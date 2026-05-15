@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Server/">
+    <Project Path="src/Server/Api/Api.csproj" />
+    <Project Path="src/Server/Application/Application.csproj" />
+    <Project Path="src/Server/Domain/Domain.csproj" />
+    <Project Path="src/Server/Infrastructure/Infrastructure.csproj" />
+    <Project Path="src/Server/SharedApiContracts/SharedApiContracts.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Contract/">
+    <Project Path="tests/Contract/ApiCompatibility.Tests/ApiCompatibility.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Integration/">
+    <Project Path="tests/Integration/Api.Tests/Api.Tests.csproj" />
+    <Project Path="tests/Integration/Integrations.Tests/Integrations.Tests.csproj" />
+    <Project Path="tests/Integration/Jobs.Tests/Jobs.Tests.csproj" />
+    <Project Path="tests/Integration/Persistence.Tests/Persistence.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Unit/">
+    <Project Path="tests/Unit/Application.Tests/Application.Tests.csproj" />
+    <Project Path="tests/Unit/Domain.Tests/Domain.Tests.csproj" />
+    <Project Path="tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,39 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.nupkg
+*.snupkg
+
+## Secrets / connection strings — never commit
+src/Server/Api/appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+.env
+.env.local
+.env.*.local
+
+## Node / frontend
+node_modules/
+dist/
+.vite/
+.cache/
+*.tsbuildinfo
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## IDE
+.idea/
+*.iml
+.vscode/extensions.json
+
+## Coverage / test output
+coverage/
+*.coverage
+*.opencover.xml

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(bmad-sprint-planning)",
+      "Skill(bmad-sprint-planning:*)",
+      "Bash(python3 \"c:/Users/jorge/source/repos/FIBRADIS/_bmad/scripts/resolve_customization.py\" --skill \"c:/Users/jorge/source/repos/FIBRADIS/.claude/skills/bmad-sprint-planning\" --key workflow)",
+      "Bash(python \"c:/Users/jorge/source/repos/FIBRADIS/_bmad/scripts/resolve_customization.py\" --skill \"c:/Users/jorge/source/repos/FIBRADIS/.claude/skills/bmad-dev-story\" --key workflow)",
+      "Bash(dotnet --version)",
+      "Bash(npm --version)",
+      "Bash(dotnet --list-sdks)"
+    ]
+  }
+}

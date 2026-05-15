@@ -1,0 +1,98 @@
+# generated: 2026-05-15
+# last_updated: 2026-05-15
+# project: FIBRADIS
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-15
+last_updated: 2026-05-15
+project: FIBRADIS
+
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # ── Épica 1: Fundación, Infraestructura y Acceso ──────────────────────────
+  epic-1: in-progress
+  1-1-inicializacion-de-la-solucion-y-estructura-del-proyecto: in-progress
+  1-2-backend-api-v1-con-openapi-y-cliente-tipado-para-los-spas: backlog
+  1-3-autenticacion-jwt-y-autorizacion-por-roles: backlog
+  1-4-hangfire-health-checks-y-observabilidad-minima: backlog
+  epic-1-retrospective: optional
+
+  # ── Épica 2: Catálogo Maestro y Descubrimiento Público ────────────────────
+  epic-2: backlog
+  2-1-catalogo-maestro-de-fibras-con-datos-semilla-iniciales: backlog
+  2-2-home-publica-con-busqueda-global-y-layout: backlog
+  2-3-ficha-publica-de-fibra: backlog
+  2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: backlog
+  epic-2-retrospective: optional
+
+  # ── Épica 3: Mercado y Frescura de Datos ──────────────────────────────────
+  epic-3: backlog
+  3-1-pipeline-de-mercado-ingesta-y-snapshots: backlog
+  3-2-clasificacion-de-frescura-y-estados-en-ui: backlog
+  3-3-historial-de-precios-yield-anualizado-y-snapshots-a-90-dias: backlog
+  epic-3-retrospective: optional
+
+  # ── Épica 4: Noticias y Contenido ─────────────────────────────────────────
+  epic-4: backlog
+  4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias: backlog
+  4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha: backlog
+  4-3-soporte-para-ai-mode-en-noticias-off-y-manual: backlog
+  epic-4-retrospective: optional
+
+  # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
+  epic-5: backlog
+  5-1-dashboard-operativo-y-control-de-pipelines: backlog
+  5-2-importacion-de-fundamentales-en-modo-manual: backlog
+  5-3-gestion-del-catalogo-de-fibras-desde-ops: backlog
+  5-4-configuracion-operativa-desde-ops-sin-redespliegue: backlog
+  epic-5-retrospective: optional
+
+  # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
+  epic-6: backlog
+  6-1-carga-y-validacion-del-portafolio: backlog
+  6-2-kpis-del-portafolio-y-tabla-con-multi-sort-y-columnas-configurables: backlog
+  6-3-filas-expandibles-con-detalle-de-posicion-y-badge-de-senal-nav: backlog
+  6-4-edicion-inline-y-eliminacion-de-posiciones: backlog
+  epic-6-retrospective: optional
+
+  # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
+  epic-7: backlog
+  7-1-score-de-oportunidad-y-ranking-del-universo: backlog
+  7-2-vista-promediar-posicion-con-simulador: backlog
+  7-3-monitoreo-de-cobertura-del-universo-y-ranking-degradado: backlog
+  7-4-favoritos-marcar-y-destacar-fibras-en-todas-las-superficies: backlog
+  epic-7-retrospective: optional
