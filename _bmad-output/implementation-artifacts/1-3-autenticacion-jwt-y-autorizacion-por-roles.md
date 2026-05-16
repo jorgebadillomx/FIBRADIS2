@@ -113,6 +113,12 @@ Entonces recibo `401 Unauthorized`.
   - [x] `dotnet test tests/Integration/Api.Tests/` — 20/20 pasan (existentes + nuevos)
   - [x] `dotnet build FIBRADIS.slnx` — exit code 0, sin warnings
 
+### Review Findings
+
+- [x] [Review][Patch] El placeholder de `Jwt:Secret` sigue siendo utilizable fuera de Development [src/Server/Api/Authentication/AddAuthenticationExtensions.cs:46]
+  La validación del placeholder ocurre solo cuando se resuelven `JwtBearerOptions`, pero `POST /api/v1/auth/login` puede emitir JWT antes de que exista cualquier request autenticado. Con `src/Server/Api/appsettings.json:10` y `src/Server/Infrastructure/Security/TokenService.cs:14`, un ambiente no-Development que arranque sin override externo todavía firma tokens con una clave conocida. Esto mantiene abierto exactamente el riesgo que la historia marcó como resuelto.
+  **RESUELTO**: Verificación de placeholder en `TokenService.GenerateAccessToken()` — si `_secret == placeholder` lanza `InvalidOperationException` antes de firmar cualquier token. En Development/tests el secret del `appsettings.Development.json` o del test es diferente al placeholder, por lo que el check pasa. El OpenAPI build-time tool nunca llama `GenerateAccessToken`, por lo que tampoco se rompe la compilación. También simplificada `ValidateJwtSecret` eliminando el guard `env.IsDevelopment()` innecesario (el check ya es placeholder-only). 21/21 tests pasan.
+
 ---
 
 ## Dev Notes
@@ -1003,3 +1009,5 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 - 2026-05-15: Historia 1.3 creada — Autenticación JWT y autorización por roles (ready-for-dev). (claude-sonnet-4-6)
 - 2026-05-15: Historia 1.3 implementada — todos los ACs satisfechos, 20/20 tests pasan, migración AddAuthSchema creada, schema TypeScript regenerado. Status → review. (claude-sonnet-4-6)
 - 2026-05-16: Hallazgos de code review resueltos — 5 items (2 High, 3 Med): validación de secret JWT, revocación atómica con IsConcurrencyToken, check IsActive en refresh, cookie Secure=IsHttps, test de reuso de token. 21/21 tests. Status → review. (claude-sonnet-4-6)
+- 2026-05-15: Revisión de código adicional — se reabrió la historia por un hallazgo pendiente sobre el placeholder de `Jwt:Secret` utilizable en runtime fuera de Development. Status → in-progress. (codex)
+- 2026-05-16: Hallazgo [Review][Patch] resuelto — check de placeholder en `TokenService.GenerateAccessToken()` bloquea emisión de JWT con clave conocida. `ValidateJwtSecret` simplificada (eliminado guard `IsDevelopment` innecesario). 21/21 tests. Status → review. (claude-sonnet-4-6)

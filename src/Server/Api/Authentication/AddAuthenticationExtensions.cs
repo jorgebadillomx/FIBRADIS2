@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -46,14 +45,12 @@ public static class AddAuthenticationExtensions
         // Validates the secret on first use (first authenticated request) without ValidateOnStart(),
         // so the OpenAPI build-time code generation tool can still run without a production secret.
         builder.Services.AddSingleton<IValidateOptions<JwtBearerOptions>>(sp =>
-            new ValidateJwtSecret(
-                sp.GetRequiredService<IWebHostEnvironment>(),
-                sp.GetRequiredService<IConfiguration>()));
+            new ValidateJwtSecret(sp.GetRequiredService<IConfiguration>()));
 
         return builder;
     }
 
-    private sealed class ValidateJwtSecret(IWebHostEnvironment env, IConfiguration config)
+    private sealed class ValidateJwtSecret(IConfiguration config)
         : IValidateOptions<JwtBearerOptions>
     {
         public ValidateOptionsResult Validate(string? name, JwtBearerOptions options)
@@ -61,13 +58,10 @@ public static class AddAuthenticationExtensions
             if (name != null && name != JwtBearerDefaults.AuthenticationScheme)
                 return ValidateOptionsResult.Success;
 
-            if (env.IsDevelopment())
-                return ValidateOptionsResult.Success;
-
             var secret = config["Jwt:Secret"];
             if (string.IsNullOrEmpty(secret) || secret == SecretPlaceholder)
                 return ValidateOptionsResult.Fail(
-                    "Jwt:Secret está usando el placeholder por defecto en un entorno no-Development. " +
+                    "Jwt:Secret está usando el placeholder por defecto. " +
                     "Configure una clave segura mediante variables de entorno (Jwt__Secret) o Secret Manager.");
 
             return ValidateOptionsResult.Success;

@@ -11,6 +11,8 @@ namespace Infrastructure.Security;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
+    private const string SecretPlaceholder = "CHANGE-ME-IN-PRODUCTION-VIA-ENV-VAR-OR-SECRET-MANAGER!!";
+
     private readonly string _secret = configuration["Jwt:Secret"]
         ?? throw new InvalidOperationException(
             "JWT Secret no configurado. Establecer Jwt:Secret en appsettings o variable de entorno Jwt__Secret.");
@@ -21,6 +23,11 @@ public class TokenService(IConfiguration configuration) : ITokenService
 
     public string GenerateAccessToken(User user)
     {
+        if (_secret == SecretPlaceholder)
+            throw new InvalidOperationException(
+                "Jwt:Secret está usando el placeholder por defecto. " +
+                "Configure una clave segura mediante variables de entorno (Jwt__Secret) o Secret Manager.");
+
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
