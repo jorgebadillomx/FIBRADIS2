@@ -18,8 +18,6 @@ public static class AddAuthenticationExtensions
         })
         .AddJwtBearer();
 
-        // Configure lazily so tests can override Jwt:Secret via in-memory config
-        // before options are first accessed at request time.
         builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
             .Configure<IConfiguration>((options, config) =>
             {
@@ -40,10 +38,13 @@ public static class AddAuthenticationExtensions
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
                 };
-            });
+            })
+            // Fail at startup if Jwt:Secret is the placeholder. The build-time OpenAPI
+            // generation tool (dotnet-getdocument.dll) also starts the host, but Api.csproj
+            // sets ASPNETCORE_ENVIRONMENT=Development before that Exec so the subprocess
+            // loads appsettings.Development.json (real dev secret) and validation passes.
+            .ValidateOnStart();
 
-        // Validates the secret on first use (first authenticated request) without ValidateOnStart(),
-        // so the OpenAPI build-time code generation tool can still run without a production secret.
         builder.Services.AddSingleton<IValidateOptions<JwtBearerOptions>>(sp =>
             new ValidateJwtSecret(sp.GetRequiredService<IConfiguration>()));
 

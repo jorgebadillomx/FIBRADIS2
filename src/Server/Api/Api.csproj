@@ -5,6 +5,32 @@
     <OpenApiDocumentName>v1</OpenApiDocumentName>
   </PropertyGroup>
 
+  <!--
+    The build-time OpenAPI generation tool (dotnet-getdocument.dll) starts the full host
+    including ValidateOnStart(). Without this target, ASPNETCORE_ENVIRONMENT is unset and
+    only appsettings.json loads — which has the placeholder Jwt:Secret — causing startup
+    failure during `dotnet build`. This target sets ASPNETCORE_ENVIRONMENT=Development in
+    the MSBuild process before the Exec task spawns dotnet-getdocument.dll, so the child
+    process inherits it and loads appsettings.Development.json (real dev secret).
+  -->
+  <UsingTask TaskName="SetEnvVarInProcess"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Name ParameterType="System.String" Required="true" />
+      <Value ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        System.Environment.SetEnvironmentVariable(Name, Value);
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="EnsureDevelopmentEnvForOpenApiGeneration" BeforeTargets="GenerateOpenApiDocuments">
+    <SetEnvVarInProcess Name="ASPNETCORE_ENVIRONMENT" Value="Development" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="BCrypt.Net-Next" />

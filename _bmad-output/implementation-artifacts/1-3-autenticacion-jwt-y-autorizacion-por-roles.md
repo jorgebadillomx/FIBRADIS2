@@ -118,6 +118,9 @@ Entonces recibo `401 Unauthorized`.
 - [x] [Review][Patch] El placeholder de `Jwt:Secret` sigue siendo utilizable fuera de Development [src/Server/Api/Authentication/AddAuthenticationExtensions.cs:46]
   La validación del placeholder ocurre solo cuando se resuelven `JwtBearerOptions`, pero `POST /api/v1/auth/login` puede emitir JWT antes de que exista cualquier request autenticado. Con `src/Server/Api/appsettings.json:10` y `src/Server/Infrastructure/Security/TokenService.cs:14`, un ambiente no-Development que arranque sin override externo todavía firma tokens con una clave conocida. Esto mantiene abierto exactamente el riesgo que la historia marcó como resuelto.
   **RESUELTO**: Verificación de placeholder en `TokenService.GenerateAccessToken()` — si `_secret == placeholder` lanza `InvalidOperationException` antes de firmar cualquier token. En Development/tests el secret del `appsettings.Development.json` o del test es diferente al placeholder, por lo que el check pasa. El OpenAPI build-time tool nunca llama `GenerateAccessToken`, por lo que tampoco se rompe la compilación. También simplificada `ValidateJwtSecret` eliminando el guard `env.IsDevelopment()` innecesario (el check ya es placeholder-only). 21/21 tests pasan.
+- [x] [Review][Patch] La historia dice “fallar arranque” pero el fix actual solo falla en runtime al usar auth [src/Server/Api/Authentication/AddAuthenticationExtensions.cs:45]
+  El follow-up marcado como resuelto pide explícitamente “Fallar arranque si `Jwt:Secret` es placeholder en ambiente no-Development”, pero el código actual evita `ValidateOnStart()` y mueve la protección a dos puntos de uso: validación al resolver `JwtBearerOptions` y excepción en `TokenService.GenerateAccessToken()` ([src/Server/Infrastructure/Security/TokenService.cs:24]). Resultado: la app todavía puede bootear con el placeholder en un entorno no-Development y solo rompe cuando llega un request autenticado o un login. Eso contradice el criterio de cierre documentado en la historia, aunque la suite siga pasando.
+  **RESUELTO**: Se habilita `.ValidateOnStart()` en `AddOptions<JwtBearerOptions>` — la app falla inmediatamente al arrancar si `Jwt:Secret` es el placeholder. El conflicto con la generación de OpenAPI en build-time se resuelve con un MSBuild inline task en `Api.csproj` que setea `ASPNETCORE_ENVIRONMENT=Development` antes del target `GenerateOpenApiDocuments`; el subprocess `dotnet-getdocument.dll` hereda esa variable, carga `appsettings.Development.json` (secret no-placeholder), y `ValidateOnStart()` pasa. En producción, si `Jwt:Secret` es el placeholder, el arranque falla en `IHost.StartAsync()`. Nuevo test `StartupValidationTests.Startup_WithPlaceholderSecretInNonDevelopment_ThrowsOptionsValidationException` verifica el comportamiento. 22/22 tests pasan.
 
 ---
 
@@ -955,12 +958,12 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 - Desviación de spec: `AuthService` en `Infrastructure/Security/` (no en `Application/Auth/`) por restricción de Clean Architecture
 
 **Hallazgos de code review resueltos (2026-05-16):**
-- ✅ Resuelto [High]: Placeholder JWT — `IValidateOptions<JwtBearerOptions>` sin `ValidateOnStart()` valida el secret en el primer request autenticado en entornos no-Development. Sin `ValidateOnStart()` para no romper la generación de OpenAPI en build-time (que arranca la app completa sin hacer requests). `AddAuthenticationExtensions.cs`
+- ✅ Resuelto [High]: Placeholder JWT — `.ValidateOnStart()` activo en `AddOptions<JwtBearerOptions>`: falla en `IHost.StartAsync()` si `Jwt:Secret` es el placeholder. Conflicto con build-time OpenAPI resuelto con MSBuild inline task en `Api.csproj` que setea `ASPNETCORE_ENVIRONMENT=Development` antes del target `GenerateOpenApiDocuments`. `AddAuthenticationExtensions.cs`, `Api.csproj`
 - ✅ Resuelto [High]: Revocación atómica — `IsConcurrencyToken()` en `RefreshToken.RevokedAt` + catch `DbUpdateConcurrencyException` → `InvalidRefreshTokenException` en `AuthService.RefreshAsync`. `RefreshTokenConfiguration.cs`, `AuthService.cs`
 - ✅ Resuelto [Med]: Validación `IsActive` en `RefreshAsync` — `if (stored is null || !stored.User!.IsActive)` antes de emitir tokens. `AuthService.cs`
 - ✅ Resuelto [Med]: Cookie `Secure` basada en `ctx.Request.IsHttps`. `AuthEndpoints.cs`
 - ✅ Resuelto [Med]: Test de reutilización de token viejo post-rotación → 401 usando cliente con `HandleCookies = false` para control manual de cookies. `AuthRefreshTests.cs`
-- ✅ 21/21 tests de integración pasan (20 originales + 1 nuevo)
+- ✅ 22/22 tests de integración pasan (20 originales + 1 token rotation + 1 startup validation)
 
 ### File List
 
@@ -989,6 +992,7 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 - `tests/Integration/Api.Tests/AuthLoginTests.cs`
 - `tests/Integration/Api.Tests/AuthRefreshTests.cs`
 - `tests/Integration/Api.Tests/AuthorizationTests.cs`
+- `tests/Integration/Api.Tests/StartupValidationTests.cs`
 
 #### Modificados
 - `Directory.Packages.props`
@@ -1011,3 +1015,5 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 - 2026-05-16: Hallazgos de code review resueltos — 5 items (2 High, 3 Med): validación de secret JWT, revocación atómica con IsConcurrencyToken, check IsActive en refresh, cookie Secure=IsHttps, test de reuso de token. 21/21 tests. Status → review. (claude-sonnet-4-6)
 - 2026-05-15: Revisión de código adicional — se reabrió la historia por un hallazgo pendiente sobre el placeholder de `Jwt:Secret` utilizable en runtime fuera de Development. Status → in-progress. (codex)
 - 2026-05-16: Hallazgo [Review][Patch] resuelto — check de placeholder en `TokenService.GenerateAccessToken()` bloquea emisión de JWT con clave conocida. `ValidateJwtSecret` simplificada (eliminado guard `IsDevelopment` innecesario). 21/21 tests. Status → review. (claude-sonnet-4-6)
+- 2026-05-15: Revisión de código adicional — se reabrió la historia porque el fix actual del placeholder protege runtime de auth, pero no cumple el requisito documentado de fallar el arranque fuera de Development. Status → in-progress. (codex)
+- 2026-05-16: Hallazgo [Review][Patch] resuelto — `ValidateOnStart()` habilitado; MSBuild inline task en `Api.csproj` setea `ASPNETCORE_ENVIRONMENT=Development` antes de `GenerateOpenApiDocuments` para que la generación de OpenAPI pase la validación. Nuevo test `StartupValidationTests` verifica falla en arranque con placeholder. 22/22 tests. Status → review. (claude-sonnet-4-6)
