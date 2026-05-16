@@ -16,7 +16,6 @@ var app = builder.Build();
 
 app.UseApiInfrastructure();
 app.UseHttpsRedirection();
-app.MapHealth();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();

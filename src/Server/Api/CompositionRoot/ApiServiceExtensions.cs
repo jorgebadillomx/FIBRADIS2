@@ -1,5 +1,9 @@
 using Api.Authentication;
+using Api.HealthChecks;
 using Application.Auth;
+using Hangfire;
+using Hangfire.SqlServer;
+using Infrastructure.Persistence.SqlServer;
 using Infrastructure.Security;
 
 namespace Api.CompositionRoot;
@@ -40,6 +44,45 @@ public static class ApiServiceExtensions
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+
+        // Hangfire — condicional para soportar tests sin SQL
+        var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
+        var hangfireConnStr = builder.Configuration.GetConnectionString("DefaultConnection");
+
+        if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
+        {
+            builder.Services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(hangfireConnStr, new SqlServerStorageOptions
+                {
+                    SchemaName = "jobs",
+                    CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                    SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                    QueuePollInterval = TimeSpan.Zero,
+                    UseRecommendedIsolationLevel = true,
+                    DisableGlobalLocks = true,
+                }));
+
+            builder.Services.AddHangfireServer(options =>
+            {
+                options.WorkerCount = 1;
+                options.Queues = ["default"];
+            });
+        }
+        else
+        {
+            // Tests o entornos sin connection string: registro mínimo sin storage ni servidor
+            builder.Services.AddHangfire(_ => { });
+        }
+
+        // Health checks — siempre registrar
+        builder.Services.AddSingleton<PipelineFreshnessHealthCheck>();
+        builder.Services.AddSingleton<DatabaseHealthCheck>();
+        builder.Services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("database")
+            .AddCheck<PipelineFreshnessHealthCheck>("pipeline-freshness");
 
         return builder;
     }

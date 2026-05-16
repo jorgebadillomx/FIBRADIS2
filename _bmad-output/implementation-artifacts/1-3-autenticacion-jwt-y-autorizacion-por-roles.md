@@ -3,7 +3,7 @@
 **Epic:** 1 — Fundación, Infraestructura y Acceso
 **Story ID:** 1.3
 **Story Key:** `1-3-autenticacion-jwt-y-autorizacion-por-roles`
-**Status:** review
+**Status:** done
 **Date:** 2026-05-15
 
 ---
@@ -1017,3 +1017,4 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 - 2026-05-16: Hallazgo [Review][Patch] resuelto — check de placeholder en `TokenService.GenerateAccessToken()` bloquea emisión de JWT con clave conocida. `ValidateJwtSecret` simplificada (eliminado guard `IsDevelopment` innecesario). 21/21 tests. Status → review. (claude-sonnet-4-6)
 - 2026-05-15: Revisión de código adicional — se reabrió la historia porque el fix actual del placeholder protege runtime de auth, pero no cumple el requisito documentado de fallar el arranque fuera de Development. Status → in-progress. (codex)
 - 2026-05-16: Hallazgo [Review][Patch] resuelto — `ValidateOnStart()` habilitado; MSBuild inline task en `Api.csproj` setea `ASPNETCORE_ENVIRONMENT=Development` antes de `GenerateOpenApiDocuments` para que la generación de OpenAPI pase la validación. Nuevo test `StartupValidationTests` verifica falla en arranque con placeholder. 22/22 tests. Status → review. (claude-sonnet-4-6)
+- 2026-05-16: Revisión de código final sin hallazgos adicionales. Verificación completa: `dotnet test tests/Integration/Api.Tests/` 22/22 y `dotnet build FIBRADIS.slnx` correcto. Status → done. (codex)

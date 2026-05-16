@@ -69,19 +69,6 @@
         }
       }
     },
-    "/api/v1/health": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "operationId": "GetHealth",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -236,9 +223,6 @@
     },
     {
       "name": "Ops"
-    },
-    {
-      "name": "Health"
     }
   ]
 }

@@ -28,6 +28,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 ["Jwt:Issuer"] = "fibradis",
                 ["Jwt:Audience"] = "fibradis-client",
                 ["Jwt:AccessTokenMinutes"] = "15",
+                ["Hangfire:UseInMemoryStorage"] = "true",
             });
         });
 

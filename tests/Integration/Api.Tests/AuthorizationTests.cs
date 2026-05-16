@@ -41,7 +41,7 @@ public class AuthorizationTests : IAsyncLifetime
     [Fact]
     public async Task PublicRoute_WithoutToken_Returns200()
     {
-        var response = await _client.GetAsync("/api/v1/health");
+        var response = await _client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 

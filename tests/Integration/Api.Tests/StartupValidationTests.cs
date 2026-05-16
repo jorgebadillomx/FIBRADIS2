@@ -29,6 +29,7 @@ public class StartupValidationTests
                         ["Jwt:Secret"] = PlaceholderSecret,
                         ["Jwt:Issuer"] = "fibradis",
                         ["Jwt:Audience"] = "fibradis-client",
+                        ["Hangfire:UseInMemoryStorage"] = "true",
                     });
                 });
 
