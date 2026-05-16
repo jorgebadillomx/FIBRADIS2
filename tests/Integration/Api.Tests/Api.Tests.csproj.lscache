@@ -55,10 +55,14 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 
 [sourceFiles]
 <NUGET>/microsoft.net.test.sdk/17.14.1/build/net8.0/Microsoft.NET.Test.Sdk.Program.cs
+ApiWebFactory.cs
+HealthEndpointTests.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  Api.Tests.AssemblyInfo.cs
  Api.Tests.GlobalUsings.g.cs
+OpenApiEndpointTests.cs
+ProblemDetailsTests.cs
 
 [metadataReferences]
 ../../../src/Server/
@@ -379,15 +383,19 @@ obj/Debug/net10.0/
 <NUGET>/
  azure.core/1.47.1/lib/net8.0/Azure.Core.dll
  azure.identity/1.14.2/lib/net8.0/Azure.Identity.dll
+ microsoft.aspnetcore.mvc.testing/10.0.8/lib/net10.0/Microsoft.AspNetCore.Mvc.Testing.dll
  microsoft.aspnetcore.openapi/10.0.8/lib/net10.0/Microsoft.AspNetCore.OpenApi.dll
+ microsoft.aspnetcore.testhost/10.0.8/lib/net10.0/Microsoft.AspNetCore.TestHost.dll
  microsoft.bcl.asyncinterfaces/8.0.0/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
  microsoft.bcl.cryptography/9.0.4/lib/net9.0/Microsoft.Bcl.Cryptography.dll
  microsoft.codecoverage/17.14.1/lib/net8.0/Microsoft.VisualStudio.CodeCoverage.Shim.dll
  microsoft.data.sqlclient/6.1.1/ref/net9.0/Microsoft.Data.SqlClient.dll
  microsoft.entityframeworkcore.abstractions/10.0.8/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
+ microsoft.entityframeworkcore.inmemory/10.0.8/lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll
  microsoft.entityframeworkcore.relational/10.0.8/lib/net10.0/Microsoft.EntityFrameworkCore.Relational.dll
  microsoft.entityframeworkcore.sqlserver/10.0.8/lib/net10.0/Microsoft.EntityFrameworkCore.SqlServer.dll
  microsoft.entityframeworkcore/10.0.8/lib/net10.0/Microsoft.EntityFrameworkCore.dll
+ microsoft.extensions.dependencymodel/10.0.8/lib/net10.0/Microsoft.Extensions.DependencyModel.dll
  microsoft.identity.client.extensions.msal/4.73.1/lib/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll
  microsoft.identity.client/4.73.1/lib/net8.0/Microsoft.Identity.Client.dll
  microsoft.identitymodel.abstractions/7.7.1/lib/net8.0/Microsoft.IdentityModel.Abstractions.dll
@@ -408,6 +416,7 @@ obj/Debug/net10.0/
   Microsoft.VisualStudio.TestPlatform.ObjectModel.dll
   testhost.dll
  newtonsoft.json/13.0.3/lib/net6.0/Newtonsoft.Json.dll
+ scalar.aspnetcore/2.4.1/lib/net9.0/Scalar.AspNetCore.dll
  system.clientmodel/1.5.1/lib/net8.0/System.ClientModel.dll
  system.identitymodel.tokens.jwt/7.7.1/lib/net8.0/System.IdentityModel.Tokens.Jwt.dll
  system.memory.data/8.0.1/lib/net8.0/System.Memory.Data.dll
@@ -451,5 +460,6 @@ obj/Debug/net10.0/
   xunit.analyzers.fixes.dll
 
 [analyzerConfigFiles]
+../../../.editorconfig
 <DOTNET>/sdk/10.0.300/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/Api.Tests.GeneratedMSBuildEditorConfig.editorconfig

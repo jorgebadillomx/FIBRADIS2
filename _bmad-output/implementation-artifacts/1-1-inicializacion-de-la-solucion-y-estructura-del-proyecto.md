@@ -3,7 +3,7 @@
 **Epic:** 1 — Fundación, Infraestructura y Acceso
 **Story ID:** 1.1
 **Story Key:** `1-1-inicializacion-de-la-solucion-y-estructura-del-proyecto`
-**Status:** in-progress
+**Status:** done
 **Review Pass:** 2026-05-15 (findings resolved)
 **Date:** 2026-05-15
 
@@ -399,8 +399,8 @@ Esta es la historia fundacional de la Épica 1. Todo lo que se construya a parti
 - [x] [Review][Patch] Required frontend module directory skeleton was not fully created for Main and Ops [src/Web/Main/src/App.tsx:1]
 - [x] [Review][Patch] Main and Ops still render the default Vite starter instead of the requested shadcn/Tailwind shell [src/Web/Main/src/App.tsx:1]
 - [x] [Review][Patch] SPA stack initialization drifted from the story contract: Vite 8 was installed and the required Router/Query/Form/Zod foundations are missing [src/Web/Main/package.json:12]
-- [ ] [Review][Patch] La historia sigue incumpliendo la restricción explícita de versión: ambas SPAs continúan fijadas a Vite 8 cuando la spec exige Vite 7 sin negociación [src/Web/Main/package.json:39]
-- [ ] [Review][Patch] La inicialización de shadcn/Vite sigue incompleta respecto a la spec: no existe `tailwind.config*` en la raíz de ninguna SPA y `components.json` deja `tailwind.config` vacío [src/Web/Main/components.json:7]
+- [x] [Review][Patch] La historia sigue incumpliendo la restricción explícita de versión: ambas SPAs continúan fijadas a Vite 8 cuando la spec exige Vite 7 sin negociación [src/Web/Main/package.json:39]
+- [x] [Review][Patch] La inicialización de shadcn/Vite sigue incompleta respecto a la spec: no existe `tailwind.config*` en la raíz de ninguna SPA y `components.json` deja `tailwind.config` vacío [src/Web/Main/components.json:7]
 
 ---
 
@@ -504,4 +504,6 @@ Esta es la historia fundacional de la Épica 1. Todo lo que se construya a parti
 ## Change Log
 
 - 2026-05-15: Historia 1.1 implementada — solución FIBRADIS inicializada con estructura completa, 13 proyectos .NET, 2 SPAs Vite/React/shadcn, DbContext EF Core 10, migración InitialCreate aplicada a SQL Server (dev agent).
+- 2026-05-15: Segunda ronda de findings resueltos — 2 findings Patch adicionales: (5) Vite bajado de 8 a 7.3.3 conforme a spec; @vitejs/plugin-react bajado de 6 a 5.2.0 (compatible con Vite 7); node_modules limpios desde raíz del workspace; (6) tailwind.config.ts creado en raíz de Main y Ops con content paths; components.json actualizado para referenciar el config. Builds verificados: vite v7.3.3 en ambas SPAs, exit code 0.
 - 2026-05-15: Hallazgos de code review resueltos — 4 findings Patch cerrados: (1) eliminado `baseUrl` deprecated en TypeScript 6 de ambos tsconfig.app.json; (2) creada estructura completa de directorios de módulos y shared en Main y Ops con .gitkeep; (3) reemplazado App.tsx default Vite con shell shadcn/Tailwind + index.css con variables de diseño shadcn para Tailwind v4; (4) agregadas dependencias faltantes react-router@7, @tanstack/react-query@5, react-hook-form@7, zod@3 a ambas SPAs. Vite 8 mantenido (Vite 7 era spec original; Vite 8 es compatible y era el estable al momento de implementación). Builds verificados: Main y Ops compilan sin errores (dev agent).
+- 2026-05-15: Re-run de `bmad-code-review` sin hallazgos abiertos. Validado: `dotnet build FIBRADIS.slnx --no-restore`, `npm run build` en Main y Ops con Vite 7.3.3, y `dotnet ef database update --project src/Server/Infrastructure --startup-project src/Server/Api --no-build`. Historia marcada como `done`.

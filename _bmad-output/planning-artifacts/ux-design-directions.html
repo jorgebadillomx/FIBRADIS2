@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FIBRADIS - UX Design Directions</title>
+  <style>
+    :root {
+      --bg: #f5f2eb;
+      --panel: #fffdf8;
+      --ink: #17333d;
+      --muted: #617983;
+      --line: #d8d8cf;
+      --teal: #167c80;
+      --teal-soft: #e0f2ef;
+      --green: #22794d;
+      --green-soft: #e3f3e8;
+      --amber: #c58d1c;
+      --amber-soft: #fbf0d6;
+      --red: #b84541;
+      --red-soft: #f8dfdd;
+      --slate: #edf0f2;
+      --shadow: 0 20px 40px rgba(23, 51, 61, 0.08);
+      --radius: 20px;
+      --mono: "IBM Plex Mono", Consolas, monospace;
+      --sans: "Public Sans", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(22,124,128,0.08), transparent 32%),
+        linear-gradient(180deg, #f8f5ef 0%, #f1ede5 100%);
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    .page {
+      max-width: 1560px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .eyebrow, .tag, .mini, .chip {
+      font-family: var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      color: var(--teal);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 0.96;
+      max-width: 10ch;
+    }
+
+    .lead {
+      max-width: 78ch;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      color: var(--ink);
+    }
+
+    .criteria {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 24px 0 40px;
+    }
+
+    .criteria .card, .direction, .frame, .toolbar, .list, .chart, .panel, .opsbar {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(8px);
+    }
+
+    .card {
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    }
+
+    .direction {
+      border-radius: 24px;
+      border: 1px solid rgba(23, 51, 61, 0.1);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 18px;
+    }
+
+    .heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .heading h2 {
+      margin: 4px 0 8px;
+      font-size: 26px;
+      line-height: 1.08;
+    }
+
+    .heading p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .score {
+      padding: 10px 12px;
+      min-width: 88px;
+      border-radius: 16px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(22,124,128,0.14), rgba(22,124,128,0.06));
+      border: 1px solid rgba(22,124,128,0.16);
+    }
+
+    .score strong {
+      display: block;
+      font-size: 22px;
+    }
+
+    .mini { font-size: 10px; color: var(--muted); }
+
+    .frame {
+      border-radius: 22px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      min-height: 520px;
+    }
+
+    .toolbar {
+      border-radius: 16px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search {
+      flex: 1;
+      min-height: 42px;
+      border-radius: 12px;
+      background: rgba(23, 51, 61, 0.04);
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pills, .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      font-size: 10px;
+      border-radius: 999px;
+      padding: 7px 9px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      background: rgba(255,255,255,0.88);
+    }
+
+    .chip.positive { background: var(--green-soft); color: var(--green); }
+    .chip.caution { background: var(--amber-soft); color: var(--amber); }
+    .chip.error { background: var(--red-soft); color: var(--red); }
+    .chip.primary { background: var(--teal-soft); color: var(--teal); }
+
+    .list {
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.3fr repeat(4, 1fr);
+      gap: 8px;
+      align-items: center;
+      padding: 12px 10px;
+      border-radius: 14px;
+      background: rgba(23, 51, 61, 0.03);
+      font-size: 13px;
+    }
+
+    .row.header {
+      background: transparent;
+      padding-top: 0;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: var(--mono);
+    }
+
+    .symbol strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .symbol span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric-up { color: var(--green); }
+    .metric-mid { color: var(--amber); }
+    .metric-soft { color: var(--muted); }
+
+    .chart {
+      border-radius: 18px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .spark {
+      height: 112px;
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(22,124,128,0.12), rgba(22,124,128,0)),
+        linear-gradient(90deg, rgba(23, 51, 61, 0.05) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(23, 51, 61, 0.05) 1px, transparent 1px);
+      background-size: auto, 20% 100%, 100% 25%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spark::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 18px 0;
+      height: 54px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        transparent 4%,
+        rgba(22,124,128,0.9) 5%,
+        rgba(22,124,128,0.9) 15%,
+        rgba(34,121,77,0.9) 27%,
+        rgba(34,121,77,0.9) 38%,
+        rgba(197,141,28,0.9) 52%,
+        rgba(197,141,28,0.9) 63%,
+        rgba(34,121,77,0.9) 76%,
+        rgba(34,121,77,0.9) 86%,
+        transparent 100%);
+      clip-path: polygon(0 80%, 6% 76%, 14% 60%, 28% 64%, 42% 38%, 54% 55%, 65% 40%, 78% 22%, 100% 12%, 100% 100%, 0 100%);
+    }
+
+    .panel {
+      border-radius: 18px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .duo {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .block {
+      background: rgba(23, 51, 61, 0.04);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 88px;
+    }
+
+    .opsbar {
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(23, 51, 61, 0.08);
+      display: grid;
+      gap: 10px;
+    }
+
+    .bars {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(23, 51, 61, 0.08);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), #4db2ac);
+      border-radius: inherit;
+    }
+
+    .notes {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .notes strong {
+      color: var(--ink);
+    }
+
+    .direction.a .frame { background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(224,242,239,0.6)); }
+    .direction.b .frame { background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(251,240,214,0.55)); }
+    .direction.c .frame { background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(237,240,242,0.88)); }
+    .direction.d .frame { background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(227,243,232,0.55)); }
+    .direction.e .frame { background: linear-gradient(180deg, rgba(23,51,61,0.96), rgba(19,43,51,0.92)); color: #eef5f4; }
+    .direction.e .frame .toolbar,
+    .direction.e .frame .list,
+    .direction.e .frame .chart,
+    .direction.e .frame .panel,
+    .direction.e .frame .opsbar { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+    .direction.e .frame .search,
+    .direction.e .frame .block,
+    .direction.e .frame .row { background: rgba(255,255,255,0.06); color: #e3eded; }
+    .direction.e .frame .row.header,
+    .direction.e .frame .symbol span,
+    .direction.e .frame .mini,
+    .direction.e .frame .notes { color: rgba(238,245,244,0.74); }
+    .direction.f .frame { background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,223,221,0.26)); }
+
+    @media (max-width: 720px) {
+      .page { padding: 24px 16px 64px; }
+      .heading { flex-direction: column; }
+      .row { grid-template-columns: 1.3fr 1fr 1fr; }
+      .row span:nth-child(4),
+      .row span:nth-child(5) { display: none; }
+      .duo { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">FIBRADIS UX Design Directions</div>
+      <h1>Seis direcciones visuales para una comparacion priorizada.</h1>
+      <p class="lead">
+        Cada direccion explora una manera distinta de resolver la misma promesa:
+        convertir tablas, senales y paneles expandibles en una lectura accionable del
+        portafolio frente al mercado, con una expresion diferenciada para publico,
+        privado y ops.
+      </p>
+      <div class="summary">
+        <span class="tag">Main: editorial-analitico</span>
+        <span class="tag">Privado: comparativo y accionable</span>
+        <span class="tag">Ops: sobrio y operativo</span>
+        <span class="tag">Base: shadcn/ui + Tailwind</span>
+      </div>
+    </section>
+
+    <section class="criteria">
+      <div class="card"><h3>1. Intuicion de layout</h3><p>Que tan rapido deja claro por donde empezar a leer, comparar y actuar.</p></div>
+      <div class="card"><h3>2. Densidad visual</h3><p>Si el peso de datos se siente util o empieza a cansar y confundir.</p></div>
+      <div class="card"><h3>3. Lectura movil</h3><p>Especialmente importante para Home, ficha y resultados de PDFs.</p></div>
+      <div class="card"><h3>4. Continuidad</h3><p>Que tan bien conecta resumen, comparacion, detalle y explicabilidad.</p></div>
+    </section>
+
+    <section class="grid">
+      <article class="direction a">
+        <div class="heading">
+          <div>
+            <div class="eyebrow">Direccion 01</div>
+            <h2>Editorial de mercado</h2>
+            <p>Prioriza lectura serena, bloques amplios y una transicion suave de resumen a comparacion.</p>
+          </div>
+          <div class="score"><span class="mini">densidad</span><strong>Media</strong></div>
+        </div>
+        <div class="frame">
+          <div class="toolbar">
+            <div class="search">Buscar ticker o nombre</div>
+            <div class="pills">
+              <span class="chip primary">Home</span>
+              <span class="chip">Mercado</span>
+              <span class="chip">PDFs</span>
+            </div>
+          </div>
+          <div class="duo">
+            <div class="panel">
+              <div class="mini">Resumen del universo</div>
+              <div class="badges">
+                <span class="chip positive">Fresh 15m</span>
+                <span class="chip caution">2 PDFs nuevos</span>
+              </div>
+              <div class="spark"></div>
+            </div>
+            <div class="panel">
+              <div class="mini">Noticias y highlights</div>
+              <div class="block"><strong>Fibra Uno</strong><br>Nuevo reporte procesado y yield estable.</div>
+              <div class="block"><strong>Macquarie</strong><br>Movimiento relevante vs 52S.</div>
+            </div>
+          </div>
+          <div class="notes">
+            <div><strong>Uso ideal:</strong> Home publica y ficha movil.</div>
+            <div><strong>Riesgo:</strong> puede quedarse corto para usuarios privados intensivos.</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="direction b">
+        <div class="heading">
+          <div>
+            <div class="eyebrow">Direccion 02</div>
+            <h2>Terminal ligera</h2>
+            <p>Hace que la tabla comparativa domine desde el primer segundo, con controles compactos y lectura rapida.</p>
+          </div>
+          <div class="score"><span class="mini">densidad</span><strong>Alta</strong></div>
+        </div>
+        <div class="frame">
+          <div class="toolbar">
+            <div class="pills">
+              <span class="chip primary">Portafolio</span>
+              <span class="chip">Oportunidades</span>
+              <span class="chip">Alertas</span>
+            </div>
+            <div class="badges">
+              <span class="chip positive">3 verdes</span>
+              <span class="chip caution">2 revisar</span>
+            </div>
+          </div>
+          <div class="list">
+            <div class="row header"><span>Posicion</span><span>Precio</span><span>52S</span><span>Delta</span><span>Senal</span></div>
+            <div class="row"><span class="symbol"><strong>FUNO11</strong><span>Firme y barata</span></span><span>24.10</span><span class="metric-soft">27.50</span><span class="metric-up">-12.3%</span><span class="metric-up">Verde</span></div>
+            <div class="row"><span class="symbol"><strong>FMTY14</strong><span>Requiere atencion</span></span><span>11.32</span><span class="metric-soft">12.44</span><span class="metric-mid">-5.1%</span><span class="metric-mid">Amarillo</span></div>
+            <div class="row"><span class="symbol"><strong>TERRA13</strong><span>Parcial por PDF</span></span><span>33.02</span><span class="metric-soft">34.00</span><span class="metric-soft">-1.4%</span><span class="metric-mid">Parcial</span></div>
+          </div>
+          <div class="notes">
+            <div><strong>Uso ideal:</strong> dashboard privado y ranking de oportunidades.</div>
+            <div><strong>Riesgo:</strong> exige mucho control fino de espaciado y jerarquia.</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="direction c">
+        <div class="heading">
+          <div>
+            <div class="eyebrow">Direccion 03</div>
+            <h2>Comparacion priorizada</h2>
+            <p>Combina una tabla dominante con una columna de insights para decirle al usuario por donde empezar.</p>
+          </div>
+          <div class="score"><span class="mini">balance</span><strong>Fuerte</strong></div>
+        </div>
+        <div class="frame">
+          <div class="toolbar">
+            <div class="search">Ordenar por: senal, yield, descuento NAV</div>
+            <span class="chip primary">Vista recomendada</span>
+          </div>
+          <div class="duo" style="grid-template-columns: 1.8fr 1fr;">
+            <div class="list">
+              <div class="row header"><span>Posicion</span><span>Precio</span><span>Yield</span><span>Delta</span><span>Estado</span></div>
+              <div class="row"><span class="symbol"><strong>FUNO11</strong><span>Primera a revisar</span></span><span>24.10</span><span class="metric-up">8.4%</span><span class="metric-up">-12.3%</span><span class="metric-up">Verde</span></div>
+              <div class="row"><span class="symbol"><strong>FMTY14</strong><span>Rango medio</span></span><span>11.32</span><span class="metric-mid">6.1%</span><span class="metric-mid">-5.1%</span><span class="metric-mid">Amarillo</span></div>
+              <div class="row"><span class="symbol"><strong>TERRA13</strong><span>Dato parcial</span></span><span>33.02</span><span class="metric-soft">--</span><span class="metric-soft">-1.4%</span><span class="metric-mid">Parcial</span></div>
+            </div>
+            <div class="panel">
+              <div class="mini">Por que empezar aqui</div>
+              <div class="block">FUNO11 combina descuento vs 52S, yield fuerte y score estable.</div>
+              <div class="block">TERRA13 requiere revisar PDF antes de decidir.</div>
+              <div class="block">2 posiciones sin novedad relevante hoy.</div>
+            </div>
+          </div>
+          <div class="notes">
+            <div><strong>Uso ideal:</strong> la promesa central del producto.</div>
+            <div><strong>Riesgo:</strong> hay que evitar que la capa de insights opaque la tabla.</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="direction d">
+        <div class="heading">
+          <div>
+            <div class="eyebrow">Direccion 04</div>
+            <h2>Canvas de decisiones</h2>
+            <p>Presenta el portafolio como un tablero modular con resumen, tabla, PDFs y senales como capas conectadas.</p>
+          </div>
+          <div class="score"><span class="mini">modularidad</span><strong>Alta</strong></div>
+        </div>
+        <div class="frame">
+          <div class="duo">
+            <div class="panel">
+              <div class="mini">KPI principal</div>
+              <div class="block"><strong>3 posiciones a revisar hoy</strong><br>Una por descuento, dos por datos parciales.</div>
+            </div>
+            <div class="panel">
+              <div class="mini">Estado de datos</div>
+              <div class="badges">
+                <span class="chip positive">Market fresh</span>
+                <span class="chip caution">PDF parcial</span>
+                <span class="chip">Score redistribuido</span>
+              </div>
+            </div>
+          </div>
+          <div class="list">
+            <div class="row header"><span>Posicion</span><span>Mercado</span><span>PDF</span><span>Score</span><span>Senal</span></div>
+            <div class="row"><span class="symbol"><strong>FUNO11</strong><span>Expandible</span></span><span>Fresh</span><span>Completo</span><span class="metric-up">82</span><span class="metric-up">Verde</span></div>
+            <div class="row"><span class="symbol"><strong>TERRA13</strong><span>Expandible</span></span><span>Fresh</span><span>Parcial</span><span class="metric-mid">61</span><span class="metric-mid">Amarillo</span></div>
+          </div>
+          <div class="notes">
+            <div><strong>Uso ideal:</strong> usuarios privados que alternan entre resumen y profundidad.</div>
+            <div><strong>Riesgo:</strong> puede sentirse demasiado modular si no se unifica bien la jerarquia.</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="direction e">
+        <div class="heading">
+          <div>
+            <div class="eyebrow">Direccion 05</div>
+            <h2>Night desk analitico</h2>
+            <p>Explora una version de alto contraste y fondo oscuro para usuarios intensivos de escritorio.</p>
+          </div>
+          <div class="score"><span class="mini">tono</span><strong>Intenso</strong></div>
+        </div>
+        <div class="frame">
+          <div class="toolbar">
+            <div class="pills">
+              <span class="chip primary">Workspace</span>
+              <span class="chip">Comparador</span>
+              <span class="chip">Ops</span>
+            </div>
+            <div class="badges">
+              <span class="chip positive">Focus mode</span>
+            </div>
+          </div>
+          <div class="chart">
+            <div class="mini">Lectura del dia</div>
+            <div class="spark"></div>
+          </div>
+          <div class="list">
+            <div class="row"><span class="symbol"><strong>FUNO11</strong><span>8.4% yield</span></span><span>24.10</span><span class="metric-up">82</span><span class="metric-up">Verde</span><span class="metric-soft">Expandir</span></div>
+            <div class="row"><span class="symbol"><strong>FMTY14</strong><span>6.1% yield</span></span><span>11.32</span><span class="metric-mid">61</span><span class="metric-mid">Amarillo</span><span class="metric-soft">Expandir</span></div>
+          </div>
+          <div class="notes">
+            <div><strong>Uso ideal:</strong> exploracion opcional para power users.</div>
+            <div><strong>Riesgo:</strong> contradice la calma luminosa definida para la experiencia base.</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="direction f">
+        <div class="heading">
+          <div>
+            <div class="eyebrow">Direccion 06</div>
+            <h2>Ops de precision</h2>
+            <p>Separa con claridad la capa administrativa: menos expresion, mas estado, mas accion.</p>
+          </div>
+          <div class="score"><span class="mini">ops fit</span><strong>Alto</strong></div>
+        </div>
+        <div class="frame">
+          <div class="opsbar">
+            <div class="mini">Pipeline status</div>
+            <div class="badges">
+              <span class="chip positive">Market OK</span>
+              <span class="chip caution">PDF backlog 4</span>
+              <span class="chip error">1 failed item</span>
+            </div>
+            <div class="bars">
+              <div class="bar"><span style="width: 92%;"></span></div>
+              <div class="bar"><span style="width: 66%; background: linear-gradient(90deg, var(--amber), #e0b562);"></span></div>
+              <div class="bar"><span style="width: 28%; background: linear-gradient(90deg, var(--red), #d36b66);"></span></div>
+            </div>
+          </div>
+          <div class="list">
+            <div class="row header"><span>Item</span><span>Status</span><span>Intentos</span><span>Trigger</span><span>Accion</span></div>
+            <div class="row"><span class="symbol"><strong>PDF FUNO11 Q3</strong><span>Reportes</span></span><span class="metric-mid">Partial</span><span>2</span><span>Daily</span><span>Retry</span></div>
+            <div class="row"><span class="symbol"><strong>News RSS batch</strong><span>Google News</span></span><span class="metric-up">Processed</span><span>1</span><span>Hourly</span><span>View</span></div>
+            <div class="row"><span class="symbol"><strong>Market refresh</strong><span>Universe</span></span><span class="metric-up">Fresh</span><span>1</span><span>15m</span><span>Run now</span></div>
+          </div>
+          <div class="notes">
+            <div><strong>Uso ideal:</strong> centro de procesos y paneles de auditoria.</div>
+            <div><strong>Riesgo:</strong> no debe contaminar la expresion del producto principal.</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

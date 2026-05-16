@@ -45,8 +45,8 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # ── Épica 1: Fundación, Infraestructura y Acceso ──────────────────────────
   epic-1: in-progress
-  1-1-inicializacion-de-la-solucion-y-estructura-del-proyecto: in-progress
-  1-2-backend-api-v1-con-openapi-y-cliente-tipado-para-los-spas: backlog
+  1-1-inicializacion-de-la-solucion-y-estructura-del-proyecto: done
+  1-2-backend-api-v1-con-openapi-y-cliente-tipado-para-los-spas: done
   1-3-autenticacion-jwt-y-autorizacion-por-roles: backlog
   1-4-hangfire-health-checks-y-observabilidad-minima: backlog
   epic-1-retrospective: optional
