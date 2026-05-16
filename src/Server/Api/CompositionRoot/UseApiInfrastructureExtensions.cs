@@ -21,6 +21,9 @@ public static class UseApiInfrastructureExtensions
             });
         }
 
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         return app;
     }
 }

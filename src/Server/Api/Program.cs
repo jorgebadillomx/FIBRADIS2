@@ -1,4 +1,6 @@
 using Api.CompositionRoot;
+using Api.Endpoints.Ops;
+using Api.Endpoints.Private;
 using Api.Endpoints.Public;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +17,9 @@ var app = builder.Build();
 app.UseApiInfrastructure();
 app.UseHttpsRedirection();
 app.MapHealth();
+app.MapAuth();
+app.MapMe();
+app.MapOpsPing();
 
 app.Run();
 

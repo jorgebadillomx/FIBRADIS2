@@ -3,7 +3,7 @@
 **Epic:** 1 — Fundación, Infraestructura y Acceso
 **Story ID:** 1.3
 **Story Key:** `1-3-autenticacion-jwt-y-autorizacion-por-roles`
-**Status:** ready-for-dev
+**Status:** review
 **Date:** 2026-05-15
 
 ---
@@ -54,56 +54,56 @@ Entonces recibo `401 Unauthorized`.
 
 ## Tareas / Subtareas
 
-- [ ] Task 1: Agregar paquetes NuGet y actualizar CPM (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
-  - [ ] Agregar `Microsoft.AspNetCore.Authentication.JwtBearer` (10.0.8) en `Directory.Packages.props`
-  - [ ] Agregar `BCrypt.Net-Next` (4.0.3) en `Directory.Packages.props`
-  - [ ] Agregar ambos `<PackageReference>` en `Api.csproj` (sin versión inline — CPM)
-  - [ ] Agregar `BCrypt.Net-Next` también en `Infrastructure.csproj` (el hashing vive en Infrastructure/Security)
-  - [ ] Agregar configuración de JWT en `appsettings.Development.json` (ver Dev Notes para esquema exacto)
+- [x] Task 1: Agregar paquetes NuGet y actualizar CPM (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
+  - [x] Agregar `Microsoft.AspNetCore.Authentication.JwtBearer` (10.0.8) en `Directory.Packages.props`
+  - [x] Agregar `BCrypt.Net-Next` (4.0.3) en `Directory.Packages.props`
+  - [x] Agregar ambos `<PackageReference>` en `Api.csproj` (sin versión inline — CPM)
+  - [x] Agregar `BCrypt.Net-Next` también en `Infrastructure.csproj` (el hashing vive en Infrastructure/Security)
+  - [x] Agregar configuración de JWT en `appsettings.Development.json` (ver Dev Notes para esquema exacto)
 
-- [ ] Task 2: Domain — Entidades, Value Objects y Excepciones (AC: CA-1, CA-2)
-  - [ ] Crear `src/Server/Domain/Auth/User.cs` — entidad con `Id`, `Email`, `PasswordHash`, `Role`, `CreatedAt`, `IsActive`
-  - [ ] Crear `src/Server/Domain/Auth/UserRole.cs` — enum con valores `User` y `AdminOps`
-  - [ ] Crear `src/Server/Domain/Auth/Exceptions/InvalidCredentialsException.cs` — extiende `DomainException` con domainCode `"INVALID_CREDENTIALS"`
-  - [ ] Crear `src/Server/Domain/Auth/Exceptions/InvalidRefreshTokenException.cs` — extiende `DomainException` con domainCode `"INVALID_REFRESH_TOKEN"`
+- [x] Task 2: Domain — Entidades, Value Objects y Excepciones (AC: CA-1, CA-2)
+  - [x] Crear `src/Server/Domain/Auth/User.cs` — entidad con `Id`, `Email`, `PasswordHash`, `Role`, `CreatedAt`, `IsActive`
+  - [x] Crear `src/Server/Domain/Auth/UserRole.cs` — enum con valores `User` y `AdminOps`
+  - [x] Crear `src/Server/Domain/Auth/Exceptions/InvalidCredentialsException.cs` — extiende `DomainException` con domainCode `"INVALID_CREDENTIALS"`
+  - [x] Crear `src/Server/Domain/Auth/Exceptions/InvalidRefreshTokenException.cs` — extiende `DomainException` con domainCode `"INVALID_REFRESH_TOKEN"`
 
-- [ ] Task 3: Infrastructure — Persistencia y TokenService (AC: CA-1, CA-2)
-  - [ ] Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Auth/UserConfiguration.cs` — EF Core `IEntityTypeConfiguration<User>` con tabla `[auth].[User]`, clave primaria, índice único en email
-  - [ ] Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Auth/RefreshTokenConfiguration.cs` — tabla `[auth].[RefreshToken]`, FK a User, índice en `TokenHash`, campos `ExpiresAt` y `RevokedAt`
-  - [ ] Crear `src/Server/Domain/Auth/RefreshToken.cs` — entidad con `Id`, `UserId`, `TokenHash`, `ExpiresAt`, `RevokedAt`, `CreatedAt`
-  - [ ] Registrar `DbSet<User>` y `DbSet<RefreshToken>` en `AppDbContext` y aplicar las configuraciones en `OnModelCreating`
-  - [ ] Crear `src/Server/Infrastructure/Security/TokenService.cs` — genera JWT (ver spec en Dev Notes) y refresh tokens (GUID criptográfico hasheado con BCrypt)
-  - [ ] Crear migración EF Core: `dotnet ef migrations add AddAuthSchema --project src/Server/Infrastructure --startup-project src/Server/Api` — verificar que genera `[auth].[User]` y `[auth].[RefreshToken]`
-  - [ ] Registrar `TokenService` como `ITokenService` en el contenedor DI (en `ApiServiceExtensions` o nuevo extension method en Infrastructure)
+- [x] Task 3: Infrastructure — Persistencia y TokenService (AC: CA-1, CA-2)
+  - [x] Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Auth/UserConfiguration.cs` — EF Core `IEntityTypeConfiguration<User>` con tabla `[auth].[User]`, clave primaria, índice único en email
+  - [x] Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Auth/RefreshTokenConfiguration.cs` — tabla `[auth].[RefreshToken]`, FK a User, índice en `TokenHash`, campos `ExpiresAt` y `RevokedAt`
+  - [x] Crear `src/Server/Domain/Auth/RefreshToken.cs` — entidad con `Id`, `UserId`, `TokenHash`, `ExpiresAt`, `RevokedAt`, `CreatedAt`
+  - [x] Registrar `DbSet<User>` y `DbSet<RefreshToken>` en `AppDbContext` y aplicar las configuraciones en `OnModelCreating`
+  - [x] Crear `src/Server/Infrastructure/Security/TokenService.cs` — genera JWT (ver spec en Dev Notes) y refresh tokens (GUID criptográfico hasheado con BCrypt)
+  - [x] Crear migración EF Core: `dotnet ef migrations add AddAuthSchema --project src/Server/Infrastructure --startup-project src/Server/Api` — genera `[auth].[User]` y `[auth].[RefreshToken]`
+  - [x] Registrar `TokenService` como `ITokenService` y `AuthService` como `IAuthService` en el contenedor DI
 
-- [ ] Task 4: Application — AuthService y Contratos (AC: CA-1, CA-2)
-  - [ ] Crear `src/Server/SharedApiContracts/Auth/LoginRequest.cs` — record con `Email` (string) y `Password` (string)
-  - [ ] Crear `src/Server/SharedApiContracts/Auth/LoginResponse.cs` — record con `AccessToken` (string)
-  - [ ] Crear `src/Server/SharedApiContracts/Auth/RefreshResponse.cs` — record con `AccessToken` (string)
-  - [ ] Crear `src/Server/Application/Auth/IAuthService.cs` — interfaz con `LoginAsync` y `RefreshAsync`
-  - [ ] Crear `src/Server/Application/Auth/AuthService.cs` — implementa `IAuthService`; busca usuario por email, verifica password con BCrypt, genera access token + refresh token, persiste RefreshToken hasheado en BD, revoca token anterior en refresh
-  - [ ] Registrar `AuthService` en DI
+- [x] Task 4: Application — AuthService y Contratos (AC: CA-1, CA-2)
+  - [x] Crear `src/Server/SharedApiContracts/Auth/LoginRequest.cs` — record con `Email` (string) y `Password` (string)
+  - [x] Crear `src/Server/SharedApiContracts/Auth/LoginResponse.cs` — record con `AccessToken` (string)
+  - [x] Crear `src/Server/SharedApiContracts/Auth/RefreshResponse.cs` — record con `AccessToken` (string)
+  - [x] Crear `src/Server/Application/Auth/IAuthService.cs` — interfaz con `LoginAsync` y `RefreshAsync`
+  - [x] Crear `src/Server/Infrastructure/Security/AuthService.cs` — implementa `IAuthService`; busca usuario por email, verifica password con BCrypt, genera access token + refresh token, persiste RefreshToken hasheado en BD, revoca token anterior en refresh (vive en Infrastructure porque necesita AppDbContext directamente)
+  - [x] Registrar `AuthService` en DI
 
-- [ ] Task 5: API — Endpoints y Configuración de Auth (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
-  - [ ] Crear `src/Server/Api/Authentication/AddAuthenticationExtensions.cs` — `AddFibradisAuthentication(this WebApplicationBuilder builder)` que configura JWT bearer con las opciones del Dev Notes
-  - [ ] Crear `src/Server/Api/Authentication/AddAuthorizationExtensions.cs` — `AddFibradisAuthorization(this WebApplicationBuilder builder)` que define políticas `"User"` y `"AdminOps"` basadas en claim de rol
-  - [ ] Actualizar `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs` — llamar a `builder.AddFibradisAuthentication()` y `builder.AddFibradisAuthorization()`
-  - [ ] Actualizar `src/Server/Api/CompositionRoot/UseApiInfrastructureExtensions.cs` — agregar `app.UseAuthentication()` y `app.UseAuthorization()` DESPUÉS de `UseExceptionHandler` y ANTES de mapear endpoints (ver orden exacto en Dev Notes)
-  - [ ] Crear `src/Server/Api/Endpoints/Public/AuthEndpoints.cs` — con `MapAuth(this IEndpointRouteBuilder app)` que registra `POST /api/v1/auth/login` y `POST /api/v1/auth/refresh`; el endpoint de login llama a `IAuthService.LoginAsync` y setea la cookie HttpOnly; el refresh llama a `IAuthService.RefreshAsync`
-  - [ ] Crear `src/Server/Api/Endpoints/Private/MeEndpoint.cs` — `GET /api/v1/me` con `[Authorize(Policy = "User")]` retorna `{"role": "<rol del usuario>"}` — endpoint de prueba mínimo para CA-3
-  - [ ] Crear `src/Server/Api/Endpoints/Ops/OpsEndpoints.cs` — `GET /api/v1/ops/ping` con `[Authorize(Policy = "AdminOps")]` retorna `{"status": "ok"}` — endpoint de prueba mínimo para CA-4/CA-5
-  - [ ] Actualizar `src/Server/Api/Program.cs` — registrar `app.MapAuth()`, `app.MapMe()`, `app.MapOpsPing()`
+- [x] Task 5: API — Endpoints y Configuración de Auth (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
+  - [x] Crear `src/Server/Api/Authentication/AddAuthenticationExtensions.cs` — `AddFibradisAuthentication(this WebApplicationBuilder builder)` con opciones JWT lazy (via `IOptions`) para que los tests puedan sobreescribir el secret
+  - [x] Crear `src/Server/Api/Authentication/AddAuthorizationExtensions.cs` — `AddFibradisAuthorization(this WebApplicationBuilder builder)` con políticas `"User"` y `"AdminOps"`
+  - [x] Actualizar `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs`
+  - [x] Actualizar `src/Server/Api/CompositionRoot/UseApiInfrastructureExtensions.cs`
+  - [x] Crear `src/Server/Api/Endpoints/Public/AuthEndpoints.cs`
+  - [x] Crear `src/Server/Api/Endpoints/Private/MeEndpoint.cs`
+  - [x] Crear `src/Server/Api/Endpoints/Ops/OpsEndpoints.cs`
+  - [x] Actualizar `src/Server/Api/Program.cs`
 
-- [ ] Task 6: Extender GlobalExceptionHandler (AC: CA-1, CA-2)
-  - [ ] Actualizar `src/Server/Api/CompositionRoot/GlobalExceptionHandler.cs` — agregar manejo de `InvalidCredentialsException` → 401 y `InvalidRefreshTokenException` → 401 con ProblemDetails shape + `domainCode`
+- [x] Task 6: Extender GlobalExceptionHandler (AC: CA-1, CA-2)
+  - [x] Actualizar `src/Server/Api/CompositionRoot/GlobalExceptionHandler.cs` — `InvalidCredentialsException` e `InvalidRefreshTokenException` → 401
 
-- [ ] Task 7: Tests de integración (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
-  - [ ] Actualizar `tests/Integration/Api.Tests/ApiWebFactory.cs` — sobreescribir `ConfigureWebHost` para agregar seed de usuarios de prueba en la BD InMemory: un usuario `User` y un usuario `AdminOps` con passwords conocidos
-  - [ ] Crear `tests/Integration/Api.Tests/AuthLoginTests.cs` — CA-1: POST login con credenciales válidas → 200 + `accessToken` en body + cookie `refreshToken` presente
-  - [ ] Crear `tests/Integration/Api.Tests/AuthRefreshTests.cs` — CA-2: POST refresh con cookie válida → 200 + nuevo `accessToken`; segundo refresh con el token antiguo → 401
-  - [ ] Crear `tests/Integration/Api.Tests/AuthorizationTests.cs` — CA-3: GET `/api/v1/me` con JWT de Usuario → 200; CA-4: GET `/api/v1/ops/ping` con JWT de Usuario → 403; CA-5: GET `/api/v1/ops/ping` con JWT de AdminOps → 200; CA-6a: GET `/api/v1/health` sin token → 200; CA-6b: GET `/api/v1/me` sin token → 401
-  - [ ] `dotnet test tests/Integration/Api.Tests/` — todos los tests existentes + nuevos pasan
-  - [ ] `dotnet build FIBRADIS.slnx` — exit code 0, sin warnings
+- [x] Task 7: Tests de integración (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
+  - [x] Actualizar `tests/Integration/Api.Tests/ApiWebFactory.cs` — JWT config en-memoria + seed de usuarios + `InMemoryDatabaseRoot` por instancia para aislamiento paralelo
+  - [x] Crear `tests/Integration/Api.Tests/AuthLoginTests.cs` — 6 tests CA-1
+  - [x] Crear `tests/Integration/Api.Tests/AuthRefreshTests.cs` — 3 tests CA-2
+  - [x] Crear `tests/Integration/Api.Tests/AuthorizationTests.cs` — 7 tests CA-3/CA-4/CA-5/CA-6
+  - [x] `dotnet test tests/Integration/Api.Tests/` — 20/20 pasan (existentes + nuevos)
+  - [x] `dotnet build FIBRADIS.slnx` — exit code 0, sin warnings
 
 ---
 
@@ -890,11 +890,28 @@ tests/Integration/Api.Tests/
 
 ### Agent Model Used
 
-claude-sonnet-4-6 (create-story, 2026-05-15)
+claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 
 ### Debug Log References
 
+1. **EF Core dual-provider conflict**: `AddDbContext` llamado dos veces (SqlServer en Program.cs + InMemory en tests) acumula dos `IDbContextOptionsConfiguration<AppDbContext>`, haciendo que EF Core aplique ambos providers simultáneamente. Fix: remover todos los descriptores `IDbContextOptionsConfiguration<AppDbContext>` antes de agregar InMemory en `ApiWebFactory`.
+2. **JWT Bearer options eager vs. lazy**: `AddFibradisAuthentication` leía `Jwt:Secret` en tiempo de registro (antes de que `ConfigureAppConfiguration` del factory aplicara el override en-memoria). Los tokens se generaban con el secret del test pero se validaban con el de `appsettings.Development.json`. Fix: mover la configuración de JWT a `AddOptions<JwtBearerOptions>().Configure<IConfiguration>(...)` para que se lea en tiempo de resolución.
+3. **Race condition en tests paralelos**: EF Core InMemory usa un store estático compartido por nombre. Múltiples instancias de `ApiWebFactory` en diferentes clases de test corriendo en paralelo generaban conflictos de clave duplicada al hacer seed. Fix: pasar un `InMemoryDatabaseRoot` explícito por instancia (`private readonly InMemoryDatabaseRoot _dbRoot = new()`).
+4. **AuthService en Infrastructure**: `AuthService` necesita `AppDbContext` directamente (no existe un repositorio abstracto en esta historia). Colocarlo en `Application` violaría Clean Architecture (Application no puede referenciar Infrastructure). Decisión: `AuthService` vive en `Infrastructure/Security/`, la interfaz `IAuthService` en `Application/Auth/`.
+
 ### Completion Notes List
+
+- ✅ CA-1 Login JWT: POST /api/v1/auth/login → 200 + accessToken + cookie refreshToken HttpOnly (6 tests)
+- ✅ CA-2 Refresh con rotación: POST /api/v1/auth/refresh → 200 + nuevo token; token anterior invalidado (3 tests)
+- ✅ CA-3 Ruta privada con rol User → 200 (1 test)
+- ✅ CA-4 Ruta Ops bloqueada para rol User → 403 (1 test)
+- ✅ CA-5 Ruta Ops permitida para AdminOps → 200 (1 test)
+- ✅ CA-6a Ruta pública sin token → 200; CA-6b Ruta privada sin token → 401 (2 tests + token inválido → 401)
+- ✅ 20/20 tests de integración pasan sin regresiones
+- ✅ `dotnet build FIBRADIS.slnx` exit 0 con OpenAPI regenerado (rutas auth en Api.json)
+- ✅ `npm run codegen:api` genera schema.d.ts con /auth/login, /auth/refresh, /me, /ops/ping
+- ✅ Migración EF Core `AddAuthSchema` creada: `[auth].[User]` y `[auth].[RefreshToken]`
+- Desviación de spec: `AuthService` en `Infrastructure/Security/` (no en `Application/Auth/`) por restricción de Clean Architecture
 
 ### File List
 
@@ -905,7 +922,7 @@ claude-sonnet-4-6 (create-story, 2026-05-15)
 - `src/Server/Api/Endpoints/Private/MeEndpoint.cs`
 - `src/Server/Api/Endpoints/Ops/OpsEndpoints.cs`
 - `src/Server/Application/Auth/IAuthService.cs`
-- `src/Server/Application/Auth/AuthService.cs`
+- `src/Server/Application/Auth/ITokenService.cs`
 - `src/Server/Domain/Auth/User.cs`
 - `src/Server/Domain/Auth/UserRole.cs`
 - `src/Server/Domain/Auth/RefreshToken.cs`
@@ -913,7 +930,10 @@ claude-sonnet-4-6 (create-story, 2026-05-15)
 - `src/Server/Domain/Auth/Exceptions/InvalidRefreshTokenException.cs`
 - `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Auth/UserConfiguration.cs`
 - `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Auth/RefreshTokenConfiguration.cs`
+- `src/Server/Infrastructure/Persistence/Migrations/20260516031909_AddAuthSchema.cs`
+- `src/Server/Infrastructure/Persistence/Migrations/20260516031909_AddAuthSchema.Designer.cs`
 - `src/Server/Infrastructure/Security/TokenService.cs`
+- `src/Server/Infrastructure/Security/AuthService.cs`
 - `src/Server/SharedApiContracts/Auth/LoginRequest.cs`
 - `src/Server/SharedApiContracts/Auth/LoginResponse.cs`
 - `src/Server/SharedApiContracts/Auth/RefreshResponse.cs`
@@ -925,13 +945,17 @@ claude-sonnet-4-6 (create-story, 2026-05-15)
 - `Directory.Packages.props`
 - `src/Server/Api/Api.csproj`
 - `src/Server/Infrastructure/Infrastructure.csproj`
+- `src/Server/Api/appsettings.json` (placeholder secret para build-time OpenAPI generation)
 - `src/Server/Api/Program.cs`
 - `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs`
 - `src/Server/Api/CompositionRoot/UseApiInfrastructureExtensions.cs`
 - `src/Server/Api/CompositionRoot/GlobalExceptionHandler.cs`
 - `src/Server/Infrastructure/Persistence/SqlServer/AppDbContext.cs`
 - `tests/Integration/Api.Tests/ApiWebFactory.cs`
+- `scripts/codegen/Api.json`
+- `src/Web/SharedApiClient/schema.d.ts`
 
 ### Change Log
 
 - 2026-05-15: Historia 1.3 creada — Autenticación JWT y autorización por roles (ready-for-dev). (claude-sonnet-4-6)
+- 2026-05-15: Historia 1.3 implementada — todos los ACs satisfechos, 20/20 tests pasan, migración AddAuthSchema creada, schema TypeScript regenerado. Status → review. (claude-sonnet-4-6)

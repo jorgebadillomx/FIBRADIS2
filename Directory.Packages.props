@@ -13,6 +13,9 @@
     <!-- OpenAPI tooling -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.4.1" />
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.8" />
+    <!-- Authentication -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
+    <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
     <!-- Testing -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.8" />

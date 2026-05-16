@@ -1,3 +1,7 @@
+using Api.Authentication;
+using Application.Auth;
+using Infrastructure.Security;
+
 namespace Api.CompositionRoot;
 
 public static class ApiServiceExtensions
@@ -30,6 +34,12 @@ public static class ApiServiceExtensions
                           .AllowAnyHeader()
                           .AllowCredentials()));
         }
+
+        builder.AddFibradisAuthentication();
+        builder.AddFibradisAuthorization();
+
+        builder.Services.AddSingleton<ITokenService, TokenService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
 
         return builder;
     }
