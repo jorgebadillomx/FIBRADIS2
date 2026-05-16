@@ -13,5 +13,6 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.HasIndex(rt => new { rt.UserId, rt.RevokedAt })
                .HasDatabaseName("IX_RefreshToken_UserId_RevokedAt");
         builder.Property(rt => rt.TokenHash).HasMaxLength(512).IsRequired();
+        builder.Property(rt => rt.RevokedAt).IsConcurrencyToken();
     }
 }

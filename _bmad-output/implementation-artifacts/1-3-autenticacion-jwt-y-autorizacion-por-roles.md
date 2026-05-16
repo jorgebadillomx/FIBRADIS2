@@ -54,6 +54,14 @@ Entonces recibo `401 Unauthorized`.
 
 ## Tareas / Subtareas
 
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][High] Fallar arranque si `Jwt:Secret` es placeholder en ambiente no-Development (`AddFibradisAuthentication.cs`)
+- [x] [AI-Review][High] Revocación atómica de refresh token — `ExecuteUpdateAsync` con `WHERE RevokedAt IS NULL` para eliminar race condition (`AuthService.cs`)
+- [x] [AI-Review][Med] Validar `IsActive` del usuario en `RefreshAsync` antes de emitir nuevos tokens (`AuthService.cs`)
+- [x] [AI-Review][Med] Cookie `Secure` basada en `Request.IsHttps` en lugar de comparación literal de hostname (`AuthEndpoints.cs`)
+- [x] [AI-Review][Med] Test de reutilización de refresh token viejo post-rotación → 401 (`AuthRefreshTests.cs`)
+
 - [x] Task 1: Agregar paquetes NuGet y actualizar CPM (AC: CA-1, CA-2, CA-3, CA-4, CA-5, CA-6)
   - [x] Agregar `Microsoft.AspNetCore.Authentication.JwtBearer` (10.0.8) en `Directory.Packages.props`
   - [x] Agregar `BCrypt.Net-Next` (4.0.3) en `Directory.Packages.props`
@@ -888,6 +896,33 @@ tests/Integration/Api.Tests/
 
 ## Dev Agent Record
 
+### Code Review Findings
+
+1. **High — Secret JWT por defecto utilizable en runtime**
+   - **Evidencia:** `src/Server/Api/appsettings.json` define `Jwt:Secret` con un valor versionado; `src/Server/Infrastructure/Security/TokenService.cs` y `src/Server/Api/Authentication/AddAuthenticationExtensions.cs` lo aceptan sin exigir override externo.
+   - **Impacto:** Si un ambiente arranca sin configuración externa, el sistema firma y valida tokens con una clave conocida, permitiendo falsificación de JWT.
+   - **Acción sugerida:** Fallar el arranque fuera de desarrollo si `Jwt:Secret` conserva un placeholder conocido o si no proviene de configuración segura externa.
+
+2. **High — La rotación de refresh token no es segura ante concurrencia**
+   - **Evidencia:** `src/Server/Infrastructure/Security/AuthService.cs` busca tokens activos, verifica el hash en memoria y solo después marca `RevokedAt`, dejando una ventana donde dos requests paralelos pueden refrescar el mismo token.
+   - **Impacto:** El mismo refresh token puede usarse más de una vez bajo carrera, incumpliendo la intención de CA-2.
+   - **Acción sugerida:** Hacer la revocación atómica, o introducir control de concurrencia/consumo único para que un refresh token no pueda rotarse exitosamente dos veces.
+
+3. **Medium — Un usuario desactivado todavía puede refrescar sesión**
+   - **Evidencia:** `LoginAsync` filtra `IsActive`, pero `RefreshAsync` no valida `stored.User!.IsActive` antes de emitir nuevos tokens.
+   - **Impacto:** Una cuenta desactivada mantiene acceso mientras conserve un refresh token válido.
+   - **Acción sugerida:** Revalidar `IsActive` durante refresh y rechazar la operación si la cuenta ya no está habilitada.
+
+4. **Medium — La cookie de refresh depende del host exacto `localhost`**
+   - **Evidencia:** `src/Server/Api/Endpoints/Public/AuthEndpoints.cs` define `Secure = !ctx.Request.Host.Host.Equals("localhost", ...)`.
+   - **Impacto:** En desarrollo con `127.0.0.1`, hostname local distinto o ciertos proxys, el navegador puede descartar la cookie segura en HTTP y romper el flujo de refresh aunque los tests pasen.
+   - **Acción sugerida:** Basar `Secure` en `Request.IsHttps` o en una política de ambiente/configuración explícita, no en comparación literal del host.
+
+5. **Medium — Falta cobertura de prueba para invalidación real del refresh token anterior**
+   - **Evidencia:** `tests/Integration/Api.Tests/AuthRefreshTests.cs` verifica `200 OK` y nueva cookie, pero no prueba reutilización del token viejo ni persistencia de `RevokedAt`.
+   - **Impacto:** La parte más sensible de CA-2 queda sin protección de regresión.
+   - **Acción sugerida:** Agregar test que capture el refresh token original, ejecute refresh, intente reutilizar el anterior y espere `401`, además de validar revocación persistida.
+
 ### Agent Model Used
 
 claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
@@ -912,6 +947,14 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 - ✅ `npm run codegen:api` genera schema.d.ts con /auth/login, /auth/refresh, /me, /ops/ping
 - ✅ Migración EF Core `AddAuthSchema` creada: `[auth].[User]` y `[auth].[RefreshToken]`
 - Desviación de spec: `AuthService` en `Infrastructure/Security/` (no en `Application/Auth/`) por restricción de Clean Architecture
+
+**Hallazgos de code review resueltos (2026-05-16):**
+- ✅ Resuelto [High]: Placeholder JWT — `IValidateOptions<JwtBearerOptions>` sin `ValidateOnStart()` valida el secret en el primer request autenticado en entornos no-Development. Sin `ValidateOnStart()` para no romper la generación de OpenAPI en build-time (que arranca la app completa sin hacer requests). `AddAuthenticationExtensions.cs`
+- ✅ Resuelto [High]: Revocación atómica — `IsConcurrencyToken()` en `RefreshToken.RevokedAt` + catch `DbUpdateConcurrencyException` → `InvalidRefreshTokenException` en `AuthService.RefreshAsync`. `RefreshTokenConfiguration.cs`, `AuthService.cs`
+- ✅ Resuelto [Med]: Validación `IsActive` en `RefreshAsync` — `if (stored is null || !stored.User!.IsActive)` antes de emitir tokens. `AuthService.cs`
+- ✅ Resuelto [Med]: Cookie `Secure` basada en `ctx.Request.IsHttps`. `AuthEndpoints.cs`
+- ✅ Resuelto [Med]: Test de reutilización de token viejo post-rotación → 401 usando cliente con `HandleCookies = false` para control manual de cookies. `AuthRefreshTests.cs`
+- ✅ 21/21 tests de integración pasan (20 originales + 1 nuevo)
 
 ### File List
 
@@ -959,3 +1002,4 @@ claude-sonnet-4-6 (create-story, 2026-05-15; dev-story, 2026-05-15)
 
 - 2026-05-15: Historia 1.3 creada — Autenticación JWT y autorización por roles (ready-for-dev). (claude-sonnet-4-6)
 - 2026-05-15: Historia 1.3 implementada — todos los ACs satisfechos, 20/20 tests pasan, migración AddAuthSchema creada, schema TypeScript regenerado. Status → review. (claude-sonnet-4-6)
+- 2026-05-16: Hallazgos de code review resueltos — 5 items (2 High, 3 Med): validación de secret JWT, revocación atómica con IsConcurrencyToken, check IsActive en refresh, cookie Secure=IsHttps, test de reuso de token. 21/21 tests. Status → review. (claude-sonnet-4-6)

@@ -50,7 +50,7 @@ public static class AuthEndpoints
         ctx.Response.Cookies.Append(RefreshTokenCookie, token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = !ctx.Request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase),
+            Secure = ctx.Request.IsHttps,
             SameSite = SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddDays(7),
         });

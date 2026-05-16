@@ -64,4 +64,36 @@ public class AuthRefreshTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         clientWithoutCookies.Dispose();
     }
+
+    [Fact]
+    public async Task Refresh_ReusingOldTokenAfterRotation_Returns401()
+    {
+        // Cliente con control manual de cookies para poder reenviar el token viejo
+        using var manualClient = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+        });
+
+        // Login — capturar cookie de refresh original
+        var loginResponse = await manualClient.PostAsJsonAsync("/api/v1/auth/login",
+            new LoginRequest("user@test.com", "password123"));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var setCookie = loginResponse.Headers
+            .GetValues("Set-Cookie")
+            .First(c => c.StartsWith("refreshToken="));
+        var oldCookieNameValue = setCookie.Split(';')[0]; // "refreshToken=<valor>"
+
+        // Primer refresh con el token original — debe rotar el token
+        var req1 = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        req1.Headers.Add("Cookie", oldCookieNameValue);
+        var firstRefresh = await manualClient.SendAsync(req1);
+        Assert.Equal(HttpStatusCode.OK, firstRefresh.StatusCode);
+
+        // Reutilizar el token ya revocado — debe retornar 401
+        var req2 = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        req2.Headers.Add("Cookie", oldCookieNameValue);
+        var secondRefresh = await manualClient.SendAsync(req2);
+        Assert.Equal(HttpStatusCode.Unauthorized, secondRefresh.StatusCode);
+    }
 }

@@ -31,12 +31,19 @@ public class AuthService(AppDbContext db, ITokenService tokenService) : IAuthSer
         var stored = candidates.FirstOrDefault(rt =>
             BCrypt.Net.BCrypt.Verify(rawRefreshToken, rt.TokenHash));
 
-        if (stored is null)
+        if (stored is null || !stored.User!.IsActive)
             throw new InvalidRefreshTokenException();
 
         stored.RevokedAt = DateTime.UtcNow;
 
-        return await IssueTokensAsync(stored.User!, ct);
+        try
+        {
+            return await IssueTokensAsync(stored.User!, ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidRefreshTokenException();
+        }
     }
 
     private async Task<(string, string)> IssueTokensAsync(User user, CancellationToken ct)
