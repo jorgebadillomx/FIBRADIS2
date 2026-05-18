@@ -50,6 +50,7 @@ El sistema no es un CRUD convencional. Combina aplicacion web, pipelines program
 - Hangfire in-app para jobs y scheduling
 - Dos frontends React independientes: sistema principal y `/ops/*`
 - Integracion con Yahoo Finance para mercado/distribuciones (best effort)
+- For integration with Yahoo Finance, you can use the following project https://github.com/dshe/YahooQuotesApi
 - Integracion con Google News RSS con filtrado estricto
 - Discovery de PDFs config-driven por FIBRA
 - Contratos estables para procesamiento IA manual y futuro modo API
