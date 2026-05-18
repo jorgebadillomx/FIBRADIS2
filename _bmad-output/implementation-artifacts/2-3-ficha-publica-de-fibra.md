@@ -1,6 +1,6 @@
 # Historia 2.3: Ficha Pública de FIBRA
 
-Status: review
+Status: done
 
 ## Historia
 
@@ -83,6 +83,12 @@ Entonces veo un skeleton/estado de carga — sin contenido vacío ni flash de "n
   - [x] Verificar CA-1: `/fibras/FUNO11` carga con todas las secciones
   - [x] Verificar CA-4: `/fibras/FAKE99` muestra "FIBRA no encontrada"
   - [x] Verificar CA-5: hay skeleton visible durante carga (simular red lenta)
+
+### Review Findings
+
+- [x] [Review][Patch] Encabezado sticky incompleto respecto a CA-1 [src/Web/Main/src/modules/ficha-publica/FibraPage.tsx:63]
+- [x] [Review][Patch] Las anclas del header desaparecen en móvil aunque CA-1 las exige [src/Web/Main/src/modules/ficha-publica/FibraPage.tsx:69]
+- [x] [Review][Patch] Reportes omite campos nulos en lugar de mostrar `—` por valor faltante [src/Web/Main/src/modules/ficha-publica/sections/ReportesSection.tsx:13]
 
 ## Dev Notes
 
@@ -411,6 +417,7 @@ claude-sonnet-4-6 (create-story, 2026-05-18)
 - `FibraPage.tsx` orquesta todos los estados: skeleton (isLoading), error genérico (isError), 404 (fibra === null), y layout completo con header sticky en `top-14`.
 - `router.tsx` actualizado; `FichaPlaceholder.tsx` eliminado.
 - Build: `npm run build --workspace=src/Web/Main` → exit code 0, 0 errores TypeScript, 0 warnings.
+- [Review fixes 2026-05-18] Header sticky completado con sector, mercado, moneda y estado (CA-1). Anclas de navegación ahora visibles en todos los breakpoints con `overflow-x-auto` en móvil. ReportesSection ahora muestra `—` por cada campo null individualmente (no omite filas). Build limpio confirmado post-fixes.
 
 ### File List
 
@@ -429,3 +436,4 @@ claude-sonnet-4-6 (create-story, 2026-05-18)
 ### Change Log
 
 - 2026-05-18: Historia 2.3 implementada — Ficha Pública de FIBRA con 6 secciones, skeleton, manejo de 404, header sticky anclado. Build limpio. (claude-sonnet-4-6)
+- 2026-05-18: Review findings resueltos — header sticky con todos los metadatos (CA-1), anclas visibles en móvil, ReportesSection muestra `—` por campo null. Build limpio confirmado. (claude-sonnet-4-6)

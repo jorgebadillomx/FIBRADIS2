@@ -4,38 +4,46 @@ interface Props {
   reportsUrl: string | null
 }
 
-interface LinkItem {
-  label: string
-  url: string
-}
+const REPORTE_ITEMS = [
+  { key: 'siteUrl', label: 'Sitio web' },
+  { key: 'investorUrl', label: 'Relación con inversionistas' },
+  { key: 'reportsUrl', label: 'Reportes oficiales' },
+] as const
 
 export function ReportesSection({ siteUrl, investorUrl, reportsUrl }: Props) {
-  const links: LinkItem[] = [
-    ...(siteUrl ? [{ label: 'Sitio web', url: siteUrl }] : []),
-    ...(investorUrl ? [{ label: 'Relación con inversionistas', url: investorUrl }] : []),
-    ...(reportsUrl ? [{ label: 'Reportes oficiales', url: reportsUrl }] : []),
-  ]
+  const values: Record<typeof REPORTE_ITEMS[number]['key'], string | null> = {
+    siteUrl,
+    investorUrl,
+    reportsUrl,
+  }
 
-  if (links.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground">—</div>
-    )
+  const allNull = siteUrl === null && investorUrl === null && reportsUrl === null
+
+  if (allNull) {
+    return <div className="text-sm text-muted-foreground">—</div>
   }
 
   return (
     <ul className="space-y-2">
-      {links.map((link) => (
-        <li key={link.url}>
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline"
-          >
-            {link.label} ↗
-          </a>
-        </li>
-      ))}
+      {REPORTE_ITEMS.map(({ key, label }) => {
+        const url = values[key]
+        return (
+          <li key={key} className="text-sm">
+            {url ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                {label} ↗
+              </a>
+            ) : (
+              <span className="text-muted-foreground">{label}: —</span>
+            )}
+          </li>
+        )
+      })}
     </ul>
   )
 }

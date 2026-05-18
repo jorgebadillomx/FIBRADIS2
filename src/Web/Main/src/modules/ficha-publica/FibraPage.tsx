@@ -61,14 +61,28 @@ export function FibraPage() {
   return (
     <div>
       <header className="sticky top-14 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <span className="text-lg font-semibold">{fibra!.ticker}</span>
-            <span className="ml-2 text-sm text-muted-foreground">{fibra!.fullName}</span>
+        <div className="container mx-auto px-4 py-3 space-y-1">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <span className="text-lg font-semibold">{fibra!.ticker}</span>
+              <span className="ml-2 text-sm text-muted-foreground truncate">{fibra!.fullName}</span>
+            </div>
+            <div className="hidden sm:flex shrink-0 flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span>{fibra!.sector}</span>
+              <span>{fibra!.market}</span>
+              <span>{fibra!.currency}</span>
+              <span>{fibra!.state}</span>
+            </div>
           </div>
-          <nav className="hidden md:flex gap-4 text-sm text-muted-foreground">
+          <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>{fibra!.sector}</span>
+            <span>{fibra!.market}</span>
+            <span>{fibra!.currency}</span>
+            <span>{fibra!.state}</span>
+          </div>
+          <nav className="flex gap-4 overflow-x-auto text-sm text-muted-foreground pb-0.5">
             {SECTION_LABELS.map((s) => (
-              <a key={s.href} href={s.href} className="hover:text-foreground transition-colors">
+              <a key={s.href} href={s.href} className="hover:text-foreground transition-colors shrink-0">
                 {s.label}
               </a>
             ))}
@@ -78,13 +92,6 @@ export function FibraPage() {
 
       <div className="container mx-auto px-4 py-6 space-y-8">
         <PrecioSection />
-
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <span>Sector: {fibra!.sector}</span>
-          <span>Mercado: {fibra!.market}</span>
-          <span>Moneda: {fibra!.currency}</span>
-          <span>Estado: {fibra!.state}</span>
-        </div>
 
         <section id="mercado" className="space-y-2">
           <h2 className="text-base font-semibold">{SECTION_TITLES.mercado}</h2>
