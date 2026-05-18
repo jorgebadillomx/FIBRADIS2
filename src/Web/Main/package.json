@@ -9,6 +9,8 @@
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-server",
     "build:full": "npm run build && npm run build:ssr && node scripts/prerender.mjs",
     "test": "node --experimental-strip-types --test src/modules/home/global-search.test.ts src/modules/ficha-publica/sections/fundamentales.test.ts src/modules/ficha-publica/sections/reportes.test.ts scripts/prerender-utils.test.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "test:e2e:runner": "playwright test",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -33,6 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

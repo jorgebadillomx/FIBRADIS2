@@ -1,6 +1,6 @@
 # Historia 2.2: Home Pública con Búsqueda Global y Layout
 
-Status: review
+Status: done
 
 ## Historia
 

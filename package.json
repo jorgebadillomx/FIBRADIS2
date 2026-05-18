@@ -11,7 +11,8 @@
     "dev:ops": "npm run dev --workspace=src/Web/Ops",
     "build:main": "npm run build --workspace=src/Web/Main",
     "build:ops": "npm run build --workspace=src/Web/Ops",
-    "codegen:api": "pwsh -File scripts/codegen/generate-api-client.ps1"
+    "codegen:api": "pwsh -File scripts/codegen/generate-api-client.ps1",
+    "test:e2e:main": "npm run test:e2e --workspace=src/Web/Main"
   },
   "devDependencies": {
     "openapi-typescript": "^7.0.0"
