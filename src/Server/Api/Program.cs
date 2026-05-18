@@ -16,9 +16,15 @@ var app = builder.Build();
 
 app.UseApiInfrastructure();
 app.UseHttpsRedirection();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
+app.MapCatalog();
+
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
