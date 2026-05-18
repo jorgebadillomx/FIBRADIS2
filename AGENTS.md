@@ -2,39 +2,38 @@
 
 Este documento es leído automáticamente por **Claude** y **Codex** al entrar al repositorio.
 
-## Memoria Persistente entre Agentes
+## Flujo de trabajo entre agentes
 
-Este proyecto usa **mem0** como sistema de memoria compartida entre agentes. El modo recomendado es `managed` (mem0.ai, tier gratuito — sin necesitar API de OpenAI ni Anthropic):
+**Claude Code** implementa historias con `/bmad-dev-story`.  
+**Codex** revisa el código con `/bmad-code-review` (o el skill equivalente).  
+La comunicación entre agentes ocurre a través del **story file** — no de mem0.
 
-```powershell
-# Primera vez — configura el modo y la key de mem0.ai
-$env:MEM0_MODE    = "managed"
-$env:MEM0_API_KEY = "m0-..."   # obtén tu key gratis en https://app.mem0.ai
+El story file es la fuente de verdad de cada historia:
+- Dev Notes → contexto de implementación
+- Dev Agent Record → decisiones tomadas durante implementación
+- Senior Developer Review (AI) → hallazgos del code review
+- Status → estado actual (`ready-for-dev` → `in-progress` → `review` → `done`)
 
-pip install -r scripts/memory/requirements.txt
-python scripts/memory/setup_mem0.py
-```
+### Convenciones obligatorias para todos los agentes
 
-Alternativa offline con Ollama (sin ninguna API key):
+Lee `_bmad-output/planning-artifacts/convenciones-fibradis.md` antes de empezar cualquier historia o review. Contiene las reglas de stack, código y flujo que NO deben ignorarse.
 
-```powershell
-$env:MEM0_MODE = "ollama"   # requiere Ollama corriendo con nomic-embed-text + llama3.2
-```
+### mem0 — solo cuando el contexto no vive en ningún archivo
 
-### Uso diario
+**No usar mem0 por defecto.** Usarlo únicamente si:
+
+1. Tomaste una decisión que contradice o extiende el story file Y afectará historias futuras.
+2. Detectaste un patrón de error recurrente no documentado en ningún story ni aquí.
+3. Encontraste una restricción del proyecto no documentada en ningún archivo.
+
+Si aplica:
 
 ```bash
-# Antes de trabajar en una tarea — carga contexto relevante
-python scripts/memory/memory_cli.py search "portafolio módulo schema"
-
-# Después de una decisión importante — guarda en mem0
-python scripts/memory/memory_cli.py add "Decisión: X porque Y"
-
-# Ver todas las memorias
-python scripts/memory/memory_cli.py list
+python scripts/memory/memory_cli.py search "<tema>"     # buscar
+python scripts/memory/memory_cli.py add "decisión: ..."  # guardar
 ```
 
-Los archivos semilla con el conocimiento base están en `project-memory/seeds/`.
+Los archivos semilla están en `project-memory/seeds/`.
 
 ## Qué es FIBRADIS
 

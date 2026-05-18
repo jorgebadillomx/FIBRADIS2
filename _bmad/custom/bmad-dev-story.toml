@@ -1,0 +1,11 @@
+# Override de equipo para bmad-dev-story — FIBRADIS
+# Estos valores se AGREGAN (append) a los del customize.toml base del skill.
+# NO editar el customize.toml en .claude/skills/ ni .codex/skills/ directamente.
+
+[workflow]
+
+# Convenciones del proyecto cargadas en cada activación del skill.
+# El agente las lee como contexto obligatorio antes de comenzar la historia.
+persistent_facts = [
+  "file:{project-root}/_bmad-output/planning-artifacts/convenciones-fibradis.md",
+]

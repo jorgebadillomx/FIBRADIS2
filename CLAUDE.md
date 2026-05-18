@@ -2,26 +2,27 @@
 
 Lee `AGENTS.md` para el contexto completo del proyecto y las instrucciones de memoria compartida con otros agentes.
 
-## Memoria Persistente
+## mem0 — solo cuando el contexto no vive en ningún archivo
 
-Este proyecto usa mem0 en `project-memory/`. Antes de trabajar en una tarea nueva, carga contexto:
+**No usar mem0 por defecto.** El contexto de cada historia vive en el story file (Dev Notes, Dev Agent Record). Usar mem0 únicamente si:
+
+1. Tomaste una decisión que contradice o extiende el story file Y afectará historias futuras.
+2. Detectaste un patrón de error recurrente que no está en ningún story ni en `AGENTS.md`.
+3. Encontraste una restricción del proyecto no documentada en ningún archivo.
+
+Si aplica, los comandos son:
 
 ```bash
-python scripts/memory/memory_cli.py search "<tema relevante>"
-```
-
-Después de decisiones arquitectónicas o cambios de diseño importantes, guarda en mem0:
-
-```bash
-python scripts/memory/memory_cli.py add "decisión: ..."
+python scripts/memory/memory_cli.py search "<tema>"   # buscar
+python scripts/memory/memory_cli.py add "decisión: ..." # guardar
 ```
 
 ## Flujo de Trabajo
 
-1. Lee `project-memory/seeds/05-current-status.md` para saber qué está hecho
-2. Busca en mem0 contexto relevante antes de implementar
-3. Implementa siguiendo las reglas en `AGENTS.md`
-4. Si tomas decisiones no triviales, agrégalas a mem0
+1. Usa los skills BMAD (`/bmad-dev-story`, `/bmad-code-review`) — son el flujo de trabajo; no los omitas
+2. Lee el story file COMPLETO antes de implementar — las Dev Notes tienen todo el contexto necesario
+3. Implementa siguiendo las reglas en `AGENTS.md` y `_bmad-output/planning-artifacts/convenciones-fibradis.md`
+4. Usa mem0 solo si aplica alguna de las condiciones de arriba
 
 ## Comandos de Desarrollo
 
