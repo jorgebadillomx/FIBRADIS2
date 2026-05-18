@@ -58,7 +58,7 @@ development_status:
   epic-2: in-progress
   2-1-catalogo-maestro-de-fibras-con-datos-semilla-iniciales: done
   2-2-home-publica-con-busqueda-global-y-layout: done
-  2-3-ficha-publica-de-fibra: backlog
+  2-3-ficha-publica-de-fibra: ready-for-dev
   2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: backlog
   epic-2-retrospective: optional
 
