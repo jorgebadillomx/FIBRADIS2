@@ -1,4 +1,6 @@
 using Api.CompositionRoot;
+using Api.Endpoints.Ops;
+using Api.Endpoints.Private;
 using Api.Endpoints.Public;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +16,15 @@ var app = builder.Build();
 
 app.UseApiInfrastructure();
 app.UseHttpsRedirection();
-app.MapHealth();
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.MapAuth();
+app.MapMe();
+app.MapOpsPing();
+app.MapCatalog();
+
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

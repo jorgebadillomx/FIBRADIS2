@@ -1,3 +1,4 @@
+using Domain.Auth.Exceptions;
 using Domain.Common;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -12,14 +13,17 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
         if (exception is not DomainException domainEx)
             return false;
 
-        httpContext.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+        httpContext.Response.StatusCode = exception is InvalidCredentialsException
+            or InvalidRefreshTokenException
+                ? StatusCodes.Status401Unauthorized
+                : StatusCodes.Status422UnprocessableEntity;
 
         await problemDetailsService.WriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
             ProblemDetails =
             {
-                Status = StatusCodes.Status422UnprocessableEntity,
+                Status = httpContext.Response.StatusCode,
                 Title = domainEx.Message,
                 Extensions = { ["domainCode"] = domainEx.DomainCode },
             },

@@ -1,5 +1,5 @@
 # generated: 2026-05-15
-# last_updated: 2026-05-15
+# last_updated: 2026-05-18
 # project: FIBRADIS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,8 +35,11 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-15
+last_updated: 2026-05-17
 project: FIBRADIS
+# story 1.4 moved to done (review finding resolved)
+# story 2.1 created — epic-2 moved to in-progress
+# story 2.1 moved to done after code review
 
 project_key: NOKEY
 tracking_system: file-system
@@ -47,14 +50,14 @@ development_status:
   epic-1: in-progress
   1-1-inicializacion-de-la-solucion-y-estructura-del-proyecto: done
   1-2-backend-api-v1-con-openapi-y-cliente-tipado-para-los-spas: done
-  1-3-autenticacion-jwt-y-autorizacion-por-roles: backlog
-  1-4-hangfire-health-checks-y-observabilidad-minima: backlog
+  1-3-autenticacion-jwt-y-autorizacion-por-roles: done
+  1-4-hangfire-health-checks-y-observabilidad-minima: done
   epic-1-retrospective: optional
 
   # ── Épica 2: Catálogo Maestro y Descubrimiento Público ────────────────────
-  epic-2: backlog
-  2-1-catalogo-maestro-de-fibras-con-datos-semilla-iniciales: backlog
-  2-2-home-publica-con-busqueda-global-y-layout: backlog
+  epic-2: in-progress
+  2-1-catalogo-maestro-de-fibras-con-datos-semilla-iniciales: done
+  2-2-home-publica-con-busqueda-global-y-layout: done
   2-3-ficha-publica-de-fibra: backlog
   2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: backlog
   epic-2-retrospective: optional

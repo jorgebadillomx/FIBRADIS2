@@ -13,6 +13,6 @@ public class OpenApiEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebF
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("\"openapi\"", body);
-        Assert.Contains("/api/v1/health", body);
+        Assert.Contains("/api/v1/auth/login", body);
     }
 }
