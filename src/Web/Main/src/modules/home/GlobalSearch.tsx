@@ -5,6 +5,7 @@ import { Command, CommandList, CommandItem, CommandEmpty } from '@/shared/ui/com
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/ui/popover'
 import { Input } from '@/shared/ui/input'
 import { fetchAllFibras } from '@/api/fibrasApi'
+import { filterFibrasByQuery } from './global-search'
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false)
@@ -18,14 +19,7 @@ export function GlobalSearch() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const filtered = query.length >= 1
-    ? fibras
-        .filter(f =>
-          (f.ticker ?? '').toLowerCase().includes(query.toLowerCase()) ||
-          (f.fullName ?? '').toLowerCase().includes(query.toLowerCase())
-        )
-        .slice(0, 8)
-    : []
+  const filtered = filterFibrasByQuery(fibras, query)
 
   function handleSelect(ticker: string) {
     setOpen(false)

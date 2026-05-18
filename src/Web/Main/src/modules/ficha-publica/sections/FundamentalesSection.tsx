@@ -1,14 +1,17 @@
-interface FundamentalesData {
-  periodsAgo?: number
-  items?: Array<{ label: string; period: string; value: number | null }>
-}
+import {
+  formatFundamentalValue,
+  hasFundamentalesItems,
+  shouldShowFundamentalesWarning,
+  type FundamentalesData,
+} from './fundamentales'
 
 interface Props {
   data?: FundamentalesData
 }
 
 export function FundamentalesSection({ data }: Props) {
-  const showWarning = data?.periodsAgo !== undefined && data.periodsAgo >= 3
+  const showWarning = shouldShowFundamentalesWarning(data)
+  const items = data?.items ?? []
 
   return (
     <div className="space-y-3">
@@ -17,14 +20,14 @@ export function FundamentalesSection({ data }: Props) {
           Último reporte disponible: hace {data!.periodsAgo} periodos — datos podrían estar desactualizados.
         </div>
       )}
-      {data?.items && data.items.length > 0 ? (
+      {hasFundamentalesItems(data) ? (
         <table className="w-full text-sm">
           <tbody>
-            {data.items.map((item) => (
+            {items.map((item) => (
               <tr key={`${item.label}-${item.period}`} className="border-b border-border last:border-0">
                 <td className="py-2 text-muted-foreground">{item.label} — {item.period}</td>
                 <td className="py-2 text-right font-mono">
-                  {item.value !== null && item.value !== undefined ? item.value : '—'}
+                  {formatFundamentalValue(item.value)}
                 </td>
               </tr>
             ))}
