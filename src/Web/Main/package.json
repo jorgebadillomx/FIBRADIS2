@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "node --experimental-strip-types --test src/modules/home/global-search.test.ts src/modules/ficha-publica/sections/fundamentales.test.ts src/modules/ficha-publica/sections/reportes.test.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

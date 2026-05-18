@@ -1,32 +1,25 @@
-interface Props {
-  siteUrl: string | null
-  investorUrl: string | null
-  reportsUrl: string | null
-}
+import {
+  areAllReportLinksMissing,
+  getReportLinkItems,
+  type ReportesSectionData,
+} from './reportes'
 
-const REPORTE_ITEMS = [
-  { key: 'siteUrl', label: 'Sitio web' },
-  { key: 'investorUrl', label: 'Relación con inversionistas' },
-  { key: 'reportsUrl', label: 'Reportes oficiales' },
-] as const
+interface Props extends ReportesSectionData {}
 
 export function ReportesSection({ siteUrl, investorUrl, reportsUrl }: Props) {
-  const values: Record<typeof REPORTE_ITEMS[number]['key'], string | null> = {
+  const reportes = {
     siteUrl,
     investorUrl,
     reportsUrl,
   }
 
-  const allNull = siteUrl === null && investorUrl === null && reportsUrl === null
-
-  if (allNull) {
+  if (areAllReportLinksMissing(reportes)) {
     return <div className="text-sm text-muted-foreground">—</div>
   }
 
   return (
     <ul className="space-y-2">
-      {REPORTE_ITEMS.map(({ key, label }) => {
-        const url = values[key]
+      {getReportLinkItems(reportes).map(({ key, label, url }) => {
         return (
           <li key={key} className="text-sm">
             {url ? (
