@@ -32,8 +32,13 @@ desktop.ini
 .idea/
 *.iml
 .vscode/extensions.json
+*.lscache
 
 ## Coverage / test output
 coverage/
 *.coverage
 *.opencover.xml
+
+## mem0 — persistent agent memory (generated, not committed)
+project-memory/chroma_db/
+project-memory/mem0.db
