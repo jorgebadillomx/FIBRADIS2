@@ -15,6 +15,7 @@ project-memory/
     03-conventions.md
     04-api-patterns.md
     05-current-status.md
+    06-agent-workflows.md
 ```
 
 ## Cómo usar mem0 en este proyecto
