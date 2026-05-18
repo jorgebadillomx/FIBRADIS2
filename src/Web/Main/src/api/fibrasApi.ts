@@ -10,3 +10,14 @@ export async function fetchAllFibras() {
   if (error) throw new Error(`Error al obtener fibras: ${JSON.stringify(error)}`)
   return data?.items ?? []
 }
+
+export async function fetchFibraByTicker(ticker: string) {
+  const { data, error, response } = await apiClient.GET('/api/v1/fibras/{ticker}', {
+    params: { path: { ticker } },
+  })
+  if (error) {
+    if (response.status === 404) return null
+    throw new Error(`Error al obtener FIBRA '${ticker}': ${JSON.stringify(error)}`)
+  }
+  return data
+}
