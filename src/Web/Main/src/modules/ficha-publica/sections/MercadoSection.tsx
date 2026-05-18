@@ -12,6 +12,7 @@ export function MercadoSection() {
         {SELECTORS.map((s) => (
           <button
             key={s}
+            aria-pressed={active === s ? "true" : "false"}
             onClick={() => setActive(s)}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               active === s

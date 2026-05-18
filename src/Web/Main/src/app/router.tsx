@@ -1,16 +1,4 @@
 import { createBrowserRouter } from 'react-router'
-import { PublicLayout } from '@/shared/layouts/PublicLayout'
-import { HomePage } from '@/modules/home/HomePage'
-import { FibraPage } from '@/modules/ficha-publica/FibraPage'
-import { NotFound } from '@/shared/layouts/NotFound'
+import { routes } from './routes'
 
-export const router = createBrowserRouter([
-  {
-    element: <PublicLayout />,
-    children: [
-      { path: '/', element: <HomePage /> },
-      { path: '/fibras/:ticker', element: <FibraPage /> },
-      { path: '*', element: <NotFound /> },
-    ],
-  },
-])
+export const router = createBrowserRouter(routes)

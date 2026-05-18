@@ -32,6 +32,12 @@ export function GlobalSearch() {
       <PopoverAnchor asChild>
         <Input
           ref={inputRef}
+          role="combobox"
+          aria-label="Buscar FIBRA por ticker o nombre"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls="global-search-listbox"
+          aria-autocomplete="list"
           placeholder="Buscar FIBRA por ticker o nombre..."
           value={query}
           onChange={(e) => {
@@ -54,14 +60,20 @@ export function GlobalSearch() {
         }}
       >
         <Command shouldFilter={false}>
-          <CommandList>
+          <CommandList id="global-search-listbox" role="listbox" aria-label="Resultados de búsqueda">
             {isLoading && (
-              <div className="py-6 text-center text-sm text-muted-foreground">Cargando catálogo...</div>
+              <div role="status" aria-live="polite" className="py-6 text-center text-sm text-muted-foreground">
+                Cargando catálogo...
+              </div>
             )}
             {isError && (
-              <div className="py-6 text-center text-sm text-muted-foreground">Error al cargar el catálogo</div>
+              <div role="status" aria-live="polite" className="py-6 text-center text-sm text-muted-foreground">
+                Error al cargar el catálogo
+              </div>
             )}
-            {!isLoading && !isError && query.length >= 1 && filtered.length === 0 && <CommandEmpty>Sin resultados encontrados.</CommandEmpty>}
+            {!isLoading && !isError && query.length >= 1 && filtered.length === 0 && (
+              <CommandEmpty role="status" aria-live="polite">Sin resultados encontrados.</CommandEmpty>
+            )}
             {!isLoading && !isError && filtered.map((f) => (
               <CommandItem key={f.ticker} onSelect={() => handleSelect(f.ticker)}>
                 <span className="font-medium">{f.ticker}</span>
