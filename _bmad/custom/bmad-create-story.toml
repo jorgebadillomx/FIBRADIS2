@@ -1,0 +1,10 @@
+[workflow]
+
+persistent_facts = [
+  "file:{project-root}/AGENTS.md",
+  "file:{project-root}/workflow-rules.md",
+]
+
+activation_steps_append = [
+  "ANTES de crear el story file, crear el branch git: `git checkout -b story/{story_key_short}` donde story_key_short es el número de épica, número de historia y primeras palabras del nombre (ej. story/2-4-seo-prerender). Confirmar que el branch fue creado exitosamente.",
+]
