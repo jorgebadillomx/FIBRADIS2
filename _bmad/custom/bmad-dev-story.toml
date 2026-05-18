@@ -8,4 +8,5 @@
 # El agente las lee como contexto obligatorio antes de comenzar la historia.
 persistent_facts = [
   "file:{project-root}/_bmad-output/planning-artifacts/convenciones-fibradis.md",
+  "file:{project-root}/workflow-rules.md",
 ]

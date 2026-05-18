@@ -18,6 +18,8 @@ El story file es la fuente de verdad de cada historia:
 
 Lee `_bmad-output/planning-artifacts/convenciones-fibradis.md` antes de empezar cualquier historia o review. Contiene las reglas de stack, código y flujo que NO deben ignorarse.
 
+Lee `workflow-rules.md` para las reglas operativas del proyecto: branch por historia, merge a main al completar, y unit tests obligatorios antes de `done`. **Son de cumplimiento estricto — no opcionales.**
+
 ### mem0 — solo cuando el contexto no vive en ningún archivo
 
 **No usar mem0 por defecto.** Usarlo únicamente si:

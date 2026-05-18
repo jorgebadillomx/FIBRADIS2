@@ -22,7 +22,8 @@ python scripts/memory/memory_cli.py add "decisión: ..." # guardar
 1. Usa los skills BMAD (`/bmad-dev-story`, `/bmad-code-review`) — son el flujo de trabajo; no los omitas
 2. Lee el story file COMPLETO antes de implementar — las Dev Notes tienen todo el contexto necesario
 3. Implementa siguiendo las reglas en `AGENTS.md` y `_bmad-output/planning-artifacts/convenciones-fibradis.md`
-4. Usa mem0 solo si aplica alguna de las condiciones de arriba
+4. **Lee `workflow-rules.md`** — branch por historia, merge a main al completar, unit tests obligatorios antes de `done`
+5. Usa mem0 solo si aplica alguna de las condiciones de arriba
 
 ## Comandos de Desarrollo
 
