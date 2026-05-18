@@ -1,4 +1,5 @@
 using Domain.Auth;
+using Domain.Catalog;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -76,6 +77,33 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                 });
+            await db.SaveChangesAsync();
+        }
+    }
+
+    public async Task SeedCatalogAsync()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        // HasData() siembra las FIBRAs activas de producción via EnsureCreatedAsync.
+        // Solo agregamos la FIBRA inactiva de test que no está en HasData.
+        if (!await db.Fibras.AnyAsync(f => f.Ticker == "INACTIVA1"))
+        {
+            db.Fibras.Add(new Fibra
+            {
+                Id = Guid.Parse("cccccccc-0000-0000-0000-000000000001"),
+                Ticker = "INACTIVA1",
+                FullName = "Fibra Inactiva Test",
+                ShortName = "Inactiva",
+                Sector = "Diversificado",
+                Market = "BMV",
+                Currency = "MXN",
+                State = FibraState.Inactive,
+                NameVariants = [],
+                CreatedAt = DateTime.UtcNow,
+            });
             await db.SaveChangesAsync();
         }
     }

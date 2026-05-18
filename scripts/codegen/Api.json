@@ -136,10 +136,214 @@
           }
         }
       }
+    },
+    "/api/v1/fibras": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfFibraListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fibras/{ticker}": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FibraDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "FibraDetail": {
+        "required": [
+          "id",
+          "ticker",
+          "fullName",
+          "shortName",
+          "sector",
+          "market",
+          "currency",
+          "state",
+          "siteUrl",
+          "investorUrl",
+          "reportsUrl",
+          "nameVariants",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticker": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "sector": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "investorUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reportsUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nameVariants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FibraListItem": {
+        "required": [
+          "id",
+          "ticker",
+          "fullName",
+          "shortName",
+          "sector",
+          "market",
+          "currency",
+          "state",
+          "siteUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticker": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "sector": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "LoginRequest": {
         "required": [
           "email",
@@ -163,6 +367,47 @@
         "properties": {
           "accessToken": {
             "type": "string"
+          }
+        }
+      },
+      "PagedResultOfFibraListItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FibraListItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -223,6 +468,9 @@
     },
     {
       "name": "Ops"
+    },
+    {
+      "name": "Catalog"
     }
   ]
 }

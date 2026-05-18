@@ -1,8 +1,10 @@
 using Api.Authentication;
 using Api.HealthChecks;
 using Application.Auth;
+using Application.Catalog;
 using Hangfire;
 using Hangfire.SqlServer;
+using Infrastructure.Persistence.Repositories.Catalog;
 using Infrastructure.Persistence.SqlServer;
 using Infrastructure.Security;
 
@@ -44,6 +46,7 @@ public static class ApiServiceExtensions
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IFibraRepository, FibraRepository>();
 
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
