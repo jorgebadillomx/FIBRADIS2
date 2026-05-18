@@ -1,6 +1,6 @@
 # Historia 2.3: Ficha Pública de FIBRA
 
-Status: ready-for-dev
+Status: review
 
 ## Historia
 
@@ -44,45 +44,45 @@ Entonces veo un skeleton/estado de carga — sin contenido vacío ni flash de "n
 
 ## Tareas / Subtareas
 
-- [ ] Task 1: Agregar `fetchFibraByTicker` a `fibrasApi.ts` (AC: CA-1, CA-4, CA-5)
-  - [ ] Llamada tipada a `GET /api/v1/fibras/{ticker}` usando el cliente openapi-fetch existente
-  - [ ] Retornar `null` si el status es 404 (not found); lanzar error para otros fallos
-  - [ ] Retornar `data` (tipo `components["schemas"]["FibraDetail"]`) si 200
+- [x] Task 1: Agregar `fetchFibraByTicker` a `fibrasApi.ts` (AC: CA-1, CA-4, CA-5)
+  - [x] Llamada tipada a `GET /api/v1/fibras/{ticker}` usando el cliente openapi-fetch existente
+  - [x] Retornar `null` si el status es 404 (not found); lanzar error para otros fallos
+  - [x] Retornar `data` (tipo `components["schemas"]["FibraDetail"]`) si 200
 
-- [ ] Task 2: Crear `FibraNotFound.tsx` para ticker inexistente (AC: CA-4)
-  - [ ] Mostrar mensaje "FIBRA no encontrada" con el ticker buscado
-  - [ ] Enlace de regreso a la Home usando `<Link to="/">`
-  - [ ] Responsive en 360px/768px/1280px
+- [x] Task 2: Crear `FibraNotFound.tsx` para ticker inexistente (AC: CA-4)
+  - [x] Mostrar mensaje "FIBRA no encontrada" con el ticker buscado
+  - [x] Enlace de regreso a la Home usando `<Link to="/">`
+  - [x] Responsive en 360px/768px/1280px
 
-- [ ] Task 3: Crear secciones de la ficha (AC: CA-1, CA-2, CA-3)
-  - [ ] `PrecioSection.tsx` — placeholder con mensaje "Precio de mercado disponible en Épica 3"
-  - [ ] `MercadoSection.tsx` — selectores 1M/3M/6M/1A + estado vacío de gráfica
-  - [ ] `FundamentalesSection.tsx` — estructura de tabla preparada, estado vacío "disponible en Épica 5"; lógica de advertencia de períodos desactualizados y render de `—` para nulos ya implementada
-  - [ ] `DistribucionesSection.tsx` — lista preparada, estado vacío "disponible en Épica 3"
-  - [ ] `NoticiasSection.tsx` — placeholder "disponible en Épica 4"
-  - [ ] `ReportesSection.tsx` — links reales a `siteUrl`, `investorUrl`, `reportsUrl`; muestra `—` si todos son null
+- [x] Task 3: Crear secciones de la ficha (AC: CA-1, CA-2, CA-3)
+  - [x] `PrecioSection.tsx` — placeholder con mensaje "Precio de mercado disponible en Épica 3"
+  - [x] `MercadoSection.tsx` — selectores 1M/3M/6M/1A + estado vacío de gráfica
+  - [x] `FundamentalesSection.tsx` — estructura de tabla preparada, estado vacío "disponible en Épica 5"; lógica de advertencia de períodos desactualizados y render de `—` para nulos ya implementada
+  - [x] `DistribucionesSection.tsx` — lista preparada, estado vacío "disponible en Épica 3"
+  - [x] `NoticiasSection.tsx` — placeholder "disponible en Épica 4"
+  - [x] `ReportesSection.tsx` — links reales a `siteUrl`, `investorUrl`, `reportsUrl`; muestra `—` si todos son null
 
-- [ ] Task 4: Crear `FibraPage.tsx` como página principal (AC: CA-1, CA-2, CA-3, CA-4, CA-5)
-  - [ ] `useParams<{ ticker: string }>()` para leer el ticker de la URL
-  - [ ] `useQuery` con `queryKey: ['fibra', ticker]` y `queryFn: () => fetchFibraByTicker(ticker)`
-  - [ ] Estado loading → mostrar skeleton
-  - [ ] Estado error → mostrar mensaje de error genérico
-  - [ ] `data === null` → mostrar `<FibraNotFound ticker={ticker} />`
-  - [ ] `data !== null && data !== undefined` → renderizar layout completo con todas las secciones
-  - [ ] Header sticky con ticker, nombre, anclas de navegación
-  - [ ] Pasar `fibra` (FibraDetail) como prop a cada sección
+- [x] Task 4: Crear `FibraPage.tsx` como página principal (AC: CA-1, CA-2, CA-3, CA-4, CA-5)
+  - [x] `useParams<{ ticker: string }>()` para leer el ticker de la URL
+  - [x] `useQuery` con `queryKey: ['fibra', ticker]` y `queryFn: () => fetchFibraByTicker(ticker)`
+  - [x] Estado loading → mostrar skeleton
+  - [x] Estado error → mostrar mensaje de error genérico
+  - [x] `data === null` → mostrar `<FibraNotFound ticker={ticker} />`
+  - [x] `data !== null && data !== undefined` → renderizar layout completo con todas las secciones
+  - [x] Header sticky con ticker, nombre, anclas de navegación
+  - [x] Pasar `fibra` (FibraDetail) como prop a cada sección
 
-- [ ] Task 5: Actualizar `router.tsx` para usar `FibraPage` (AC: CA-1)
-  - [ ] Cambiar import de `FichaPlaceholder` a `FibraPage`
-  - [ ] Actualizar la ruta `/fibras/:ticker` para usar `<FibraPage />`
-  - [ ] Eliminar `FichaPlaceholder.tsx` (ya no se usa)
+- [x] Task 5: Actualizar `router.tsx` para usar `FibraPage` (AC: CA-1)
+  - [x] Cambiar import de `FichaPlaceholder` a `FibraPage`
+  - [x] Actualizar la ruta `/fibras/:ticker` para usar `<FibraPage />`
+  - [x] Eliminar `FichaPlaceholder.tsx` (ya no se usa)
 
-- [ ] Task 6: Validación final (NFR-15, todos los CA)
-  - [ ] `npm run build --workspace=src/Web/Main` — 0 errores TypeScript, 0 warnings
-  - [ ] Verificar en 360px, 768px y 1280px que no hay overflow horizontal (NFR-15)
-  - [ ] Verificar CA-1: `/fibras/FUNO11` carga con todas las secciones
-  - [ ] Verificar CA-4: `/fibras/FAKE99` muestra "FIBRA no encontrada"
-  - [ ] Verificar CA-5: hay skeleton visible durante carga (simular red lenta)
+- [x] Task 6: Validación final (NFR-15, todos los CA)
+  - [x] `npm run build --workspace=src/Web/Main` — 0 errores TypeScript, 0 warnings
+  - [x] Verificar en 360px, 768px y 1280px que no hay overflow horizontal (NFR-15)
+  - [x] Verificar CA-1: `/fibras/FUNO11` carga con todas las secciones
+  - [x] Verificar CA-4: `/fibras/FAKE99` muestra "FIBRA no encontrada"
+  - [x] Verificar CA-5: hay skeleton visible durante carga (simular red lenta)
 
 ## Dev Notes
 
@@ -405,4 +405,27 @@ claude-sonnet-4-6 (create-story, 2026-05-18)
 
 ### Completion Notes List
 
+- Implementada `fetchFibraByTicker` en `fibrasApi.ts` usando openapi-fetch con manejo correcto de 404 (retorna `null`) vs error real (lanza excepción).
+- Creado `FibraNotFound.tsx` con mensaje claro y link de regreso a Home usando `react-router` v7.
+- Creadas las 6 secciones en `modules/ficha-publica/sections/`: PrecioSection (placeholder MVP), MercadoSection (selectores + empty state), FundamentalesSection (preparada para Épica 5 con lógica de advertencia y `—` para nulos), DistribucionesSection, NoticiasSection, ReportesSection (único con datos reales: links o `—` si todos null).
+- `FibraPage.tsx` orquesta todos los estados: skeleton (isLoading), error genérico (isError), 404 (fibra === null), y layout completo con header sticky en `top-14`.
+- `router.tsx` actualizado; `FichaPlaceholder.tsx` eliminado.
+- Build: `npm run build --workspace=src/Web/Main` → exit code 0, 0 errores TypeScript, 0 warnings.
+
 ### File List
+
+- src/Web/Main/src/api/fibrasApi.ts (modificado)
+- src/Web/Main/src/app/router.tsx (modificado)
+- src/Web/Main/src/modules/ficha-publica/FichaPlaceholder.tsx (eliminado)
+- src/Web/Main/src/modules/ficha-publica/FibraPage.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/FibraNotFound.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/sections/PrecioSection.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/sections/MercadoSection.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/sections/FundamentalesSection.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/sections/DistribucionesSection.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/sections/NoticiasSection.tsx (nuevo)
+- src/Web/Main/src/modules/ficha-publica/sections/ReportesSection.tsx (nuevo)
+
+### Change Log
+
+- 2026-05-18: Historia 2.3 implementada — Ficha Pública de FIBRA con 6 secciones, skeleton, manejo de 404, header sticky anclado. Build limpio. (claude-sonnet-4-6)
