@@ -1,0 +1,12 @@
+# Override de equipo para bmad-testing-guide — FIBRADIS
+# Estos valores se AGREGAN (append) a los del customize.toml base del skill.
+# NO editar el customize.toml en .claude/skills/ ni .codex/skills/ directamente.
+
+[workflow]
+
+# Contexto obligatorio del proyecto que el agente carga antes de generar la guía.
+# Aporta: glosario base, módulos, convenciones de nombres y estado del sistema.
+persistent_facts = [
+  "file:{project-root}/_bmad-output/planning-artifacts/convenciones-fibradis.md",
+  "file:{project-root}/workflow-rules.md",
+]

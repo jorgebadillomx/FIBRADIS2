@@ -55,7 +55,7 @@ development_status:
   1-2-backend-api-v1-con-openapi-y-cliente-tipado-para-los-spas: done
   1-3-autenticacion-jwt-y-autorizacion-por-roles: done
   1-4-hangfire-health-checks-y-observabilidad-minima: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # ── Épica 2: Catálogo Maestro y Descubrimiento Público ────────────────────
   epic-2: in-progress
@@ -63,7 +63,7 @@ development_status:
   2-2-home-publica-con-busqueda-global-y-layout: done
   2-3-ficha-publica-de-fibra: done
   2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # ── Épica 3: Mercado y Frescura de Datos ──────────────────────────────────
   epic-3: backlog

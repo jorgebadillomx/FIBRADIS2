@@ -1,0 +1,33 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-testing-guide. Mirrors the
+# agent customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (config load, greet).
+# Overrides append.
+
+activation_steps_prepend = []
+
+# Steps to run after greet but before the workflow begins.
+# Overrides append.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run.
+# Overrides append.
+
+persistent_facts = [
+  "file:{project-root}/**/project-context.md",
+]
+
+# Scalar: executed when the workflow reaches its final step,
+# after the testing guide is saved. Override wins.
+# Leave empty for no custom post-completion behavior.
+
+on_complete = ""
