@@ -1,5 +1,6 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-18
+# story 2.4 moved to review — SEO prerender + WCAG 2.1 AA implementado
 # project: FIBRADIS
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,6 +42,7 @@ project: FIBRADIS
 # story 2.1 created — epic-2 moved to in-progress
 # story 2.1 moved to done after code review
 # story 2.3 moved to done after review findings resolved
+# story 2.4 created — ready-for-dev
 
 project_key: NOKEY
 tracking_system: file-system
@@ -60,7 +62,7 @@ development_status:
   2-1-catalogo-maestro-de-fibras-con-datos-semilla-iniciales: done
   2-2-home-publica-con-busqueda-global-y-layout: done
   2-3-ficha-publica-de-fibra: done
-  2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: backlog
+  2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: done
   epic-2-retrospective: optional
 
   # ── Épica 3: Mercado y Frescura de Datos ──────────────────────────────────

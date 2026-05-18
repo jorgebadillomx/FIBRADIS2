@@ -23,4 +23,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  ssr: {
+    noExternal: ['react-router', '@tanstack/react-query'],
+  },
 })
