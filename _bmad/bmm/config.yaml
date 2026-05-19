@@ -1,0 +1,11 @@
+# BMad project configuration — FIBRADIS
+# Edit this file to customize agent behavior across all skills.
+
+project_name: FIBRADIS
+planning_artifacts: _bmad-output/planning-artifacts
+implementation_artifacts: _bmad-output/implementation-artifacts
+
+user_name: Jorge
+communication_language: es
+document_output_language: es
+user_skill_level: expert

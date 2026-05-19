@@ -3,13 +3,17 @@ using Api.HealthChecks;
 using Application.Auth;
 using Application.Catalog;
 using Application.Market;
+using Application.News;
 using Hangfire;
 using Hangfire.SqlServer;
+using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.Yahoo;
 using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
+using Infrastructure.Jobs.News;
 using Infrastructure.Persistence.Repositories.Catalog;
 using Infrastructure.Persistence.Repositories.Market;
+using Infrastructure.Persistence.Repositories.News;
 using Infrastructure.Persistence.SqlServer;
 using Infrastructure.Security;
 using Infrastructure.Time;
@@ -55,10 +59,18 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFibraRepository, FibraRepository>();
         builder.Services.AddScoped<IMarketRepository, MarketRepository>();
         builder.Services.AddScoped<MarketPipelineJob>();
+        builder.Services.AddScoped<NewsPipelineJob>();
+        builder.Services.AddScoped<INewsRepository, NewsRepository>();
+        builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
+        builder.Services.AddHttpClient<IRssClient, GoogleNewsRssClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
+        });
 
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");

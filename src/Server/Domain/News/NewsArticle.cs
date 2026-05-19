@@ -1,0 +1,15 @@
+namespace Domain.News;
+
+public class NewsArticle
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = string.Empty;
+    public string TitleNormalized { get; set; } = string.Empty;
+    public string Source { get; set; } = string.Empty;
+    public DateTimeOffset PublishedAt { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public string? Snippet { get; set; }
+    public NewsArticleStatus Status { get; set; } = NewsArticleStatus.Pending;
+    public DateTimeOffset CapturedAt { get; set; } = DateTimeOffset.UtcNow;
+    public string? ErrorReason { get; set; }
+}
