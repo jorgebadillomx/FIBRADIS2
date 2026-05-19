@@ -2,11 +2,16 @@ using Api.Authentication;
 using Api.HealthChecks;
 using Application.Auth;
 using Application.Catalog;
+using Application.Market;
 using Hangfire;
 using Hangfire.SqlServer;
+using Infrastructure.Integrations.Yahoo;
+using Infrastructure.Jobs.Market;
 using Infrastructure.Persistence.Repositories.Catalog;
+using Infrastructure.Persistence.Repositories.Market;
 using Infrastructure.Persistence.SqlServer;
 using Infrastructure.Security;
+using Infrastructure.Time;
 
 namespace Api.CompositionRoot;
 
@@ -47,6 +52,15 @@ public static class ApiServiceExtensions
         builder.Services.AddSingleton<ITokenService, TokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IFibraRepository, FibraRepository>();
+        builder.Services.AddScoped<IMarketRepository, MarketRepository>();
+        builder.Services.AddScoped<MarketPipelineJob>();
+        builder.Services.AddSingleton<ITimeService, SystemTimeService>();
+        builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
+        builder.Services.AddHttpClient<IYahooFinanceClient, YahooFinanceClient>(client =>
+        {
+            client.BaseAddress = new Uri("https://query1.finance.yahoo.com");
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
 
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");

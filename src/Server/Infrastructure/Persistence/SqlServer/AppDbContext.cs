@@ -1,5 +1,6 @@
 using Domain.Auth;
 using Domain.Catalog;
+using Domain.Market;
 using Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Fibra> Fibras => Set<Fibra>();
+    public DbSet<PriceSnapshot> PriceSnapshots => Set<PriceSnapshot>();
+    public DbSet<DailySnapshot> DailySnapshots => Set<DailySnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
