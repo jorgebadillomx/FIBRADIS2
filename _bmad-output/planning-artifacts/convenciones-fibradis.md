@@ -9,7 +9,7 @@ Estas reglas se aplican en TODA historia y code review. Son no negociables.
 - openapi-fetch para todas las llamadas API — cliente en `fibrasApi.ts`
 - shadcn/ui existente — NO ejecutar `npx shadcn@latest add` sin aprobación explícita
 - Tailwind v4 — NO usar clases de v3 que no existan en v4
-- NO añadir dependencias npm nuevas sin aprobación explícita del usuario
+- NO añadir dependencias npm nuevas sin justificación; cuando valga la pena (mejor DX, menos código propio, librería estándar del stack), sugerirla al usuario antes de instalar
 
 ## Convenciones de código TypeScript/React
 

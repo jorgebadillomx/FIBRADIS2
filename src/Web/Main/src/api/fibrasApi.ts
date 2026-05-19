@@ -17,6 +17,14 @@ export async function fetchMarketSnapshots() {
   return data ?? []
 }
 
+export async function fetchFibraHistory(ticker: string, period: '1m' | '3m' | '6m' | '1y') {
+  const { data, error } = await apiClient.GET('/api/v1/market/fibras/{ticker}/history', {
+    params: { path: { ticker }, query: { period } },
+  })
+  if (error) throw new Error(`Error al obtener historial de '${ticker}': ${JSON.stringify(error)}`)
+  return data
+}
+
 export async function fetchFibraByTicker(ticker: string) {
   const { data, error, response } = await apiClient.GET('/api/v1/fibras/{ticker}', {
     params: { path: { ticker } },

@@ -1,5 +1,6 @@
 using Application.Catalog;
 using Application.Market;
+using Microsoft.AspNetCore.Mvc;
 using SharedApiContracts.Market;
 
 namespace Api.Endpoints.Public;
@@ -45,6 +46,52 @@ public static class MarketEndpoints
         })
         .AllowAnonymous()
         .Produces<IReadOnlyList<MarketSnapshotDto>>(StatusCodes.Status200OK);
+
+        group.MapGet("/fibras/{ticker}/history", async (
+            string ticker,
+            [FromQuery] string? period,
+            IFibraRepository fibraRepo,
+            IMarketRepository marketRepo,
+            CancellationToken ct) =>
+        {
+            var fibra = await fibraRepo.GetByTickerAsync(ticker.ToUpperInvariant(), ct);
+            if (fibra is null)
+                return Results.NotFound();
+
+            int days = period?.ToLowerInvariant() switch
+            {
+                "1m" => 30,
+                "3m" => 90,
+                "6m" => 90,
+                "1y" => 90,
+                _ => 90,
+            };
+
+            var snapshotsTask = marketRepo.GetDailySnapshotsAsync(fibra.Id, days, ct);
+            var distributionsTask = marketRepo.GetDistributionsAsync(fibra.Id, maxDays: 365, ct);
+            var latestTask = marketRepo.GetLatestSnapshotPerFibraAsync(ct);
+
+            await Task.WhenAll(snapshotsTask, distributionsTask, latestTask);
+
+            var snapshots = snapshotsTask.Result;
+            var distributions = distributionsTask.Result;
+            var lastPrice = latestTask.Result.FirstOrDefault(s => s.FibraId == fibra.Id)?.LastPrice;
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var annualizedYield = YieldCalculator.Calculate(distributions, lastPrice, today);
+
+            var dto = new FibraHistoryDto(
+                fibra.Ticker,
+                snapshots.Select(s => new DailyPricePointDto(s.Date.ToString("yyyy-MM-dd"), s.Close)).ToList(),
+                distributions.Take(8).Select(d => new DistributionPointDto(d.PaymentDate.ToString("yyyy-MM-dd"), d.AmountPerUnit)).ToList(),
+                annualizedYield
+            );
+
+            return Results.Ok(dto);
+        })
+        .AllowAnonymous()
+        .Produces<FibraHistoryDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
         return app;
     }

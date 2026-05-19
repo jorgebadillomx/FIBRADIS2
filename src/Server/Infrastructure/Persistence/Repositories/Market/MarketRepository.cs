@@ -49,4 +49,30 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
                 .Any(l => l.FibraId == p.FibraId && l.MaxDate == p.CapturedAt))
             .ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<DailySnapshot>> GetDailySnapshotsAsync(Guid fibraId, int days, CancellationToken ct = default)
+    {
+        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-days);
+        return await db.DailySnapshots
+            .Where(d => d.FibraId == fibraId && d.Date >= cutoff)
+            .OrderBy(d => d.Date)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Distribution>> GetDistributionsAsync(Guid fibraId, int? maxDays = null, CancellationToken ct = default)
+    {
+        var query = db.Distributions.Where(d => d.FibraId == fibraId);
+        if (maxDays.HasValue)
+        {
+            var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-maxDays.Value);
+            query = query.Where(d => d.PaymentDate >= cutoff);
+        }
+        return await query.OrderByDescending(d => d.PaymentDate).ToListAsync(ct);
+    }
+
+    public async Task AddDistributionAsync(Distribution dist, CancellationToken ct = default)
+    {
+        db.Distributions.Add(dist);
+        await db.SaveChangesAsync(ct);
+    }
 }

@@ -37,6 +37,9 @@
 
 generated: 2026-05-15
 last_updated: 2026-05-19
+# story 3.3 creado — ready-for-dev
+# story 3.3 vuelve a in-progress por hallazgos de code review
+# story 3.3 moved to done after review findings resolved
 project: FIBRADIS
 # story 1.4 moved to done (review finding resolved)
 # story 2.1 created — epic-2 moved to in-progress
@@ -71,7 +74,7 @@ development_status:
   epic-3: in-progress
   3-1-pipeline-de-mercado-ingesta-y-snapshots: done
   3-2-clasificacion-de-frescura-y-estados-en-ui: done
-  3-3-historial-de-precios-yield-anualizado-y-snapshots-a-90-dias: backlog
+  3-3-historial-de-precios-yield-anualizado-y-snapshots-a-90-dias: done
   epic-3-retrospective: optional
 
   # ── Épica 4: Noticias y Contenido ─────────────────────────────────────────

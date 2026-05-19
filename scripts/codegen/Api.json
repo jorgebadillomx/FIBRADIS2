@@ -242,10 +242,90 @@
           }
         }
       }
+    },
+    "/api/v1/market/fibras/{ticker}/history": {
+      "get": {
+        "tags": [
+          "Market"
+        ],
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FibraHistoryDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "DailyPricePointDto": {
+        "required": [
+          "date",
+          "close"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "close": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "DistributionPointDto": {
+        "required": [
+          "date",
+          "amountPerUnit"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "amountPerUnit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "FibraDetail": {
         "required": [
           "id",
@@ -316,6 +396,41 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "FibraHistoryDto": {
+        "required": [
+          "ticker",
+          "priceHistory",
+          "distributions",
+          "annualizedYield"
+        ],
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string"
+          },
+          "priceHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyPricePointDto"
+            }
+          },
+          "distributions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistributionPointDto"
+            }
+          },
+          "annualizedYield": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
