@@ -1,6 +1,6 @@
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { fetchFibraByTicker } from '@/api/fibrasApi'
+import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
 import { FibraNotFound } from './FibraNotFound'
 import { PrecioSection } from './sections/PrecioSection'
 import { MercadoSection } from './sections/MercadoSection'
@@ -9,6 +9,8 @@ import { DistribucionesSection } from './sections/DistribucionesSection'
 import { NoticiasSection } from './sections/NoticiasSection'
 import { ReportesSection } from './sections/ReportesSection'
 import { FreshnessBadge } from '@/shared/ui/freshness-badge'
+import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
+import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
 
 function SectionHeader({ title }: { title: string }) {
   return (
@@ -66,6 +68,15 @@ export function FibraPage() {
     enabled: !!ticker,
   })
 
+  const { data: snapshots = [] } = useQuery({
+    queryKey: ['market-snapshots'],
+    queryFn: fetchMarketSnapshots,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+  })
+
+  const marketData = snapshots.find(s => s.ticker === fibra?.ticker) ?? null
+
   const pageTitle = fibra
     ? `${fibra.ticker} — ${fibra.fullName} | FIBRADIS`
     : `${ticker?.toUpperCase() ?? 'FIBRA'} | FIBRADIS`
@@ -79,6 +90,9 @@ export function FibraPage() {
   if (isLoading) return <FibraPageSkeleton />
   if (isError) return <FibraErrorState />
   if (fibra === null) return <FibraNotFound ticker={ticker!} />
+
+  const marketPrice = toNum(marketData?.lastPrice)
+  const hasMarketPrice = marketPrice != null && marketData?.freshnessStatus != null
 
   return (
     <>
@@ -105,10 +119,21 @@ export function FibraPage() {
                   <span>{fibra!.currency}</span>
                 </div>
               </div>
-              {/* Precio placeholder — Épica 3 reemplaza este bloque con precio real */}
+              {/* Precio real con badge de frescura */}
               <div className="flex items-center gap-2 shrink-0 pt-1">
-                <span className="text-2xl font-semibold tabular-nums text-muted-foreground">—</span>
-                <FreshnessBadge status="off-hours" />
+                {hasMarketPrice ? (
+                  <>
+                    <span className="text-2xl font-semibold tabular-nums">
+                      {marketPrice!.toFixed(2)}
+                    </span>
+                    <FreshnessBadge
+                      status={marketData!.freshnessStatus as FreshnessStatus}
+                      lastUpdated={marketData!.capturedAt ? formatRelativeTime(marketData!.capturedAt) : undefined}
+                    />
+                  </>
+                ) : (
+                  <span className="text-2xl font-semibold tabular-nums text-muted-foreground">—</span>
+                )}
               </div>
             </div>
             {/* Anclas de sección */}
@@ -130,11 +155,21 @@ export function FibraPage() {
         </header>
 
         <div className="container mx-auto px-4 py-6 space-y-10">
-          <PrecioSection />
+          <PrecioSection
+            lastPrice={marketData?.lastPrice}
+            dailyChange={marketData?.dailyChange}
+            dailyChangePct={marketData?.dailyChangePct}
+            capturedAt={marketData?.capturedAt}
+            freshnessStatus={marketData?.freshnessStatus}
+          />
 
           <section id="mercado" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.mercado} />
-            <MercadoSection />
+            <MercadoSection
+              week52High={marketData?.week52High}
+              week52Low={marketData?.week52Low}
+              volume={marketData?.volume}
+            />
           </section>
 
           <section id="fundamentales" className="scroll-mt-32 space-y-4">

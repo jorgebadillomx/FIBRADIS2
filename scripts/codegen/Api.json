@@ -220,6 +220,28 @@
           }
         }
       }
+    },
+    "/api/v1/market/snapshots": {
+      "get": {
+        "tags": [
+          "Market"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MarketSnapshotDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -370,6 +392,96 @@
           }
         }
       },
+      "MarketSnapshotDto": {
+        "required": [
+          "fibraId",
+          "ticker",
+          "lastPrice",
+          "dailyChange",
+          "dailyChangePct",
+          "volume",
+          "week52High",
+          "week52Low",
+          "capturedAt",
+          "freshnessStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "fibraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticker": {
+            "type": "string"
+          },
+          "lastPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "dailyChange": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "dailyChangePct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "volume": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "week52High": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "week52Low": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "capturedAt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "freshnessStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "PagedResultOfFibraListItem": {
         "required": [
           "items",
@@ -471,6 +583,9 @@
     },
     {
       "name": "Catalog"
+    },
+    {
+      "name": "Market"
     }
   ]
 }
