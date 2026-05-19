@@ -22,11 +22,14 @@ export function FundamentalesSection({ data }: Props) {
       )}
       {hasFundamentalesItems(data) ? (
         <table className="w-full text-sm">
-          <tbody>
+          <tbody className="divide-y divide-border">
             {items.map((item) => (
-              <tr key={`${item.label}-${item.period}`} className="border-b border-border last:border-0">
-                <td className="py-2 text-muted-foreground">{item.label} — {item.period}</td>
-                <td className="py-2 text-right font-mono">
+              <tr key={`${item.label}-${item.period}`} className="hover:bg-muted/40 transition-colors">
+                <td className="py-2.5 pr-4">
+                  <span className="text-foreground">{item.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground/70">{item.period}</span>
+                </td>
+                <td className="py-2.5 text-right font-mono font-medium tabular-nums">
                   {formatFundamentalValue(item.value)}
                 </td>
               </tr>
@@ -34,8 +37,9 @@ export function FundamentalesSection({ data }: Props) {
           </tbody>
         </table>
       ) : (
-        <div className="rounded-lg border border-border bg-muted/20 flex items-center justify-center h-32">
-          <p className="text-sm text-muted-foreground">Fundamentales disponibles en Épica 5</p>
+        <div className="rounded-lg border border-border bg-surface-elevated px-4 py-8 flex flex-col items-center justify-center gap-2">
+          <p className="text-sm font-medium text-muted-foreground">Sin fundamentales disponibles</p>
+          <p className="text-xs text-muted-foreground/60">Los datos fundamentales estarán disponibles en Épica 5</p>
         </div>
       )}
     </div>
