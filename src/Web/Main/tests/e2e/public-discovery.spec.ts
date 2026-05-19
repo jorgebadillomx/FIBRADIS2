@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test'
 import { mockCatalogApi } from './fixtures/catalog-api'
+import { mockMarketApi } from './fixtures/market-api'
 
 test.beforeEach(async ({ page }) => {
   await mockCatalogApi(page)
+  await mockMarketApi(page, 'fresh', 24.5)
 })
 
 test('Home publica permite buscar una FIBRA y navegar a su ficha', async ({ page }) => {
@@ -10,18 +12,18 @@ test('Home publica permite buscar una FIBRA y navegar a su ficha', async ({ page
 
   await expect(page).toHaveTitle(/FIBRADIS/)
   await expect(page.getByRole('combobox', { name: 'Buscar FIBRA por ticker o nombre' })).toBeVisible()
-  await expect(page.getByText('Precios de mercado — disponible en Épica 3')).toBeVisible()
-  await expect(page.getByText('Noticias — disponible en Épica 4')).toBeVisible()
+  await expect(page.getByLabel('Carrusel de precios')).toBeVisible()
+  await expect(page.getByLabel('Top movers')).toBeVisible()
 
   await page.getByRole('combobox', { name: 'Buscar FIBRA por ticker o nombre' }).fill('FUN')
 
-  await expect(page.getByText('FUNO11')).toBeVisible()
-  await expect(page.getByText('Fibra Uno')).toBeVisible()
+  await expect(page.getByRole('option', { name: /FUNO11/ })).toBeVisible()
+  await expect(page.getByRole('option', { name: /Fibra Uno/ })).toBeVisible()
 
-  await page.getByText('FUNO11').click()
+  await page.getByRole('option', { name: /FUNO11/ }).click()
 
   await expect(page).toHaveURL(/\/fibras\/FUNO11$/)
-  await expect(page.getByText('Precio de mercado disponible en Épica 3')).toBeVisible()
+  await expect(page.getByText('Fresh').first()).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mercado' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Fundamentales' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Distribuciones' })).toBeVisible()

@@ -1,5 +1,6 @@
 using Domain.Auth;
 using Domain.Catalog;
+using Domain.Market;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -106,5 +107,52 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             });
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task SeedMarketAsync()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        // Obtener la fibra FUNO11 seeded por HasData para usar su ID real
+        var funo = await db.Fibras.FirstOrDefaultAsync(f => f.Ticker == "FUNO11");
+        if (funo is null) return;
+
+        if (!await db.PriceSnapshots.AnyAsync(p => p.FibraId == funo.Id))
+        {
+            db.PriceSnapshots.Add(new PriceSnapshot
+            {
+                Id = Guid.NewGuid(),
+                FibraId = funo.Id,
+                Ticker = "FUNO11",
+                LastPrice = 24.50m,
+                DailyChange = 0.15m,
+                DailyChangePct = 0.62m,
+                Volume = 1_234_567L,
+                Week52High = 28.10m,
+                Week52Low = 20.80m,
+                CapturedAt = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5),
+                Status = MarketDataStatus.Processed,
+            });
+        }
+
+        if (!await db.DailySnapshots.AnyAsync(d => d.FibraId == funo.Id))
+        {
+            db.DailySnapshots.Add(new DailySnapshot
+            {
+                Id = Guid.NewGuid(),
+                FibraId = funo.Id,
+                Ticker = "FUNO11",
+                Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
+                Open = 24.20m,
+                High = 24.60m,
+                Low = 24.10m,
+                Close = 24.50m,
+                Volume = 1_234_567L,
+            });
+        }
+
+        await db.SaveChangesAsync();
     }
 }
