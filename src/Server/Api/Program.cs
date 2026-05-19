@@ -24,6 +24,7 @@ app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
 app.MapCatalog();
+app.MapMarket();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("index.html");

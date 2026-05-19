@@ -11,6 +11,12 @@ export async function fetchAllFibras() {
   return data?.items ?? []
 }
 
+export async function fetchMarketSnapshots() {
+  const { data, error } = await apiClient.GET('/api/v1/market/snapshots')
+  if (error) throw new Error(`Error al obtener market snapshots: ${JSON.stringify(error)}`)
+  return data ?? []
+}
+
 export async function fetchFibraByTicker(ticker: string) {
   const { data, error, response } = await apiClient.GET('/api/v1/fibras/{ticker}', {
     params: { path: { ticker } },

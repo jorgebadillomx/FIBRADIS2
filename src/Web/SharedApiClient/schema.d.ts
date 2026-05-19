@@ -277,6 +277,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MarketSnapshotDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -316,6 +351,25 @@ export interface components {
         };
         LoginResponse: {
             accessToken: string;
+        };
+        MarketSnapshotDto: {
+            /** Format: uuid */
+            fibraId: string;
+            ticker: string;
+            /** Format: double */
+            lastPrice: null | number | string;
+            /** Format: double */
+            dailyChange: null | number | string;
+            /** Format: double */
+            dailyChangePct: null | number | string;
+            /** Format: int64 */
+            volume: null | number | string;
+            /** Format: double */
+            week52High: null | number | string;
+            /** Format: double */
+            week52Low: null | number | string;
+            capturedAt: null | string;
+            freshnessStatus: null | string;
         };
         PagedResultOfFibraListItem: {
             items: components["schemas"]["FibraListItem"][];

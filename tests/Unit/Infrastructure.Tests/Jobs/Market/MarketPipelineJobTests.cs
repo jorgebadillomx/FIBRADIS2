@@ -197,4 +197,7 @@ internal sealed class FakeMarketRepository : IMarketRepository
         UpsertedDailies.Add(snapshot);
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<PriceSnapshot>>([]);
 }
