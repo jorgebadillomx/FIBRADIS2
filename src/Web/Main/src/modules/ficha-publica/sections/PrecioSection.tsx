@@ -1,8 +1,15 @@
+import { FreshnessBadge } from '@/shared/ui/freshness-badge'
+
 export function PrecioSection() {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 flex items-center gap-3">
-      <span className="text-2xl font-semibold text-muted-foreground">—</span>
-      <span className="text-sm text-muted-foreground">Precio de mercado disponible en Épica 3</span>
+    <div className="rounded-xl border border-border bg-surface-elevated px-5 py-4">
+      <div className="flex items-end gap-3">
+        <span className="text-4xl font-bold tabular-nums tracking-tight text-muted-foreground">—</span>
+        <div className="pb-1 space-y-1">
+          <FreshnessBadge status="off-hours" />
+          <p className="text-xs text-muted-foreground/60">Precio en tiempo real disponible en Épica 3</p>
+        </div>
+      </div>
     </div>
   )
 }

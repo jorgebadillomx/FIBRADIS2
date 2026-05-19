@@ -8,6 +8,18 @@ import { FundamentalesSection } from './sections/FundamentalesSection'
 import { DistribucionesSection } from './sections/DistribucionesSection'
 import { NoticiasSection } from './sections/NoticiasSection'
 import { ReportesSection } from './sections/ReportesSection'
+import { FreshnessBadge } from '@/shared/ui/freshness-badge'
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+        {title}
+      </h2>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  )
+}
 
 function FibraPageSkeleton() {
   return (
@@ -77,28 +89,39 @@ export function FibraPage() {
       <div>
         <h1 className="sr-only">{fibra!.fullName} ({fibra!.ticker}) | FIBRADIS</h1>
         <header className="sticky top-14 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 py-3 space-y-1">
-            <div className="flex items-center justify-between gap-4">
+          <div className="container mx-auto px-4 pt-3 pb-0">
+            <div className="flex items-start justify-between gap-4">
+              {/* Identidad de la FIBRA */}
               <div className="min-w-0">
-                <span className="text-lg font-semibold">{fibra!.ticker}</span>
-                <span className="ml-2 text-sm text-muted-foreground truncate">{fibra!.fullName}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold tracking-tight">{fibra!.ticker}</span>
+                  <span className="text-sm text-muted-foreground truncate hidden sm:block">{fibra!.fullName}</span>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
+                  <span>{fibra!.sector}</span>
+                  <span className="text-border">·</span>
+                  <span>{fibra!.market}</span>
+                  <span className="text-border">·</span>
+                  <span>{fibra!.currency}</span>
+                </div>
               </div>
-              <div className="hidden sm:flex shrink-0 flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>{fibra!.sector}</span>
-                <span>{fibra!.market}</span>
-                <span>{fibra!.currency}</span>
-                <span>{fibra!.state}</span>
+              {/* Precio placeholder — Épica 3 reemplaza este bloque con precio real */}
+              <div className="flex items-center gap-2 shrink-0 pt-1">
+                <span className="text-2xl font-semibold tabular-nums text-muted-foreground">—</span>
+                <FreshnessBadge status="off-hours" />
               </div>
             </div>
-            <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <span>{fibra!.sector}</span>
-              <span>{fibra!.market}</span>
-              <span>{fibra!.currency}</span>
-              <span>{fibra!.state}</span>
-            </div>
-            <nav aria-label="Navegación de secciones de la ficha" className="flex gap-4 overflow-x-auto text-sm text-muted-foreground pb-0.5">
+            {/* Anclas de sección */}
+            <nav
+              aria-label="Navegación de secciones de la ficha"
+              className="flex gap-1 overflow-x-auto mt-3 -mx-1"
+            >
               {SECTION_LABELS.map((s) => (
-                <a key={s.href} href={s.href} className="hover:text-foreground transition-colors shrink-0">
+                <a
+                  key={s.href}
+                  href={s.href}
+                  className="shrink-0 px-3 pb-2.5 pt-1 text-sm text-muted-foreground hover:text-foreground hover:border-b-2 hover:border-brand transition-colors"
+                >
                   {s.label}
                 </a>
               ))}
@@ -106,31 +129,31 @@ export function FibraPage() {
           </div>
         </header>
 
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="container mx-auto px-4 py-6 space-y-10">
           <PrecioSection />
 
-          <section id="mercado" className="space-y-2">
-            <h2 className="text-base font-semibold">{SECTION_TITLES.mercado}</h2>
+          <section id="mercado" className="scroll-mt-32 space-y-4">
+            <SectionHeader title={SECTION_TITLES.mercado} />
             <MercadoSection />
           </section>
 
-          <section id="fundamentales" className="space-y-2">
-            <h2 className="text-base font-semibold">{SECTION_TITLES.fundamentales}</h2>
+          <section id="fundamentales" className="scroll-mt-32 space-y-4">
+            <SectionHeader title={SECTION_TITLES.fundamentales} />
             <FundamentalesSection />
           </section>
 
-          <section id="distribuciones" className="space-y-2">
-            <h2 className="text-base font-semibold">{SECTION_TITLES.distribuciones}</h2>
+          <section id="distribuciones" className="scroll-mt-32 space-y-4">
+            <SectionHeader title={SECTION_TITLES.distribuciones} />
             <DistribucionesSection />
           </section>
 
-          <section id="noticias" className="space-y-2">
-            <h2 className="text-base font-semibold">{SECTION_TITLES.noticias}</h2>
+          <section id="noticias" className="scroll-mt-32 space-y-4">
+            <SectionHeader title={SECTION_TITLES.noticias} />
             <NoticiasSection />
           </section>
 
-          <section id="reportes" className="space-y-2">
-            <h2 className="text-base font-semibold">{SECTION_TITLES.reportes}</h2>
+          <section id="reportes" className="scroll-mt-32 space-y-4">
+            <SectionHeader title={SECTION_TITLES.reportes} />
             <ReportesSection
               siteUrl={fibra!.siteUrl ?? null}
               investorUrl={fibra!.investorUrl ?? null}

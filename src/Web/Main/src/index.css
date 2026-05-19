@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* shadcn base tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -25,10 +26,23 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* FIBRADIS semantic tokens */
+  --color-positive: var(--positive);
+  --color-positive-muted: var(--positive-muted);
+  --color-negative: var(--negative);
+  --color-negative-muted: var(--negative-muted);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
+  --color-brand: var(--brand);
+  --color-brand-muted: var(--brand-muted);
+  --color-surface-elevated: var(--surface-elevated);
 }
 
 :root {
   --radius: 0.625rem;
+
+  /* shadcn base palette */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -48,6 +62,25 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+
+  /* FIBRADIS brand — plusvalía, Fresh, subida de precio */
+  --positive: oklch(0.527 0.154 150.069);
+  --positive-muted: oklch(0.527 0.154 150.069 / 0.12);
+
+  /* FIBRADIS brand — minusvalía, Crítico, bajada de precio */
+  --negative: oklch(0.577 0.245 27.325);
+  --negative-muted: oklch(0.577 0.245 27.325 / 0.12);
+
+  /* FIBRADIS brand — Stale, advertencias, datos parciales */
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-muted: oklch(0.769 0.188 70.08 / 0.14);
+
+  /* FIBRADIS brand — acción primaria, score, links activos */
+  --brand: oklch(0.546 0.245 262.881);
+  --brand-muted: oklch(0.546 0.245 262.881 / 0.1);
+
+  /* Superficie elevada para KPI cards y filas expandidas */
+  --surface-elevated: oklch(0.991 0 0);
 }
 
 .dark {
