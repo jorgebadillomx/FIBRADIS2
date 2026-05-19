@@ -139,18 +139,29 @@ public class ApiWebFactory : WebApplicationFactory<Program>
 
         if (!await db.DailySnapshots.AnyAsync(d => d.FibraId == funo.Id))
         {
-            db.DailySnapshots.Add(new DailySnapshot
+            // Datos en múltiples puntos temporales para poder distinguir períodos en tests:
+            //   5 días  → dentro de 1m, 3m, 6m, 1y
+            //  20 días  → dentro de 1m, 3m, 6m, 1y
+            //  50 días  → fuera de 1m, dentro de 3m, 6m, 1y
+            // 110 días  → fuera de 1m y 3m, dentro de 6m, 1y
+            // 220 días  → fuera de 1m, 3m y 6m, dentro de 1y
+            // 400 días  → fuera de todos los períodos
+            var offsets = new[] { 5, 20, 50, 110, 220, 400 };
+            foreach (var daysAgo in offsets)
             {
-                Id = Guid.NewGuid(),
-                FibraId = funo.Id,
-                Ticker = "FUNO11",
-                Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
-                Open = 24.20m,
-                High = 24.60m,
-                Low = 24.10m,
-                Close = 24.50m,
-                Volume = 1_234_567L,
-            });
+                db.DailySnapshots.Add(new DailySnapshot
+                {
+                    Id = Guid.NewGuid(),
+                    FibraId = funo.Id,
+                    Ticker = "FUNO11",
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-daysAgo)),
+                    Open = 24.00m,
+                    High = 24.80m,
+                    Low = 23.90m,
+                    Close = 24.50m,
+                    Volume = 1_000_000L,
+                });
+            }
         }
 
         await db.SaveChangesAsync();

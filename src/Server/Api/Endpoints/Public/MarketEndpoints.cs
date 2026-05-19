@@ -62,20 +62,15 @@ public static class MarketEndpoints
             {
                 "1m" => 30,
                 "3m" => 90,
-                "6m" => 90,
-                "1y" => 90,
-                _ => 90,
+                "6m" => 180,
+                "1y" => 365,
+                _ => 30,
             };
 
-            var snapshotsTask = marketRepo.GetDailySnapshotsAsync(fibra.Id, days, ct);
-            var distributionsTask = marketRepo.GetDistributionsAsync(fibra.Id, maxDays: 365, ct);
-            var latestTask = marketRepo.GetLatestSnapshotPerFibraAsync(ct);
-
-            await Task.WhenAll(snapshotsTask, distributionsTask, latestTask);
-
-            var snapshots = snapshotsTask.Result;
-            var distributions = distributionsTask.Result;
-            var lastPrice = latestTask.Result.FirstOrDefault(s => s.FibraId == fibra.Id)?.LastPrice;
+            var snapshots = await marketRepo.GetDailySnapshotsAsync(fibra.Id, days, ct);
+            var distributions = await marketRepo.GetDistributionsAsync(fibra.Id, maxDays: 365, ct);
+            var latest = await marketRepo.GetLatestSnapshotPerFibraAsync(ct);
+            var lastPrice = latest.FirstOrDefault(s => s.FibraId == fibra.Id)?.LastPrice;
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var annualizedYield = YieldCalculator.Calculate(distributions, lastPrice, today);
