@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMarketSnapshots, fetchAllFibras } from '@/api/fibrasApi'
-import { FreshnessBadge } from '@/shared/ui/freshness-badge'
-import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
-import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
+import { toNum } from '@/shared/lib/format-time'
 
 const CARD_WIDTH = 144 + 12 // w-36 (144px) + gap-3 (12px)
 const AUTO_SCROLL_MS = 3000
@@ -88,7 +86,7 @@ export function PriceCarousel() {
           const fibra = fibraByTicker[snap.ticker]
           const lastPrice = toNum(snap.lastPrice)
           const changePct = toNum(snap.dailyChangePct)
-          const hasPrice = lastPrice != null && snap.freshnessStatus != null
+          const hasPrice = lastPrice != null
           return (
             <a
               key={snap.ticker}
@@ -112,12 +110,6 @@ export function PriceCarousel() {
                         {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
                       </p>
                     )}
-                    <div className="flex justify-end mt-0.5">
-                      <FreshnessBadge
-                        status={snap.freshnessStatus as FreshnessStatus}
-                        lastUpdated={snap.capturedAt ? formatRelativeTime(snap.capturedAt) : undefined}
-                      />
-                    </div>
                   </>
                 ) : (
                   <p className="text-sm font-bold tabular-nums text-muted-foreground">—</p>

@@ -118,6 +118,14 @@ Assert.All(priceHistory, p =>
     Assert.True(DateOnly.Parse(p.date) >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30))));
 ```
 
+## PriceCarousel — decisiones de diseño vigentes (historia 2.5)
+
+`src/Web/Main/src/modules/home/PriceCarousel.tsx`
+
+- **`FreshnessBadge` eliminado intencionalmente** — el carrusel ya no muestra el badge de frescura de datos. Esta decisión es deliberada (la tarjeta compacta horizontal no tiene espacio y el badge aportaba ruido visual en ese contexto). **No restaurar** en futuros reviews ni historias salvo decisión explícita del equipo.
+- `hasPrice = lastPrice != null` — la condición anterior (`lastPrice != null && snap.freshnessStatus != null`) fue reemplazada; el precio se muestra si existe independientemente de `freshnessStatus`.
+- La tarjeta usa layout horizontal compacto (`flex items-center justify-between`) con auto-scroll automático cada 3 s (pausa al hacer hover).
+
 ## Hallazgos de review no bloqueantes — cómo no perderlos
 
 Cuando un hallazgo de code review no bloquea el cierre de la historia pero representa deuda real:
