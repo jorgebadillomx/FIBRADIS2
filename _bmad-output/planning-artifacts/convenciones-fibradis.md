@@ -70,6 +70,54 @@ Antes de marcar `done`, verificar:
 
 Estas verificaciones no las cubre el test suite — requieren browser o curl en dev server.
 
+## EF Core — nunca `Task.WhenAll` con el mismo DbContext
+
+El `DbContext` es Scoped (una instancia por request) y **no es thread-safe**. Ejecutar queries en paralelo sobre la misma instancia lanza `InvalidOperationException` en SQL Server real, aunque pase sin error con el proveedor InMemory usado en tests.
+
+```csharp
+// MAL — causa 500 en producción, pasa en tests InMemory
+var t1 = repo.GetDailySnapshotsAsync(id, days, ct);
+var t2 = repo.GetDistributionsAsync(id, 365, ct);
+await Task.WhenAll(t1, t2);
+
+// BIEN — siempre secuencial cuando comparten DbContext
+var snapshots = await repo.GetDailySnapshotsAsync(id, days, ct);
+var dists     = await repo.GetDistributionsAsync(id, 365, ct);
+```
+
+**Regla**: si el endpoint llama a más de un método del mismo repositorio, usar `await` secuencial. La ganancia de paralelismo no existe cuando el cuello de botella es la misma conexión de BD.
+
+## Tests de integración — seed temporal y assertions semánticas
+
+Dos patrones que enmascaran bugs de lógica:
+
+**1. Seed con un solo punto de datos**
+Si el endpoint filtra por fecha/período, sembrar datos en múltiples puntos temporales. Con un solo registro, todos los períodos devuelven el mismo resultado y un mapeo incorrecto (`"6m" => 90` en vez de 180) pasa invisible.
+
+Patrón recomendado para endpoints con filtro temporal:
+```csharp
+// Cubrir todos los rangos relevantes: dentro y fuera de cada período
+var offsets = new[] { 5, 20, 50, 110, 220, 400 }; // días atrás
+foreach (var d in offsets)
+    db.Table.Add(new Entity { Date = today.AddDays(-d), ... });
+```
+
+**2. Assertions solo de status code**
+Verificar `200 OK` y estructura JSON no es suficiente. Los tests deben validar **contenido semántico**:
+- El período `"1m"` devuelve menos filas que `"1y"`
+- Las fechas retornadas caen dentro del rango esperado
+- Períodos distintos producen resultados distintos
+
+```csharp
+// Mal: solo verifica que no explota
+Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+// Bien: verifica que el filtro funciona
+Assert.Equal(2, priceHistory.Count); // seed tiene 2 puntos en los últimos 30 días
+Assert.All(priceHistory, p =>
+    Assert.True(DateOnly.Parse(p.date) >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30))));
+```
+
 ## Hallazgos de review no bloqueantes — cómo no perderlos
 
 Cuando un hallazgo de code review no bloquea el cierre de la historia pero representa deuda real:

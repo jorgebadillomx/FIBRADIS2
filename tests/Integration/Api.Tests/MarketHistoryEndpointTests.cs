@@ -128,6 +128,77 @@ public class MarketHistoryEndpointTests(ApiWebFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    // El seed incluye DailySnapshots a 5, 20, 50, 110, 220 y 400 días atrás.
+    // Si el mapeo período→días es correcto, cada período devuelve un subconjunto distinto:
+    //   1m (30d)  → 5, 20                    = 2 puntos
+    //   3m (90d)  → 5, 20, 50                = 3 puntos
+    //   6m (180d) → 5, 20, 50, 110           = 4 puntos
+    //   1y (365d) → 5, 20, 50, 110, 220      = 5 puntos  (400d queda fuera)
+    // Si todos los períodos mapearan a 90 días (bug original), 6m y 1y devolverían 3 puntos
+    // igual que 3m y el test fallaría.
+    [Theory]
+    [InlineData("1m", 2)]
+    [InlineData("3m", 3)]
+    [InlineData("6m", 4)]
+    [InlineData("1y", 5)]
+    public async Task GetHistory_Period_ReturnsCorrectNumberOfDataPoints(string period, int expectedCount)
+    {
+        await EnsureSeededAsync();
+
+        var response = await _client.GetAsync($"/api/v1/market/fibras/FUNO11/history?period={period}");
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var priceHistory = doc.RootElement.GetProperty("priceHistory").EnumerateArray().ToList();
+
+        Assert.Equal(expectedCount, priceHistory.Count);
+    }
+
+    [Theory]
+    [InlineData("1m", 30)]
+    [InlineData("3m", 90)]
+    [InlineData("6m", 180)]
+    [InlineData("1y", 365)]
+    public async Task GetHistory_Period_AllDatesWithinExpectedRange(string period, int maxDays)
+    {
+        await EnsureSeededAsync();
+
+        var response = await _client.GetAsync($"/api/v1/market/fibras/FUNO11/history?period={period}");
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var priceHistory = doc.RootElement.GetProperty("priceHistory").EnumerateArray().ToList();
+
+        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-maxDays));
+        Assert.All(priceHistory, point =>
+        {
+            var date = DateOnly.Parse(point.GetProperty("date").GetString()!);
+            Assert.True(date >= cutoff,
+                $"Período {period}: fecha {date} es anterior al corte {cutoff} ({maxDays} días)");
+        });
+    }
+
+    [Fact]
+    public async Task GetHistory_LongerPeriodReturnsMorePointsThanShorter()
+    {
+        await EnsureSeededAsync();
+
+        async Task<int> Count(string period)
+        {
+            var r = await _client.GetAsync($"/api/v1/market/fibras/FUNO11/history?period={period}");
+            var body = await r.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.GetProperty("priceHistory").EnumerateArray().Count();
+        }
+
+        var count1m = await Count("1m");
+        var count3m = await Count("3m");
+        var count6m = await Count("6m");
+        var count1y  = await Count("1y");
+
+        Assert.True(count1m < count3m,  $"1m ({count1m}) debe ser < 3m ({count3m})");
+        Assert.True(count3m < count6m,  $"3m ({count3m}) debe ser < 6m ({count6m})");
+        Assert.True(count6m < count1y,  $"6m ({count6m}) debe ser < 1y ({count1y})");
+    }
+
     [Fact]
     public async Task GetHistory_TickerIsCaseInsensitive()
     {
