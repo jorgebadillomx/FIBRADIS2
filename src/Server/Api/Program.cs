@@ -25,6 +25,7 @@ app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
 app.MapNewsBlocklist();
+app.MapNews();
 app.MapCatalog();
 app.MapMarket();
 

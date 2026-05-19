@@ -4,7 +4,7 @@ import {
   type ReportesSectionData,
 } from './reportes'
 
-interface Props extends ReportesSectionData {}
+type Props = ReportesSectionData
 
 export function ReportesSection({ siteUrl, investorUrl, reportsUrl }: Props) {
   const reportes = {

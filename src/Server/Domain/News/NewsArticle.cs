@@ -12,4 +12,5 @@ public class NewsArticle
     public NewsArticleStatus Status { get; set; } = NewsArticleStatus.Pending;
     public DateTimeOffset CapturedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? ErrorReason { get; set; }
+    public ICollection<NewsArticleFibra> FibraLinks { get; set; } = [];
 }

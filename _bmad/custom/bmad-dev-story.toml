@@ -4,6 +4,17 @@
 
 [workflow]
 
+# Buscar en mem0 ANTES de leer el story file — recupera patrones y decisiones de historias anteriores.
+# El tema debe coincidir con el área técnica de la historia (auth, market, noticias, catálogo, etc.).
+# Si el comando falla o no hay resultados, continúa normalmente.
+activation_steps_prepend = [
+  "Ejecuta `python scripts/memory/memory_cli.py search \"<tema principal de la historia>\"` para recuperar contexto de historias anteriores relacionado con el área técnica que vas a implementar. Si hay resultados, tenlos en cuenta durante la implementación.",
+]
+
+# Guardar en mem0 al completar — SOLO si aplica alguna de las condiciones documentadas en AGENTS.md.
+# Formato obligatorio: "contexto: <área> | problema: <qué pasó> | solución: <cómo se resolvió>"
+on_complete = "Antes de cerrar, evalúa las condiciones de mem0 en AGENTS.md. Si aplica alguna, guarda con: python scripts/memory/memory_cli.py add \"contexto: <área> | problema: <qué pasó> | solución: <cómo se resolvió>\"."
+
 # Convenciones del proyecto cargadas en cada activación del skill.
 # El agente las lee como contexto obligatorio antes de comenzar la historia.
 persistent_facts = [

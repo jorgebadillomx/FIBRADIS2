@@ -57,6 +57,7 @@ internal sealed class FakeNewsRepository : INewsRepository
 {
     public List<string>? LastCandidateUrls { get; private set; }
     public List<NewsArticle> SavedArticles { get; } = [];
+    public List<Guid> SavedFibraLinks { get; } = [];
 
     public Task<bool> ExistsByUrlAsync(string url, CancellationToken ct = default) => Task.FromResult(false);
 
@@ -69,13 +70,17 @@ internal sealed class FakeNewsRepository : INewsRepository
     public Task<IReadOnlyList<string>> GetRecentNormalizedTitlesAsync(DateTimeOffset since, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<string>>([]);
 
-    public Task AddAsync(NewsArticle article, CancellationToken ct = default)
+    public Task AddWithLinksAsync(NewsArticle article, IEnumerable<Guid> fibraIds, CancellationToken ct = default)
     {
         SavedArticles.Add(article);
+        SavedFibraLinks.AddRange(fibraIds);
         return Task.CompletedTask;
     }
 
     public Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
+
+    public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
 }
 

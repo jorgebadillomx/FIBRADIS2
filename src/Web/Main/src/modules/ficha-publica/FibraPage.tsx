@@ -185,7 +185,7 @@ export function FibraPage() {
 
           <section id="noticias" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.noticias} />
-            <NoticiasSection />
+            <NoticiasSection fibraId={fibra!.id} />
           </section>
 
           <section id="reportes" className="scroll-mt-32 space-y-4">

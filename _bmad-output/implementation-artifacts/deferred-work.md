@@ -19,6 +19,17 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **`[DisableConcurrentExecution]` ausente en `NewsPipelineJob`** [`NewsPipelineJob.cs`] — Hangfire puede solapar ejecuciones si una tarda más de 1h. El unique index en URL absorbe duplicados con `errors++` espurios. Agregar el atributo junto con la próxima modificación del job.
 - **Test del pipeline no cubre general queries** [`NewsPipelineJobTests.cs`] — `FakeRssClient` retorna el mismo set para cualquier query; una regresión que elimine el `foreach (GeneralQueries)` no sería detectada. Agregar test explícito cuando se extienda el job.
 
+## Deferred from: code review of 4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha (2026-05-19)
+
+- **`GetLatestForFibraAsync` NullReferenceException teórico** [`NewsRepository.cs:58-65`] — EF Core genera INNER JOIN; filas huérfanas son imposibles con FK+cascade. Solo relevante ante corrupción directa de BD.
+- **AC2 sin test de integración** [`NewsEndpoints.cs`] — `Associate_NoMatchReturnsEmpty` cubre la lógica; falta test end-to-end que verifique artículo sin asociación aparece en `/api/v1/news` pero no en `/api/v1/news/fibras/{id}`.
+- **`JSON.stringify(error)` en mensajes de throw** [`newsApi.ts`, `fibraNewsApi.ts`] — Patrón heredado de `fibrasApi.ts`. No llega al usuario final pero sería mejor serializar solo el status o el `domainCode`.
+
+## Deferred from: code review of 4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha — 2ª pasada (2026-05-19)
+
+- **DbContext en estado sucio tras `SaveChangesAsync` fallido** [`NewsRepository.cs:AddWithLinksAsync`] — Tras una `DbUpdateException` (ej. URL duplicada), las entidades en estado `Added` no se desvinculan del tracker. El siguiente `SaveChangesAsync` del mismo scope intenta persistir AMBAS entidades (la fallida + la nueva), repitiendo el error en cascada para el resto del batch. Fix: detach entidades en error tras la excepción, o usar `IDbContextFactory` con un contexto por artículo. Pre-existing del AddAsync de story 4.1.
+- **Variante de nombre que normaliza a ≤2 chars matchea cualquier token del mismo tamaño** [`NewsAssociator.cs:MatchesVariant`] — Si una FIBRA tiene una variante de nombre que `NormalizeTitle` reduce a 1-2 caracteres (datos corruptos o abreviaciones), matcheará casi cualquier artículo. Agregar guard `normalizedVariant.Length >= 3` en `MatchesVariant`. Teórico con datos actuales (variantes son frases multi-word).
+
 ## Deferred from: code review of 2-5-home-topmovers-tabla-y-ganadores-perdedores (2026-05-19)
 
 - **`dailyChangePct = 0` excluido silenciosamente de GainersLosers** [`movers-logic.ts:39,44`] — El filtro `> 0` / `< 0` excluye valores exactamente cero sin indicación al usuario. Comportamiento no especificado en los AC; abordar si el negocio lo requiere.
