@@ -1,6 +1,6 @@
 import { PriceCarousel } from './PriceCarousel'
 import { TopMovers } from './TopMovers'
-import { QuickRanking } from './QuickRanking'
+import { GainersLosers } from './GainersLosers'
 import { NewsSection } from './NewsSection'
 
 export function HomePage() {
@@ -31,8 +31,8 @@ export function HomePage() {
           </div>
         </div>
         <section aria-labelledby="heading-ranking">
-          <h2 id="heading-ranking" className="sr-only">Ranking rápido</h2>
-          <QuickRanking />
+          <h2 id="heading-ranking" className="sr-only">Ganadores y perdedores del día</h2>
+          <GainersLosers />
         </section>
       </div>
     </>

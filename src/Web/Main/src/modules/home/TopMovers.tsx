@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchMarketSnapshots } from '@/api/fibrasApi'
-import { FreshnessBadge } from '@/shared/ui/freshness-badge'
-import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
-import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
+import { toNum } from '@/shared/lib/format-time'
+import { getTopMovers, formatVolume } from './movers-logic'
 
 export function TopMovers() {
   const { data: snapshots = [], isLoading } = useQuery({
@@ -12,74 +11,64 @@ export function TopMovers() {
     refetchInterval: 5 * 60_000,
   })
 
-  const hasAnyChangePct = snapshots.some(s => s.dailyChangePct != null)
-
-  const topMovers = hasAnyChangePct
-    ? [...snapshots]
-        .sort((a, b) => {
-          const absA = toNum(a.dailyChangePct) != null ? Math.abs(toNum(a.dailyChangePct)!) : -1
-          const absB = toNum(b.dailyChangePct) != null ? Math.abs(toNum(b.dailyChangePct)!) : -1
-          return absB - absA
-        })
-        .slice(0, 5)
-    : [...snapshots]
-        .sort((a, b) => a.ticker.localeCompare(b.ticker))
-        .slice(0, 5)
+  const hasAnyChangePct = snapshots.some(s => toNum(s.dailyChangePct) != null)
+  const topMovers = getTopMovers(snapshots, 5)
 
   return (
     <div aria-label="Top movers" className="rounded-xl border border-border bg-surface-elevated overflow-hidden">
       <div className="px-4 pt-4 pb-2 flex items-center gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Movimientos del día</h3>
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Movimientos del día</h3>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">Top 5 con mayor variación % hoy (sube o baja)</p>
+        </div>
         <div className="flex-1 h-px bg-border" />
+      </div>
+
+      <div className="px-4 py-2 border-b border-border grid grid-cols-[2rem_1fr_auto_auto_auto] gap-3 text-xs font-semibold text-muted-foreground">
+        <span>#</span>
+        <span>Ticker</span>
+        <span className="text-right">Cambio</span>
+        <span className="text-right">Precio</span>
+        <span className="text-right">Volumen</span>
       </div>
 
       {isLoading ? (
         <div className="divide-y divide-border animate-pulse">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-4 py-3 flex items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="h-3 w-16 bg-muted rounded" />
-                <div className="h-2.5 w-24 bg-muted rounded" />
-              </div>
-              <div className="text-right space-y-1.5">
-                <div className="h-3 w-14 bg-muted rounded" />
-                <div className="h-2.5 w-10 bg-muted rounded ml-auto" />
-              </div>
+            <div key={i} className="px-4 py-3 grid grid-cols-[2rem_1fr_auto_auto_auto] gap-3 items-center">
+              <div className="h-3 w-5 bg-muted rounded" />
+              <div className="h-3 w-14 bg-muted rounded" />
+              <div className="h-3 w-12 bg-muted rounded" />
+              <div className="h-3 w-16 bg-muted rounded" />
+              <div className="h-3 w-14 bg-muted rounded" />
             </div>
           ))}
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {topMovers.map((snap) => {
+          {topMovers.map((snap, idx) => {
             const lastPrice = toNum(snap.lastPrice)
             const changePct = toNum(snap.dailyChangePct)
+            const vol = toNum(snap.volume)
             return (
               <a
                 key={snap.ticker}
                 href={`/fibras/${snap.ticker}`}
-                className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-muted/30 transition-colors"
+                className="px-4 py-3 grid grid-cols-[2rem_1fr_auto_auto_auto] gap-3 items-center hover:bg-muted/30 transition-colors"
               >
-                <div>
-                  <p className="font-semibold text-sm">{snap.ticker}</p>
-                  {snap.freshnessStatus != null && (
-                    <FreshnessBadge
-                      status={snap.freshnessStatus as FreshnessStatus}
-                      lastUpdated={snap.capturedAt ? formatRelativeTime(snap.capturedAt) : undefined}
-                    />
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm tabular-nums font-medium">
-                    {lastPrice != null ? lastPrice.toFixed(2) : '—'}
-                  </p>
-                  {changePct != null ? (
-                    <p className={`text-xs font-medium ${changePct >= 0 ? 'text-positive' : 'text-negative'}`}>
-                      {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">—</p>
-                  )}
-                </div>
+                <span className="text-xs tabular-nums text-muted-foreground/60 font-medium">{idx + 1}</span>
+                <span className="text-sm font-semibold">{snap.ticker}</span>
+                <span className={`text-sm tabular-nums text-right font-medium ${
+                  changePct == null ? 'text-muted-foreground' : changePct >= 0 ? 'text-positive' : 'text-negative'
+                }`}>
+                  {changePct != null ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : '—'}
+                </span>
+                <span className="text-sm tabular-nums text-right">
+                  {hasAnyChangePct && lastPrice != null ? lastPrice.toFixed(2) : '—'}
+                </span>
+                <span className="text-sm tabular-nums text-right text-muted-foreground">
+                  {hasAnyChangePct && vol != null ? formatVolume(vol) : '—'}
+                </span>
               </a>
             )
           })}
