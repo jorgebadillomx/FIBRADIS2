@@ -12,8 +12,8 @@ namespace Infrastructure.Tests.Jobs.Market;
 public class MarketPipelineJobTests
 {
     private static readonly DateTimeOffset _tradingUtc = new(2026, 5, 19, 15, 0, 0, TimeSpan.Zero); // 10am CDT
-    private static readonly Fibra _fibraFuno = new() { Id = Guid.NewGuid(), Ticker = "FUNO11", State = FibraState.Active };
-    private static readonly Fibra _fibraFmty = new() { Id = Guid.NewGuid(), Ticker = "FMTY14", State = FibraState.Active };
+    private static readonly Fibra _fibraFuno = new() { Id = Guid.NewGuid(), Ticker = "FUNO11", YahooTicker = "FUNO11.MX", State = FibraState.Active };
+    private static readonly Fibra _fibraFmty = new() { Id = Guid.NewGuid(), Ticker = "FMTY14", YahooTicker = "FMTY14.MX", State = FibraState.Active };
 
     private static MarketPipelineJob Build(
         FakeBmvSchedule bmv,

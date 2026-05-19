@@ -36,7 +36,7 @@ public class MarketPipelineJob(
 
         try
         {
-            quotes = await yahooClient.GetQuotesAsync(fibras.Select(f => f.Ticker + ".MX"), ct);
+            quotes = await yahooClient.GetQuotesAsync(fibras.Select(f => f.YahooTicker), ct);
         }
         catch (Exception ex)
         {
@@ -45,7 +45,7 @@ public class MarketPipelineJob(
         }
 
         var quotesBySymbol = quotes.ToDictionary(
-            q => q.Symbol.Replace(".MX", "", StringComparison.OrdinalIgnoreCase),
+            q => q.Symbol,
             q => q,
             StringComparer.OrdinalIgnoreCase);
 
@@ -55,7 +55,7 @@ public class MarketPipelineJob(
         {
             PriceSnapshot snapshot;
 
-            if (!batchFailed && quotesBySymbol.TryGetValue(fibra.Ticker, out var quote))
+            if (!batchFailed && quotesBySymbol.TryGetValue(fibra.YahooTicker, out var quote))
             {
                 snapshot = new PriceSnapshot
                 {
