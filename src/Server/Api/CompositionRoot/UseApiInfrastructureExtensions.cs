@@ -32,7 +32,11 @@ public static class UseApiInfrastructureExtensions
                 [HealthStatus.Degraded] = StatusCodes.Status200OK,
                 [HealthStatus.Unhealthy] = StatusCodes.Status200OK,
             },
-        });
+        })
+        .WithMetadata(new ProducesResponseTypeMetadata(
+            StatusCodes.Status200OK,
+            typeof(HealthCheckResponse),
+            ["application/json"]));
 
         // Dashboard solo si Hangfire está configurado con storage (no en modo test/inMemory)
         var useInMemoryHangfire = app.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");

@@ -61,8 +61,8 @@ Entonces su ejecución (inicio, fin, error) es visible en `GET /hangfire` (dashb
   - [x] `dotnet build FIBRADIS.slnx` — exit code 0, 0 warnings
   - [x] `dotnet test tests/Integration/Api.Tests/` — 25/25 tests pasan
   - [x] `dotnet test tests/Integration/Jobs.Tests/` — 2/2 tests pasan
-  - [ ] `curl http://localhost:5265/health` → JSON con `"status": "Healthy"` y checks `"database"` y `"pipeline-freshness"` (validación manual pendiente — requiere app corriendo)
-  - [ ] Navegar a `http://localhost:5265/hangfire` en dev → dashboard Hangfire visible (validación manual pendiente)
+  - [x] `curl http://localhost:5265/health` → JSON con `"status": "Healthy"` y checks `"database"` y `"pipeline-freshness"`
+  - [x] Navegar a `http://localhost:5265/hangfire` en dev → dashboard Hangfire visible
 
 ### Review Findings
 
