@@ -6,6 +6,7 @@ using Application.Market;
 using Hangfire;
 using Hangfire.SqlServer;
 using Infrastructure.Integrations.Yahoo;
+using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Persistence.Repositories.Catalog;
 using Infrastructure.Persistence.Repositories.Market;
@@ -56,11 +57,8 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<MarketPipelineJob>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
-        builder.Services.AddHttpClient<IYahooFinanceClient, YahooFinanceClient>(client =>
-        {
-            client.BaseAddress = new Uri("https://query1.finance.yahoo.com");
-            client.Timeout = TimeSpan.FromSeconds(15);
-        });
+        builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
+        builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
 
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
