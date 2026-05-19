@@ -1,0 +1,70 @@
+using System.Xml.Linq;
+using Application.News;
+using Microsoft.Extensions.Logging;
+
+namespace Infrastructure.Integrations.GoogleNews;
+
+public class GoogleNewsRssClient(HttpClient http, ILogger<GoogleNewsRssClient> logger) : IRssClient
+{
+    private const string BaseUrl = "https://news.google.com/rss/search";
+
+    public async Task<IReadOnlyList<RssItem>> FetchAsync(string query, CancellationToken ct = default)
+    {
+        var url = $"{BaseUrl}?q={Uri.EscapeDataString(query)}&hl=es-419&gl=MX&ceid=MX:es-419";
+
+        try
+        {
+            var xml = await http.GetStringAsync(url, ct);
+            var doc = XDocument.Parse(xml);
+
+            return doc.Descendants("item")
+                .Select(item =>
+                {
+                    var title = item.Element("title")?.Value ?? string.Empty;
+                    var link = item.Element("link")?.Value ?? string.Empty;
+                    var snippet = item.Element("description")?.Value;
+                    var source = item.Element("source")?.Value ?? string.Empty;
+                    var pubDateStr = item.Element("pubDate")?.Value ?? string.Empty;
+                    var publishedAt = ParsePublishedAt(pubDateStr, query, title);
+
+                    return new RssItem(
+                        Title: title,
+                        Source: source,
+                        PublishedAt: publishedAt == default ? DateTimeOffset.UtcNow : publishedAt,
+                        Url: link,
+                        Snippet: snippet);
+                })
+                .Where(item => !string.IsNullOrWhiteSpace(item.Url))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "RSS fetch failed for query '{Query}'", query);
+            return [];
+        }
+    }
+
+    private DateTimeOffset ParsePublishedAt(string pubDateStr, string query, string title)
+    {
+        if (DateTimeOffset.TryParse(pubDateStr, out var publishedAt))
+            return publishedAt;
+
+        if (string.IsNullOrWhiteSpace(pubDateStr))
+        {
+            logger.LogWarning(
+                "RSS item missing pubDate for query '{Query}' and title '{Title}'",
+                query,
+                title);
+        }
+        else
+        {
+            logger.LogWarning(
+                "RSS item with invalid pubDate '{PubDate}' for query '{Query}' and title '{Title}'",
+                pubDateStr,
+                query,
+                title);
+        }
+
+        return DateTimeOffset.UtcNow;
+    }
+}

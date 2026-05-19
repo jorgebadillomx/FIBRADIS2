@@ -20,6 +20,12 @@ Lee `_bmad-output/planning-artifacts/convenciones-fibradis.md` antes de empezar 
 
 Lee `workflow-rules.md` para las reglas operativas del proyecto: branch por historia, merge a main al completar, y unit tests obligatorios antes de `done`. **Son de cumplimiento estricto — no opcionales.**
 
+### Context7 — documentación técnica actualizada
+
+`context7` está configurado para este proyecto en Claude Code y Codex.
+Úsalo cuando necesites documentación actualizada de librerías, frameworks, APIs o ejemplos de integración y haya riesgo de que el conocimiento del modelo esté desactualizado.
+No lo uses para sustituir el story file, `AGENTS.md`, `workflow-rules.md` o la documentación propia del repo.
+
 ### mem0 — solo cuando el contexto no vive en ningún archivo
 
 **No usar mem0 por defecto.** Usarlo únicamente si:

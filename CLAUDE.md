@@ -24,6 +24,7 @@ python scripts/memory/memory_cli.py add "decisión: ..." # guardar
 3. Implementa siguiendo las reglas en `AGENTS.md` y `_bmad-output/planning-artifacts/convenciones-fibradis.md`
 4. **Lee `workflow-rules.md`** — branch por historia, merge a main al completar, unit tests obligatorios antes de `done`
 5. Usa mem0 solo si aplica alguna de las condiciones de arriba
+6. Usa `context7` cuando necesites documentación actualizada de librerías, frameworks o APIs externas; no sustituye la documentación del proyecto
 
 ## Comandos de Desarrollo
 

@@ -4,6 +4,7 @@ using Api.Endpoints.Private;
 using Api.Endpoints.Public;
 using Hangfire;
 using Infrastructure.Jobs.Market;
+using Infrastructure.Jobs.News;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,7 @@ app.UseStaticFiles();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
+app.MapNewsBlocklist();
 app.MapCatalog();
 app.MapMarket();
 
@@ -43,6 +45,12 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
             cronExpression,
             new RecurringJobOptions { TimeZone = mexicoTz });
     }
+
+    RecurringJob.AddOrUpdate<NewsPipelineJob>(
+        NewsPipelineSchedule.HourlyJobId,
+        j => j.ExecuteAsync(CancellationToken.None),
+        NewsPipelineSchedule.CronExpression,
+        new RecurringJobOptions { TimeZone = mexicoTz });
 }
 
 app.Run();
