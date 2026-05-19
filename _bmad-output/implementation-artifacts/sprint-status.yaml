@@ -37,6 +37,10 @@
 
 generated: 2026-05-15
 last_updated: 2026-05-19
+# story 4-2 done — hallazgos de code review resueltos (2 patches), deferred-work actualizado
+# story 4-2 vuelve a in-progress — 2ª pasada code review: 1 patch pendiente (XSS url href)
+# story 4-2 creada — ready-for-dev
+# story 4-1 done — mergeada a main
 # story 4-1 vuelve a in-progress — 3ª pasada: 2 patches pendientes (NormalizeTerm diacríticos, DbUpdateException amplio)
 # story 4-1 vuelve a review — patches de code review implementados
 # story 4-1 creado — epic-4 moved to in-progress
@@ -85,8 +89,8 @@ development_status:
 
   # ── Épica 4: Noticias y Contenido ─────────────────────────────────────────
   epic-4: in-progress
-  4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias: in-progress
-  4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha: backlog
+  4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias: done
+  4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha: done
   4-3-soporte-para-ai-mode-en-noticias-off-y-manual: backlog
   epic-4-retrospective: optional
 

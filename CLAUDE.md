@@ -2,19 +2,31 @@
 
 Lee `AGENTS.md` para el contexto completo del proyecto y las instrucciones de memoria compartida con otros agentes.
 
-## mem0 — solo cuando el contexto no vive en ningún archivo
+## mem0 — contexto que trasciende el story file
 
-**No usar mem0 por defecto.** El contexto de cada historia vive en el story file (Dev Notes, Dev Agent Record). Usar mem0 únicamente si:
+El skill `bmad-dev-story` y `bmad-code-review` ejecutan automáticamente búsquedas en mem0 al activarse. No necesitas hacerlo manualmente en la mayoría de casos.
+
+**Cuándo guardar manualmente:** solo si aplica una de estas condiciones exactas:
 
 1. Tomaste una decisión que contradice o extiende el story file Y afectará historias futuras.
-2. Detectaste un patrón de error recurrente que no está en ningún story ni en `AGENTS.md`.
-3. Encontraste una restricción del proyecto no documentada en ningún archivo.
+2. Detectaste un patrón de error recurrente no documentado en ningún story ni en `AGENTS.md`.
+3. Encontraste una restricción del toolchain no documentada en ningún archivo.
 
-Si aplica, los comandos son:
+**Formato obligatorio al guardar:**
+- Decisión técnica: `"contexto: <área> | problema: <qué pasó> | solución: <cómo se resolvió>"`
+- Patrón de review: `"patrón review: <área> | antipatrón: <qué evitar> | corrección: <cómo hacerlo bien>"`
 
+**Ejemplos reales de memorias válidas (tomadas de Épicas 1-3):**
+- `"contexto: scaffolding frontend | problema: npm create vite@latest instala Vite 8 en lugar de Vite 7 | solución: usar npm create vite@7 para fijar versión exacta"`
+- `"contexto: CPM + dotnet templates | problema: dotnet new agrega versiones inline en .csproj | solución: limpiar después de cada scaffold, solo definir versiones en Directory.Packages.props"`
+- `"contexto: auth JWT | problema: ExecuteUpdateAsync sin WHERE RevokedAt IS NULL permite race condition en refresh tokens | solución: siempre añadir condición atómica al invalidar tokens"`
+- `"patrón review: auth | antipatrón: Cookie.Secure basada en comparación literal de hostname | corrección: usar Request.IsHttps"`
+
+**Comandos:**
 ```bash
-python scripts/memory/memory_cli.py search "<tema>"   # buscar
-python scripts/memory/memory_cli.py add "decisión: ..." # guardar
+python scripts/memory/memory_cli.py search "<tema>"     # buscar
+python scripts/memory/memory_cli.py add "<memoria>"     # guardar
+python scripts/memory/memory_cli.py list                # listar todo
 ```
 
 ## Flujo de Trabajo

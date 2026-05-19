@@ -32,9 +32,19 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .Select(n => n.TitleNormalized)
             .ToListAsync(ct);
 
-    public async Task AddAsync(NewsArticle article, CancellationToken ct = default)
+    public async Task AddWithLinksAsync(NewsArticle article, IEnumerable<Guid> fibraIds, CancellationToken ct = default)
     {
         db.NewsArticles.Add(article);
+
+        foreach (var fibraId in fibraIds.Distinct())
+        {
+            db.NewsArticleFibras.Add(new NewsArticleFibra
+            {
+                NewsArticleId = article.Id,
+                FibraId = fibraId,
+            });
+        }
+
         await db.SaveChangesAsync(ct);
     }
 
@@ -42,6 +52,15 @@ public class NewsRepository(AppDbContext db) : INewsRepository
         => await db.NewsArticles
             .Where(n => n.Status == NewsArticleStatus.Pending || n.Status == NewsArticleStatus.Processed)
             .OrderByDescending(n => n.PublishedAt)
+            .Take(count)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
+        => await db.NewsArticleFibras
+            .Where(link => link.FibraId == fibraId)
+            .Select(link => link.NewsArticle)
+            .Where(article => article.Status == NewsArticleStatus.Pending || article.Status == NewsArticleStatus.Processed)
+            .OrderByDescending(article => article.PublishedAt)
             .Take(count)
             .ToListAsync(ct);
 }

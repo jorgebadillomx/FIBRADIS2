@@ -285,6 +285,61 @@
         }
       }
     },
+    "/api/v1/news": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewsArticleDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/news/fibras/{fibraId}": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "name": "fibraId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewsArticleDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/fibras": {
       "get": {
         "tags": [
@@ -817,6 +872,42 @@
             ]
           },
           "freshnessStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "NewsArticleDto": {
+        "required": [
+          "id",
+          "title",
+          "source",
+          "publishedAt",
+          "url",
+          "snippet"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string"
+          },
+          "snippet": {
             "type": [
               "null",
               "string"

@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<DailySnapshot> DailySnapshots => Set<DailySnapshot>();
     public DbSet<Distribution> Distributions => Set<Distribution>();
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
+    public DbSet<NewsArticleFibra> NewsArticleFibras => Set<NewsArticleFibra>();
     public DbSet<BlocklistTerm> BlocklistTerms => Set<BlocklistTerm>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

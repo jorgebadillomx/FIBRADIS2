@@ -22,6 +22,9 @@ public class NewsPipelineJob(
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
         var fibras = await fibraRepo.GetAllActiveAsync(ct);
+        var fibraMatchInfos = fibras
+            .Select(f => new FibraMatchInfo(f.Id, f.Ticker, f.NameVariants.AsReadOnly()))
+            .ToList();
         var blocklistTerms = await blocklistRepo.GetAllTermsAsync(ct);
         var since24h = DateTimeOffset.UtcNow.AddHours(-24);
 
@@ -71,8 +74,9 @@ public class NewsPipelineJob(
                     Status = NewsArticleStatus.Pending,
                     CapturedAt = DateTimeOffset.UtcNow,
                 };
+                var fibraIds = NewsAssociator.Associate(item, fibraMatchInfos);
 
-                await newsRepo.AddAsync(article, ct);
+                await newsRepo.AddWithLinksAsync(article, fibraIds, ct);
                 saved++;
             }
             catch (Exception ex)

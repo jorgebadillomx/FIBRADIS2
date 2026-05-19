@@ -26,19 +26,42 @@ Lee `workflow-rules.md` para las reglas operativas del proyecto: branch por hist
 Úsalo cuando necesites documentación actualizada de librerías, frameworks, APIs o ejemplos de integración y haya riesgo de que el conocimiento del modelo esté desactualizado.
 No lo uses para sustituir el story file, `AGENTS.md`, `workflow-rules.md` o la documentación propia del repo.
 
-### mem0 — solo cuando el contexto no vive en ningún archivo
+### mem0 — contexto que trasciende el story file
 
-**No usar mem0 por defecto.** Usarlo únicamente si:
+Los skills `bmad-dev-story` y `bmad-code-review` buscan en mem0 automáticamente al activarse (`activation_steps_prepend`). No es necesario hacerlo de forma manual en cada historia.
 
-1. Tomaste una decisión que contradice o extiende el story file Y afectará historias futuras.
-2. Detectaste un patrón de error recurrente no documentado en ningún story ni aquí.
-3. Encontraste una restricción del proyecto no documentada en ningún archivo.
+**Cuándo guardar — condiciones exactas:**
 
-Si aplica:
+| Condición | Ejemplos reales de Épicas 1-3 |
+|---|---|
+| Decisión que afectará historias futuras | shadcn@4.6.0 requerido (v4.7 tiene bug de workspace) |
+| Patrón de error recurrente no documentado | dotnet new agrega versiones inline (rompe CPM) |
+| Restricción del toolchain no documentada | npm create vite@latest instala la versión más reciente, no la especificada |
 
+**Qué NO guardar en mem0:**
+- Estado de una historia específica → va en el story file (Dev Agent Record)
+- Convenciones del proyecto → van en `convenciones-fibradis.md`
+- Decisiones de arquitectura → van en `docs/req/architecture.md`
+- Cambios de código → van en git history
+
+**Formato obligatorio:**
+- Decisión: `"contexto: <área> | problema: <qué pasó> | solución: <cómo se resolvió>"`
+- Review: `"patrón review: <área> | antipatrón: <qué evitar> | corrección: <cómo hacerlo bien>"`
+
+**Ejemplos reales válidos:**
+```
+"contexto: scaffolding frontend | problema: npm create vite@latest instala Vite 8 en lugar de Vite 7 | solución: usar npm create vite@7 para fijar versión exacta"
+"contexto: auth JWT | problema: ExecuteUpdateAsync sin WHERE RevokedAt IS NULL — race condition en refresh tokens | solución: añadir condición atómica WHERE RevokedAt IS NULL"
+"contexto: CPM + dotnet | problema: dotnet new agrega versiones inline en .csproj | solución: limpiar inline versions después de cada scaffold"
+"patrón review: auth | antipatrón: Cookie.Secure basada en hostname literal | corrección: usar Request.IsHttps"
+"patrón review: auth | antipatrón: JWT placeholder con ValidateOnStart() solo en Development — deja pasar tokens con clave conocida en otros ambientes | corrección: validación estricta en todos los ambientes"
+```
+
+**Comandos:**
 ```bash
 python scripts/memory/memory_cli.py search "<tema>"     # buscar
-python scripts/memory/memory_cli.py add "decisión: ..."  # guardar
+python scripts/memory/memory_cli.py add "<memoria>"     # guardar
+python scripts/memory/memory_cli.py list                # listar todo
 ```
 
 Los archivos semilla están en `project-memory/seeds/`.

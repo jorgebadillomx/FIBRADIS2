@@ -7,7 +7,11 @@
       "Bash(python \"c:/Users/jorge/source/repos/FIBRADIS/_bmad/scripts/resolve_customization.py\" --skill \"c:/Users/jorge/source/repos/FIBRADIS/.claude/skills/bmad-dev-story\" --key workflow)",
       "Bash(dotnet --version)",
       "Bash(npm --version)",
-      "Bash(dotnet --list-sdks)"
+      "Bash(dotnet --list-sdks)",
+      "Bash(python scripts/memory/memory_cli.py search *)",
+      "Bash(python scripts/memory/memory_cli.py add *)",
+      "Bash(python scripts/memory/memory_cli.py list)",
+      "Bash(python scripts/memory/memory_cli.py delete *)"
     ]
   }
 }

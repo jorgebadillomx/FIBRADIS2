@@ -4,6 +4,17 @@
 
 [workflow]
 
+# Buscar en mem0 ANTES de revisar — recupera antipatrones y hallazgos de reviews anteriores.
+# Incluye el tema en la búsqueda: auth, market pipeline, ingesta RSS, catálogo, etc.
+# Si el comando falla, continúa con el checklist estándar.
+activation_steps_prepend = [
+  "Ejecuta `python scripts/memory/memory_cli.py search \"<tema principal de la historia>\"` para recuperar patrones de error conocidos y hallazgos de reviews anteriores. Si hay resultados, agrégalos a tu checklist de revisión.",
+]
+
+# Guardar en mem0 al terminar — si encontraste un patrón recurrente nuevo, no documentado en AGENTS.md.
+# Formato obligatorio: "patrón review: <área> | antipatrón: <qué evitar> | corrección: <cómo hacerlo bien>"
+on_complete = "Si encontraste un patrón de error recurrente o antipatrón no documentado en AGENTS.md, guárdalo con: python scripts/memory/memory_cli.py add \"patrón review: <área> | antipatrón: <qué evitar> | corrección: <cómo hacerlo bien>\"."
+
 # Convenciones del proyecto cargadas en cada activación del skill.
 # El agente las usa como checklist de revisión adicional al story file.
 persistent_facts = [

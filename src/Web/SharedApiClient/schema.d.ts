@@ -363,6 +363,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/news": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NewsArticleDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/news/fibras/{fibraId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    fibraId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NewsArticleDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fibras": {
         parameters: {
             query?: never;
@@ -624,6 +696,16 @@ export interface components {
             week52Low: null | number | string;
             capturedAt: null | string;
             freshnessStatus: null | string;
+        };
+        NewsArticleDto: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            source: string;
+            /** Format: date-time */
+            publishedAt: string;
+            url: string;
+            snippet: null | string;
         };
         PagedResultOfFibraListItem: {
             items: components["schemas"]["FibraListItem"][];
