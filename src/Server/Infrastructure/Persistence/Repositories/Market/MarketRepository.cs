@@ -32,11 +32,7 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
         }
         else
         {
-            existing.Open = snapshot.Open;
-            existing.High = snapshot.High;
-            existing.Low = snapshot.Low;
-            existing.Close = snapshot.Close;
-            existing.Volume = snapshot.Volume;
+            existing.MergeUpdate(snapshot);
         }
 
         await db.SaveChangesAsync(ct);

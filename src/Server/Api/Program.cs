@@ -32,11 +32,16 @@ var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMe
 var hangfireConnStr = builder.Configuration.GetConnectionString("DefaultConnection");
 if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
 {
-    RecurringJob.AddOrUpdate<MarketPipelineJob>(
-        "market-pipeline",
-        j => j.ExecuteAsync(CancellationToken.None),
-        "*/15 * * * 1-5",
-        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+    var mexicoTz = MarketPipelineSchedule.GetMexicoTimeZone();
+
+    foreach (var (jobId, cronExpression) in MarketPipelineSchedule.GetRecurringJobs())
+    {
+        RecurringJob.AddOrUpdate<MarketPipelineJob>(
+            jobId,
+            j => j.ExecuteAsync(CancellationToken.None),
+            cronExpression,
+            new RecurringJobOptions { TimeZone = mexicoTz });
+    }
 }
 
 app.Run();

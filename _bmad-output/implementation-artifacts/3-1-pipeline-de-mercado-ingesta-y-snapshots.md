@@ -1,6 +1,6 @@
 # Historia 3.1: Pipeline de Mercado — Ingesta y Snapshots
 
-Status: review
+Status: done
 
 ## Historia
 
@@ -329,10 +329,13 @@ claude-sonnet-4-6
 - `MarketPipelineJob` captura excepciones de batch Yahoo a nivel de todo el lote y marca todas las FIBRAs como Error/Critical según historial previo.
 - El job recurrente se registra en `Program.cs` solo cuando Hangfire tiene SQL storage configurado.
 - `PipelineFreshnessHealthCheck` ya era funcional — verifica Hangfire failed job count.
+- ✅ Resuelto [Review][Patch]: `Program.cs` ahora usa timezone Mexico City (`Central Standard Time` / `America/Mexico_City`) en lugar de UTC para el RecurringJob.
+- ✅ Resuelto [Review][Patch]: `DailySnapshot` tiene método `MergeUpdate` que preserva `Open` y toma max/min de High/Low; `MarketRepository.UpsertDailySnapshotAsync` lo usa. 8 tests nuevos en `Domain.Tests/Market/DailySnapshotTests.cs` verifican todos los casos.
 
 ### File List
 
 **Nuevos:**
+- tests/Unit/Domain.Tests/Market/DailySnapshotTests.cs
 - src/Server/Domain/Market/MarketDataStatus.cs
 - src/Server/Domain/Market/PriceSnapshot.cs
 - src/Server/Domain/Market/DailySnapshot.cs
@@ -345,6 +348,7 @@ claude-sonnet-4-6
 - src/Server/Infrastructure/Integrations/Yahoo/YahooFinanceClient.cs
 - src/Server/Infrastructure/Jobs/Market/BmvSchedule.cs
 - src/Server/Infrastructure/Jobs/Market/MarketPipelineJob.cs
+- src/Server/Infrastructure/Jobs/Market/MarketPipelineSchedule.cs
 - src/Server/Infrastructure/Persistence/Repositories/Market/MarketRepository.cs
 - src/Server/Infrastructure/Persistence/SqlServer/Configurations/Market/PriceSnapshotConfiguration.cs
 - src/Server/Infrastructure/Persistence/SqlServer/Configurations/Market/DailySnapshotConfiguration.cs
@@ -352,6 +356,7 @@ claude-sonnet-4-6
 - src/Server/Infrastructure/Persistence/Migrations/20260519030126_AddMarketSchema.Designer.cs
 - tests/Unit/Infrastructure.Tests/Jobs/Market/BmvScheduleTests.cs
 - tests/Unit/Infrastructure.Tests/Jobs/Market/MarketPipelineJobTests.cs
+- tests/Unit/Infrastructure.Tests/Jobs/Market/MarketPipelineScheduleTests.cs
 
 **Modificados:**
 - src/Server/Infrastructure/Infrastructure.csproj
@@ -361,7 +366,16 @@ claude-sonnet-4-6
 - src/Server/Application/Catalog/IFibraRepository.cs
 - src/Server/Api/CompositionRoot/ApiServiceExtensions.cs
 - src/Server/Api/Program.cs
+- src/Server/Domain/Market/DailySnapshot.cs
 
 ### Change Log
 
 - 2026-05-19: Implementación completa de historia 3.1 — pipeline de mercado backend (claude-sonnet-4-6)
+- 2026-05-18: Resolución de findings de code review — timezone CDMX en RecurringJob + MergeUpdate OHLC en DailySnapshot (claude-sonnet-4-6)
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+- [x] [Review][Patch] El job recurrente sigue programado fuera del horario BMV [src/Server/Api/Program.cs:35]
+- [x] [Review][Patch] `DailySnapshot` puede degradarse o perder OHLC al sobrescribir siempre con el último payload [src/Server/Infrastructure/Persistence/Repositories/Market/MarketRepository.cs:24]

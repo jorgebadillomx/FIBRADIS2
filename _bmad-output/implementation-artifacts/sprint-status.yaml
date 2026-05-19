@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-19
+last_updated: 2026-05-18
 project: FIBRADIS
 # story 1.4 moved to done (review finding resolved)
 # story 2.1 created — epic-2 moved to in-progress
@@ -69,7 +69,7 @@ development_status:
 
   # ── Épica 3: Mercado y Frescura de Datos ──────────────────────────────────
   epic-3: in-progress
-  3-1-pipeline-de-mercado-ingesta-y-snapshots: review
+  3-1-pipeline-de-mercado-ingesta-y-snapshots: done
   3-2-clasificacion-de-frescura-y-estados-en-ui: backlog
   3-3-historial-de-precios-yield-anualizado-y-snapshots-a-90-dias: backlog
   epic-3-retrospective: optional
