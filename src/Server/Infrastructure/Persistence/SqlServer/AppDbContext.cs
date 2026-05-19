@@ -13,11 +13,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Fibra> Fibras => Set<Fibra>();
     public DbSet<PriceSnapshot> PriceSnapshots => Set<PriceSnapshot>();
     public DbSet<DailySnapshot> DailySnapshots => Set<DailySnapshot>();
+    public DbSet<Distribution> Distributions => Set<Distribution>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         CatalogSeed.Seed(modelBuilder);
+        MarketSeed.Seed(modelBuilder);
     }
 }

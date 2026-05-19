@@ -312,10 +312,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/fibras/{ticker}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    period?: string;
+                };
+                header?: never;
+                path: {
+                    ticker: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FibraHistoryDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        DailyPricePointDto: {
+            date: string;
+            /** Format: double */
+            close: null | number | string;
+        };
+        DistributionPointDto: {
+            date: string;
+            /** Format: double */
+            amountPerUnit: number | string;
+        };
         FibraDetail: {
             /** Format: uuid */
             id: string;
@@ -332,6 +388,13 @@ export interface components {
             nameVariants: string[];
             /** Format: date-time */
             createdAt: string;
+        };
+        FibraHistoryDto: {
+            ticker: string;
+            priceHistory: components["schemas"]["DailyPricePointDto"][];
+            distributions: components["schemas"]["DistributionPointDto"][];
+            /** Format: double */
+            annualizedYield: null | number | string;
         };
         FibraListItem: {
             /** Format: uuid */

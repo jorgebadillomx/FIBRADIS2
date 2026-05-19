@@ -166,6 +166,7 @@ export function FibraPage() {
           <section id="mercado" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.mercado} />
             <MercadoSection
+              ticker={fibra!.ticker}
               week52High={marketData?.week52High}
               week52Low={marketData?.week52Low}
               volume={marketData?.volume}
@@ -179,7 +180,7 @@ export function FibraPage() {
 
           <section id="distribuciones" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.distribuciones} />
-            <DistribucionesSection />
+            <DistribucionesSection ticker={fibra!.ticker} />
           </section>
 
           <section id="noticias" className="scroll-mt-32 space-y-4">
