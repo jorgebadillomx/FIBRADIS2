@@ -26,4 +26,10 @@ public class FibraRepository(AppDbContext db) : IFibraRepository
     public async Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
         => await db.Fibras
             .FirstOrDefaultAsync(f => f.Ticker == ticker.ToUpper(), ct);
+
+    public async Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
+        => await db.Fibras
+            .Where(f => f.State == FibraState.Active)
+            .OrderBy(f => f.Ticker)
+            .ToListAsync(ct);
 }

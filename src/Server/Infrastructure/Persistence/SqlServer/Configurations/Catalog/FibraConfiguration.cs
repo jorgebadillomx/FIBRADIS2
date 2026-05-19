@@ -22,6 +22,7 @@ public class FibraConfiguration : IEntityTypeConfiguration<Fibra>
         builder.HasIndex(f => f.Ticker).IsUnique().HasDatabaseName("UX_Fibra_Ticker");
 
         builder.Property(f => f.Ticker).HasMaxLength(20).IsRequired().HasColumnName("ticker");
+        builder.Property(f => f.YahooTicker).HasMaxLength(32).IsRequired().HasColumnName("yahoo_ticker");
         builder.Property(f => f.FullName).HasMaxLength(256).IsRequired().HasColumnName("full_name");
         builder.Property(f => f.ShortName).HasMaxLength(64).IsRequired().HasColumnName("short_name");
         builder.Property(f => f.Sector).HasMaxLength(64).IsRequired().HasColumnName("sector");

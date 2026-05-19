@@ -4,6 +4,7 @@ public class Fibra
 {
     public Guid Id { get; set; }
     public string Ticker { get; set; } = string.Empty;
+    public string YahooTicker { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string ShortName { get; set; } = string.Empty;
     public string Sector { get; set; } = string.Empty;

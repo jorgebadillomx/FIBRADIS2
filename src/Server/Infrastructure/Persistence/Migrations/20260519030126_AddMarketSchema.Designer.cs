@@ -4,6 +4,7 @@ using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260519030126_AddMarketSchema")]
+    partial class AddMarketSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -162,12 +165,6 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("ticker");
 
-                    b.Property<string>("YahooTicker")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .HasColumnName("yahoo_ticker");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Ticker")
@@ -190,8 +187,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Fibra Uno",
                             SiteUrl = "https://fibra.uno",
                             State = "Active",
-                            Ticker = "FUNO11",
-                            YahooTicker = "FUNO11.MX"
+                            Ticker = "FUNO11"
                         },
                         new
                         {
@@ -206,8 +202,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Danhos",
                             SiteUrl = "https://fibradanhos.com.mx",
                             State = "Active",
-                            Ticker = "DANHOS13",
-                            YahooTicker = "DANHOS13.MX"
+                            Ticker = "DANHOS13"
                         },
                         new
                         {
@@ -221,8 +216,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Terra",
                             SiteUrl = "https://fibra-terra.com",
                             State = "Active",
-                            Ticker = "TERRA13",
-                            YahooTicker = "TERRA13.MX"
+                            Ticker = "TERRA13"
                         },
                         new
                         {
@@ -237,8 +231,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "FibraMQ",
                             SiteUrl = "https://fibramacquarie.com.mx",
                             State = "Active",
-                            Ticker = "FIBRAMQ12",
-                            YahooTicker = "FIBRAMQ12.MX"
+                            Ticker = "FIBRAMQ12"
                         },
                         new
                         {
@@ -253,8 +246,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Fibra MTY",
                             SiteUrl = "https://fibramty.com",
                             State = "Active",
-                            Ticker = "FMTY14",
-                            YahooTicker = "FMTY14.MX"
+                            Ticker = "FMTY14"
                         },
                         new
                         {
@@ -268,8 +260,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Fibra Inn",
                             SiteUrl = "https://fibrainn.com.mx",
                             State = "Active",
-                            Ticker = "FINN13",
-                            YahooTicker = "FINN13.MX"
+                            Ticker = "FINN13"
                         },
                         new
                         {
@@ -283,8 +274,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Fibra Hotel",
                             SiteUrl = "https://fibrahotel.com",
                             State = "Active",
-                            Ticker = "FIHO12",
-                            YahooTicker = "FIHO12.MX"
+                            Ticker = "FIHO12"
                         },
                         new
                         {
@@ -299,8 +289,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Vesta",
                             SiteUrl = "https://fibravesta.com",
                             State = "Active",
-                            Ticker = "VESTA15",
-                            YahooTicker = "VESTA.MX"
+                            Ticker = "VESTA15"
                         },
                         new
                         {
@@ -314,8 +303,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "HC",
                             SiteUrl = "https://hcity.com.mx",
                             State = "Active",
-                            Ticker = "HCITY17",
-                            YahooTicker = "HCITY.MX"
+                            Ticker = "HCITY17"
                         },
                         new
                         {
@@ -329,8 +317,7 @@ namespace Infrastructure.Persistence.Migrations
                             ShortName = "Fibra Plus",
                             SiteUrl = "https://fibraplus.mx",
                             State = "Active",
-                            Ticker = "PLUS18",
-                            YahooTicker = "PLUS18.MX"
+                            Ticker = "PLUS18"
                         });
                 });
 
