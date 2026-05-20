@@ -6,6 +6,7 @@ using Application.Market;
 using Application.News;
 using Hangfire;
 using Hangfire.SqlServer;
+using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.Yahoo;
 using YahooQuotesApi;
@@ -62,10 +63,15 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<NewsPipelineJob>();
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
+        builder.Services.AddScoped<IAiModeRepository, AiModeRepository>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
+        builder.Services.AddHttpClient<IAiSummaryService, GeminiAiSummaryService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
         builder.Services.AddHttpClient<IRssClient, GoogleNewsRssClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);

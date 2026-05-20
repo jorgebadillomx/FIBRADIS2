@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
     public DbSet<NewsArticleFibra> NewsArticleFibras => Set<NewsArticleFibra>();
     public DbSet<BlocklistTerm> BlocklistTerms => Set<BlocklistTerm>();
+    public DbSet<AiModeConfig> AiModeConfigs => Set<AiModeConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

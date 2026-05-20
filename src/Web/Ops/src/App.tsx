@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AiModeSection } from '@/modules/ai-mode/AiModeSection'
 import { createBlocklistTerm, deleteBlocklistTerm, fetchBlocklistTerms } from '@/api/newsApi'
 
 function App() {
@@ -42,10 +43,11 @@ function App() {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">AdminOps</p>
             <h1 className="text-xl font-semibold tracking-tight">FIBRADIS Ops</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Blocklist activo para Google News RSS</p>
+          <p className="text-sm text-muted-foreground">Configuración operativa de noticias</p>
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-8">
+        <AiModeSection />
         <section className="rounded-2xl border border-border/80 bg-white/90 p-6 shadow-sm">
           <div className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold tracking-tight">Blocklist de noticias</h2>

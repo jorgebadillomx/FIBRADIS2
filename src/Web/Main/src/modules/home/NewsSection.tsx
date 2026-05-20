@@ -54,6 +54,7 @@ export function NewsSection() {
         <div className="divide-y divide-border">
           {articles.map(article => {
             const safeUrl = getSafeExternalUrl(article.url)
+            const summary = article.aiSummary ?? article.snippet
 
             return (
               <article key={article.id} className="px-4 py-3">
@@ -72,11 +73,11 @@ export function NewsSection() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {article.source} · {formatRelativeTime(article.publishedAt)}
                 </p>
-                {article.snippet && (
+                {summary ? (
                   <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                    {article.snippet}
+                    {summary}
                   </p>
-                )}
+                ) : null}
               </article>
             )
           })}

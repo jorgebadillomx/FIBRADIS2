@@ -34,5 +34,5 @@ public static class NewsEndpoints
     }
 
     private static NewsArticleDto ToDto(Domain.News.NewsArticle article)
-        => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url, article.Snippet);
+        => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url, article.Snippet, article.AiSummary);
 }
