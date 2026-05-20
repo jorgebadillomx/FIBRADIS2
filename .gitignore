@@ -33,6 +33,7 @@ desktop.ini
 *.iml
 .vscode/extensions.json
 *.lscache
+.claude/worktrees/
 
 ## Coverage / test output
 coverage/

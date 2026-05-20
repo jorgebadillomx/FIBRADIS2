@@ -1,5 +1,6 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-20
+# epic-4-retrospective done — validación real de RSS y Gemini en critical path antes de Épica 5
 # story 4-3 done — Pass 8 code review limpio (0 patches)
 # story 4-3 vuelve a review — Pass 6 de code review resuelto (P1-P2)
 # story 4-3 vuelve a in-progress — 2 patches Pass 6 (P1-P2)
@@ -105,7 +106,7 @@ development_status:
   4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias: done
   4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha: done
   4-3-soporte-para-ai-mode-en-noticias-off-y-manual: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
   epic-5: backlog
