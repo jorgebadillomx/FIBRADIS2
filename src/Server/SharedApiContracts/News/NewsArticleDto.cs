@@ -6,5 +6,6 @@ public sealed record NewsArticleDto(
     string Source,
     DateTimeOffset PublishedAt,
     string Url,
-    string? Snippet
+    string? Snippet,
+    string? AiSummary
 );

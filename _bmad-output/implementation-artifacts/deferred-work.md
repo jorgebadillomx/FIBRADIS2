@@ -36,3 +36,49 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **Doble llamada a `numOf` en comparador de `getTopMovers`** [`movers-logic.ts:24-26`] — Micro-optimización: `numOf` se llama dos veces por elemento por comparación. Refactorizar a variable local si el corpus de snapshots crece.
 - **`formatVolume`: rango [999_500, 1_000_000) muestra "1000K"** [`movers-logic.ts:15`] — Edge case de formateo: `(999_500 / 1_000).toFixed(0) = "1000"` → "1000K". Sin impacto con volúmenes actuales de FIBRAs.
 - **`TopMovers` sin empty state cuando `snapshots = []`** [`TopMovers.tsx`] — Si la API devuelve array vacío y no hay error, el componente renderiza un contenedor vacío sin mensaje. Inconsistente con `GainersLosers` que sí tiene empty state.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual (2026-05-19)
+
+- **Inyección de prompt via `title`/`snippet`** [`AnthropicAiSummaryService.cs:26-33`] — Inputs RSS interpolados directamente en el prompt sin sanitizar saltos de línea. Fuente RSS pre-filtrada; surface de ataque baja en MVP. Sanitizar con `ReplaceLineEndings(" ")` cuando el corpus de fuentes se amplíe.
+- **TOCTOU modo Off→Manual entre check y llamada a Anthropic** [`AiModeEndpoints.cs:69,84`] — Ventana temporal muy pequeña para operación admin manual. Documentar como limitación conocida o releer el modo dentro del try si el problema emerge en producción.
+- **HTTP 429 tratado igual que 500 sin retry/backoff** [`AnthropicAiSummaryService.cs:53`] — Sin distinción de códigos de error Anthropic. Implementar retry con `Retry-After` header cuando se active uso intensivo de la API.
+- **Artículos `Pending` visibles en endpoints públicos** [`NewsRepository.cs`] — Comportamiento pre-existente desde historia 4.1. En modo Manual los artículos quedan en `Pending` hasta que el admin dispara el resumen; el fallback `aiSummary ?? snippet` los muestra correctamente pero sin resumen. Evaluar si se debe ocultar `Pending` en futuras historias del módulo AI.
+- **`PreviousMode = null` en rama de creación de `AiModeConfig`** [`AiModeRepository.cs:27-34`] — Rama inalcanzable en producción (seed EF garantiza fila Id=1). Completar el objeto si se agrega un test para esa rama.
+- **Sin tests para endpoint `POST /{id}/ai-summary`** [`AiModeEndpoints.cs`] — Task 9 del spec solo exige tests del pipeline. Los ACs 2 y 3 del endpoint de trigger manual no tienen cobertura. Agregar tests de integración en historia 5.x que extienda el módulo AI.
+- **`UpdateSummaryAsync` silencioso con 0 filas afectadas** [`NewsRepository.cs:54-59`] — Si el artículo fue eliminado entre `GetByIdAsync` y `ExecuteUpdateAsync`, la operación retorna 0 sin error. Probabilidad muy baja en operación admin-only; verificar filas afectadas si se habilita borrado de artículos.
+- **Token expirado sin refresh en `aiModeApi.ts`** [`aiModeApi.ts`] — Patrón heredado de `newsApi.ts`. Implementar refresh flow cuando se añada gestión de sesión al Ops SPA.
+- **Cambio de modo a mitad de ejecución del pipeline** [`NewsPipelineJob.cs:25`] — Por diseño según spec (aplica en el siguiente ciclo). Documentar en las notas de operación del pipeline si la duración del job crece significativamente con más FIBRAs.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — 2ª pasada (2026-05-19)
+
+- **`opsAccessTokenStorageKey` y `getAuthHeaders()` duplicados** [`aiModeApi.ts`, `newsApi.ts`] — Patrón copy-paste pre-existente en todo el Ops SPA. Refactorizar a un módulo de auth compartido cuando se implemente gestión de sesión/refresh.
+- **`SetAiModeRequest.Mode` acepta strings numéricos vía `Enum.TryParse`** [`AiModeEndpoints.cs`] — `"0"` o `"1"` son válidos como Mode (se parsean como `AiMode.Off`/`Manual`). Endpoint admin-only, impacto bajo; la respuesta serializa el enum como "Off"/"Manual" correctamente.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — 4ª pasada (2026-05-19)
+
+- **Anthropic error body descartado en fallo de `EnsureSuccessStatusCode`** [`AnthropicAiSummaryService.cs`] — El operador solo ve el código HTTP (401, 429, 500) en el log, no el mensaje de Anthropic. Leer y loguear el body del error antes de lanzar en una próxima mejora de observabilidad.
+- **`GetConfigAsync` fallback in-memory con `UpdatedAt` variable** [`AiModeRepository.cs:GetConfigAsync`] — Si la fila seed no existiera, dos GETs consecutivos devolverían timestamps distintos. Inalcanzable en producción; completar solo si se añade un test explícito para esa rama.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — 5ª pasada (2026-05-19)
+
+- **`UpdatedAt` calculado antes de `SaveChangesAsync`** [`AiModeRepository.cs:25`] — En caso de retry el timestamp del primer intento se pierde; el registro de auditoría refleja el momento del intento, no del commit. Menor impacto en auditoría; asignar `DateTimeOffset.UtcNow` justo antes del `SaveChangesAsync` si la precisión importa.
+- **Retry de insert concurrente puede relanzar en réplica de lectura** [`AiModeRepository.cs:44-48`] — `FindAsync` post-`ChangeTracker.Clear()` puede retornar null si la réplica de lectura no ha replicado el insert ganador, relanzando `DbUpdateException` como 500. Improbable con SQL Server single-node; resolver si se añade read replica.
+- **Actor fallback `"unknown"` persiste sin log de advertencia** [`AiModeEndpoints.cs:46-49`] — La cadena Name→Email→NameIdentifier→"unknown" es funcional, pero `"unknown"` en `updated_by` no identifica al actor real. Añadir `LogWarning` cuando se cae en "unknown" para detectar JWTs con claims ausentes.
+- **PK singleton `1` hardcodeado en 5 lugares** [`AiModeRepository.cs`, `AiModeConfig.cs`, `AiModeConfigConfiguration.cs`] — Extraer `public const int SingletonId = 1` en `AiModeConfig` y referenciar desde repositorio y configuración EF en próxima iteración del módulo AI.
+- **Modo stale en ventana de refetch (~200ms) tras Off→Manual** [`AiModeSection.tsx:104`] — El botón de trigger queda disabled brevemente después de guardar cambio Off→Manual porque `currentMode` lee del caché obsoleto. Resolver con `queryClient.setQueryData` optimista en `saveMutation.onSuccess`.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — 6ª pasada (2026-05-20)
+
+- **Gemini API key en query param `?key=` visible en logs HTTP/telemetría** [`GeminiAiSummaryService.cs:42`] — Usar header `x-goog-api-key` sería mejor para log hygiene; el spec Dev Notes especifica la URL con `?key={apiKey}` siguiendo la documentación oficial de Gemini. Migrar si se añade observabilidad centralizada de HTTP.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — 7ª pasada (2026-05-20)
+
+- **`ILoggerFactory.CreateLogger` por request en lugar de `ILogger<T>` tipado** [`AiModeEndpoints.cs:71`] — Allocación menor en endpoint admin-only de bajo volumen. Refactorizar a inyección tipada si el endpoint crece.
+- **Fallback `AiMode.Off` ante BD caída puede dejar artículos del período de falla como `Processed` permanentemente** [`NewsPipelineJob.cs:34-42`] — En modo Manual, artículos ingestados durante falla de BD quedan `Processed` sin AI; el guard de idempotencia bloquea re-proceso posterior. Trade-off del diseño de fallback; el admin puede hacer trigger manual de artículos específicos.
+- **Safety-block de Gemini (HTTP 200 sin candidatos) devuelve 502 "proveedor no disponible"** [`GeminiAiSummaryService.cs:67-71`, `AiModeEndpoints.cs:125-127`] — El mensaje 502 implica falla de red cuando la causa real es bloqueo por política de contenido. El log de error contiene la `InvalidOperationException` con detalle. Mejorar al añadir observabilidad centralizada.
+- **`modeQuery.data?.mode as 'Off' | 'Manual'` sin validación en runtime** [`AiModeSection.tsx:30`] — TypeScript `as` no valida en runtime; un tercer modo del backend deshabilitaría el panel de trigger sin mensaje claro. Validar al extender el enum.
+
+## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — 8ª pasada (2026-05-20)
+
+- **Race condition: dos requests concurrentes de AdminOps sobre el mismo artículo `Pending` pasan el guard de idempotencia y llaman a Gemini dos veces** [`AiModeEndpoints.cs:85-100`] — Endpoint admin-only de muy bajo volumen; worst case = cuota Gemini desperdiciada + segundo summary sobreescribe al primero de forma inocua. Resolver con `ExecuteUpdateAsync WHERE Status != Processed` atómico si el uso aumenta.
+- **`AiSummary` se persiste sin validar longitud máxima** [`GeminiAiSummaryService.cs:78`, `NewsRepository.cs:58`] — Columna `nvarchar(2048)`; 256 output tokens ≈ 800-1000 chars, bien bajo el límite, pero no hay truncación explícita. Si se excediera, `DbUpdateException` sería capturada como fallo de proveedor con mensaje "proveedor no disponible" que es engañoso. Agregar `text.Truncate(2048)` o aumentar límite de columna si se amplía `maxOutputTokens`.

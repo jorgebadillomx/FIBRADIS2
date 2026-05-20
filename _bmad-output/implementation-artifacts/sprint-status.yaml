@@ -1,5 +1,9 @@
 # generated: 2026-05-15
-# last_updated: 2026-05-19
+# last_updated: 2026-05-20
+# story 4-3 done — Pass 8 code review limpio (0 patches)
+# story 4-3 vuelve a review — Pass 6 de code review resuelto (P1-P2)
+# story 4-3 vuelve a in-progress — 2 patches Pass 6 (P1-P2)
+# story 4-3 vuelve a review — Pass 4 de code review resuelto (NP1-NP2)
 # story 2.4 moved to review — SEO prerender + WCAG 2.1 AA implementado
 # project: FIBRADIS
 # project_key: NOKEY
@@ -36,7 +40,16 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-19
+last_updated: 2026-05-20
+# story 4-3 done — Pass 8 code review limpio (0 patches)
+# story 4-3 vuelve a in-progress — 4 patches Pass 7 (P1-P4)
+# story 4-3 vuelve a review — Gemini migration + patches Pass 5 (P1-P5) applied
+# story 4-3 vuelve a in-progress — 2 patches Pass 4 (NP1-NP2)
+# story 4-3 vuelve a review — 6 patches Pass 2+3 resueltos (NR1-NR3, P1-P3)
+# story 4-3 vuelve a in-progress — 3 patches 2ª pasada code review (NR1-NR3)
+# story 4-3 vuelve a review — 6 patches de code review resueltos
+# story 4-3 vuelve a in-progress — 6 patches de code review pendientes
+# story 4-3 creada — AI_MODE noticias (Off/Manual), branch story/4-3-ai-mode-noticias
 # story 4-2 done — hallazgos de code review resueltos (2 patches), deferred-work actualizado
 # story 4-2 vuelve a in-progress — 2ª pasada code review: 1 patch pendiente (XSS url href)
 # story 4-2 creada — ready-for-dev
@@ -91,7 +104,7 @@ development_status:
   epic-4: in-progress
   4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias: done
   4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha: done
-  4-3-soporte-para-ai-mode-en-noticias-off-y-manual: backlog
+  4-3-soporte-para-ai-mode-en-noticias-off-y-manual: done
   epic-4-retrospective: optional
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────

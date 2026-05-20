@@ -137,6 +137,150 @@
         }
       }
     },
+    "/api/v1/ops/ai-mode": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AI"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAiModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/news/{articleId}/ai-summary": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "parameters": [
+          {
+            "name": "articleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "502": {
+            "description": "Bad Gateway"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/news/blocklist-terms": {
       "get": {
         "tags": [
@@ -488,6 +632,36 @@
   },
   "components": {
     "schemas": {
+      "AiModeDto": {
+        "required": [
+          "mode",
+          "updatedAt",
+          "updatedBy",
+          "previousMode"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "previousMode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "BlocklistTermDto": {
         "required": [
           "id",
@@ -886,7 +1060,8 @@
           "source",
           "publishedAt",
           "url",
-          "snippet"
+          "snippet",
+          "aiSummary"
         ],
         "type": "object",
         "properties": {
@@ -908,6 +1083,12 @@
             "type": "string"
           },
           "snippet": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aiSummary": {
             "type": [
               "null",
               "string"
@@ -1004,6 +1185,17 @@
             "type": "string"
           }
         }
+      },
+      "SetAiModeRequest": {
+        "required": [
+          "mode"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -1013,6 +1205,9 @@
     },
     {
       "name": "Ops"
+    },
+    {
+      "name": "AI"
     },
     {
       "name": "News"

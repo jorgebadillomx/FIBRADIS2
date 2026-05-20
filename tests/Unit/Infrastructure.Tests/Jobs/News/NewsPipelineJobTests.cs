@@ -30,6 +30,7 @@ public class NewsPipelineJobTests
             newsRepo,
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
+            new FakeAiModeRepository(AiMode.Off),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -38,6 +39,71 @@ public class NewsPipelineJobTests
         Assert.Equal(2, newsRepo.LastCandidateUrls!.Count);
         Assert.Contains("https://example.com/1", newsRepo.LastCandidateUrls);
         Assert.Contains("https://example.com/2", newsRepo.LastCandidateUrls);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAiModeOff_SetsArticleStatusToProcessed()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var job = CreateJob(newsRepo, AiMode.Off);
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Equal(NewsArticleStatus.Processed, article.Status);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAiModeManual_SetsArticleStatusToPending()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var job = CreateJob(newsRepo, AiMode.Manual);
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Equal(NewsArticleStatus.Pending, article.Status);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenAiModeLookupFails_FallsBackToProcessed()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var job = CreateJob(newsRepo, shouldThrowOnModeLookup: true);
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Equal(NewsArticleStatus.Processed, article.Status);
+    }
+
+    private static NewsPipelineJob CreateJob(FakeNewsRepository newsRepo, AiMode mode)
+        => CreateJob(newsRepo, mode, shouldThrowOnModeLookup: false);
+
+    private static NewsPipelineJob CreateJob(
+        FakeNewsRepository newsRepo,
+        AiMode mode = AiMode.Off,
+        bool shouldThrowOnModeLookup = false)
+    {
+        var fibra = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FUNO11",
+            NameVariants = ["Fibra Uno"],
+            State = FibraState.Active,
+        };
+        var rssItems = new[]
+        {
+            new RssItem("FUNO11 sube", "Fuente", DateTimeOffset.UtcNow, "https://example.com/1", "Snippet"),
+        };
+
+        return new NewsPipelineJob(
+            new FakeNewsFibraRepository([fibra]),
+            newsRepo,
+            new FakeNewsBlocklistRepository([]),
+            new FakeRssClient(rssItems),
+            new FakeAiModeRepository(mode, shouldThrowOnModeLookup),
+            NullLogger<NewsPipelineJob>.Instance);
     }
 }
 
@@ -77,6 +143,21 @@ internal sealed class FakeNewsRepository : INewsRepository
         return Task.CompletedTask;
     }
 
+    public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(SavedArticles.FirstOrDefault(article => article.Id == id));
+
+    public Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default)
+    {
+        var article = SavedArticles.FirstOrDefault(saved => saved.Id == id);
+        if (article is not null)
+        {
+            article.AiSummary = summary;
+            article.Status = status;
+        }
+
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
 
@@ -101,6 +182,43 @@ internal sealed class FakeNewsBlocklistRepository(IReadOnlyList<string> terms) :
 
     public Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult(true);
+}
+
+internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLookup = false) : IAiModeRepository
+{
+    private AiModeConfig _config = new()
+    {
+        Id = 1,
+        Mode = mode,
+        PreviousMode = null,
+        UpdatedAt = DateTimeOffset.UtcNow,
+        UpdatedBy = "test",
+    };
+
+    public Task<AiMode> GetCurrentModeAsync(CancellationToken ct = default)
+    {
+        if (shouldThrowOnModeLookup)
+            throw new InvalidOperationException("AI mode lookup failed.");
+
+        return Task.FromResult(_config.Mode);
+    }
+
+    public Task<AiModeConfig> GetConfigAsync(CancellationToken ct = default)
+        => Task.FromResult(_config);
+
+    public Task SetModeAsync(AiMode mode, string actor, CancellationToken ct = default)
+    {
+        _config = new AiModeConfig
+        {
+            Id = 1,
+            Mode = mode,
+            PreviousMode = _config.Mode,
+            UpdatedAt = DateTimeOffset.UtcNow,
+            UpdatedBy = actor,
+        };
+
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class FakeRssClient(IReadOnlyList<RssItem> items) : IRssClient

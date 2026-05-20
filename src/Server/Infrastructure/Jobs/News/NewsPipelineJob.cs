@@ -11,6 +11,7 @@ public class NewsPipelineJob(
     INewsRepository newsRepo,
     IBlocklistRepository blocklistRepo,
     IRssClient rssClient,
+    IAiModeRepository aiModeRepo,
     ILogger<NewsPipelineJob> logger)
 {
     private static readonly string[] GeneralQueries =
@@ -21,6 +22,16 @@ public class NewsPipelineJob(
 
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
+        var currentMode = AiMode.Off;
+        try
+        {
+            currentMode = await aiModeRepo.GetCurrentModeAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to read AI mode configuration; falling back to Off for this pipeline run.");
+        }
+
         var fibras = await fibraRepo.GetAllActiveAsync(ct);
         var fibraMatchInfos = fibras
             .Select(f => new FibraMatchInfo(f.Id, f.Ticker, f.NameVariants.AsReadOnly()))
@@ -71,7 +82,7 @@ public class NewsPipelineJob(
                     PublishedAt = item.PublishedAt,
                     Url = item.Url,
                     Snippet = item.Snippet,
-                    Status = NewsArticleStatus.Pending,
+                    Status = currentMode == AiMode.Off ? NewsArticleStatus.Processed : NewsArticleStatus.Pending,
                     CapturedAt = DateTimeOffset.UtcNow,
                 };
                 var fibraIds = NewsAssociator.Associate(item, fibraMatchInfos);

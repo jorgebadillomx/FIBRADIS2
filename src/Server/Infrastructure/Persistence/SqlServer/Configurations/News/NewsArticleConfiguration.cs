@@ -18,6 +18,7 @@ public class NewsArticleConfiguration : IEntityTypeConfiguration<NewsArticle>
         builder.Property(x => x.PublishedAt).HasColumnName("published_at").IsRequired();
         builder.Property(x => x.Url).HasColumnName("url").HasMaxLength(1024).IsRequired();
         builder.Property(x => x.Snippet).HasColumnName("snippet").HasMaxLength(2048);
+        builder.Property(x => x.AiSummary).HasColumnName("ai_summary").HasMaxLength(2048);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(x => x.CapturedAt).HasColumnName("captured_at").IsRequired();
         builder.Property(x => x.ErrorReason).HasColumnName("error_reason").HasMaxLength(512);

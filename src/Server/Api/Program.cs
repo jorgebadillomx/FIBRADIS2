@@ -24,6 +24,7 @@ app.UseStaticFiles();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
+app.MapAiMode();
 app.MapNewsBlocklist();
 app.MapNews();
 app.MapCatalog();

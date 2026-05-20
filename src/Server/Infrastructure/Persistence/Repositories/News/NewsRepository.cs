@@ -48,9 +48,23 @@ public class NewsRepository(AppDbContext db) : INewsRepository
         await db.SaveChangesAsync(ct);
     }
 
+    public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.NewsArticles.FindAsync([id], ct).AsTask();
+
+    public async Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default)
+    {
+        await db.NewsArticles
+            .Where(article => article.Id == id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(article => article.AiSummary, summary)
+                .SetProperty(article => article.Status, status), ct);
+    }
+
     public async Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
         => await db.NewsArticles
-            .Where(n => n.Status == NewsArticleStatus.Pending || n.Status == NewsArticleStatus.Processed)
+            .Where(n => n.Status == NewsArticleStatus.Pending
+                || n.Status == NewsArticleStatus.Processed
+                || n.Status == NewsArticleStatus.Partial)
             .OrderByDescending(n => n.PublishedAt)
             .Take(count)
             .ToListAsync(ct);
@@ -59,7 +73,9 @@ public class NewsRepository(AppDbContext db) : INewsRepository
         => await db.NewsArticleFibras
             .Where(link => link.FibraId == fibraId)
             .Select(link => link.NewsArticle)
-            .Where(article => article.Status == NewsArticleStatus.Pending || article.Status == NewsArticleStatus.Processed)
+            .Where(article => article.Status == NewsArticleStatus.Pending
+                || article.Status == NewsArticleStatus.Processed
+                || article.Status == NewsArticleStatus.Partial)
             .OrderByDescending(article => article.PublishedAt)
             .Take(count)
             .ToListAsync(ct);
