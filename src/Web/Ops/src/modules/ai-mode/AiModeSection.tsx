@@ -10,6 +10,7 @@ export function AiModeSection() {
   const modeQuery = useQuery({
     queryKey: ['ai-mode'],
     queryFn: fetchAiMode,
+    retry: false,
   })
 
   const saveMutation = useMutation({

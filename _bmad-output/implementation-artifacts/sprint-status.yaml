@@ -1,5 +1,7 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-21
+# story 4-3 hardening code review done — 4 patches aplicados (clearOpsAccessToken solo en 401, assertOpsAccessToken dispatch event, invalidateQueries en bootstrap, test e2e aislado)
+# story 4-3 hardening post-done — Ops auth shell agregado (bootstrap refresh + login AdminOps + fallback sin 401 crudo)
 # stories 4-5-1 y 4-5-3 vuelven a review — patches finales resueltos (cancelación/IPv4-mapped IPv6/skeleton/log DNS + metadata JSX/fetchArticleById tipado)
 # story 4-5-1 vuelve a in-progress — 4 patches pasada 3 (OCE, IPv4-mapped IPv6, skeleton, SocketException log)
 # story 4-5-3 vuelve a in-progress — 2 patches pasada 1 (JSX title, fetchArticleById cast)

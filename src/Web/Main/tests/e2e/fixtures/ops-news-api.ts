@@ -32,6 +32,49 @@ export async function seedOpsAuth(page: Page) {
   })
 }
 
+export async function mockOpsAuthApi(page: Page) {
+  await page.route('**/api/v1/auth/refresh', async (route) => {
+    if (route.request().method() !== 'POST') {
+      return route.fallback()
+    }
+
+    return route.fulfill({
+      status: 401,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        title: 'Unauthorized',
+        status: 401,
+      }),
+    })
+  })
+
+  await page.route('**/api/v1/auth/login', async (route) => {
+    if (route.request().method() !== 'POST') {
+      return route.fallback()
+    }
+
+    const body = route.request().postDataJSON() as { email?: string; password?: string } | null
+    const email = body?.email?.trim() ?? ''
+    const password = body?.password ?? ''
+
+    if (email === 'adminops@test.com' && password === 'admin456') {
+      return fulfillJson(route, 200, {
+        accessToken: 'playwright-adminops-token',
+      })
+    }
+
+    return route.fulfill({
+      status: 401,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        title: 'Unauthorized',
+        status: 401,
+        detail: 'Credenciales inválidas.',
+      }),
+    })
+  })
+}
+
 export async function mockOpsNewsApi(page: Page, options: OpsNewsApiOptions = {}) {
   let blocklistTerms = options.blocklistTerms ?? [
     {
