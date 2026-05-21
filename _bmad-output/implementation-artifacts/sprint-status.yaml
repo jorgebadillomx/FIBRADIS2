@@ -1,5 +1,6 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-21
+# epic-4 done — todas las historias completadas, auth hardening mergeado a main
 # story 4-3 hardening code review done — 4 patches aplicados (clearOpsAccessToken solo en 401, assertOpsAccessToken dispatch event, invalidateQueries en bootstrap, test e2e aislado)
 # story 4-3 hardening post-done — Ops auth shell agregado (bootstrap refresh + login AdminOps + fallback sin 401 crudo)
 # stories 4-5-1 y 4-5-3 vuelven a review — patches finales resueltos (cancelación/IPv4-mapped IPv6/skeleton/log DNS + metadata JSX/fetchArticleById tipado)
@@ -110,7 +111,7 @@ development_status:
   epic-3-retrospective: done
 
   # ── Épica 4: Noticias y Contenido ─────────────────────────────────────────
-  epic-4: in-progress
+  epic-4: done
   4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias: done
   4-2-asociacion-de-noticias-con-fibras-y-display-en-home-y-ficha: done
   4-3-soporte-para-ai-mode-en-noticias-off-y-manual: done
