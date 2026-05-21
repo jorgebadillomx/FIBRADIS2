@@ -89,6 +89,7 @@ para que las noticias siempre se publiquen incluso sin procesamiento de IA, y pu
 
 #### Action Items
 
+- [x] [Review][Post-Release Hardening] P3: Ops asumía un `fibradis.ops.accessToken` pre-sembrado y arrancaba contra endpoints `AdminOps` sin bootstrap de sesión real [src/Web/Ops/src/App.tsx, src/Web/Ops/src/api/aiModeApi.ts, src/Web/Ops/src/api/newsApi.ts] — en acceso directo al sitio Ops sin token, la UI mostraba `401 Unauthorized` crudo al consultar `AI_MODE`; además el síntoma podía duplicarse por retries/remounts en desarrollo. Fix: agregar shell de acceso AdminOps con bootstrap vía `/api/v1/auth/refresh`, login real por `/api/v1/auth/login`, evento global de expiración de sesión y fallback a pantalla de acceso en lugar de serializar `ProblemDetails`.
 - [x] [Review][Patch] P1: `GenerateSummaryAsync` retorna `null` → artículo marcado `Processed` sin resumen [AiModeEndpoints.cs:84-85] — cuando la API key no está configurada o la respuesta es vacía, el endpoint marca el artículo como `Processed` en lugar de `Partial`; fix: `if (summary is null) { await newsRepo.UpdateSummaryAsync(articleId, null, NewsArticleStatus.Partial, ct); return Results.NoContent(); }`
 - [x] [Review][Patch] P2: `content[0].GetProperty("text")` sin `TryGetProperty` → `KeyNotFoundException` no controlado [AnthropicAiSummaryService.cs:61] — si Anthropic devuelve un elemento sin propiedad `text` (tool-use, refusal), lanza excepción; fix: usar `TryGetProperty("text", out var textProp)` y retornar `null` si no existe
 - [x] [Review][Patch] P3: `catch` desnudo sin log — `OperationCanceledException` usa `ct` ya cancelado en `UpdateSummaryAsync` interno [AiModeEndpoints.cs:87-90] — cuando el cliente desconecta, `ct` se cancela, el `catch` intenta `UpdateSummaryAsync` con ese `ct` cancelado → la llamada interna lanza, artículo queda en estado indeterminado; fix: separar `catch (OperationCanceledException)` (no actualizar, dejar estado previo) del `catch (Exception ex)` (loguear + usar `CancellationToken.None` para el update de Partial)
@@ -992,6 +993,7 @@ gpt-5.5-codex
 - Validación amplia adicional: `dotnet build FIBRADIS.slnx` OK, `npm run build --workspace=src/Web/Main` OK. `dotnet test FIBRADIS.slnx --no-build` ejecutó `Domain.Tests` 9/9, `Application.Tests` 35/35, `Infrastructure.Tests` 30/30, `Jobs.Tests` 2/2 y `Api.Tests` 60/60, pero el host de pruebas abortó al cierre por `ObjectDisposedException: EventLogInternal` en logging de Hangfire; queda documentado como incidencia de teardown del runner, no como fallo del patch.
 - Resueltos hallazgos Pass 7 (P1-P4): el endpoint manual ahora retorna `ProblemDetails` en 400, `AiModeSection` limpia el estado de éxito previo al guardar y bloquea toggles mientras el PUT está en vuelo, y `GeminiAiSummaryService` dispone explícitamente el `HttpResponseMessage`.
 - Validación Pass 7: `dotnet test tests/Integration/Api.Tests/Api.Tests.csproj --filter FullyQualifiedName~AiModeOpsEndpointTests` → 5/5 passing; `npm run build --workspace=src/Web/Ops` OK; `npm run build --workspace=src/Web/Main` OK; `dotnet build FIBRADIS.slnx` OK. `dotnet test FIBRADIS.slnx --no-build` volvió a ejecutar `Domain.Tests` 9/9, `Application.Tests` 35/35, `Infrastructure.Tests` 30/30, `Jobs.Tests` 2/2 y `Api.Tests` 64/64, pero el runner abortó al teardown por `ObjectDisposedException: EventLogInternal` de Hangfire y además reportó tres ensamblados sin tests (`ApiCompatibility.Tests`, `Integrations.Tests`, `Persistence.Tests`).
+- Hardening post-cierre (2026-05-21): Ops dejó de depender de un token sembrado manualmente. Se agregó bootstrap de sesión con `/api/v1/auth/refresh`, formulario de login AdminOps con `/api/v1/auth/login`, cierre de sesión local y fallback a pantalla de acceso cuando cualquier endpoint Ops devuelve `401`. También se agregó una regresión e2e para el arranque de Ops sin token.
 
 ### File List
 
@@ -1027,13 +1029,18 @@ gpt-5.5-codex
 - `src/Web/Main/src/modules/ficha-publica/sections/NoticiasSection.tsx`
 - `src/Web/Main/src/modules/home/NewsSection.tsx`
 - `src/Web/Ops/src/App.tsx`
+- `src/Web/Ops/src/api/authApi.ts`
 - `src/Web/Ops/src/api/aiModeApi.ts`
+- `src/Web/Ops/src/api/opsAuth.ts`
+- `src/Web/Ops/src/components/OpsLoginGate.tsx`
 - `src/Web/Ops/src/modules/ai-mode/AiModeSection.tsx`
 - `src/Web/SharedApiClient/schema.d.ts`
 - `tests/Integration/Api.Tests/AiModeOpsEndpointTests.cs`
 - `tests/Unit/Infrastructure.Tests/Integrations/Ai/GeminiAiSummaryServiceTests.cs`
 - ~~`tests/Unit/Infrastructure.Tests/Integrations/Ai/AnthropicAiSummaryServiceTests.cs`~~ (eliminado)
 - `tests/Unit/Infrastructure.Tests/Jobs/News/NewsPipelineJobTests.cs`
+- `src/Web/Main/tests/e2e/fixtures/ops-news-api.ts`
+- `src/Web/Main/tests/e2e/news-epic4.spec.ts`
 
 ## Change Log
 
@@ -1045,3 +1052,4 @@ gpt-5.5-codex
 - 2026-05-19: Migración de proveedor IA Anthropic → Gemini + patches Pass 5 (P1-P5) — `GeminiAiSummaryService` con routing `gemini-2.5-flash` (noticias) / `gemini-2.5-pro` (documentos) vía `AiContentType`; null→503, excepción→502, idempotencia en trigger, `triggerMutation.reset()` en onChange. Tests: 7 nuevos Gemini unit tests, 4 integration tests actualizados. Build 0 errores, 141/141 tests passing.
 - 2026-05-20: Addressed code review findings Pass 6 — 2 items resolved: Gemini ahora distingue configuración ausente vs respuesta vacía del proveedor, y Ops muestra `detail/message` legible en errores de AI_MODE/resumen manual. Validaciones: `GeminiAiSummaryServiceTests` 8/8, `AiModeOpsEndpointTests` 4/4, `npm run build --workspace=src/Web/Ops` OK.
 - 2026-05-20: Addressed code review findings Pass 7 — 4 items resolved: `POST /ai-summary` devuelve `ProblemDetails` en 400, `AiModeSection` resetea feedback exitoso al guardar y bloquea toggles durante save, y `GeminiAiSummaryService` dispone el `HttpResponseMessage`. Validaciones: `AiModeOpsEndpointTests` 5/5, `dotnet build` OK, builds Ops/Main OK; full suite sigue chocando al teardown por `EventLogInternal` de Hangfire.
+- 2026-05-21: Hardening post-release de Ops auth shell — bootstrap de sesión por refresh cookie, login real AdminOps, cierre de sesión local y fallback automático a pantalla de acceso cuando expira o falta la sesión; agregado e2e de arranque sin token para evitar regresión del `401` crudo.

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { mockCatalogApi } from './fixtures/catalog-api'
 import { mockMarketApi } from './fixtures/market-api'
 import { mockNewsApi } from './fixtures/news-api'
-import { mockOpsNewsApi, seedOpsAuth } from './fixtures/ops-news-api'
+import { mockOpsAuthApi, mockOpsNewsApi, seedOpsAuth } from './fixtures/ops-news-api'
 
 test.describe('Épica 4 - Noticias y Contenido', () => {
   test.describe('Mundo público', () => {
@@ -121,6 +121,23 @@ test.describe('Épica 4 - Noticias y Contenido', () => {
       await page.getByRole('button', { name: 'Generar resumen' }).click()
 
       await expect(page.getByText('Resumen solicitado correctamente.')).toBeVisible()
+    })
+
+    test('Ops pide login cuando no hay sesión y permite entrar como AdminOps', async ({ page }) => {
+      await mockOpsAuthApi(page)
+      await mockOpsNewsApi(page)
+
+      await page.goto('http://127.0.0.1:4174/')
+
+      await expect(page.getByText('Inicia sesión como AdminOps para usar el sitio Ops.')).toBeVisible()
+      await expect(page.getByText('Error al obtener AI_MODE')).not.toBeVisible()
+
+      await page.getByLabel('Correo').fill('adminops@test.com')
+      await page.getByLabel('Contraseña').fill('admin456')
+      await page.getByRole('button', { name: 'Entrar a Ops' }).click()
+
+      await expect(page.getByRole('heading', { name: 'Modo AI de Noticias' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible()
     })
   })
 })
