@@ -12,6 +12,7 @@ public class NewsPipelineJob(
     IBlocklistRepository blocklistRepo,
     IRssClient rssClient,
     IAiModeRepository aiModeRepo,
+    IOgImageScraper ogImageScraper,
     ILogger<NewsPipelineJob> logger)
 {
     private static readonly string[] GeneralQueries =
@@ -74,6 +75,10 @@ public class NewsPipelineJob(
         {
             try
             {
+                var imageUrl = ShouldScrapeOgImage(item.Url)
+                    ? await ogImageScraper.TryGetOgImageAsync(item.Url, ct)
+                    : null;
+
                 var article = new NewsArticle
                 {
                     Title = item.Title,
@@ -82,6 +87,7 @@ public class NewsPipelineJob(
                     PublishedAt = item.PublishedAt,
                     Url = item.Url,
                     Snippet = item.Snippet,
+                    ImageUrl = imageUrl,
                     Status = currentMode == AiMode.Off ? NewsArticleStatus.Processed : NewsArticleStatus.Pending,
                     CapturedAt = DateTimeOffset.UtcNow,
                 };
@@ -112,4 +118,7 @@ public class NewsPipelineJob(
         foreach (var variant in fibra.NameVariants.Where(v => !string.Equals(v, fibra.Ticker, StringComparison.OrdinalIgnoreCase)))
             yield return $"{variant} FIBRA México";
     }
+
+    private static bool ShouldScrapeOgImage(string url)
+        => !url.Contains("news.google.com", StringComparison.OrdinalIgnoreCase);
 }

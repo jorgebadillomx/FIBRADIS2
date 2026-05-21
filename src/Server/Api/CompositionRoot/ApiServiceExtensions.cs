@@ -8,6 +8,7 @@ using Hangfire;
 using Hangfire.SqlServer;
 using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.GoogleNews;
+using Infrastructure.Integrations.OgImage;
 using Infrastructure.Integrations.Yahoo;
 using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
@@ -77,6 +78,12 @@ public static class ApiServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
         });
+        builder.Services.AddHttpClient<IOgImageScraper, OgImageScraper>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(5);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");

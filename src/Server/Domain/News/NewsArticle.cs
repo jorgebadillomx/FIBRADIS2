@@ -9,6 +9,7 @@ public class NewsArticle
     public DateTimeOffset PublishedAt { get; set; }
     public string Url { get; set; } = string.Empty;
     public string? Snippet { get; set; }
+    public string? ImageUrl { get; set; }
     public string? AiSummary { get; set; }
     public NewsArticleStatus Status { get; set; } = NewsArticleStatus.Pending;
     public DateTimeOffset CapturedAt { get; set; } = DateTimeOffset.UtcNow;

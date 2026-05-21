@@ -3,6 +3,7 @@ using Application.News;
 using Domain.Catalog;
 using Domain.News;
 using Infrastructure.Jobs.News;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Infrastructure.Tests.Jobs.News;
@@ -31,6 +32,7 @@ public class NewsPipelineJobTests
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(AiMode.Off),
+            new FakeOgImageScraper(null),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -77,13 +79,66 @@ public class NewsPipelineJobTests
         Assert.Equal(NewsArticleStatus.Processed, article.Status);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenOgImageIsAvailable_AssignsImageUrl()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var scraper = new FakeOgImageScraper("https://cdn.example.com/image.jpg");
+        var job = CreateJob(newsRepo, ogImageScraper: scraper);
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Equal("https://cdn.example.com/image.jpg", article.ImageUrl);
+        Assert.Equal(["https://example.com/1"], scraper.RequestedUrls);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenArticleUrlIsGoogleNews_DoesNotCallOgImageScraper()
+    {
+        var fibra = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FUNO11",
+            NameVariants = ["Fibra Uno"],
+            State = FibraState.Active,
+        };
+        var newsRepo = new FakeNewsRepository();
+        var scraper = new FakeOgImageScraper("https://cdn.example.com/image.jpg");
+        var rssItems = new[]
+        {
+            new RssItem(
+                "FUNO11 sube",
+                "Fuente",
+                DateTimeOffset.UtcNow,
+                "https://news.google.com/rss/articles/CBMiT2h0dHBzOi8vZXhhbXBsZS5jb20vbm90aWNpYQ?oc=5",
+                "Snippet"),
+        };
+
+        var job = new NewsPipelineJob(
+            new FakeNewsFibraRepository([fibra]),
+            newsRepo,
+            new FakeNewsBlocklistRepository([]),
+            new FakeRssClient(rssItems),
+            new FakeAiModeRepository(AiMode.Off),
+            scraper,
+            NullLogger<NewsPipelineJob>.Instance);
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Null(article.ImageUrl);
+        Assert.Empty(scraper.RequestedUrls);
+    }
+
     private static NewsPipelineJob CreateJob(FakeNewsRepository newsRepo, AiMode mode)
         => CreateJob(newsRepo, mode, shouldThrowOnModeLookup: false);
 
     private static NewsPipelineJob CreateJob(
         FakeNewsRepository newsRepo,
         AiMode mode = AiMode.Off,
-        bool shouldThrowOnModeLookup = false)
+        bool shouldThrowOnModeLookup = false,
+        IOgImageScraper? ogImageScraper = null)
     {
         var fibra = new Fibra
         {
@@ -103,6 +158,7 @@ public class NewsPipelineJobTests
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(mode, shouldThrowOnModeLookup),
+            ogImageScraper ?? new FakeOgImageScraper(null),
             NullLogger<NewsPipelineJob>.Instance);
     }
 }
@@ -225,4 +281,15 @@ internal sealed class FakeRssClient(IReadOnlyList<RssItem> items) : IRssClient
 {
     public Task<IReadOnlyList<RssItem>> FetchAsync(string query, CancellationToken ct = default)
         => Task.FromResult(items);
+}
+
+internal sealed class FakeOgImageScraper(string? imageUrl) : IOgImageScraper
+{
+    public List<string> RequestedUrls { get; } = [];
+
+    public Task<string?> TryGetOgImageAsync(string url, CancellationToken ct = default)
+    {
+        RequestedUrls.Add(url);
+        return Task.FromResult(imageUrl);
+    }
 }

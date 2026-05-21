@@ -1,13 +1,18 @@
+import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraNews } from '@/api/fibraNewsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
-import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
+import { getArticleImageUrl, getSectorImageUrl } from '@/shared/lib/news-image-fallback'
 
 interface NoticiasSectionProps {
   fibraId: string
+  fibra?: {
+    logoUrl?: string | null
+    sector?: string | null
+  } | null
 }
 
-export function NoticiasSection({ fibraId }: NoticiasSectionProps) {
+export function NoticiasSection({ fibraId, fibra }: NoticiasSectionProps) {
   const { data: articles = [], isLoading, isError } = useQuery({
     queryKey: ['fibra-news', fibraId],
     queryFn: () => fetchFibraNews(fibraId),
@@ -38,23 +43,27 @@ export function NoticiasSection({ fibraId }: NoticiasSectionProps) {
   return (
     <div className="rounded-lg border border-border bg-surface-elevated divide-y divide-border overflow-hidden">
       {articles.map(article => {
-        const safeUrl = getSafeExternalUrl(article.url)
         const summary = article.aiSummary ?? article.snippet
 
         return (
           <article key={article.id} className="px-4 py-3">
-            {safeUrl ? (
-              <a
-                href={safeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block hover:text-brand transition-colors"
-              >
+            <Link to={`/noticias/${article.id}`} className="block">
+              <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
+                <img
+                  src={getArticleImageUrl(article, fibra)}
+                  alt={`Imagen de la nota: ${article.title}`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null
+                    event.currentTarget.src = getSectorImageUrl(fibra?.sector)
+                  }}
+                />
+              </div>
+              <div className="hover:text-brand transition-colors">
                 <h3 className="text-sm font-medium leading-5">{article.title}</h3>
-              </a>
-            ) : (
-              <h3 className="text-sm font-medium leading-5">{article.title}</h3>
-            )}
+              </div>
+            </Link>
             <p className="mt-1 text-xs text-muted-foreground">
               {article.source} · {formatRelativeTime(article.publishedAt)}
             </p>

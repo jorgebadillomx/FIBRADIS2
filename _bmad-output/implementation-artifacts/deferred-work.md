@@ -82,3 +82,34 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 
 - **Race condition: dos requests concurrentes de AdminOps sobre el mismo artículo `Pending` pasan el guard de idempotencia y llaman a Gemini dos veces** [`AiModeEndpoints.cs:85-100`] — Endpoint admin-only de muy bajo volumen; worst case = cuota Gemini desperdiciada + segundo summary sobreescribe al primero de forma inocua. Resolver con `ExecuteUpdateAsync WHERE Status != Processed` atómico si el uso aumenta.
 - **`AiSummary` se persiste sin validar longitud máxima** [`GeminiAiSummaryService.cs:78`, `NewsRepository.cs:58`] — Columna `nvarchar(2048)`; 256 output tokens ≈ 800-1000 chars, bien bajo el límite, pero no hay truncación explícita. Si se excediera, `DbUpdateException` sería capturada como fallo de proveedor con mensaje "proveedor no disponible" que es engañoso. Agregar `text.Truncate(2048)` o aumentar límite de columna si se amplía `maxOutputTokens`.
+
+## Deferred from: code review of 4-5-1-scraping-imagen-ogimage-y-fallback-visual (2026-05-20)
+
+- **Regex backtracking teórico en OgImageScraper** [`OgImageScraper.cs`] — `[^>]*` bounded por `>` limita el backtracking; GeneratedRegex de .NET optimiza el patrón. Riesgo bajo en producción. Evaluar `RegexOptions.NonBacktracking` si se detecta CPU spikes en métricas.
+- **Scraping og:image secuencial bloquea pipeline ~5s por artículo nuevo** [`NewsPipelineJob.cs`] — Intencional per Dev Notes (rate limiting implícito). Revisar si el volumen de artículos nuevos crece significativamente; considerar throttled `Task.WhenAll` en ese momento.
+- **Sin retry/circuit-breaker en OgImageScraper** [`ApiServiceExtensions.cs`] — Dominio caído consume 5s por artículo en cada run. Agregar Polly circuit-breaker por host en Epic 5 junto con la infraestructura de resiliencia global.
+- **Regex no cubre atributos HTML5 sin comillas en `<meta>`** [`OgImageScraper.cs`] — Atributos unquoted son válidos en HTML5 pero infrecuentes. No requerido por spec; revisar si tasa de `imageUrl=null` en producción sugiere miss rate alto.
+- **Race condition entre ejecuciones concurrentes del pipeline** [`NewsPipelineJob.cs`] — Pre-existing de historia 4.1 (`[DisableConcurrentExecution]` ausente). Dos runs simultáneos pueden scraper la misma URL dos veces e intentar insertar el mismo artículo.
+
+## Deferred from: code review of 4-5-3-pagina-lectora-interna-noticias — Pasada 1 (2026-05-21)
+
+- **AC 4.5.3/3 — logo de FIBRA en `NoticiaPage`** [`newsApi.ts`, `NoticiaPage.tsx`] — `NewsArticleDto` no lleva asociación de FIBRA; el fallback de imagen en la página lectora solo puede llegar a imagen sectorial. Requiere extender el DTO con datos de FIBRA o un endpoint auxiliar. Alineado con decisión de AC2 en historia 4.5.1.
+- **`GET /api/v1/news/{id}` retorna 404 sin `ProblemDetails`** [`NewsEndpoints.cs:39`] — Inconsistencia con convención de la API (otros endpoints retornan `ProblemDetails` en error). Impacto nulo en comportamiento funcional; normalizar en próxima iteración del módulo noticias.
+- **`staleTime: 10 min` cachea el sentinel `null` (404)** [`NoticiaPage.tsx:17`] — Un artículo inexistente queda cacheado como "no encontrado" durante 10 minutos. Aceptable dado que los IDs son GUIDs y artículos no se crean retroactivamente en el mismo ID.
+
+## Deferred from: code review of 4-5-1-scraping-imagen-ogimage-y-fallback-visual — Pasada 3 (2026-05-21)
+
+- **DNS rebinding (TOCTOU) entre `IsAllowedHostAsync` y la HTTP request real** [`OgImageScraper.cs:15`] — La resolución DNS ocurre antes del request; con TTL corto un atacante puede devolver IP pública para el check e IP privada para la conexión. Fix requiere `HttpMessageHandler` custom con IP pinning. Limitación arquitectural aceptada.
+- **URL de `og:image` extraída no validada contra SSRF allowlist** [`OgImageScraper.cs:35`] — Un publisher malicioso puede poner `og:image = http://169.254.169.254/...`; la URL se almacena y se sirve como `<img src>` al browser (no fetch server-side). Riesgo browser-side únicamente con stack actual.
+- **HTTP 416 `Range Not Satisfiable` retorna `null` silencioso** [`OgImageScraper.cs:24`] — Páginas HTML pequeñas que retornan 416 hacen que el scraper abandone silenciosamente en lugar de reintentar sin el header Range. Edge case infrecuente.
+- **IPv6 ULA `fc00::/7` no bloqueado en `IsAllowedIp`** [`OgImageScraper.cs:81`] — Unique Local Addresses son el equivalente IPv6 de RFC 1918; no bloqueados en la validación actual. Bajo riesgo con infraestructura actual; cubrir junto con la revisión global de SSRF si se amplía el scraping.
+
+## Deferred from: code review of 4-5-1-scraping-imagen-ogimage-y-fallback-visual — Pasada 2 (2026-05-20)
+
+- **AC2: color de identidad visual de FIBRA no implementado en fallback de imagen** [`news-image-fallback.ts`, `NoticiasSection.tsx`] — `getArticleImageUrl` usa `fibra?.logoUrl` pero no un `brandColor`. Si la FIBRA no tiene logo, cae a sector asset. Requiere nuevo campo `brandColor` en entidad `Fibra`, migración, seed y frontend. Diferido para historia futura del módulo noticias.
+- **`AllowAutoRedirect=false` silencia og:image de fuentes con redirect HTTP→HTTPS** [`ApiServiceExtensions.cs`] — Trade-off de seguridad aceptado conscientemente; el fix SSRF previo eligió esta opción. Revisitar si miss rate en producción es alto.
+- **`ResponseContentRead` puede buffear respuesta completa si servidor ignora `Range` header** [`OgImageScraper.cs`] — Intencional per Dev Notes; el timeout de 5s acota la exposición total. Evaluar si hay memory pressure en métricas de producción.
+- **Dominios redirect de Google (`goo.gl`, `googleusercontent.com`) no cubiertos por filtro `news.google.com`** [`GoogleNewsRssClient.cs`] — Escenario especulativo; si Google emite GUIDs con short-links, el scraper intentaría extraer og:image del landing de Google en vez del artículo real. Revisar si aparece en logs como `imageUrl=null` con origen `goo.gl`.
+- **Charset decoding ambiguo en respuestas Range sin header `Content-Type; charset=`** [`OgImageScraper.cs`] — ReadAsStringAsync cae a ISO-8859-1 per HTTP spec si no hay charset. En práctica las URLs de og:image son ASCII-safe; solo afectaría titles u otras partes del HTML, no al scraping.
+- **`ExtractLink` retorna `string.Empty` como sentinela de fallo en vez de `null`** [`GoogleNewsRssClient.cs`] — Inconsistente con convención `string?`; el caller actual maneja `string.Empty` correctamente. Normalizar en refactor de GoogleNewsRssClient.
+- **Sectores nuevos (Educativo, Autoalmacenaje, Hipotecario) sin asset en `SECTOR_IMAGES`** [`news-image-fallback.ts`] — Caen a `otro.jpg`; fuera del scope de AC3 (7 sectores definidos). Agregar assets sectoriales en historia futura si el miss rate visual es relevante.
