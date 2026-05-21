@@ -10,7 +10,7 @@ const fibras = [
   { ticker: 'VESTA15', fullName: 'Fibra Vesta' },
   { ticker: 'FINN13', fullName: 'Fibra Inn' },
   { ticker: 'FIHO12', fullName: 'Fibra Hotel' },
-  { ticker: 'PLUS18', fullName: 'Fibra Plus' },
+  { ticker: 'FPLUS16', fullName: 'Fibra Plus' },
   { ticker: 'HCITY17', fullName: 'Fibra Hotel City Express' },
 ] as const
 
@@ -36,7 +36,7 @@ test('filterFibrasByQuery limits suggestions to eight matches', () => {
     'VESTA15',
     'FINN13',
     'FIHO12',
-    'PLUS18',
+    'FPLUS16',
   ])
 })
 

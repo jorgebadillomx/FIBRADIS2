@@ -30,9 +30,21 @@ public static class NewsEndpoints
         .AllowAnonymous()
         .Produces<IReadOnlyList<NewsArticleDto>>(StatusCodes.Status200OK);
 
+        group.MapGet("/{id:guid}", async (
+            Guid id,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var article = await newsRepo.GetByIdAsync(id, ct);
+            return article is null ? Results.NotFound() : Results.Ok(ToDto(article));
+        })
+        .AllowAnonymous()
+        .Produces<NewsArticleDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
         return app;
     }
 
     private static NewsArticleDto ToDto(Domain.News.NewsArticle article)
-        => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url, article.Snippet, article.AiSummary);
+        => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url, article.Snippet, article.ImageUrl, article.AiSummary);
 }

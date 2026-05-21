@@ -4,6 +4,7 @@ using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520160318_AddImageUrlToNewsArticle")]
+    partial class AddImageUrlToNewsArticle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -319,184 +322,18 @@ namespace Infrastructure.Persistence.Migrations
                         },
                         new
                         {
-                            Id = new Guid("3129ee4f-d156-04c8-a03f-42bdc468ff27"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Educa",
-                            InvestorUrl = "https://www.fibraeduca.com/invertir",
-                            Market = "BMV",
-                            NameVariants = "[\"Fibra Educa\",\"EDUCA\",\"EDUCA18\"]",
-                            ReportsUrl = "https://www.fibraeduca.com/reportes-financieros",
-                            Sector = "Educativo",
-                            ShortName = "Fibra Educa",
-                            SiteUrl = "https://www.fibraeduca.com",
-                            State = "Active",
-                            Ticker = "EDUCA18",
-                            YahooTicker = "EDUCA18.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("32377b6d-9244-a715-0279-2660cc6b62a5"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Prologis",
-                            InvestorUrl = "https://www.fibraprologis.com/en-US/investors",
-                            Market = "BMV",
-                            NameVariants = "[\"Fibra Prologis\",\"Prologis\",\"FIBRAPL\"]",
-                            ReportsUrl = "https://www.fibraprologis.com/en-US/investors/financial-results",
-                            Sector = "Industrial",
-                            ShortName = "Prologis",
-                            SiteUrl = "https://www.fibraprologis.com/en-US",
-                            State = "Active",
-                            Ticker = "FIBRAPL14",
-                            YahooTicker = "FIBRAPL14.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("132f2dbd-1a77-3ca5-01eb-c65b7a03b14b"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Upsite",
-                            Market = "BMV",
-                            NameVariants = "[\"Fibra Upsite\",\"Upsite\",\"FIBRAUP\"]",
-                            Sector = "Industrial",
-                            ShortName = "Upsite",
-                            SiteUrl = "https://fibra-upsite.com",
-                            State = "Active",
-                            Ticker = "FIBRAUP18",
-                            YahooTicker = "FIBRAUP18.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("8d7ad206-8591-fd28-f33f-d0b887817b5c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Nova",
-                            InvestorUrl = "https://www.fibra-nova.com/inversionistas/como-invertir",
-                            Market = "BIVA",
-                            NameVariants = "[\"Fibra Nova\",\"FNOVA\",\"FNOVA17\"]",
-                            ReportsUrl = "https://www.fibra-nova.com/inversionistas/reportes-trimestrales",
-                            Sector = "Diversificado",
-                            ShortName = "Fibra Nova",
-                            SiteUrl = "https://www.fibra-nova.com",
-                            State = "Active",
-                            Ticker = "FNOVA17",
-                            YahooTicker = "FNOVA17.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("32418186-9e2c-942b-8f4a-1e61388760a4"),
+                            Id = new Guid("cc194e75-e5a3-ee5e-0673-0f61be3fe509"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Currency = "MXN",
                             FullName = "Fibra Plus",
                             Market = "BMV",
-                            NameVariants = "[\"Fibra Plus\",\"FPLUS\",\"FPLUS16\"]",
-                            ReportsUrl = "https://www.fibraplus.mx/es/financiera/trimestrales",
+                            NameVariants = "[\"Fibra Plus\",\"PLUS\"]",
                             Sector = "Diversificado",
                             ShortName = "Fibra Plus",
-                            SiteUrl = "https://www.fibraplus.mx",
+                            SiteUrl = "https://fibraplus.mx",
                             State = "Active",
-                            Ticker = "FPLUS16",
-                            YahooTicker = "FPLUS16.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("933f9202-f943-0342-0e05-5cfd283a5bbc"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Shop",
-                            InvestorUrl = "https://fibrashop.mx/contacto/",
-                            Market = "BMV",
-                            NameVariants = "[\"Fibra Shop\",\"FSHOP\",\"FSHOP13\"]",
-                            ReportsUrl = "https://fibrashop.mx/informes-financieros/",
-                            Sector = "Comercial",
-                            ShortName = "Fibra Shop",
-                            SiteUrl = "https://fibrashop.mx",
-                            State = "Active",
-                            Ticker = "FSHOP13",
-                            YahooTicker = "FSHOP13.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("2f25d292-5a8d-a262-1cdc-093621c7471c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Next",
-                            InvestorUrl = "https://fibranext.mx/investors",
-                            Market = "BMV",
-                            NameVariants = "[\"Fibra Next\",\"NEXT\",\"NEXT25\"]",
-                            ReportsUrl = "https://fibranext.mx/investors",
-                            Sector = "Industrial",
-                            ShortName = "Fibra Next",
-                            SiteUrl = "https://fibranext.mx",
-                            State = "Active",
-                            Ticker = "NEXT25",
-                            YahooTicker = "NEXT25.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("9797ad53-1324-9a81-6102-992b9f07e92c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra SOMA",
-                            Market = "BIVA",
-                            NameVariants = "[\"Fibra SOMA\",\"SOMA\",\"SOMA21\"]",
-                            Sector = "Comercial",
-                            ShortName = "Fibra SOMA",
-                            SiteUrl = "https://fibrasoma.group",
-                            State = "Active",
-                            Ticker = "SOMA21",
-                            YahooTicker = "SOMA21.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("17e765b2-df1e-6842-3dcf-ec7506563c89"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "Fibra Storage",
-                            Market = "BMV",
-                            NameVariants = "[\"Fibra Storage\",\"Storage\",\"STORAGE18\",\"U-Storage\"]",
-                            ReportsUrl = "https://fibrastorage.com/repositorio-informacion-financiera/",
-                            Sector = "Autoalmacenaje",
-                            ShortName = "Fibra Storage",
-                            SiteUrl = "https://fibrastorage.com",
-                            State = "Active",
-                            Ticker = "STORAGE18",
-                            YahooTicker = "STORAGE18.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("055c422a-c2df-ec0f-ab61-2b5c3ede52c2"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "FHipo",
-                            InvestorUrl = "https://fhipo.com/es/kit-para-inversionistas/",
-                            Market = "BIVA",
-                            NameVariants = "[\"FHipo\",\"Fideicomiso Hipotecario\",\"FHIPO\",\"FHIPO14\"]",
-                            ReportsUrl = "https://fhipo.com/es/reportes-trimestrales/",
-                            Sector = "Hipotecario",
-                            ShortName = "FHipo",
-                            SiteUrl = "https://fhipo.com/es/",
-                            State = "Active",
-                            Ticker = "FHIPO14",
-                            YahooTicker = "FHIPO14.MX"
-                        },
-                        new
-                        {
-                            Id = new Guid("15d3465f-5ff4-a84c-c883-1dd381fd22f0"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "MXN",
-                            FullName = "CFE Fibra E",
-                            InvestorUrl = "https://cfecapital.com.mx/inversionistas",
-                            Market = "BMV/BIVA",
-                            NameVariants = "[\"CFE Fibra E\",\"FCFE\",\"FCFE18\"]",
-                            ReportsUrl = "https://cfecapital.com.mx/inversionistas",
-                            Sector = "Infraestructura",
-                            ShortName = "CFE Fibra E",
-                            SiteUrl = "https://cfecapital.com.mx",
-                            State = "Active",
-                            Ticker = "FCFE18",
-                            YahooTicker = "FCFE18.MX"
+                            Ticker = "PLUS18",
+                            YahooTicker = "PLUS18.MX"
                         });
                 });
 

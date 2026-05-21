@@ -484,6 +484,39 @@
         }
       }
     },
+    "/api/v1/news/{id}": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsArticleDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/v1/fibras": {
       "get": {
         "tags": [
@@ -1061,6 +1094,7 @@
           "publishedAt",
           "url",
           "snippet",
+          "imageUrl",
           "aiSummary"
         ],
         "type": "object",
@@ -1083,6 +1117,12 @@
             "type": "string"
           },
           "snippet": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "imageUrl": {
             "type": [
               "null",
               "string"

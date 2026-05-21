@@ -21,7 +21,7 @@ public class GoogleNewsRssClient(HttpClient http, ILogger<GoogleNewsRssClient> l
                 .Select(item =>
                 {
                     var title = item.Element("title")?.Value ?? string.Empty;
-                    var link = item.Element("link")?.Value ?? string.Empty;
+                    var link = ExtractLink(item);
                     var snippet = item.Element("description")?.Value;
                     var source = item.Element("source")?.Value ?? string.Empty;
                     var pubDateStr = item.Element("pubDate")?.Value ?? string.Empty;
@@ -42,6 +42,36 @@ public class GoogleNewsRssClient(HttpClient http, ILogger<GoogleNewsRssClient> l
             logger.LogWarning(ex, "RSS fetch failed for query '{Query}'", query);
             return [];
         }
+    }
+
+    // Google News RSS puede emitir <link/> self-closing o <link href="..."/>.
+    // Fallback: <guid isPermaLink="true"> contiene la URL real en esos casos.
+    private static string ExtractLink(XElement item)
+    {
+        var linkElement = item.Element("link");
+
+        // Caso normal: <link>https://...</link>
+        var value = linkElement?.Value?.Trim();
+        if (!string.IsNullOrEmpty(value)) return value;
+
+        // Caso Atom-style: <link href="https://..."/>
+        var hrefAttr = linkElement?.Attribute("href")?.Value?.Trim();
+        if (!string.IsNullOrEmpty(hrefAttr)) return hrefAttr;
+
+        // Fallback: <guid isPermaLink="true">https://...</guid>
+        // Excluir URLs de news.google.com: son redirects internos de Google, no URLs reales del artículo.
+        var guid = item.Element("guid");
+        var isPermaLink = guid?.Attribute("isPermaLink")?.Value;
+        if (isPermaLink is null or "true")
+        {
+            var guidValue = guid?.Value?.Trim();
+            if (!string.IsNullOrEmpty(guidValue)
+                && guidValue.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                && !guidValue.Contains("news.google.com", StringComparison.OrdinalIgnoreCase))
+                return guidValue;
+        }
+
+        return string.Empty;
     }
 
     private DateTimeOffset ParsePublishedAt(string pubDateStr, string query, string title)

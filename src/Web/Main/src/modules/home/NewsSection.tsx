@@ -1,7 +1,8 @@
+import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchLatestNews } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
-import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
+import { getArticleImageUrl, SECTOR_IMAGES } from '@/shared/lib/news-image-fallback'
 
 function NewsSectionSkeleton() {
   return (
@@ -13,6 +14,7 @@ function NewsSectionSkeleton() {
       <div className="divide-y divide-border animate-pulse">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="px-4 py-3 space-y-2">
+            <div className="aspect-video rounded-lg bg-muted" />
             <div className="h-3 w-full bg-muted rounded" />
             <div className="h-3 w-4/5 bg-muted rounded" />
             <div className="h-2.5 w-20 bg-muted rounded" />
@@ -53,23 +55,27 @@ export function NewsSection() {
       ) : (
         <div className="divide-y divide-border">
           {articles.map(article => {
-            const safeUrl = getSafeExternalUrl(article.url)
             const summary = article.aiSummary ?? article.snippet
 
             return (
               <article key={article.id} className="px-4 py-3">
-                {safeUrl ? (
-                  <a
-                    href={safeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block hover:text-brand transition-colors"
-                  >
+                <Link to={`/noticias/${article.id}`} className="block">
+                  <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
+                    <img
+                      src={getArticleImageUrl(article)}
+                      alt={`Imagen de la nota: ${article.title}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null
+                        event.currentTarget.src = SECTOR_IMAGES.otro
+                      }}
+                    />
+                  </div>
+                  <div className="hover:text-brand transition-colors">
                     <h4 className="text-sm font-medium leading-5">{article.title}</h4>
-                  </a>
-                ) : (
-                  <h4 className="text-sm font-medium leading-5">{article.title}</h4>
-                )}
+                  </div>
+                </Link>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {article.source} · {formatRelativeTime(article.publishedAt)}
                 </p>
