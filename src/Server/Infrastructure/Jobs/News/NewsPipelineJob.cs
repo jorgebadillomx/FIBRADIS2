@@ -13,6 +13,7 @@ public class NewsPipelineJob(
     IRssClient rssClient,
     IAiModeRepository aiModeRepo,
     IOgImageScraper ogImageScraper,
+    IAiSummaryService summaryService,
     ILogger<NewsPipelineJob> logger)
 {
     private static readonly string[] GeneralQueries =
@@ -75,9 +76,35 @@ public class NewsPipelineJob(
         {
             try
             {
-                var imageUrl = ShouldScrapeOgImage(item.Url)
+                var imageUrl = !string.IsNullOrWhiteSpace(item.Url)
                     ? await ogImageScraper.TryGetOgImageAsync(item.Url, ct)
                     : null;
+
+                string? aiSummary = null;
+                var finalStatus = NewsArticleStatus.Processed;
+
+                if (currentMode == AiMode.On)
+                {
+                    try
+                    {
+                        aiSummary = await summaryService.GenerateSummaryAsync(
+                            item.Title, item.Snippet, AiContentType.News, ct);
+                        if (aiSummary is not null)
+                        {
+                            finalStatus = NewsArticleStatus.Processed;
+                        }
+                        else
+                        {
+                            logger.LogWarning("AI summary returned null for '{Url}'; article saved with Partial status", item.Url);
+                            finalStatus = NewsArticleStatus.Partial;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "AI summary failed for '{Url}'; article saved without summary", item.Url);
+                        finalStatus = NewsArticleStatus.Partial;
+                    }
+                }
 
                 var article = new NewsArticle
                 {
@@ -88,7 +115,8 @@ public class NewsPipelineJob(
                     Url = item.Url,
                     Snippet = item.Snippet,
                     ImageUrl = imageUrl,
-                    Status = currentMode == AiMode.Off ? NewsArticleStatus.Processed : NewsArticleStatus.Pending,
+                    AiSummary = aiSummary,
+                    Status = finalStatus,
                     CapturedAt = DateTimeOffset.UtcNow,
                 };
                 var fibraIds = NewsAssociator.Associate(item, fibraMatchInfos);
@@ -119,6 +147,4 @@ public class NewsPipelineJob(
             yield return $"{variant} FIBRA México";
     }
 
-    private static bool ShouldScrapeOgImage(string url)
-        => !url.Contains("news.google.com", StringComparison.OrdinalIgnoreCase);
 }

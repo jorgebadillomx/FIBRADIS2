@@ -33,6 +33,7 @@ public class NewsPipelineJobTests
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(AiMode.Off),
             new FakeOgImageScraper(null),
+            new FakeAiSummaryService("resumen"),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -44,7 +45,7 @@ public class NewsPipelineJobTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithAiModeOff_SetsArticleStatusToProcessed()
+    public async Task ExecuteAsync_WithAiModeOff_SetsArticleStatusToProcessedWithoutSummary()
     {
         var newsRepo = new FakeNewsRepository();
         var job = CreateJob(newsRepo, AiMode.Off);
@@ -53,18 +54,35 @@ public class NewsPipelineJobTests
 
         var article = Assert.Single(newsRepo.SavedArticles);
         Assert.Equal(NewsArticleStatus.Processed, article.Status);
+        Assert.Null(article.AiSummary);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithAiModeManual_SetsArticleStatusToPending()
+    public async Task ExecuteAsync_WithAiModeOn_GeneratesSummaryAndSetsStatusToProcessed()
     {
         var newsRepo = new FakeNewsRepository();
-        var job = CreateJob(newsRepo, AiMode.Manual);
+        var summaryService = new FakeAiSummaryService("Resumen profesional FIBRA.");
+        var job = CreateJob(newsRepo, AiMode.On, summaryService: summaryService);
 
         await job.ExecuteAsync();
 
         var article = Assert.Single(newsRepo.SavedArticles);
-        Assert.Equal(NewsArticleStatus.Pending, article.Status);
+        Assert.Equal(NewsArticleStatus.Processed, article.Status);
+        Assert.Equal("Resumen profesional FIBRA.", article.AiSummary);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAiModeOn_WhenSummaryServiceThrows_SetsStatusToPartial()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var summaryService = new FakeAiSummaryService(shouldThrow: true);
+        var job = CreateJob(newsRepo, AiMode.On, summaryService: summaryService);
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Equal(NewsArticleStatus.Partial, article.Status);
+        Assert.Null(article.AiSummary);
     }
 
     [Fact]
@@ -94,7 +112,7 @@ public class NewsPipelineJobTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenArticleUrlIsGoogleNews_DoesNotCallOgImageScraper()
+    public async Task ExecuteAsync_WhenArticleUrlIsGoogleNews_CallsOgImageScraper()
     {
         var fibra = new Fibra
         {
@@ -122,13 +140,14 @@ public class NewsPipelineJobTests
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(AiMode.Off),
             scraper,
+            new FakeAiSummaryService("resumen"),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
 
         var article = Assert.Single(newsRepo.SavedArticles);
-        Assert.Null(article.ImageUrl);
-        Assert.Empty(scraper.RequestedUrls);
+        Assert.Equal("https://cdn.example.com/image.jpg", article.ImageUrl);
+        Assert.NotEmpty(scraper.RequestedUrls);
     }
 
     private static NewsPipelineJob CreateJob(FakeNewsRepository newsRepo, AiMode mode)
@@ -138,7 +157,8 @@ public class NewsPipelineJobTests
         FakeNewsRepository newsRepo,
         AiMode mode = AiMode.Off,
         bool shouldThrowOnModeLookup = false,
-        IOgImageScraper? ogImageScraper = null)
+        IOgImageScraper? ogImageScraper = null,
+        FakeAiSummaryService? summaryService = null)
     {
         var fibra = new Fibra
         {
@@ -159,6 +179,7 @@ public class NewsPipelineJobTests
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(mode, shouldThrowOnModeLookup),
             ogImageScraper ?? new FakeOgImageScraper(null),
+            summaryService ?? new FakeAiSummaryService("resumen"),
             NullLogger<NewsPipelineJob>.Instance);
     }
 }
@@ -291,5 +312,20 @@ internal sealed class FakeOgImageScraper(string? imageUrl) : IOgImageScraper
     {
         RequestedUrls.Add(url);
         return Task.FromResult(imageUrl);
+    }
+}
+
+internal sealed class FakeAiSummaryService(string? summary = null, bool shouldThrow = false) : IAiSummaryService
+{
+    public Task<string?> GenerateSummaryAsync(
+        string title,
+        string? snippet,
+        AiContentType contentType = AiContentType.News,
+        CancellationToken ct = default)
+    {
+        if (shouldThrow)
+            throw new InvalidOperationException("AI summary service failed.");
+
+        return Task.FromResult(summary);
     }
 }

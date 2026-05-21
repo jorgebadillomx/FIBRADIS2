@@ -83,7 +83,11 @@ public static class ApiServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(5);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
         })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+        });
 
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");

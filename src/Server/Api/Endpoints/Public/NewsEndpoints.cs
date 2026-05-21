@@ -13,7 +13,7 @@ public static class NewsEndpoints
             INewsRepository newsRepo,
             CancellationToken ct) =>
         {
-            var articles = await newsRepo.GetLatestAsync(10, ct);
+            var articles = await newsRepo.GetLatestAsync(5, ct);
             return Results.Ok(articles.Select(ToDto).ToList());
         })
         .AllowAnonymous()

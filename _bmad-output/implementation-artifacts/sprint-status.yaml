@@ -1,5 +1,6 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-21
+# story 4-6 done — code review pass limpio (2 patches: Gemini null log + UI mensaje)
 # epic-4 done — todas las historias completadas, auth hardening mergeado a main
 # story 4-3 hardening code review done — 4 patches aplicados (clearOpsAccessToken solo en 401, assertOpsAccessToken dispatch event, invalidateQueries en bootstrap, test e2e aislado)
 # story 4-3 hardening post-done — Ops auth shell agregado (bootstrap refresh + login AdminOps + fallback sin 401 crudo)
@@ -51,6 +52,7 @@
 
 generated: 2026-05-15
 last_updated: 2026-05-21
+# story 3-4 creada — pipeline histórico distribuciones Yahoo Finance (5 años, idempotencia, catálogo completo)
 # story 4-3 done — Pass 8 code review limpio (0 patches)
 # story 4-3 vuelve a in-progress — 4 patches Pass 7 (P1-P4)
 # story 4-3 vuelve a review — Gemini migration + patches Pass 5 (P1-P5) applied
@@ -124,6 +126,14 @@ development_status:
   4-5-1-scraping-imagen-ogimage-y-fallback-visual: done
   4-5-2-scraping-cuerpo-del-articulo: cancelled
   4-5-3-pagina-lectora-interna-noticias: done
+
+  # ── 3.4: Pipeline histórico de distribuciones Yahoo Finance ─────────────
+  # story 3-4 creada — pipeline 5 años, idempotencia, cobertura catálogo completo, historial expandible
+  3-4-pipeline-historico-distribuciones: ready-for-dev
+
+  # ── 4.6: Display fixes + AiMode On (post-release improvements) ───────────
+  # story 4-6 creada — og:image redirects, HTML snippet strip, AiMode Off/On, home 5 noticias
+  4-6-noticias-display-fixes-y-aimode-on: done
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
   epic-5: backlog

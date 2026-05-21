@@ -36,8 +36,19 @@ public class GeminiAiSummaryService(
         };
 
         var prompt = string.IsNullOrWhiteSpace(snippet)
-            ? $"Resume en 2-3 oraciones este titular de noticia financiera: {title}"
-            : $"Resume en 2-3 oraciones esta noticia financiera.\nTítulo: {title}\nFragmento: {snippet}";
+            ? $"""
+              Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
+              Redacta un resumen profesional en español de máximo 3 oraciones sobre esta noticia:
+              Título: {title}
+              Incluye: el hecho central, su relevancia para el sector de FIBRAs o bienes raíces en México, y una perspectiva analítica breve para el inversor. Responde solo con el resumen, sin preámbulos.
+              """
+            : $"""
+              Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
+              Redacta un resumen profesional en español de máximo 3 oraciones sobre esta noticia:
+              Título: {title}
+              Fragmento: {snippet}
+              Incluye: el hecho central, su relevancia para el sector de FIBRAs o bienes raíces en México, y una perspectiva analítica breve para el inversor. Responde solo con el resumen, sin preámbulos.
+              """;
 
         var url = $"{BaseUrl}/{model}:generateContent?key={apiKey}";
         var body = new
