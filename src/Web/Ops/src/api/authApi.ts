@@ -38,8 +38,6 @@ export async function refreshOpsSession(): Promise<boolean> {
   const { data, error } = await apiClient['/api/v1/auth/refresh'].POST({})
 
   if (error) {
-    clearOpsAccessToken()
-
     if (
       error &&
       typeof error === 'object' &&
@@ -47,6 +45,7 @@ export async function refreshOpsSession(): Promise<boolean> {
       typeof error.status === 'number' &&
       error.status === 401
     ) {
+      clearOpsAccessToken()
       return false
     }
 

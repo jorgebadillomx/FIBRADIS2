@@ -40,6 +40,7 @@ export function getOpsAuthHeaders(): HeadersInit {
 
 export function assertOpsAccessToken(): void {
   if (getStoredOpsAccessToken()) return
+  notifyOpsAuthRequired()
   throw new Error('Inicia sesión como AdminOps para usar el sitio Ops.')
 }
 

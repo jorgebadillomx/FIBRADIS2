@@ -28,10 +28,14 @@ export function OpsLoginGate({ children }: Props) {
         const restored = await refreshOpsSession()
 
         if (!active) return
-        setAuthStatus(restored || getStoredOpsAccessToken() ? 'authenticated' : 'anonymous')
+        const isAuthenticated = restored || Boolean(getStoredOpsAccessToken())
+        setAuthStatus(isAuthenticated ? 'authenticated' : 'anonymous')
+        if (isAuthenticated) void queryClient.invalidateQueries()
       } catch {
         if (!active) return
-        setAuthStatus(getStoredOpsAccessToken() ? 'authenticated' : 'anonymous')
+        const isAuthenticated = Boolean(getStoredOpsAccessToken())
+        setAuthStatus(isAuthenticated ? 'authenticated' : 'anonymous')
+        if (isAuthenticated) void queryClient.invalidateQueries()
       }
     }
 

@@ -123,6 +123,9 @@ test.describe('Épica 4 - Noticias y Contenido', () => {
       await expect(page.getByText('Resumen solicitado correctamente.')).toBeVisible()
     })
 
+  })
+
+  test.describe('Ops auth — sin sesión previa', () => {
     test('Ops pide login cuando no hay sesión y permite entrar como AdminOps', async ({ page }) => {
       await mockOpsAuthApi(page)
       await mockOpsNewsApi(page)
