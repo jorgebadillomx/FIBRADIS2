@@ -39,7 +39,7 @@ public static class AiModeEndpoints
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["mode"] = ["Valor inválido. Use 'Off' o 'Manual'."],
+                    ["mode"] = ["Valor inválido. Use 'Off' o 'On'."],
                 });
             }
 
@@ -62,21 +62,12 @@ public static class AiModeEndpoints
 
         newsGroup.MapPost("/{articleId:guid}/ai-summary", async (
             Guid articleId,
-            IAiModeRepository aiModeRepo,
             INewsRepository newsRepo,
             IAiSummaryService summaryService,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
             var logger = loggerFactory.CreateLogger("AiModeEndpoints");
-            var mode = await aiModeRepo.GetCurrentModeAsync(ct);
-            if (mode != AiMode.Manual)
-            {
-                return Results.Problem(
-                    statusCode: StatusCodes.Status400BadRequest,
-                    detail: "La generación de resumen solo está disponible cuando AI_MODE=Manual.");
-            }
-
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();

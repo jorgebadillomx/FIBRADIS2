@@ -114,6 +114,11 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **`ExtractLink` retorna `string.Empty` como sentinela de fallo en vez de `null`** [`GoogleNewsRssClient.cs`] — Inconsistente con convención `string?`; el caller actual maneja `string.Empty` correctamente. Normalizar en refactor de GoogleNewsRssClient.
 - **Sectores nuevos (Educativo, Autoalmacenaje, Hipotecario) sin asset en `SECTOR_IMAGES`** [`news-image-fallback.ts`] — Caen a `otro.jpg`; fuera del scope de AC3 (7 sectores definidos). Agregar assets sectoriales en historia futura si el miss rate visual es relevante.
 
+## Deferred from: code review of 4-6-noticias-display-fixes-y-aimode-on (2026-05-21)
+
+- **SSRF: destino del redirect no validado en OgImageScraper** [`ApiServiceExtensions.cs`] — `AllowAutoRedirect=true` permite que un redirect externo apunte a endpoints internos; `IsAllowedHostAsync` valida solo la URL de origen. Riesgo bajo por diseño (dev notes lo acepta explícitamente). Revisar junto con SSRF global si se amplía el scraping.
+- **CancellationToken swallowed en bloque AI del pipeline** [`NewsPipelineJob.cs`] — Si el job Hangfire se cancela durante la llamada a Gemini, `OperationCanceledException` es capturada por el `catch(Exception)` interno y el artículo queda como `Partial` permanentemente (deduplicador lo excluye en la próxima corrida). Recuperable via regeneración manual con el endpoint de trigger.
+
 ## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — Hardening Pass (2026-05-21)
 
 - **Token de AdminOps en `sessionStorage` expuesto a XSS** [`src/Web/Ops/src/api/opsAuth.ts`] — Decisión arquitectural aceptada para SPA; el Ops SPA tiene surface de ataque reducida (acceso restringido a AdminOps). Revisar si se migra a HttpOnly cookie en Epic 5 junto con gestión de sesión.

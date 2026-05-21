@@ -7,10 +7,10 @@ type BlocklistTerm = {
 }
 
 type AiModeState = {
-  mode: 'Off' | 'Manual'
+  mode: 'Off' | 'On'
   updatedAt: string
   updatedBy: string | null
-  previousMode: 'Off' | 'Manual' | null
+  previousMode: 'Off' | 'On' | null
 }
 
 type OpsNewsApiOptions = {
@@ -134,7 +134,7 @@ export async function mockOpsNewsApi(page: Page, options: OpsNewsApiOptions = {}
     }
 
     if (method === 'PUT') {
-      const body = route.request().postDataJSON() as { mode?: 'Off' | 'Manual' } | null
+      const body = route.request().postDataJSON() as { mode?: 'Off' | 'On' } | null
       const nextMode = body?.mode ?? aiMode.mode
 
       aiMode = {
@@ -153,14 +153,6 @@ export async function mockOpsNewsApi(page: Page, options: OpsNewsApiOptions = {}
   await page.route('**/api/v1/ops/news/*/ai-summary', async (route) => {
     if (route.request().method() !== 'POST') {
       return route.fallback()
-    }
-
-    if (aiMode.mode !== 'Manual') {
-      return fulfillJson(route, 400, {
-        title: 'Bad Request',
-        status: 400,
-        detail: 'La generación de resumen solo está disponible cuando AI_MODE=Manual.',
-      })
     }
 
     return route.fulfill({ status: 204 })

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Application.News;
 using Microsoft.Extensions.Logging;
@@ -22,7 +24,7 @@ public class GoogleNewsRssClient(HttpClient http, ILogger<GoogleNewsRssClient> l
                 {
                     var title = item.Element("title")?.Value ?? string.Empty;
                     var link = ExtractLink(item);
-                    var snippet = item.Element("description")?.Value;
+                    var snippet = StripHtml(item.Element("description")?.Value);
                     var source = item.Element("source")?.Value ?? string.Empty;
                     var pubDateStr = item.Element("pubDate")?.Value ?? string.Empty;
                     var publishedAt = ParsePublishedAt(pubDateStr, query, title);
@@ -72,6 +74,15 @@ public class GoogleNewsRssClient(HttpClient http, ILogger<GoogleNewsRssClient> l
         }
 
         return string.Empty;
+    }
+
+    private static string? StripHtml(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var stripped = Regex.Replace(raw, "<[^>]+>", " ", RegexOptions.IgnoreCase);
+        var decoded = WebUtility.HtmlDecode(stripped);
+        var normalized = Regex.Replace(decoded, @"\s{2,}", " ").Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
     private DateTimeOffset ParsePublishedAt(string pubDateStr, string query, string title)

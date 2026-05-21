@@ -4,7 +4,7 @@ import { fetchAiMode, setAiMode, triggerAiSummary } from '@/api/aiModeApi'
 
 export function AiModeSection() {
   const queryClient = useQueryClient()
-  const [selected, setSelected] = useState<'Off' | 'Manual' | null>(null)
+  const [selected, setSelected] = useState<'Off' | 'On' | null>(null)
   const [articleId, setArticleId] = useState('')
 
   const modeQuery = useQuery({
@@ -29,7 +29,7 @@ export function AiModeSection() {
     },
   })
 
-  const currentMode = modeQuery.data?.mode as 'Off' | 'Manual' | undefined
+  const currentMode = modeQuery.data?.mode as 'Off' | 'On' | undefined
   const pendingMode = selected ?? currentMode
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -51,7 +51,7 @@ export function AiModeSection() {
       ) : (
         <>
           <div className="mt-6 flex flex-col gap-3 md:flex-row">
-            {(['Off', 'Manual'] as const).map((mode) => (
+            {(['Off', 'On'] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
@@ -64,7 +64,7 @@ export function AiModeSection() {
                 disabled={saveMutation.isPending}
                 onClick={() => setSelected(mode)}
               >
-                {mode === 'Off' ? 'Off - sin resúmenes' : 'Manual - disparar desde Ops'}
+                {mode === 'Off' ? 'Off - sin resúmenes' : 'On - generar resumen al ingestar'}
               </button>
             ))}
           </div>
@@ -98,14 +98,14 @@ export function AiModeSection() {
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-semibold tracking-tight">Generación manual de resumen</h3>
               <p className="text-sm text-muted-foreground">
-                Usa el id del artículo para disparar un resumen desde Ops cuando el modo esté en Manual.
+                Usa el id del artículo para regenerar el resumen de una noticia específica, sin importar el modo actual.
               </p>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 md:flex-row">
               <input
                 className="h-11 flex-1 rounded-xl border border-border bg-white px-4 text-sm outline-none ring-0 transition focus:border-teal-600"
-                disabled={currentMode !== 'Manual' || triggerMutation.isPending}
+                disabled={triggerMutation.isPending}
                 onChange={(event) => {
                   setArticleId(event.target.value)
                   triggerMutation.reset()
@@ -115,7 +115,7 @@ export function AiModeSection() {
               />
               <button
                 className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                disabled={currentMode !== 'Manual' || !isValidUuid || triggerMutation.isPending}
+                disabled={!isValidUuid || triggerMutation.isPending}
                 onClick={() => triggerMutation.mutate(articleId.trim())}
                 type="button"
               >
@@ -127,9 +127,9 @@ export function AiModeSection() {
               <p className="mt-2 text-sm text-destructive">El ID debe ser un GUID válido (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).</p>
             ) : null}
 
-            {currentMode !== 'Manual' ? (
+            {currentMode === 'On' ? (
               <p className="mt-3 text-sm text-muted-foreground">
-                Cambia AI_MODE a Manual para habilitar este disparo.
+                En modo On, el pipeline ya genera resúmenes automáticamente. Este disparo regenera uno específico.
               </p>
             ) : null}
 

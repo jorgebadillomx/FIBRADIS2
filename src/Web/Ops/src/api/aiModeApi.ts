@@ -22,7 +22,7 @@ export async function fetchAiMode(): Promise<AiModeDto> {
   return data
 }
 
-export async function setAiMode(mode: 'Off' | 'Manual'): Promise<void> {
+export async function setAiMode(mode: 'Off' | 'On'): Promise<void> {
   assertOpsAccessToken()
 
   const { error } = await apiClient['/api/v1/ops/ai-mode'].PUT({

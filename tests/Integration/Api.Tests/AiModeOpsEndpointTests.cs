@@ -13,23 +13,21 @@ namespace Api.Tests;
 public class AiModeOpsEndpointTests
 {
     [Fact]
-    public async Task PostAiSummary_WhenModeIsNotManual_ReturnsProblemDetails400()
+    public async Task PostAiSummary_WhenModeIsOff_StillGeneratesSummary()
     {
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
-            new StubAiSummaryService("should not be called"),
+            new StubAiSummaryService("Resumen generado"),
             repository,
             new StubAiModeRepository(AiMode.Off));
         await factory.SeedUsersAsync();
         using var client = await CreateAuthorizedClientAsync(factory);
 
         var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-summary", content: null);
-        var body = await response.Content.ReadAsStringAsync();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        Assert.Contains("AI_MODE=Manual", body);
-        Assert.Equal(0, repository.UpdateAttempts);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(1, repository.UpdateAttempts);
+        Assert.Equal(NewsArticleStatus.Processed, repository.Article.Status);
     }
 
     [Fact]
@@ -39,7 +37,7 @@ public class AiModeOpsEndpointTests
         await using var factory = new AiModeApiWebFactory(
             new StubAiSummaryService(null),
             repository,
-            new StubAiModeRepository(AiMode.Manual));
+            new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
         using var client = await CreateAuthorizedClientAsync(factory);
 
@@ -57,7 +55,7 @@ public class AiModeOpsEndpointTests
         await using var factory = new AiModeApiWebFactory(
             new ThrowingAiSummaryService(new TaskCanceledException("Gemini timeout")),
             repository,
-            new StubAiModeRepository(AiMode.Manual));
+            new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
 
         using var client = await CreateAuthorizedClientAsync(factory);
@@ -77,7 +75,7 @@ public class AiModeOpsEndpointTests
         await using var factory = new AiModeApiWebFactory(
             new ThrowingAiSummaryService(new InvalidOperationException("Gemini unavailable")),
             repository,
-            new StubAiModeRepository(AiMode.Manual));
+            new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
 
         using var client = await CreateAuthorizedClientAsync(factory);
@@ -97,7 +95,7 @@ public class AiModeOpsEndpointTests
         await using var factory = new AiModeApiWebFactory(
             new StubAiSummaryService("should not be called"),
             repository,
-            new StubAiModeRepository(AiMode.Manual));
+            new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
 
         using var client = await CreateAuthorizedClientAsync(factory);
