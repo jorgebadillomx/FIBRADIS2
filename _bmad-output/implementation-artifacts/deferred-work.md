@@ -149,6 +149,27 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **Null/empty `YahooTicker` sin guardia explícita** [`DistributionPipelineJob.cs`] — Pre-existente en todos los pipelines; catálogo controlado. Agregar guard defensivo si se abre la gestión del catálogo en Épica 5.
 - **React row key `d.date` puede colisionar** [`DistribucionesSection.tsx`] — El UIX garantiza unicidad en DB; sin impacto real. Usar `${d.date}-${i}` si se añade soporte para múltiples distribuciones por fecha.
 
+## Deferred from: code review of 4-5-4-limpieza-semantica-del-body-text-de-noticias (2026-05-22)
+
+- **Regex `ArticleBlockRegex` no-greedy captura primer `</article>` anidado** [`ArticleContentScraper.cs`] — Artículos con elementos `<article>` anidados (WordPress related posts, microdata) capturan el bloque más pequeño; limitación del enfoque regex sin HTML parser.
+- **`CountSentenceTerminators` cuenta puntos decimales** [`GeminiAiSummaryService.cs`] — `text.Count(c => c is '.' or '!')` cuenta decimales financieros (`94.5%`, `$0.42`, `NOI 1.2mmdp`) como terminadores de oración; puede aprobar resúmenes de 1-2 oraciones con muchos números.
+- **Retry de Gemini sin delay entre intentos** [`GeminiAiSummaryService.cs`] — Las dos llamadas a `GenerateSummaryCoreAsync` son inmediatamente consecutivas; un 429 en el primer intento podría agravar el rate limiting.
+- **`TryExtractByContentClassStart` trunca HTML a 40k chars** [`ArticleContentScraper.cs`] — Artículos muy largos (informes trimestrales) pueden ser cortados a mitad de un tag, produciendo un párrafo final con contenido de otro bloque.
+
+## Deferred from: code review of 4-7-editor-manual-body-text-ops (2026-05-22)
+
+- **Doble `FindAsync` en el flujo PUT body-text** [`AiModeEndpoints.cs` + `NewsRepository.cs`] — El endpoint llama `GetByIdAsync` para verificar 404, luego `UpdateBodyTextAsync` llama `FindAsync` de nuevo; EF Core devuelve la entidad trackeada sin ir a BD (no es doble roundtrip real), pero la redundancia puede confundir en mantenimiento futuro.
+- **`GetPagedForOpsAsync` COUNT y SELECT sin snapshot transaccional** [`NewsRepository.cs`] — Artículos insertados entre ambas queries producen `total` inconsistente con `items`; menor impacto para UI de backoffice de bajo volumen.
+- **Botón "Limpiar (null)" sin diálogo de confirmación** [`NewsBodyTextSection.tsx`] — Destructivo e irreversible desde la UI; un clic accidental elimina el body_text sin posibilidad de recuperación desde el panel Ops. Decisión de UX.
+- **Sin límite de longitud en `UpdateBodyTextRequest.BodyText`** [`AiModeEndpoints.cs`] — Columna `nvarchar(max)` sin `[MaxLength]`; un payload grande sería persistido y enviado íntegro a Gemini en el siguiente trigger ai-summary.
+
+## Deferred from: code review of 4-7-seleccion-modelo-ia-noticias (2026-05-22)
+
+- **Whitelist de modelos duplicada en C#/TS/UI** [`AiModeEndpoints.cs` / `aiModeApi.ts` / `AiModeSection.tsx`] — Los valores `"gemini-2.5-flash"` / `"gemini-2.5-pro"` aparecen en ≥4 archivos sin fuente única de verdad. Un nuevo modelo requiere cambios coordinados en backend y frontend. Sin impacto funcional actual.
+- **`UpdateConfigAsync(null, null, ...)` silently no-ops sin audit trail** [`AiModeRepository.cs`] — La firma permite ambos parámetros null; el método retorna sin `SaveChangesAsync`. No hay llamador actual con ambos null (el endpoint valida primero). Interfaz permisiva pero sin consecuencia práctica hoy.
+- **Upsert-on-insert asume singleton cuando solo `newsModel` es proporcionado** [`AiModeRepository.cs:32-35`] — Si la fila id=1 no existe y se llama solo con `newsModel`, se inserta con `Mode = Off` como default, potencialmente inesperado. Inalcanzable con seed EF en producción.
+- **Conflicto route handler LIFO en test E2E** [`news-epic4.spec.ts:~427`] — El test "Guardar con Flash" registra un segundo handler de Playwright sobre el mock base (LIFO); funcional hoy pero frágil ante reordenamiento de `beforeEach`.
+
 ## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — Hardening Pass (2026-05-21)
 
 - **Token de AdminOps en `sessionStorage` expuesto a XSS** [`src/Web/Ops/src/api/opsAuth.ts`] — Decisión arquitectural aceptada para SPA; el Ops SPA tiene surface de ataque reducida (acceso restringido a AdminOps). Revisar si se migra a HttpOnly cookie en Epic 5 junto con gestión de sesión.

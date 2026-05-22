@@ -179,6 +179,41 @@ public class NewsPipelineJobTests
         Assert.NotEmpty(scraper.RequestedUrls);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WithAiModeOn_PassesNewsModelFromConfigToSummaryService()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var summaryService = new FakeAiSummaryService("Resumen flash.");
+        var fibra = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FUNO11",
+            NameVariants = ["Fibra Uno"],
+            State = FibraState.Active,
+        };
+        var rssItems = new[]
+        {
+            new RssItem("FUNO11 sube", "Fuente", DateTimeOffset.UtcNow, "https://example.com/1", "Snippet"),
+        };
+
+        var job = new NewsPipelineJob(
+            new FakeNewsFibraRepository([fibra]),
+            newsRepo,
+            new FakeNewsBlocklistRepository([]),
+            new FakeRssClient(rssItems),
+            new FakeAiModeRepository(AiMode.On, newsModel: "gemini-2.5-flash"),
+            new FakeOgImageScraper(null),
+            new FakeArticleContentScraper(null),
+            summaryService,
+            NullLogger<NewsPipelineJob>.Instance);
+
+        await job.ExecuteAsync();
+
+        Assert.Equal("gemini-2.5-flash", summaryService.LastModel);
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Equal(NewsArticleStatus.Processed, article.Status);
+    }
+
     private static NewsPipelineJob CreateJob(FakeNewsRepository newsRepo, AiMode mode)
         => CreateJob(newsRepo, mode, shouldThrowOnModeLookup: false);
 
@@ -304,12 +339,13 @@ internal sealed class FakeNewsBlocklistRepository(IReadOnlyList<string> terms) :
         => Task.FromResult(true);
 }
 
-internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLookup = false) : IAiModeRepository
+internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLookup = false, string newsModel = "gemini-2.5-pro") : IAiModeRepository
 {
     private AiModeConfig _config = new()
     {
         Id = 1,
         Mode = mode,
+        NewsModel = newsModel,
         PreviousMode = null,
         UpdatedAt = DateTimeOffset.UtcNow,
         UpdatedBy = "test",
@@ -324,7 +360,12 @@ internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLo
     }
 
     public Task<AiModeConfig> GetConfigAsync(CancellationToken ct = default)
-        => Task.FromResult(_config);
+    {
+        if (shouldThrowOnModeLookup)
+            throw new InvalidOperationException("AI mode lookup failed.");
+
+        return Task.FromResult(_config);
+    }
 
     public Task SetModeAsync(AiMode mode, string actor, CancellationToken ct = default)
     {
@@ -332,11 +373,21 @@ internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLo
         {
             Id = 1,
             Mode = mode,
+            NewsModel = _config.NewsModel,
             PreviousMode = _config.Mode,
             UpdatedAt = DateTimeOffset.UtcNow,
             UpdatedBy = actor,
         };
 
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateConfigAsync(AiMode? mode, string? newsModel, string actor, CancellationToken ct = default)
+    {
+        if (mode is not null) _config.Mode = mode.Value;
+        if (newsModel is not null) _config.NewsModel = newsModel;
+        _config.UpdatedAt = DateTimeOffset.UtcNow;
+        _config.UpdatedBy = actor;
         return Task.CompletedTask;
     }
 }
@@ -371,13 +422,18 @@ internal sealed class FakeArticleContentScraper(string? bodyText) : IArticleCont
 
 internal sealed class FakeAiSummaryService(string? summary = null, bool shouldThrow = false) : IAiSummaryService
 {
+    public string? LastModel { get; private set; }
+
     public Task<string?> GenerateSummaryAsync(
         string title,
         string? snippet,
         string? bodyText = null,
         AiContentType contentType = AiContentType.News,
+        string? model = null,
         CancellationToken ct = default)
     {
+        LastModel = model;
+
         if (shouldThrow)
             throw new InvalidOperationException("AI summary service failed.");
 

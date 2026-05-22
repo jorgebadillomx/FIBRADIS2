@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchOpsNewsList,
@@ -41,6 +41,13 @@ export function NewsBodyTextSection() {
     },
   })
 
+  useEffect(() => {
+    if (bodyQuery.isSuccess && editingId) {
+      setEditText(bodyQuery.data.bodyText ?? '')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId, bodyQuery.isSuccess, bodyQuery.data?.bodyText])
+
   function handleEdit(article: OpsNewsArticle) {
     setEditingId(article.id)
     setEditText('')
@@ -61,12 +68,7 @@ export function NewsBodyTextSection() {
     saveMutation.mutate({ id, text: null })
   }
 
-  // Pre-populate textarea once body text loads
-  if (bodyQuery.isSuccess && editingId && editText === '') {
-    setEditText(bodyQuery.data.bodyText ?? '')
-  }
-
-  const total = listQuery.data?.total ?? 0
+  const total = Number(listQuery.data?.total ?? 0)
   const totalPages = Math.ceil(total / pageSize)
 
   return (
@@ -115,10 +117,9 @@ export function NewsBodyTextSection() {
             ) : null}
 
             {listQuery.data?.items.map((article) => (
-              <>
+              <Fragment key={article.id}>
                 <tr
                   className="border-t border-border/70 text-sm"
-                  key={article.id}
                 >
                   <td className="max-w-xs px-4 py-4 font-medium text-slate-900">
                     <a
@@ -212,7 +213,7 @@ export function NewsBodyTextSection() {
                     </td>
                   </tr>
                 ) : null}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -227,7 +228,7 @@ export function NewsBodyTextSection() {
             <button
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
               disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => { setPage((p) => p - 1); setEditingId(null); setEditText('') }}
               type="button"
             >
               Anterior
@@ -235,7 +236,7 @@ export function NewsBodyTextSection() {
             <button
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
               disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => { setPage((p) => p + 1); setEditingId(null); setEditText('') }}
               type="button"
             >
               Siguiente

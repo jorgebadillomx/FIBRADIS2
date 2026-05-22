@@ -1,6 +1,6 @@
 # Historia 4.5.4: Limpieza semántica del `body_text` de noticias
 
-Status: review
+Status: done
 
 ## Story
 
@@ -309,3 +309,24 @@ Fases:
 ## Change Log
 
 - 2026-05-22: Rediseño completo de `ArticleContentScraper` — extracción semántica + boilerplate removal + quality gate. Tests unitarios amplíados a 78. Tests integración AiModeOpsEndpoints siguen pasando. (Historia 4.5.4)
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+#### Action Items — Patches
+
+- [x] [Review][Patch] `curl.exe` hardcoded falla silenciosamente en Linux/Docker — cambiar a `"curl"` sin extensión [GoogleNewsUrlDecoder.cs:117]
+- [x] [Review][Patch] Deadlock stdout/stderr en `TryFetchWithCurlAsync` — `ReadToEndAsync` para stdout y stderr deben iniciarse concurrentemente antes de `WaitForExitAsync`; si el buffer de stderr (~4 KB) se llena el proceso hijo se bloquea indefinidamente [GoogleNewsUrlDecoder.cs:134]
+- [x] [Review][Patch] Proceso curl hijo queda huérfano al cancelar — añadir `process.Kill()` antes de relanzar `OperationCanceledException` en el catch de `TryFetchWithCurlAsync` [GoogleNewsUrlDecoder.cs:155]
+- [x] [Review][Patch] `HttpResponseMessage` no dispuesto en error paths 401/403 de `SendRequestAsync` — añadir `using` sobre `response` o asegurar `Dispose()` antes de lanzar la `AiProviderConfigurationException` [GeminiAiSummaryService.cs:~323]
+- [x] [Review][Patch] `BuildPrompt` llama `.Trim()` dos veces sobre el mismo string — cachear resultado en variable local antes de calcular longitud y hacer slice [GeminiAiSummaryService.cs:~361]
+- [x] [Review][Patch] `InMemoryNewsRepository.UpdateBodyTextAsync` no incrementa `UpdateAttempts` — el test `PostAiSummary_WhenConfigurationError_Returns503` comprueba `UpdateAttempts == 0` pero un body refresh previo a la excepción pasaría invisible [AiModeOpsEndpointTests.cs:~1187]
+- [x] [Review][Patch] Falta test explícito para `PassesQualityGate` cuando el texto extraído es exactamente `"Google News"` — el quality gate existe pero no está cubierto por un test unitario directo [ArticleContentScraperTests.cs]
+
+#### Action Items — Deferred
+
+- [x] [Review][Defer] Regex no-greedy `<article>` captura primer cierre anidado — artículos con `<article>` anidado capturan el más pequeño en lugar del cuerpo principal; limitación arquitectural del enfoque sin parser HTML — deferred, pre-existing del diseño sin HtmlAgilityPack
+- [x] [Review][Defer] `CountSentenceTerminators` cuenta puntos decimales y abreviaturas como terminadores de oración — puede aprobar resúmenes de 1-2 oraciones con muchos decimales financieros — deferred, corner case aceptable para MVP
+- [x] [Review][Defer] Retry de Gemini sin delay — dos llamadas consecutivas inmediatas pueden agravar rate limiting; no hay `Task.Delay` entre primer y segundo intento — deferred, mejora de calidad
+- [x] [Review][Defer] `TryExtractByContentClassStart` trunca HTML a 40k chars — el corte puede caer en medio de un tag, produciendo un párrafo final con texto de otro bloque — deferred, edge case muy raro en práctica

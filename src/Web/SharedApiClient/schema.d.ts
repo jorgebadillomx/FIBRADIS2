@@ -349,7 +349,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["SetAiModeRequest"];
+                    "application/json": components["schemas"]["UpdateAiModeRequest"];
                 };
             };
             responses: {
@@ -1116,6 +1116,7 @@ export interface components {
     schemas: {
         AiModeDto: {
             mode: string;
+            newsModel: string;
             /** Format: date-time */
             updatedAt: string;
             updatedBy: null | string;
@@ -1274,8 +1275,9 @@ export interface components {
         RefreshResponse: {
             accessToken: string;
         };
-        SetAiModeRequest: {
-            mode: string;
+        UpdateAiModeRequest: {
+            mode: null | string;
+            newsModel: null | string;
         };
         UpdateBodyTextRequest: {
             bodyText: null | string;

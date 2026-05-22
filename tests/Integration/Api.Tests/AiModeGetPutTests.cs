@@ -243,4 +243,62 @@ public class AiModeGetPutTests(ApiWebFactory factory) : IClassFixture<ApiWebFact
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    // ── newsModel — AC 1, 2, 3 ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetAiMode_ResponseContainsNewsModel()
+    {
+        var response = await _client.GetAsync("/api/v1/ops/ai-mode");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.TryGetProperty("newsModel", out var newsModelProp), "missing: newsModel");
+        var value = newsModelProp.GetString();
+        Assert.False(string.IsNullOrEmpty(value), "newsModel should not be empty");
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithNewsModelOnly_UpdatesModelAndPreservesMode()
+    {
+        await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { mode = "Off" });
+
+        var putResponse = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { newsModel = "gemini-2.5-flash" });
+        Assert.Equal(HttpStatusCode.NoContent, putResponse.StatusCode);
+
+        var getResponse = await _client.GetAsync("/api/v1/ops/ai-mode");
+        using var doc = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.Equal("gemini-2.5-flash", doc.RootElement.GetProperty("newsModel").GetString());
+        Assert.Equal("Off", doc.RootElement.GetProperty("mode").GetString());
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithModeOnly_PreservesNewsModel()
+    {
+        await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { newsModel = "gemini-2.5-flash" });
+
+        var putResponse = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { mode = "On" });
+        Assert.Equal(HttpStatusCode.NoContent, putResponse.StatusCode);
+
+        var getResponse = await _client.GetAsync("/api/v1/ops/ai-mode");
+        using var doc = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.Equal("gemini-2.5-flash", doc.RootElement.GetProperty("newsModel").GetString());
+        Assert.Equal("On", doc.RootElement.GetProperty("mode").GetString());
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithInvalidNewsModel_Returns400()
+    {
+        var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { newsModel = "gemini-invalid" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithEmptyBody_Returns400()
+    {
+        var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

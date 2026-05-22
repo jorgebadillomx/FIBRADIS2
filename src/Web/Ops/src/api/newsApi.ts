@@ -81,7 +81,7 @@ export async function updateNewsBodyText(id: string, bodyText: string | null): P
   const { error } = await apiClient['/api/v1/ops/news/{articleId}/body-text'].PUT({
     headers: getOpsAuthHeaders(),
     params: { path: { articleId: id } },
-    body: { bodyText: bodyText ?? undefined },
+    body: { bodyText: bodyText ?? null },
   })
 
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al guardar body text: ${JSON.stringify(error)}`))

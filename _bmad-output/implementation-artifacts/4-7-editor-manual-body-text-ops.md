@@ -1,6 +1,6 @@
 # Historia 4.7: Editor manual de body_text en Ops
 
-Status: review
+Status: done
 
 ## Story
 
@@ -162,3 +162,24 @@ npm run dev:ops
 ## Change Log
 
 - 2026-05-22: Implementación completa de historia 4.7 — Editor manual de body_text en Ops.
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+#### Action Items — Decisiones requeridas
+
+- [x] [Review][Decision] `NeedsBodyRefresh` sobreescribe body_text editado manualmente si mide < 200 chars — si un operador guarda un extracto manual corto (< 200 chars) y luego dispara ai-summary, el cuerpo manual es silenciosamente sobreescrito por el scraper; opciones: (A) cambiar la condición a solo `null` evitando refrescar ediciones cortas pero válidas, (B) añadir flag `manually_edited` en `NewsArticle`, (C) aceptar el comportamiento actual y documentarlo [AiModeEndpoints.cs:~164]
+
+#### Action Items — Patches
+
+- [x] [Review][Patch] `setState` durante render en `NewsBodyTextSection` — `setEditText(bodyQuery.data.bodyText ?? '')` se llama directamente en el cuerpo del componente; si el usuario vacía el textarea y el componente re-renderiza por cualquier razón, la condición `editText === ''` vuelve a ser verdadera y sobreescribe el vaciado intencional del operador; mover a `useEffect` [NewsBodyTextSection.tsx:~65]
+- [x] [Review][Patch] Fragment shorthand `<>` no acepta prop `key` — usar `<React.Fragment key={article.id}>` en el map de artículos para que React reconcilie correctamente el par fila-datos + fila-editor [NewsBodyTextSection.tsx:~117]
+- [x] [Review][Patch] Editor inline no se cierra al cambiar de página — `editingId` y `editText` persisten al presionar Anterior/Siguiente; añadir `setEditingId(null); setEditText('')` en los handlers de cambio de página [NewsBodyTextSection.tsx:~227]
+
+#### Action Items — Deferred
+
+- [x] [Review][Defer] Doble `FindAsync` en el flujo PUT body-text — el endpoint llama `GetByIdAsync` para verificar 404, luego `UpdateBodyTextAsync` llama `FindAsync` de nuevo; EF Core devuelve la entidad ya trackeada sin ir a BD, por lo que no es un doble roundtrip real, pero la redundancia puede confundir — deferred, pre-existing del patrón de endpoints
+- [x] [Review][Defer] `GetPagedForOpsAsync` COUNT y SELECT son dos queries sin snapshot — artículos insertados entre ambas queries producen `total` inconsistente con `items`; aceptable para UI de backoffice de bajo volumen — deferred, no crítico para ops
+- [x] [Review][Defer] Botón "Limpiar (null)" sin diálogo de confirmación — destructivo e irreversible desde la UI; no hay posibilidad de recuperar el body_text desde el panel Ops — deferred, decisión de UX
+- [x] [Review][Defer] Sin límite de longitud en `UpdateBodyTextRequest.BodyText` — columna `nvarchar(max)`, sin `[MaxLength]`, sin validación de request size; un payload grande sería persistido y enviado íntegro a Gemini en el siguiente trigger — deferred, post-MVP

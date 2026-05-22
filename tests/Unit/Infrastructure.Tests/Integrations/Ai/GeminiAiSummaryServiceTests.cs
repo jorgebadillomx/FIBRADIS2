@@ -378,6 +378,34 @@ public class GeminiAiSummaryServiceTests
     }
 
     [Fact]
+    public async Task GenerateSummaryAsync_UsesExplicitModelParameter_WhenProvided()
+    {
+        string? capturedUrl = null;
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            capturedUrl = request.RequestUri?.ToString();
+            return Task.FromResult(CreateJsonResponse("""
+                {
+                  "candidates": [
+                    {
+                      "content": {
+                        "parts": [{ "text": "Fibra Danhos anunció resultados relevantes. La lectura es constructiva para el portafolio del inversionista con visibilidad en flujos." }]
+                      }
+                    }
+                  ]
+                }
+                """));
+        });
+        var service = CreateService(handler);
+
+        await service.GenerateSummaryAsync("Titulo", "Snippet", model: "gemini-2.5-flash");
+
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("gemini-2.5-flash", capturedUrl);
+        Assert.DoesNotContain("gemini-2.5-pro", capturedUrl);
+    }
+
+    [Fact]
     public async Task GenerateSummaryAsync_UsesDefaultDocumentModel_WhenConfiguredValueIsEmpty()
     {
         string? capturedUrl = null;

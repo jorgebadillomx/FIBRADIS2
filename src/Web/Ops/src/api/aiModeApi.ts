@@ -23,10 +23,17 @@ export async function fetchAiMode(): Promise<AiModeDto> {
 }
 
 export async function setAiMode(mode: 'Off' | 'On'): Promise<void> {
+  return setAiConfig({ mode })
+}
+
+export async function setAiConfig(payload: {
+  mode?: 'Off' | 'On'
+  newsModel?: 'gemini-2.5-flash' | 'gemini-2.5-pro'
+}): Promise<void> {
   assertOpsAccessToken()
 
   const { error } = await apiClient['/api/v1/ops/ai-mode'].PUT({
-    body: { mode },
+    body: { mode: payload.mode ?? null, newsModel: payload.newsModel ?? null },
     headers: getOpsAuthHeaders(),
   })
 

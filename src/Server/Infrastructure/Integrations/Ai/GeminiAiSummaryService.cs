@@ -30,6 +30,7 @@ public class GeminiAiSummaryService(
         string? snippet,
         string? bodyText = null,
         AiContentType contentType = AiContentType.News,
+        string? model = null,
         CancellationToken ct = default)
     {
         var apiKey = configuration["Gemini:ApiKey"];
@@ -39,13 +40,14 @@ public class GeminiAiSummaryService(
             return null;
         }
 
-        var model = contentType switch
-        {
-            AiContentType.Document => ResolveModel(configuration["Gemini:DocumentModel"], DefaultDocumentModel),
-            _ => ResolveModel(configuration["Gemini:NewsModel"], DefaultNewsModel),
-        };
+        var effectiveModel = model
+            ?? (contentType switch
+            {
+                AiContentType.Document => ResolveModel(configuration["Gemini:DocumentModel"], DefaultDocumentModel),
+                _ => ResolveModel(configuration["Gemini:NewsModel"], DefaultNewsModel),
+            });
         var summary = await GenerateSummaryCoreAsync(
-            model,
+            effectiveModel,
             apiKey,
             BuildPrompt(title, snippet, bodyText, requiresElaboration: false),
             DefaultMaxOutputTokens,
@@ -56,11 +58,11 @@ public class GeminiAiSummaryService(
 
         logger.LogWarning(
             "Gemini devolvió un resumen corto o incompleto para modelo {Model}. Longitud: {Length}. Reintentando con prompt reforzado.",
-            model,
+            effectiveModel,
             summary.Length);
 
         var retriedSummary = await GenerateSummaryCoreAsync(
-            model,
+            effectiveModel,
             apiKey,
             BuildPrompt(title, snippet, bodyText, requiresElaboration: true),
             RetryMaxOutputTokens,
@@ -142,6 +144,7 @@ public class GeminiAiSummaryService(
                     (int)response.StatusCode,
                     responseBody);
 
+                response.Dispose();
                 throw new AiProviderConfigurationException(
                     "La credencial de Gemini fue rechazada. Verifique Gemini:ApiKey y genere una nueva API key si la actual fue revocada o reportada como filtrada.");
             }
@@ -171,9 +174,8 @@ public class GeminiAiSummaryService(
             ? "La respuesta debe estar completa, cerrar la idea final y no puede quedar truncada. Escribe entre 6 y 8 oraciones completas, con un mínimo de 450 caracteres, análisis suficiente para un inversionista y sin frases telegráficas."
             : "Redacta un resumen analítico en español de entre 5 y 7 oraciones sobre esta noticia. Debe ser un texto sustancial, no una nota breve.";
 
-        var preparedBody = string.IsNullOrWhiteSpace(bodyText)
-            ? null
-            : bodyText.Trim()[..Math.Min(bodyText.Trim().Length, MaxPromptBodyChars)];
+        var trimmedBody = string.IsNullOrWhiteSpace(bodyText) ? null : bodyText.Trim();
+        var preparedBody = trimmedBody is null ? null : trimmedBody[..Math.Min(trimmedBody.Length, MaxPromptBodyChars)];
 
         var bodySection = string.IsNullOrWhiteSpace(preparedBody)
             ? "Cuerpo completo no disponible."

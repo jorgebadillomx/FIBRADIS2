@@ -178,13 +178,13 @@ public class AiModeOpsEndpointTests
 
     private sealed class StubAiSummaryService(string? summary) : IAiSummaryService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
+        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, string? model = null, CancellationToken ct = default)
             => Task.FromResult(summary);
     }
 
     private sealed class ThrowingAiSummaryService(Exception exception) : IAiSummaryService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
+        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, string? model = null, CancellationToken ct = default)
             => Task.FromException<string?>(exception);
     }
 
@@ -204,11 +204,15 @@ public class AiModeOpsEndpointTests
             {
                 Id = 1,
                 Mode = mode,
+                NewsModel = "gemini-2.5-pro",
                 UpdatedAt = DateTimeOffset.UtcNow,
                 UpdatedBy = "test",
             });
 
         public Task SetModeAsync(AiMode newMode, string actor, CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public Task UpdateConfigAsync(AiMode? newMode, string? newsModel, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
     }
 
@@ -247,8 +251,11 @@ public class AiModeOpsEndpointTests
         public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(id == Article.Id ? Article : null);
 
+        public int UpdateBodyTextAttempts { get; private set; }
+
         public Task UpdateBodyTextAsync(Guid id, string? bodyText, CancellationToken ct = default)
         {
+            UpdateBodyTextAttempts++;
             Article.BodyText = bodyText;
             return Task.CompletedTask;
         }
