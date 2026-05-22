@@ -15,6 +15,10 @@ public partial class ArticleContentScraper(
     private const int MinUsefulLength = 200;
     private const int MinParagraphLength = 60;
 
+    // Max chars to scan after a content-class anchor when falling back to paragraphs.
+    // Limits regex work on large pages while covering most article bodies.
+    private const int ContentClassScanWindow = 40_000;
+
     public async Task<string?> TryGetArticleTextAsync(string url, CancellationToken ct = default)
     {
         try
@@ -68,35 +72,51 @@ public partial class ArticleContentScraper(
         html = FooterBlockRegex().Replace(html, " ");
         html = AsideBlockRegex().Replace(html, " ");
 
-        // Phase 1: semantic content containers (editorial priority order)
+        // Phase 1: HTML5 semantic containers (most specific, highest precision)
         var fragment = TryExtractSemanticBlock(html);
 
-        // Phase 2: paragraph-based fallback when no semantic container found
+        // Phase 2: CMS content-class patterns — covers WordPress, Drupal, and Spanish
+        //   editorial platforms that do not use <article> or <main>
+        fragment ??= TryExtractByContentClassStart(html);
+
+        // Phase 3: paragraph-density fallback — paragraph-level extraction with
+        //   nav-paragraph filtering as last resort
         fragment ??= ExtractFromParagraphs(html);
 
         if (string.IsNullOrWhiteSpace(fragment))
             return null;
 
         var text = StripTagsAndNormalize(fragment);
-
         return PassesQualityGate(text) ? text : null;
     }
 
     private static string? TryExtractSemanticBlock(string html)
     {
-        // <article> — most specific editorial container
         var match = ArticleBlockRegex().Match(html);
         if (match.Success) return match.Value;
 
-        // itemprop="articleBody" — structured data marker
         match = ArticleBodyPropRegex().Match(html);
         if (match.Success) return match.Value;
 
-        // <main> — document landmark for primary content
         match = MainBlockRegex().Match(html);
         if (match.Success) return match.Value;
 
         return null;
+    }
+
+    // Find the opening tag of a CMS content-class div/section and extract paragraphs
+    // from the bounded window that follows it, avoiding the closing-tag matching problem.
+    private static string? TryExtractByContentClassStart(string html)
+    {
+        var match = ContentClassStartRegex().Match(html);
+        if (!match.Success) return null;
+
+        var remaining = html.Length - match.Index;
+        var fragment = remaining > ContentClassScanWindow
+            ? html.Substring(match.Index, ContentClassScanWindow)
+            : html[match.Index..];
+
+        return ExtractFromParagraphs(fragment);
     }
 
     private static string? ExtractFromParagraphs(string html)
@@ -104,10 +124,22 @@ public partial class ArticleContentScraper(
         var useful = ParagraphContentRegex()
             .Matches(html)
             .Select(m => StripTagsAndNormalize(m.Groups[1].Value))
-            .Where(p => p.Length >= MinParagraphLength)
+            .Where(p => p.Length >= MinParagraphLength && !IsNavigationParagraph(p))
             .ToList();
 
         return useful.Count >= 2 ? string.Join(" ", useful) : null;
+    }
+
+    // Returns true when a paragraph looks like navigation/chrome rather than editorial text.
+    private static bool IsNavigationParagraph(string text)
+    {
+        // Two or more pipe separators → breadcrumb or nav bar
+        if (text.Count(c => c == '|') >= 2) return true;
+
+        // Contains action words typical of nav/menu chrome
+        if (NavKeywordRegex().IsMatch(text)) return true;
+
+        return false;
     }
 
     private static string StripTagsAndNormalize(string html)
@@ -198,12 +230,26 @@ public partial class ArticleContentScraper(
     [GeneratedRegex("""<article\b[^>]*>[\s\S]*?</article>""", RegexOptions.IgnoreCase)]
     private static partial Regex ArticleBlockRegex();
 
-    // Captures div/section/article/span with itemprop="articleBody"; backreference ensures correct closing tag
+    // Backreference ensures closing tag matches the opening tag (div/section/article/span)
     [GeneratedRegex("""<(div|section|article|span)\b[^>]+itemprop\s*=\s*"articleBody"[^>]*>[\s\S]*?</\1>""", RegexOptions.IgnoreCase)]
     private static partial Regex ArticleBodyPropRegex();
 
     [GeneratedRegex("""<main\b[^>]*>[\s\S]*?</main>""", RegexOptions.IgnoreCase)]
     private static partial Regex MainBlockRegex();
+
+    // Matches the opening tag of a div/section whose class contains known editorial CMS patterns.
+    // Covers: WordPress (entry-content, post-content), Drupal (field-body, content-body),
+    // and common Spanish-language editorial CMSs (nota-body, nota-cuerpo, articulo-cuerpo).
+    [GeneratedRegex(
+        """<(?:div|section)\b[^>]*\bclass\s*=\s*"[^"]*(?:article[-_]body|article[-_]content|article__body|article__content|entry[-_]content|entry__content|post[-_]content|post__content|nota[-_]body|nota[-_]cuerpo|nota[-_]contenido|cuerpo[-_]nota|story[-_]body|story__body|content[-_]body|editorial[-_]content|article[-_]text|text[-_]article|articulo[-_]cuerpo|field[-_]body)[^"]*"[^>]*>""",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex ContentClassStartRegex();
+
+    // Detects nav/chrome action words at word boundaries within paragraph text
+    [GeneratedRegex(
+        """(?:^|\s)(?:buscar|search|suscr[íi]bete|subscribe|iniciar\s+sesi[oó]n|login|cerrar\s+sesi[oó]n|logout|s[íi]guenos|follow\s+us|compartir|share\s+this|ver\s+m[aá]s|leer\s+m[aá]s|read\s+more|ver\s+todos|see\s+all)(?:\s|[.,!?]|$)""",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex NavKeywordRegex();
 
     [GeneratedRegex("""<p\b[^>]*>([\s\S]*?)</p>""", RegexOptions.IgnoreCase)]
     private static partial Regex ParagraphContentRegex();

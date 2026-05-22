@@ -129,6 +129,107 @@ public class ArticleContentScraperTests
         Assert.DoesNotContain("Aviso de privacidad", body);
     }
 
+    // ── Phase 2: CMS content-class patterns ───────────────────────────────────
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_WithArticleBodyClass_ExtractsContentAndIgnoresNav()
+    {
+        var handler = HtmlHandler("""
+            <html>
+              <nav>Inicio | FIBRAs | Mercados | Suscríbete</nav>
+              <div id="wrapper">
+                <div class="article-body">
+                  <p>Fibra MQ reportó un incremento del 15% en sus ingresos operativos netos del trimestre, superando las expectativas del consenso de analistas del sector inmobiliario.</p>
+                  <p>El portafolio industrial de la FIBRA alcanzó una ocupación del 98% impulsado por la expansión del sector manufacturero en el Bajío y norte del país.</p>
+                  <p>La directora de relaciones con inversionistas destacó que los contratos de arrendamiento de largo plazo sustentan la visibilidad de flujos futuros.</p>
+                </div>
+                <div class="sidebar">Más leídas | Relacionadas | Publicidad</div>
+              </div>
+              <footer>Footer del sitio | Aviso de privacidad</footer>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("incremento del 15%", body);
+        Assert.Contains("contratos de arrendamiento", body);
+        Assert.DoesNotContain("Suscríbete", body);
+    }
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_WithEntryContentClass_ExtractsWordPressStyle()
+    {
+        var handler = HtmlHandler("""
+            <html>
+              <header><nav>Menú principal | Categorías | Login</nav></header>
+              <section class="entry-content">
+                <p>Fibra Danhos anunció la apertura de su nuevo proyecto Plaza Carso II con una inversión de 3,500 millones de pesos en la Ciudad de México.</p>
+                <p>El desarrollo de uso mixto contará con 80,000 metros cuadrados de área rentable comercial y de oficinas premium de clase A.</p>
+                <p>La ocupación proyectada al primer año supera el 90% con anclas ya firmadas de retail internacional y corporativos nacionales.</p>
+              </section>
+              <footer>Footer | Compartir | Suscríbete</footer>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("Plaza Carso II", body);
+        Assert.Contains("área rentable comercial", body);
+        Assert.DoesNotContain("Login", body);
+    }
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_ParagraphsWithNavKeywords_FiltersThemOut()
+    {
+        var handler = HtmlHandler("""
+            <html>
+              <div id="content">
+                <p>Buscar noticias sobre FIBRAs en nuestro portal</p>
+                <p>Suscríbete para recibir alertas del mercado inmobiliario</p>
+                <p>Fibra Uno publicó sus resultados del primer trimestre con un crecimiento del 9% en NOI comparable ajustado por inflación.</p>
+                <p>La cartera de propiedades industriales y comerciales alcanzó una valuación total de 145 mil millones de pesos al cierre del período.</p>
+                <p>Ver más noticias relacionadas con el sector</p>
+                <p>Los analistas de Banorte mantienen su recomendación de compra con precio objetivo de 38 pesos por CBFI para los próximos doce meses.</p>
+              </div>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("crecimiento del 9%", body);
+        Assert.Contains("recomendación de compra", body);
+        Assert.DoesNotContain("Suscríbete", body);
+        Assert.DoesNotContain("Buscar noticias", body);
+        Assert.DoesNotContain("Ver más noticias", body);
+    }
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_ParagraphsWithPipeSeparators_FiltersNavBars()
+    {
+        var handler = HtmlHandler("""
+            <html>
+              <div id="page">
+                <p>Inicio | Noticias | FIBRAs | Mercado | Contacto | Suscripción</p>
+                <p>Economía | Política | Mercados | Internacional | Tecnología | Finanzas</p>
+                <p>Fibra Macquarie anunció la distribución de 0.42 pesos por CBFI correspondiente al cuarto trimestre del ejercicio fiscal.</p>
+                <p>El monto representa un incremento del 5% respecto al trimestre anterior y refleja la solidez operativa del portafolio de parques industriales.</p>
+                <p>La distribución será pagada el próximo 15 de enero a los tenedores registrados al cierre del 31 de diciembre.</p>
+              </div>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("distribución de 0.42 pesos", body);
+        Assert.Contains("incremento del 5%", body);
+        Assert.DoesNotContain("Inicio | Noticias", body);
+        Assert.DoesNotContain("Economía | Política", body);
+    }
+
     // ── AC 3: fallback heurístico ──────────────────────────────────────────────
 
     [Fact]
