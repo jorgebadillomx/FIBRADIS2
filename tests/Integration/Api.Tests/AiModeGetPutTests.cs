@@ -134,4 +134,113 @@ public class AiModeGetPutTests(ApiWebFactory factory) : IClassFixture<ApiWebFact
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    // ── GET /api/v1/ops/news ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOpsNewsList_WithAdminOpsToken_ReturnsPagedResult()
+    {
+        await _factory.SeedNewsAsync();
+
+        var response = await _client.GetAsync("/api/v1/ops/news?page=1&pageSize=20");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.TryGetProperty("items", out var items), "missing: items");
+        Assert.True(doc.RootElement.TryGetProperty("total", out _), "missing: total");
+        Assert.True(doc.RootElement.TryGetProperty("page", out var page), "missing: page");
+        Assert.Equal(1, page.GetInt32());
+        Assert.True(items.GetArrayLength() >= 1);
+    }
+
+    [Fact]
+    public async Task GetOpsNewsList_WithoutToken_Returns401()
+    {
+        var response = await _factory.CreateClient().GetAsync("/api/v1/ops/news");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // ── GET /api/v1/ops/news/{id} ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOpsNewsBody_WithAdminOpsToken_ReturnsBodyTextProperty()
+    {
+        await _factory.SeedNewsAsync();
+        var id = ApiWebFactory.TestNewsArticleId;
+
+        var response = await _client.GetAsync($"/api/v1/ops/news/{id}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.TryGetProperty("id", out _), "missing: id");
+        Assert.True(doc.RootElement.TryGetProperty("bodyText", out _), "missing: bodyText");
+    }
+
+    [Fact]
+    public async Task GetOpsNewsBody_WhenArticleNotFound_Returns404()
+    {
+        var response = await _client.GetAsync($"/api/v1/ops/news/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ── PUT /api/v1/ops/news/{id}/body-text ──────────────────────────────────
+
+    [Fact]
+    public async Task PutOpsNewsBodyText_WithNewText_Returns204AndPersists()
+    {
+        await _factory.SeedNewsAsync();
+        var id = ApiWebFactory.TestNewsArticleId;
+
+        var response = await _client.PutAsJsonAsync(
+            $"/api/v1/ops/news/{id}/body-text",
+            new { bodyText = "Texto corregido manualmente por el operador." });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var getResponse = await _client.GetAsync($"/api/v1/ops/news/{id}");
+        using var doc = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.Equal("Texto corregido manualmente por el operador.", doc.RootElement.GetProperty("bodyText").GetString());
+    }
+
+    [Fact]
+    public async Task PutOpsNewsBodyText_WithEmptyString_SetsBodyTextNull()
+    {
+        await _factory.SeedNewsAsync();
+        var id = ApiWebFactory.TestNewsArticleId;
+
+        var response = await _client.PutAsJsonAsync(
+            $"/api/v1/ops/news/{id}/body-text",
+            new { bodyText = (string?)null });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var getResponse = await _client.GetAsync($"/api/v1/ops/news/{id}");
+        using var doc = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.Equal(JsonValueKind.Null, doc.RootElement.GetProperty("bodyText").ValueKind);
+    }
+
+    [Fact]
+    public async Task PutOpsNewsBodyText_WhenArticleNotFound_Returns404()
+    {
+        var response = await _client.PutAsJsonAsync(
+            $"/api/v1/ops/news/{Guid.NewGuid()}/body-text",
+            new { bodyText = "Texto nuevo" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutOpsNewsBodyText_WithoutToken_Returns401()
+    {
+        await _factory.SeedNewsAsync();
+        var id = ApiWebFactory.TestNewsArticleId;
+
+        var response = await _factory.CreateClient().PutAsJsonAsync(
+            $"/api/v1/ops/news/{id}/body-text",
+            new { bodyText = "Intento no autorizado" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

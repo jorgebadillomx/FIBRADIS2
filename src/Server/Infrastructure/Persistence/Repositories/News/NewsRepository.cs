@@ -53,10 +53,12 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     public async Task UpdateBodyTextAsync(Guid id, string? bodyText, CancellationToken ct = default)
     {
-        await db.NewsArticles
-            .Where(article => article.Id == id)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(article => article.BodyText, bodyText), ct);
+        var article = await db.NewsArticles.FindAsync([id], ct);
+        if (article is not null)
+        {
+            article.BodyText = bodyText;
+            await db.SaveChangesAsync(ct);
+        }
     }
 
     public async Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default)
@@ -87,4 +89,15 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .OrderByDescending(article => article.PublishedAt)
             .Take(count)
             .ToListAsync(ct);
+
+    public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = db.NewsArticles.OrderByDescending(n => n.PublishedAt);
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+        return (items, total);
+    }
 }
