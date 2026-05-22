@@ -73,7 +73,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 {
                     Id = Guid.Parse("22222222-0000-0000-0000-000000000001"),
                     Email = "adminops@test.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin456"),
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("ops123"),
                     Role = UserRole.AdminOps,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,

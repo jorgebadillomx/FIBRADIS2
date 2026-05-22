@@ -25,7 +25,7 @@ public class AuthorizationTests : IAsyncLifetime
 
         // Obtener token de AdminOps
         var adminLogin = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest("adminops@test.com", "admin456"));
+            new LoginRequest("adminops@test.com", "ops123"));
         var adminBody = await adminLogin.Content.ReadFromJsonAsync<LoginResponse>();
         _adminOpsToken = adminBody!.AccessToken;
     }

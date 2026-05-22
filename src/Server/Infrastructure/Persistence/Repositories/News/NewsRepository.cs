@@ -51,6 +51,14 @@ public class NewsRepository(AppDbContext db) : INewsRepository
     public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.NewsArticles.FindAsync([id], ct).AsTask();
 
+    public async Task UpdateBodyTextAsync(Guid id, string? bodyText, CancellationToken ct = default)
+    {
+        await db.NewsArticles
+            .Where(article => article.Id == id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(article => article.BodyText, bodyText), ct);
+    }
+
     public async Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default)
     {
         await db.NewsArticles

@@ -63,6 +63,7 @@ public static class AiModeEndpoints
         newsGroup.MapPost("/{articleId:guid}/ai-summary", async (
             Guid articleId,
             INewsRepository newsRepo,
+            IArticleContentScraper articleContentScraper,
             IAiSummaryService summaryService,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
@@ -72,13 +73,17 @@ public static class AiModeEndpoints
             if (article is null)
                 return Results.NotFound();
 
-            // P2: idempotencia — no reprocesar artículos ya procesados
-            if (article.Status == NewsArticleStatus.Processed)
-                return Results.NoContent();
-
             try
             {
-                var summary = await summaryService.GenerateSummaryAsync(article.Title, article.Snippet, AiContentType.News, ct);
+                var bodyText = article.BodyText;
+                if (NeedsBodyRefresh(bodyText) && !string.IsNullOrWhiteSpace(article.Url))
+                {
+                    bodyText = await articleContentScraper.TryGetArticleTextAsync(article.Url, ct);
+                    if (!string.IsNullOrWhiteSpace(bodyText))
+                        await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
+                }
+
+                var summary = await summaryService.GenerateSummaryAsync(article.Title, article.Snippet, bodyText, AiContentType.News, ct);
 
                 // P4: null indica proveedor no configurado → 503
                 if (summary is null)
@@ -90,6 +95,14 @@ public static class AiModeEndpoints
 
                 await newsRepo.UpdateSummaryAsync(articleId, summary, NewsArticleStatus.Processed, ct);
                 return Results.NoContent();
+            }
+            catch (AiProviderConfigurationException ex)
+            {
+                logger.LogError(ex, "Gemini configuration error while generating AI summary for news article {ArticleId}", articleId);
+
+                return Results.Problem(
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    detail: ex.Message);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -127,6 +140,11 @@ public static class AiModeEndpoints
 
         return app;
     }
+
+    private static bool NeedsBodyRefresh(string? bodyText)
+        => string.IsNullOrWhiteSpace(bodyText)
+            || bodyText.Length < 200
+            || string.Equals(bodyText.Trim(), "Google News", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record SetAiModeRequest(string Mode);

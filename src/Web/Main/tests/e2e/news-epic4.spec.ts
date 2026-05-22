@@ -136,7 +136,7 @@ test.describe('Épica 4 - Noticias y Contenido', () => {
       await expect(page.getByText('Error al obtener AI_MODE')).not.toBeVisible()
 
       await page.getByLabel('Correo').fill('adminops@test.com')
-      await page.getByLabel('Contraseña').fill('admin456')
+      await page.getByLabel('Contraseña').fill('ops123')
       await page.getByRole('button', { name: 'Entrar a Ops' }).click()
 
       await expect(page.getByRole('heading', { name: 'Modo AI de Noticias' })).toBeVisible()

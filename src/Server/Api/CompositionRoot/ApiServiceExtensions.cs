@@ -7,6 +7,7 @@ using Application.News;
 using Hangfire;
 using Hangfire.SqlServer;
 using Infrastructure.Integrations.Ai;
+using Infrastructure.Integrations.Articles;
 using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.OgImage;
 using Infrastructure.Integrations.Yahoo;
@@ -86,9 +87,25 @@ public static class ApiServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
         });
+        builder.Services.AddHttpClient<IGoogleNewsUrlDecoder, GoogleNewsUrlDecoder>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("es-MX,es;q=0.9,en;q=0.8");
+        });
         builder.Services.AddHttpClient<IOgImageScraper, OgImageScraper>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(5);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+        });
+        builder.Services.AddHttpClient<IArticleContentScraper, ArticleContentScraper>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

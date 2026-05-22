@@ -13,6 +13,7 @@ public class NewsPipelineJob(
     IRssClient rssClient,
     IAiModeRepository aiModeRepo,
     IOgImageScraper ogImageScraper,
+    IArticleContentScraper articleContentScraper,
     IAiSummaryService summaryService,
     ILogger<NewsPipelineJob> logger)
 {
@@ -79,6 +80,9 @@ public class NewsPipelineJob(
                 var imageUrl = !string.IsNullOrWhiteSpace(item.Url)
                     ? await ogImageScraper.TryGetOgImageAsync(item.Url, ct)
                     : null;
+                var bodyText = !string.IsNullOrWhiteSpace(item.Url)
+                    ? await articleContentScraper.TryGetArticleTextAsync(item.Url, ct)
+                    : null;
 
                 string? aiSummary = null;
                 var finalStatus = NewsArticleStatus.Processed;
@@ -88,7 +92,7 @@ public class NewsPipelineJob(
                     try
                     {
                         aiSummary = await summaryService.GenerateSummaryAsync(
-                            item.Title, item.Snippet, AiContentType.News, ct);
+                            item.Title, item.Snippet, bodyText, AiContentType.News, ct);
                         if (aiSummary is not null)
                         {
                             finalStatus = NewsArticleStatus.Processed;
@@ -114,6 +118,7 @@ public class NewsPipelineJob(
                     PublishedAt = item.PublishedAt,
                     Url = item.Url,
                     Snippet = item.Snippet,
+                    BodyText = bodyText,
                     ImageUrl = imageUrl,
                     AiSummary = aiSummary,
                     Status = finalStatus,
