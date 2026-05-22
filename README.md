@@ -16,6 +16,7 @@ Financial Bonds & Fixed-Income Discovery System
 
 ```bash
 # Backend
+setx GEMINI__APIKEY "<tu-api-key-de-gemini>"
 dotnet build FIBRADIS.slnx
 dotnet ef database update --project src/Server/Infrastructure --startup-project src/Server/Api
 

@@ -39,7 +39,7 @@ public class AuthLoginTests : IAsyncLifetime
     public async Task Login_ValidAdminOpsCredentials_Returns200WithAccessToken()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest("adminops@test.com", "admin456"));
+            new LoginRequest("adminops@test.com", "ops123"));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

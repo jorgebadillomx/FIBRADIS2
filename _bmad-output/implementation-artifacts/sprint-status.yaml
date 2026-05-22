@@ -1,5 +1,5 @@
 # generated: 2026-05-15
-# last_updated: 2026-05-21
+# last_updated: 2026-05-22
 # retrospectivas épicas 2, 3, 4 actualizadas — incluyen historias extendidas (2-6, 3-4, 3-5, 4-5-1, 4-5-3, 4-6)
 # story 3-5 done — code review pass (3 patches: retentionCutoff AddDays(-1), UpsertDailySnapshot catch duplicate key, ChangeTracker.Clear → Entry.Detach)
 # story 3-5 creada — DailySnapshot histórico 5 años + limpieza PriceSnapshot 2 días + trigger manual Ops
@@ -59,7 +59,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-21
+last_updated: 2026-05-22
 # retrospectivas épicas 2/3/4 actualizadas con historias extendidas — epic-2-retro-2026-05-21, epic-3-retro-2026-05-21, epic-4-retro-2026-05-21
 # story 3-4 done — 2ª pasada code review (9 patches aplicados)
 # story 3-4 creada — pipeline histórico distribuciones Yahoo Finance (5 años, idempotencia, catálogo completo)
@@ -135,9 +135,11 @@ development_status:
   # epic-4.5 creada — blog reader experience: imagen + cuerpo + lectora interna
   # fix href bug en GoogleNewsRssClient — done
   # 4.5.2 cancelada — no scrapear cuerpo completo; usar resumen Gemini + og:image + link externo
+  # 4.5.4 creada — limpieza semántica de body_text para uso interno del pipeline y la IA, sin republicación pública
   4-5-1-scraping-imagen-ogimage-y-fallback-visual: done
   4-5-2-scraping-cuerpo-del-articulo: cancelled
   4-5-3-pagina-lectora-interna-noticias: done
+  4-5-4-limpieza-semantica-del-body-text-de-noticias: review
 
   # ── 3.4: Pipeline histórico de distribuciones Yahoo Finance ─────────────
   # story 3-4 creada — pipeline 5 años, idempotencia, cobertura catálogo completo, historial expandible

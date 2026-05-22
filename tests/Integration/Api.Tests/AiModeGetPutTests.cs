@@ -19,7 +19,7 @@ public class AiModeGetPutTests(ApiWebFactory factory) : IClassFixture<ApiWebFact
         var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             Email = "adminops@test.com",
-            Password = "admin456",
+            Password = "ops123",
         });
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);

@@ -18,6 +18,7 @@ public class AiModeOpsEndpointTests
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
             new StubAiSummaryService("Resumen generado"),
+            new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.Off));
         await factory.SeedUsersAsync();
@@ -36,6 +37,7 @@ public class AiModeOpsEndpointTests
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
             new StubAiSummaryService(null),
+            new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
@@ -54,6 +56,7 @@ public class AiModeOpsEndpointTests
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
             new ThrowingAiSummaryService(new TaskCanceledException("Gemini timeout")),
+            new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
@@ -69,11 +72,33 @@ public class AiModeOpsEndpointTests
     }
 
     [Fact]
+    public async Task PostAiSummary_WhenSummaryServiceHasConfigurationError_Returns503WithoutUpdatingArticle()
+    {
+        var repository = new InMemoryNewsRepository();
+        await using var factory = new AiModeApiWebFactory(
+            new ThrowingAiSummaryService(new AiProviderConfigurationException("API key rechazada")),
+            new StubArticleContentScraper(null),
+            repository,
+            new StubAiModeRepository(AiMode.On));
+        await factory.SeedUsersAsync();
+
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-summary", content: null);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(0, repository.UpdateAttempts);
+        Assert.Equal(NewsArticleStatus.Pending, repository.Article.Status);
+        Assert.Null(repository.Article.AiSummary);
+    }
+
+    [Fact]
     public async Task PostAiSummary_WhenPartialUpdateFails_AbsorbsSecondaryFailureAndReturns502()
     {
         var repository = new InMemoryNewsRepository(throwOnUpdate: true);
         await using var factory = new AiModeApiWebFactory(
             new ThrowingAiSummaryService(new InvalidOperationException("Gemini unavailable")),
+            new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
@@ -89,11 +114,12 @@ public class AiModeOpsEndpointTests
     }
 
     [Fact]
-    public async Task PostAiSummary_WhenArticleAlreadyProcessed_ReturnsNoContentWithoutCallingUpdate()
+    public async Task PostAiSummary_WhenArticleAlreadyProcessed_RegeneratesSummary()
     {
         var repository = new InMemoryNewsRepository(initialStatus: NewsArticleStatus.Processed);
         await using var factory = new AiModeApiWebFactory(
-            new StubAiSummaryService("should not be called"),
+            new StubAiSummaryService("Resumen regenerado"),
+            new StubArticleContentScraper("Cuerpo completo recuperado"),
             repository,
             new StubAiModeRepository(AiMode.On));
         await factory.SeedUsersAsync();
@@ -103,7 +129,9 @@ public class AiModeOpsEndpointTests
         var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-summary", content: null);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Equal(0, repository.UpdateAttempts);
+        Assert.Equal(1, repository.UpdateAttempts);
+        Assert.Equal(NewsArticleStatus.Processed, repository.Article.Status);
+        Assert.Equal("Resumen regenerado", repository.Article.AiSummary);
     }
 
     private static async Task<HttpClient> CreateAuthorizedClientAsync(ApiWebFactory factory)
@@ -111,7 +139,7 @@ public class AiModeOpsEndpointTests
         var client = factory.CreateClient();
         var adminLogin = await client.PostAsJsonAsync(
             "/api/v1/auth/login",
-            new LoginRequest("adminops@test.com", "admin456"));
+            new LoginRequest("adminops@test.com", "ops123"));
         var adminBody = await adminLogin.Content.ReadFromJsonAsync<LoginResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBody!.AccessToken);
         return client;
@@ -119,6 +147,7 @@ public class AiModeOpsEndpointTests
 
     private sealed class AiModeApiWebFactory(
         IAiSummaryService aiSummaryService,
+        IArticleContentScraper articleContentScraper,
         INewsRepository? newsRepositoryOverride = null,
         IAiModeRepository? aiModeRepositoryOverride = null) : ApiWebFactory
     {
@@ -129,6 +158,8 @@ public class AiModeOpsEndpointTests
             {
                 services.RemoveAll<IAiSummaryService>();
                 services.AddSingleton(aiSummaryService);
+                services.RemoveAll<IArticleContentScraper>();
+                services.AddSingleton(articleContentScraper);
 
                 if (newsRepositoryOverride is not null)
                 {
@@ -147,14 +178,20 @@ public class AiModeOpsEndpointTests
 
     private sealed class StubAiSummaryService(string? summary) : IAiSummaryService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
+        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
             => Task.FromResult(summary);
     }
 
     private sealed class ThrowingAiSummaryService(Exception exception) : IAiSummaryService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
+        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
             => Task.FromException<string?>(exception);
+    }
+
+    private sealed class StubArticleContentScraper(string? bodyText) : IArticleContentScraper
+    {
+        public Task<string?> TryGetArticleTextAsync(string url, CancellationToken ct = default)
+            => Task.FromResult(bodyText);
     }
 
     private sealed class StubAiModeRepository(AiMode mode) : IAiModeRepository
@@ -188,6 +225,7 @@ public class AiModeOpsEndpointTests
             PublishedAt = DateTimeOffset.UtcNow,
             Url = "https://example.com/noticia-timeout",
             Snippet = "Snippet original",
+            BodyText = null,
             Status = initialStatus,
             CapturedAt = DateTimeOffset.UtcNow,
         };
@@ -208,6 +246,12 @@ public class AiModeOpsEndpointTests
 
         public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(id == Article.Id ? Article : null);
+
+        public Task UpdateBodyTextAsync(Guid id, string? bodyText, CancellationToken ct = default)
+        {
+            Article.BodyText = bodyText;
+            return Task.CompletedTask;
+        }
 
         public Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default)
         {

@@ -57,7 +57,7 @@ export async function mockOpsAuthApi(page: Page) {
     const email = body?.email?.trim() ?? ''
     const password = body?.password ?? ''
 
-    if (email === 'adminops@test.com' && password === 'admin456') {
+    if (email === 'adminops@test.com' && password === 'ops123') {
       return fulfillJson(route, 200, {
         accessToken: 'playwright-adminops-token',
       })
