@@ -1,6 +1,7 @@
 using Domain.Auth;
 using Domain.Catalog;
 using Domain.Market;
+using Domain.News;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -78,6 +79,32 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                 });
+            await db.SaveChangesAsync();
+        }
+    }
+
+    public static readonly Guid TestNewsArticleId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
+
+    public async Task SeedNewsAsync()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        if (!await db.NewsArticles.AnyAsync(n => n.Id == TestNewsArticleId))
+        {
+            db.NewsArticles.Add(new NewsArticle
+            {
+                Id = TestNewsArticleId,
+                Title = "FUNO reporta crecimiento en NOI",
+                TitleNormalized = "funo reporta crecimiento en noi",
+                Source = "Test Source",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Url = "https://example.com/noticia-ops-test",
+                BodyText = "Cuerpo de texto de prueba para edición manual en Ops.",
+                Status = NewsArticleStatus.Pending,
+                CapturedAt = DateTimeOffset.UtcNow,
+            });
             await db.SaveChangesAsync();
         }
     }

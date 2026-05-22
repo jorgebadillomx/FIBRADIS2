@@ -140,6 +140,9 @@ development_status:
   4-5-2-scraping-cuerpo-del-articulo: cancelled
   4-5-3-pagina-lectora-interna-noticias: done
   4-5-4-limpieza-semantica-del-body-text-de-noticias: review
+  # ── 4.7: Editor manual body_text en Ops ──────────────────────────────────
+  # story 4-7 creada — listado paginado + editor inline body_text + GET by ID para carga completa
+  4-7-editor-manual-body-text-ops: review
 
   # ── 3.4: Pipeline histórico de distribuciones Yahoo Finance ─────────────
   # story 3-4 creada — pipeline 5 años, idempotencia, cobertura catálogo completo, historial expandible
@@ -153,6 +156,10 @@ development_status:
   # ── 4.6: Display fixes + AiMode On (post-release improvements) ───────────
   # story 4-6 creada — og:image redirects, HTML snippet strip, AiMode Off/On, home 5 noticias
   4-6-noticias-display-fixes-y-aimode-on: done
+
+  # ── 4.7: Selección de modelo IA para noticias en Ops ─────────────────────
+  # story 4-7 creada — selector Gemini Flash/Pro en AiModeSection, delay 5s entre llamadas Gemini
+  4-7-seleccion-modelo-ia-noticias: ready-for-dev
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
   epic-5: backlog

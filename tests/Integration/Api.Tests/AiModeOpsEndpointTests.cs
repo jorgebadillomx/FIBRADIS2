@@ -272,5 +272,8 @@ public class AiModeOpsEndpointTests
 
         public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
             => throw new NotSupportedException();
+
+        public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<NewsArticle>, int)>(([Article], 1));
     }
 }

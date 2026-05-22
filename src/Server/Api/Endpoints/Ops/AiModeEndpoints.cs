@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Application.News;
 using Domain.News;
 using Microsoft.Extensions.Logging;
+using SharedApiContracts.Common;
 using SharedApiContracts.News;
 
 namespace Api.Endpoints.Ops;
@@ -59,6 +60,66 @@ public static class AiModeEndpoints
         var newsGroup = app.MapGroup("/api/v1/ops/news")
             .RequireAuthorization("AdminOps")
             .WithTags("AI");
+
+        newsGroup.MapGet("/", async (
+            INewsRepository newsRepo,
+            CancellationToken ct,
+            int page = 1,
+            int pageSize = 20) =>
+        {
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var (items, total) = await newsRepo.GetPagedForOpsAsync(page, pageSize, ct);
+            var dtos = items.Select(a => new OpsNewsArticleDto(
+                a.Id,
+                a.Title,
+                a.Source,
+                a.PublishedAt,
+                a.Url,
+                a.Status.ToString(),
+                a.BodyText?.Length,
+                a.BodyText is not null ? a.BodyText[..Math.Min(200, a.BodyText.Length)] : null,
+                a.AiSummary is not null)).ToList();
+            return Results.Ok(new PagedResult<OpsNewsArticleDto>(dtos, page, pageSize, total));
+        })
+        .Produces<PagedResult<OpsNewsArticleDto>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        newsGroup.MapGet("/{articleId:guid}", async (
+            Guid articleId,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var article = await newsRepo.GetByIdAsync(articleId, ct);
+            if (article is null)
+                return Results.NotFound();
+            return Results.Ok(new OpsNewsBodyDto(article.Id, article.BodyText));
+        })
+        .Produces<OpsNewsBodyDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        newsGroup.MapPut("/{articleId:guid}/body-text", async (
+            Guid articleId,
+            UpdateBodyTextRequest request,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var article = await newsRepo.GetByIdAsync(articleId, ct);
+            if (article is null)
+                return Results.NotFound();
+
+            var bodyText = string.IsNullOrWhiteSpace(request.BodyText) ? null : request.BodyText.Trim();
+            await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
+            return Results.NoContent();
+        })
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
 
         newsGroup.MapPost("/{articleId:guid}/ai-summary", async (
             Guid articleId,

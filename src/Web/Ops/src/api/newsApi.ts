@@ -43,3 +43,46 @@ export async function deleteBlocklistTerm(id: string): Promise<void> {
 
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al eliminar término: ${JSON.stringify(error)}`))
 }
+
+export type OpsNewsArticle = components['schemas']['OpsNewsArticleDto']
+export type OpsNewsPage = components['schemas']['PagedResultOfOpsNewsArticleDto']
+
+export async function fetchOpsNewsList(page = 1, pageSize = 20): Promise<OpsNewsPage> {
+  assertOpsAccessToken()
+
+  const { data, error } = await apiClient['/api/v1/ops/news'].GET({
+    headers: getOpsAuthHeaders(),
+    params: { query: { page, pageSize } },
+  })
+
+  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al obtener noticias: ${JSON.stringify(error)}`))
+  if (!data) throw new Error('La API no devolvió datos.')
+  return data
+}
+
+export type OpsNewsBody = components['schemas']['OpsNewsBodyDto']
+
+export async function fetchOpsNewsBody(id: string): Promise<OpsNewsBody> {
+  assertOpsAccessToken()
+
+  const { data, error } = await apiClient['/api/v1/ops/news/{articleId}'].GET({
+    headers: getOpsAuthHeaders(),
+    params: { path: { articleId: id } },
+  })
+
+  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al obtener body text: ${JSON.stringify(error)}`))
+  if (!data) throw new Error('La API no devolvió datos.')
+  return data
+}
+
+export async function updateNewsBodyText(id: string, bodyText: string | null): Promise<void> {
+  assertOpsAccessToken()
+
+  const { error } = await apiClient['/api/v1/ops/news/{articleId}/body-text'].PUT({
+    headers: getOpsAuthHeaders(),
+    params: { path: { articleId: id } },
+    body: { bodyText: bodyText ?? undefined },
+  })
+
+  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al guardar body text: ${JSON.stringify(error)}`))
+}

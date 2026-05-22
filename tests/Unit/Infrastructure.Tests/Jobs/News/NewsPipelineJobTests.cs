@@ -280,6 +280,9 @@ internal sealed class FakeNewsRepository : INewsRepository
 
     public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
+
+    public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
+        => Task.FromResult<(IReadOnlyList<NewsArticle>, int)>(([],  0));
 }
 
 internal sealed class FakeNewsBlocklistRepository(IReadOnlyList<string> terms) : IBlocklistRepository
