@@ -247,7 +247,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetAiModeRequest"
+                "$ref": "#/components/schemas/UpdateAiModeRequest"
               }
             }
           },
@@ -908,6 +908,7 @@
       "AiModeDto": {
         "required": [
           "mode",
+          "newsModel",
           "updatedAt",
           "updatedBy",
           "previousMode"
@@ -915,6 +916,9 @@
         "type": "object",
         "properties": {
           "mode": {
+            "type": "string"
+          },
+          "newsModel": {
             "type": "string"
           },
           "updatedAt": {
@@ -1580,14 +1584,24 @@
           }
         }
       },
-      "SetAiModeRequest": {
+      "UpdateAiModeRequest": {
         "required": [
-          "mode"
+          "mode",
+          "newsModel"
         ],
         "type": "object",
         "properties": {
           "mode": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newsModel": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

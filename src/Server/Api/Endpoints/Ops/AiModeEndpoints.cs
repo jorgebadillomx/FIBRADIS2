@@ -71,7 +71,7 @@ public static class AiModeEndpoints
                 ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? "unknown";
 
-            await repo.UpdateConfigAsync(parsedMode, request.NewsModel, actor, ct);
+            await repo.UpdateConfigAsync(parsedMode, request.NewsModel?.ToLowerInvariant(), actor, ct);
             return Results.NoContent();
         })
         .Produces(StatusCodes.Status204NoContent)
@@ -213,6 +213,7 @@ public static class AiModeEndpoints
                         articleId);
                 }
 
+                await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
                 return Results.Problem(
                     statusCode: StatusCodes.Status502BadGateway,
                     detail: "El proveedor de IA no está disponible. El artículo fue marcado como Partial.");
@@ -233,10 +234,7 @@ public static class AiModeEndpoints
         new(StringComparer.OrdinalIgnoreCase) { "gemini-2.5-flash", "gemini-2.5-pro" };
 
     private static bool NeedsBodyRefresh(string? bodyText)
-        => string.IsNullOrWhiteSpace(bodyText)
-            || bodyText.Length < 200
-            || string.Equals(bodyText.Trim(), "Google News", StringComparison.OrdinalIgnoreCase);
+        => string.IsNullOrWhiteSpace(bodyText);
 }
 
-public sealed record SetAiModeRequest(string Mode);
 public sealed record UpdateAiModeRequest(string? Mode, string? NewsModel);

@@ -105,7 +105,7 @@ export function AiModeSection() {
             <div className="mt-4 flex items-center gap-3">
               <button
                 className="h-10 rounded-xl bg-teal-700 px-5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-400"
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || triggerMutation.isPending}
                 onClick={() =>
                   saveMutation.mutate({
                     mode: modeChanged ? (pendingMode as 'Off' | 'On') : undefined,
@@ -155,7 +155,7 @@ export function AiModeSection() {
               />
               <button
                 className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                disabled={!isValidUuid || triggerMutation.isPending}
+                disabled={!isValidUuid || triggerMutation.isPending || saveMutation.isPending}
                 onClick={() => triggerMutation.mutate(articleId.trim())}
                 type="button"
               >

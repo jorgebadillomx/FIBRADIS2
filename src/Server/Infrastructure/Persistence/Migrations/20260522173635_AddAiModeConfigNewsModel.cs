@@ -17,7 +17,7 @@ namespace Infrastructure.Persistence.Migrations
                 type: "nvarchar(100)",
                 maxLength: 100,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "gemini-2.5-pro");
 
             migrationBuilder.UpdateData(
                 schema: "ai",

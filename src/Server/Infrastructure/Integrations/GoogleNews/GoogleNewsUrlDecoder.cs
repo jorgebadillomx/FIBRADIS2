@@ -113,7 +113,7 @@ public partial class GoogleNewsUrlDecoder(HttpClient http, ILogger<GoogleNewsUrl
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "curl.exe",
+                FileName = "curl",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -131,12 +131,21 @@ public partial class GoogleNewsUrlDecoder(HttpClient http, ILogger<GoogleNewsUrl
             using var process = new Process { StartInfo = psi };
             process.Start();
 
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
-            var stderrTask = process.StandardError.ReadToEndAsync(ct);
-            await process.WaitForExitAsync(ct);
-
-            var stdout = await stdoutTask;
-            var stderr = await stderrTask;
+            string stdout, stderr;
+            try
+            {
+                var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+                var stderrTask = process.StandardError.ReadToEndAsync(ct);
+                var outputs = await Task.WhenAll(stdoutTask, stderrTask);
+                await process.WaitForExitAsync(ct);
+                stdout = outputs[0];
+                stderr = outputs[1];
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                try { process.Kill(); } catch { }
+                throw;
+            }
 
             if (process.ExitCode != 0)
             {

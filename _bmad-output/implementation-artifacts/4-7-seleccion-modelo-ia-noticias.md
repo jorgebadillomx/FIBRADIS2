@@ -1,6 +1,6 @@
 # Historia 4.7: Selección de Modelo IA para Noticias en Ops
 
-Status: review
+Status: done
 
 ## Story
 
@@ -267,6 +267,21 @@ Primero construir el backend (`dotnet build FIBRADIS.slnx`) para que el OpenAPI 
 - `src/Web/Ops/src/api/aiModeApi.ts` — cliente API actual
 - `_bmad-output/implementation-artifacts/4-6-noticias-display-fixes-y-aimode-on.md` — historia predecesora con el renombramiento Manual→On
 - `_bmad-output/implementation-artifacts/4-3-soporte-para-ai-mode-en-noticias-off-y-manual.md` — historia fundacional del AiMode
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+- [x] [Review][Decision] ¿El delay de 5s en POST /ai-summary debe aplicarse también en rutas de error (502, 503)? — Decidido: sí, aplica en rutas de error. `Task.Delay(5s, CancellationToken.None)` añadido antes del return 502 en `catch (Exception ex)`. [AiModeEndpoints.cs] ✅
+- [x] [Review][Patch] newsModel no se normaliza a lowercase antes de persistir — `.ToLowerInvariant()` añadido al pasar `request.NewsModel` a `UpdateConfigAsync`. [AiModeEndpoints.cs:74] ✅
+- [x] [Review][Patch] Migration `defaultValue: ""` → `"gemini-2.5-pro"` — Corregido en `AddColumn`. [20260522173635_AddAiModeConfigNewsModel.cs:20] ✅
+- [x] [Review][Patch] `OperationCanceledException` del `Task.Delay` en el pipeline es tragada — `catch (OperationCanceledException) { throw; }` añadido antes del catch genérico en el loop de items. [NewsPipelineJob.cs] ✅
+- [x] [Review][Patch] Botón "Guardar cambio" no se deshabilita cuando `triggerMutation.isPending` — `disabled` actualizado a `saveMutation.isPending || triggerMutation.isPending`; "Generar resumen" también deshabilita con `saveMutation.isPending`. [AiModeSection.tsx] ✅
+- [x] [Review][Patch] `SetAiModeRequest` dead code eliminado. [AiModeEndpoints.cs] ✅
+- [x] [Review][Defer] Whitelist de modelos duplicada en C#/TS/UI — Los valores `"gemini-2.5-flash"` / `"gemini-2.5-pro"` aparecen en `AllowedNewsModels` (C#), `NewsModel` union type (TS), botones de UI (TSX) y fixtures E2E. Deuda de mantenibilidad: un nuevo modelo requiere cambios en ≥4 archivos. Sin fuente única de verdad. [AiModeEndpoints.cs / aiModeApi.ts / AiModeSection.tsx] — deferred, pre-existing
+- [x] [Review][Defer] `UpdateConfigAsync(null, null, ...)` silently no-ops sin audit trail — La firma permite pasar ambos null; el método retorna sin SaveChangesAsync ni UpdatedAt/UpdatedBy. No hay llamador actual con ambos null (el endpoint valida antes), pero la interfaz lo permite sin error. [AiModeRepository.cs] — deferred, pre-existing
+- [x] [Review][Defer] Upsert-on-insert asume singleton cuando solo `newsModel` es proporcionado — Si se crea la fila inexistente con `mode=null`, se inserta con `Mode = Off` como default; puede sorprender si la intención era preservar el modo actual. Inalcanzable con seed existente (fila id=1 siempre presente). [AiModeRepository.cs:32-35] — deferred, pre-existing
+- [x] [Review][Defer] Conflicto route handler LIFO en test E2E — El test "Guardar con Flash envía PUT" registra un segundo handler sobre el mock ya registrado por `mockOpsNewsApi`; Playwright los ejecuta en LIFO. Funcional hoy, pero frágil ante reordenamiento de setup. [news-epic4.spec.ts:~427] — deferred, pre-existing
 
 ## Dev Agent Record
 

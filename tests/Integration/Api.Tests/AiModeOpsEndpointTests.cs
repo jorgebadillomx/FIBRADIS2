@@ -251,8 +251,11 @@ public class AiModeOpsEndpointTests
         public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(id == Article.Id ? Article : null);
 
+        public int UpdateBodyTextAttempts { get; private set; }
+
         public Task UpdateBodyTextAsync(Guid id, string? bodyText, CancellationToken ct = default)
         {
+            UpdateBodyTextAttempts++;
             Article.BodyText = bodyText;
             return Task.CompletedTask;
         }

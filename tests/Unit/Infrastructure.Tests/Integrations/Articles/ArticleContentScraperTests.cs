@@ -295,6 +295,22 @@ public class ArticleContentScraperTests
         Assert.Null(body);
     }
 
+    [Fact]
+    public async Task TryGetArticleTextAsync_WhenExtractedTextIsOnlyGoogleNews_ReturnsNull()
+    {
+        var handler = HtmlHandler("""
+            <html>
+              <body>
+                <article>Google News</article>
+              </body>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticia");
+
+        Assert.Null(body);
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     private static ArticleContentScraper MakeScraper(StubHttpMessageHandler handler)

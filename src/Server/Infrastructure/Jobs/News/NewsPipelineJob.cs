@@ -134,6 +134,10 @@ public class NewsPipelineJob(
                 await newsRepo.AddWithLinksAsync(article, fibraIds, ct);
                 saved++;
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to save news article '{Url}'", item.Url);
