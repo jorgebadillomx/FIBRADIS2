@@ -129,6 +129,25 @@ public class MarketPipelineJobTests
         Assert.Single(marketRepo.AddedSnapshots);
         Assert.Equal(MarketDataStatus.Critical, marketRepo.AddedSnapshots[0].Status);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_DeletesOldPriceSnapshotsUsingCurrentUtcDate()
+    {
+        var marketRepo = new FakeMarketRepository();
+        var yahoo = new FakeYahooClient(
+            new YahooQuoteResult("FUNO11.MX", 50m, 0.5m, 1.0m, 100_000L, 55m, 45m, 49m, 51m, 48m));
+
+        var job = Build(
+            new FakeBmvSchedule(true),
+            new FakeTimeService(_tradingUtc),
+            new FakeFibraRepository([_fibraFuno]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Equal(new DateOnly(2026, 5, 18), marketRepo.DeleteOldPriceSnapshotsCutoff);
+    }
 }
 
 // ── Fakes ────────────────────────────────────────────────────────────────────
@@ -166,6 +185,14 @@ internal sealed class FakeYahooClient(params YahooQuoteResult[] quotes) : IYahoo
         CallCount++;
         return Task.FromResult<IReadOnlyList<YahooQuoteResult>>(quotes);
     }
+
+    public Task<IReadOnlyList<YahooDividendResult>> GetDividendHistoryAsync(
+        string yahooTicker, DateOnly from, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<YahooDividendResult>>([]);
+
+    public Task<IReadOnlyList<YahooOhlcvResult>> GetOhlcvHistoryAsync(
+        string yahooTicker, DateOnly from, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<YahooOhlcvResult>>([]);
 }
 
 internal sealed class FakeMarketRepository : IMarketRepository
@@ -176,6 +203,7 @@ internal sealed class FakeMarketRepository : IMarketRepository
 
     public List<PriceSnapshot> AddedSnapshots { get; } = [];
     public List<DailySnapshot> UpsertedDailies { get; } = [];
+    public DateOnly? DeleteOldPriceSnapshotsCutoff { get; private set; }
 
     public Task AddPriceSnapshotAsync(PriceSnapshot snapshot, CancellationToken ct = default)
     {
@@ -192,9 +220,15 @@ internal sealed class FakeMarketRepository : IMarketRepository
         return Task.FromResult(result);
     }
 
-    public Task UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default)
+    public Task<bool> UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default)
     {
         UpsertedDailies.Add(snapshot);
+        return Task.FromResult(true);
+    }
+
+    public Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default)
+    {
+        DeleteOldPriceSnapshotsCutoff = cutoff;
         return Task.CompletedTask;
     }
 
@@ -209,4 +243,7 @@ internal sealed class FakeMarketRepository : IMarketRepository
 
     public Task AddDistributionAsync(Distribution dist, CancellationToken ct = default)
         => Task.CompletedTask;
+
+    public Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default)
+        => Task.FromResult(true);
 }

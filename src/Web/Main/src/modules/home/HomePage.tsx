@@ -1,6 +1,6 @@
 import { PriceCarousel } from './PriceCarousel'
-import { TopMovers } from './TopMovers'
 import { GainersLosers } from './GainersLosers'
+import { FibraUniverseTable } from './FibraUniverseTable'
 import { NewsSection } from './NewsSection'
 
 export function HomePage() {
@@ -18,9 +18,9 @@ export function HomePage() {
         </section>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <section aria-labelledby="heading-movers">
-              <h2 id="heading-movers" className="sr-only">Movimientos del día</h2>
-              <TopMovers />
+            <section aria-labelledby="heading-ranking">
+              <h2 id="heading-ranking" className="sr-only">Ganadores y perdedores del día</h2>
+              <GainersLosers />
             </section>
           </div>
           <div>
@@ -30,9 +30,9 @@ export function HomePage() {
             </section>
           </div>
         </div>
-        <section aria-labelledby="heading-ranking">
-          <h2 id="heading-ranking" className="sr-only">Ganadores y perdedores del día</h2>
-          <GainersLosers />
+        <section aria-labelledby="heading-universo">
+          <h2 id="heading-universo" className="sr-only">Universo FIBRAS</h2>
+          <FibraUniverseTable />
         </section>
       </div>
     </>

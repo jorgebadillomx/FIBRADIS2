@@ -7,6 +7,9 @@ namespace Api.Endpoints.Public;
 
 public static class MarketEndpoints
 {
+    private const int DistributionHistoryDays = 1825; // ~5 years
+    private const int MaxDistributionsInResponse = 60; // covers 5 years of quarterly payments
+
     public static IEndpointRouteBuilder MapMarket(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/market").WithTags("Market");
@@ -68,7 +71,7 @@ public static class MarketEndpoints
             };
 
             var snapshots = await marketRepo.GetDailySnapshotsAsync(fibra.Id, days, ct);
-            var distributions = await marketRepo.GetDistributionsAsync(fibra.Id, maxDays: 365, ct);
+            var distributions = await marketRepo.GetDistributionsAsync(fibra.Id, maxDays: DistributionHistoryDays, ct);
             var latest = await marketRepo.GetLatestSnapshotPerFibraAsync(ct);
             var lastPrice = latest.FirstOrDefault(s => s.FibraId == fibra.Id)?.LastPrice;
 
@@ -78,7 +81,7 @@ public static class MarketEndpoints
             var dto = new FibraHistoryDto(
                 fibra.Ticker,
                 snapshots.Select(s => new DailyPricePointDto(s.Date.ToString("yyyy-MM-dd"), s.Close)).ToList(),
-                distributions.Take(8).Select(d => new DistributionPointDto(d.PaymentDate.ToString("yyyy-MM-dd"), d.AmountPerUnit)).ToList(),
+                distributions.Take(MaxDistributionsInResponse).Select(d => new DistributionPointDto(d.PaymentDate.ToString("yyyy-MM-dd"), d.AmountPerUnit)).ToList(),
                 annualizedYield
             );
 

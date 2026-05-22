@@ -21,6 +21,7 @@ public class DistributionConfiguration : IEntityTypeConfiguration<Distribution>
         builder.Property(d => d.CapturedAt).HasColumnName("captured_at").IsRequired();
 
         builder.HasIndex(d => new { d.FibraId, d.PaymentDate })
-            .HasDatabaseName("IX_Distribution_FibraId_PaymentDate");
+            .IsUnique()
+            .HasDatabaseName("UIX_Distribution_FibraId_PaymentDate");
     }
 }

@@ -21,21 +21,37 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             .Take(count)
             .ToListAsync(ct);
 
-    public async Task UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default)
+    public async Task<bool> UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default)
     {
         var existing = await db.DailySnapshots
             .FirstOrDefaultAsync(d => d.FibraId == snapshot.FibraId && d.Date == snapshot.Date, ct);
 
         if (existing is null)
         {
-            db.DailySnapshots.Add(snapshot);
-        }
-        else
-        {
-            existing.MergeUpdate(snapshot);
+            try
+            {
+                db.DailySnapshots.Add(snapshot);
+                await db.SaveChangesAsync(ct);
+                return true;
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2627 or 2601 })
+            {
+                db.Entry(snapshot).State = EntityState.Detached;
+                return false;
+            }
         }
 
+        existing.MergeUpdate(snapshot);
         await db.SaveChangesAsync(ct);
+        return false;
+    }
+
+    public async Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default)
+    {
+        var cutoffDt = cutoff.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        await db.PriceSnapshots
+            .Where(p => p.CapturedAt < cutoffDt)
+            .ExecuteDeleteAsync(ct);
     }
 
     public async Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default)
@@ -74,5 +90,20 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
     {
         db.Distributions.Add(dist);
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default)
+    {
+        try
+        {
+            db.Distributions.Add(dist);
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2627 or 2601 })
+        {
+            db.Entry(dist).State = EntityState.Detached;
+            return false;
+        }
     }
 }

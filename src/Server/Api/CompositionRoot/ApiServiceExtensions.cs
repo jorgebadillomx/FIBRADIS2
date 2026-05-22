@@ -61,6 +61,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFibraRepository, FibraRepository>();
         builder.Services.AddScoped<IMarketRepository, MarketRepository>();
         builder.Services.AddScoped<MarketPipelineJob>();
+        builder.Services.AddScoped<DailySnapshotHistoricalJob>();
         builder.Services.AddScoped<NewsPipelineJob>();
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
@@ -68,7 +69,14 @@ public static class ApiServiceExtensions
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
+        builder.Services.AddSingleton(
+            _ => new YahooQuotesHistory(
+                new YahooQuotesBuilder()
+                    .WithHistoryStartDate(NodaTime.Instant.FromDateTimeUtc(
+                        new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc)))
+                    .Build()));
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
+        builder.Services.AddScoped<DistributionPipelineJob>();
         builder.Services.AddHttpClient<IAiSummaryService, GeminiAiSummaryService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
