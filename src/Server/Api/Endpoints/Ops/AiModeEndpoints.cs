@@ -22,6 +22,7 @@ public static class AiModeEndpoints
             var config = await repo.GetConfigAsync(ct);
             return Results.Ok(new AiModeDto(
                 config.Mode.ToString(),
+                config.NewsModel,
                 config.UpdatedAt,
                 config.UpdatedBy,
                 config.PreviousMode?.ToString()));
@@ -31,16 +32,37 @@ public static class AiModeEndpoints
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
         configGroup.MapPut("/", async (
-            SetAiModeRequest request,
+            UpdateAiModeRequest request,
             IAiModeRepository repo,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            if (!Enum.TryParse<AiMode>(request.Mode, ignoreCase: true, out var mode) || !Enum.IsDefined(mode))
+            if (request.Mode is null && request.NewsModel is null)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["mode"] = ["Valor inválido. Use 'Off' o 'On'."],
+                    ["body"] = ["Se debe proporcionar al menos `mode` o `newsModel`."],
+                });
+            }
+
+            AiMode? parsedMode = null;
+            if (request.Mode is not null)
+            {
+                if (!Enum.TryParse<AiMode>(request.Mode, ignoreCase: true, out var mode) || !Enum.IsDefined(mode))
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["mode"] = ["Valor inválido. Use 'Off' o 'On'."],
+                    });
+                }
+                parsedMode = mode;
+            }
+
+            if (request.NewsModel is not null && !AllowedNewsModels.Contains(request.NewsModel))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["newsModel"] = ["Modelo no permitido. Valores válidos: gemini-2.5-flash, gemini-2.5-pro."],
                 });
             }
 
@@ -49,7 +71,7 @@ public static class AiModeEndpoints
                 ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? "unknown";
 
-            await repo.SetModeAsync(mode, actor, ct);
+            await repo.UpdateConfigAsync(parsedMode, request.NewsModel, actor, ct);
             return Results.NoContent();
         })
         .Produces(StatusCodes.Status204NoContent)
@@ -124,6 +146,7 @@ public static class AiModeEndpoints
         newsGroup.MapPost("/{articleId:guid}/ai-summary", async (
             Guid articleId,
             INewsRepository newsRepo,
+            IAiModeRepository aiModeRepo,
             IArticleContentScraper articleContentScraper,
             IAiSummaryService summaryService,
             ILoggerFactory loggerFactory,
@@ -133,6 +156,8 @@ public static class AiModeEndpoints
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();
+
+            var config = await aiModeRepo.GetConfigAsync(ct);
 
             try
             {
@@ -144,7 +169,8 @@ public static class AiModeEndpoints
                         await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
                 }
 
-                var summary = await summaryService.GenerateSummaryAsync(article.Title, article.Snippet, bodyText, AiContentType.News, ct);
+                var summary = await summaryService.GenerateSummaryAsync(
+                    article.Title, article.Snippet, bodyText, AiContentType.News, config.NewsModel, ct);
 
                 // P4: null indica proveedor no configurado → 503
                 if (summary is null)
@@ -155,6 +181,7 @@ public static class AiModeEndpoints
                 }
 
                 await newsRepo.UpdateSummaryAsync(articleId, summary, NewsArticleStatus.Processed, ct);
+                await Task.Delay(TimeSpan.FromSeconds(5), ct);
                 return Results.NoContent();
             }
             catch (AiProviderConfigurationException ex)
@@ -202,6 +229,9 @@ public static class AiModeEndpoints
         return app;
     }
 
+    private static readonly HashSet<string> AllowedNewsModels =
+        new(StringComparer.OrdinalIgnoreCase) { "gemini-2.5-flash", "gemini-2.5-pro" };
+
     private static bool NeedsBodyRefresh(string? bodyText)
         => string.IsNullOrWhiteSpace(bodyText)
             || bodyText.Length < 200
@@ -209,3 +239,4 @@ public static class AiModeEndpoints
 }
 
 public sealed record SetAiModeRequest(string Mode);
+public sealed record UpdateAiModeRequest(string? Mode, string? NewsModel);

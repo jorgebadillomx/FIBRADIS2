@@ -66,7 +66,7 @@ export function NewsBodyTextSection() {
     setEditText(bodyQuery.data.bodyText ?? '')
   }
 
-  const total = listQuery.data?.total ?? 0
+  const total = Number(listQuery.data?.total ?? 0)
   const totalPages = Math.ceil(total / pageSize)
 
   return (

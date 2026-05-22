@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchAiMode, setAiMode, triggerAiSummary } from '@/api/aiModeApi'
+import { fetchAiMode, setAiConfig, triggerAiSummary } from '@/api/aiModeApi'
+
+type NewsModel = 'gemini-2.5-flash' | 'gemini-2.5-pro'
 
 export function AiModeSection() {
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<'Off' | 'On' | null>(null)
+  const [selectedModel, setSelectedModel] = useState<NewsModel | null>(null)
   const [articleId, setArticleId] = useState('')
 
   const modeQuery = useQuery({
@@ -14,9 +17,10 @@ export function AiModeSection() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: setAiMode,
+    mutationFn: setAiConfig,
     onSuccess: async () => {
       setSelected(null)
+      setSelectedModel(null)
       triggerMutation.reset()
       await queryClient.invalidateQueries({ queryKey: ['ai-mode'] })
     },
@@ -30,7 +34,13 @@ export function AiModeSection() {
   })
 
   const currentMode = modeQuery.data?.mode as 'Off' | 'On' | undefined
+  const currentModel = modeQuery.data?.newsModel as NewsModel | undefined
   const pendingMode = selected ?? currentMode
+  const pendingModel = selectedModel ?? currentModel
+
+  const modeChanged = selected !== null && selected !== currentMode
+  const modelChanged = selectedModel !== null && selectedModel !== currentModel
+  const hasChanges = modeChanged || modelChanged
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const isValidUuid = UUID_REGEX.test(articleId.trim())
@@ -69,12 +79,39 @@ export function AiModeSection() {
             ))}
           </div>
 
-          {selected !== null && selected !== currentMode ? (
+          <div className="mt-4 flex flex-col gap-2">
+            <p className="text-xs font-medium text-muted-foreground">Modelo IA</p>
+            <div className="flex flex-col gap-3 md:flex-row">
+              {(['gemini-2.5-flash', 'gemini-2.5-pro'] as const).map((model) => (
+                <button
+                  key={model}
+                  type="button"
+                  className={[
+                    'rounded-xl border px-5 py-3 text-sm font-medium transition',
+                    pendingModel === model
+                      ? 'border-teal-700 bg-teal-700 text-white'
+                      : 'border-border bg-white text-slate-700 hover:border-teal-600',
+                  ].join(' ')}
+                  disabled={saveMutation.isPending}
+                  onClick={() => setSelectedModel(model)}
+                >
+                  {model === 'gemini-2.5-flash' ? 'Flash (gemini-2.5-flash)' : 'Pro (gemini-2.5-pro)'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {hasChanges ? (
             <div className="mt-4 flex items-center gap-3">
               <button
                 className="h-10 rounded-xl bg-teal-700 px-5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-400"
                 disabled={saveMutation.isPending}
-                onClick={() => saveMutation.mutate(selected)}
+                onClick={() =>
+                  saveMutation.mutate({
+                    mode: modeChanged ? (pendingMode as 'Off' | 'On') : undefined,
+                    newsModel: modelChanged ? (pendingModel as NewsModel) : undefined,
+                  })
+                }
                 type="button"
               >
                 {saveMutation.isPending ? 'Guardando...' : 'Guardar cambio'}
@@ -82,7 +119,10 @@ export function AiModeSection() {
               <button
                 className="text-sm text-muted-foreground hover:text-foreground"
                 disabled={saveMutation.isPending}
-                onClick={() => setSelected(null)}
+                onClick={() => {
+                  setSelected(null)
+                  setSelectedModel(null)
+                }}
                 type="button"
               >
                 Cancelar

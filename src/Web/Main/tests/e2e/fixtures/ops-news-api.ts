@@ -8,6 +8,7 @@ type BlocklistTerm = {
 
 type AiModeState = {
   mode: 'Off' | 'On'
+  newsModel: string
   updatedAt: string
   updatedBy: string | null
   previousMode: 'Off' | 'On' | null
@@ -86,6 +87,7 @@ export async function mockOpsNewsApi(page: Page, options: OpsNewsApiOptions = {}
 
   let aiMode = options.aiMode ?? {
     mode: 'Off' as const,
+    newsModel: 'gemini-2.5-pro',
     updatedAt: '2026-05-20T12:05:00Z',
     updatedBy: 'qa.seed@test.com',
     previousMode: null,
@@ -134,11 +136,13 @@ export async function mockOpsNewsApi(page: Page, options: OpsNewsApiOptions = {}
     }
 
     if (method === 'PUT') {
-      const body = route.request().postDataJSON() as { mode?: 'Off' | 'On' } | null
+      const body = route.request().postDataJSON() as { mode?: 'Off' | 'On'; newsModel?: string } | null
       const nextMode = body?.mode ?? aiMode.mode
+      const nextNewsModel = body?.newsModel ?? aiMode.newsModel
 
       aiMode = {
         mode: nextMode,
+        newsModel: nextNewsModel,
         updatedAt: '2026-05-20T13:00:00Z',
         updatedBy: 'qa.ops@test.com',
         previousMode: aiMode.mode,

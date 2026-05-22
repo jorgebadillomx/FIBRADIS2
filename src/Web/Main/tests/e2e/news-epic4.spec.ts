@@ -125,6 +125,43 @@ test.describe('Épica 4 - Noticias y Contenido', () => {
 
   })
 
+  test.describe('Ops AI mode — selector de modelo', () => {
+    test.beforeEach(async ({ page }) => {
+      await seedOpsAuth(page)
+      await mockOpsAuthApi(page)
+      await mockOpsNewsApi(page)
+      await page.goto('http://127.0.0.1:4174/')
+    })
+
+    test('El selector de modelo muestra las dos opciones Flash y Pro', async ({ page }) => {
+      await expect(page.getByRole('button', { name: /Flash \(gemini-2\.5-flash\)/i })).toBeVisible()
+      await expect(page.getByRole('button', { name: /Pro \(gemini-2\.5-pro\)/i })).toBeVisible()
+    })
+
+    test('Seleccionar Flash muestra el botón Guardar cambio', async ({ page }) => {
+      await expect(page.getByRole('button', { name: 'Guardar cambio' })).not.toBeVisible()
+      await page.getByRole('button', { name: /Flash \(gemini-2\.5-flash\)/i }).click()
+      await expect(page.getByRole('button', { name: 'Guardar cambio' })).toBeVisible()
+    })
+
+    test('Guardar con Flash envía PUT con newsModel correcto', async ({ page }) => {
+      let capturedBody: unknown = null
+      await page.route('**/api/v1/ops/ai-mode', async (route) => {
+        if (route.request().method() === 'PUT') {
+          capturedBody = route.request().postDataJSON()
+          return route.fulfill({ status: 204 })
+        }
+        return route.fallback()
+      })
+
+      await page.getByRole('button', { name: /Flash \(gemini-2\.5-flash\)/i }).click()
+      await page.getByRole('button', { name: 'Guardar cambio' }).click()
+
+      await expect(page.getByRole('button', { name: 'Guardar cambio' })).not.toBeVisible()
+      expect((capturedBody as { newsModel?: string })?.newsModel).toBe('gemini-2.5-flash')
+    })
+  })
+
   test.describe('Ops auth — sin sesión previa', () => {
     test('Ops pide login cuando no hay sesión y permite entrar como AdminOps', async ({ page }) => {
       await mockOpsAuthApi(page)

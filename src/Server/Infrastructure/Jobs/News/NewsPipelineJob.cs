@@ -26,9 +26,12 @@ public class NewsPipelineJob(
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
         var currentMode = AiMode.Off;
+        var newsModel = "gemini-2.5-pro";
         try
         {
-            currentMode = await aiModeRepo.GetCurrentModeAsync(ct);
+            var config = await aiModeRepo.GetConfigAsync(ct);
+            currentMode = config.Mode;
+            newsModel = config.NewsModel;
         }
         catch (Exception ex)
         {
@@ -92,7 +95,7 @@ public class NewsPipelineJob(
                     try
                     {
                         aiSummary = await summaryService.GenerateSummaryAsync(
-                            item.Title, item.Snippet, bodyText, AiContentType.News, ct);
+                            item.Title, item.Snippet, bodyText, AiContentType.News, newsModel, ct);
                         if (aiSummary is not null)
                         {
                             finalStatus = NewsArticleStatus.Processed;
@@ -108,6 +111,8 @@ public class NewsPipelineJob(
                         logger.LogError(ex, "AI summary failed for '{Url}'; article saved without summary", item.Url);
                         finalStatus = NewsArticleStatus.Partial;
                     }
+
+                    await Task.Delay(TimeSpan.FromSeconds(5), ct);
                 }
 
                 var article = new NewsArticle

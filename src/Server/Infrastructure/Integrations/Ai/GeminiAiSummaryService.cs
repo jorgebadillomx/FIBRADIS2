@@ -30,6 +30,7 @@ public class GeminiAiSummaryService(
         string? snippet,
         string? bodyText = null,
         AiContentType contentType = AiContentType.News,
+        string? model = null,
         CancellationToken ct = default)
     {
         var apiKey = configuration["Gemini:ApiKey"];
@@ -39,13 +40,14 @@ public class GeminiAiSummaryService(
             return null;
         }
 
-        var model = contentType switch
-        {
-            AiContentType.Document => ResolveModel(configuration["Gemini:DocumentModel"], DefaultDocumentModel),
-            _ => ResolveModel(configuration["Gemini:NewsModel"], DefaultNewsModel),
-        };
+        var effectiveModel = model
+            ?? (contentType switch
+            {
+                AiContentType.Document => ResolveModel(configuration["Gemini:DocumentModel"], DefaultDocumentModel),
+                _ => ResolveModel(configuration["Gemini:NewsModel"], DefaultNewsModel),
+            });
         var summary = await GenerateSummaryCoreAsync(
-            model,
+            effectiveModel,
             apiKey,
             BuildPrompt(title, snippet, bodyText, requiresElaboration: false),
             DefaultMaxOutputTokens,
@@ -56,11 +58,11 @@ public class GeminiAiSummaryService(
 
         logger.LogWarning(
             "Gemini devolvió un resumen corto o incompleto para modelo {Model}. Longitud: {Length}. Reintentando con prompt reforzado.",
-            model,
+            effectiveModel,
             summary.Length);
 
         var retriedSummary = await GenerateSummaryCoreAsync(
-            model,
+            effectiveModel,
             apiKey,
             BuildPrompt(title, snippet, bodyText, requiresElaboration: true),
             RetryMaxOutputTokens,

@@ -21,6 +21,9 @@ public class AiModeRepository(AppDbContext db) : IAiModeRepository
            };
 
     public async Task SetModeAsync(AiMode mode, string actor, CancellationToken ct = default)
+        => await UpdateConfigAsync(mode, null, actor, ct);
+
+    public async Task UpdateConfigAsync(AiMode? mode, string? newsModel, string actor, CancellationToken ct = default)
     {
         var updatedAt = DateTimeOffset.UtcNow;
         var config = await db.AiModeConfigs.FindAsync([1], ct);
@@ -29,7 +32,8 @@ public class AiModeRepository(AppDbContext db) : IAiModeRepository
             db.AiModeConfigs.Add(new AiModeConfig
             {
                 Id = 1,
-                Mode = mode,
+                Mode = mode ?? AiMode.Off,
+                NewsModel = newsModel ?? "gemini-2.5-pro",
                 UpdatedAt = updatedAt,
                 UpdatedBy = actor,
             });
@@ -48,11 +52,24 @@ public class AiModeRepository(AppDbContext db) : IAiModeRepository
             }
         }
 
-        if (config.Mode == mode)
+        var changed = false;
+
+        if (mode is not null && config.Mode != mode.Value)
+        {
+            config.PreviousMode = config.Mode;
+            config.Mode = mode.Value;
+            changed = true;
+        }
+
+        if (newsModel is not null && !string.Equals(config.NewsModel, newsModel, StringComparison.OrdinalIgnoreCase))
+        {
+            config.NewsModel = newsModel;
+            changed = true;
+        }
+
+        if (!changed)
             return;
 
-        config.PreviousMode = config.Mode;
-        config.Mode = mode;
         config.UpdatedAt = updatedAt;
         config.UpdatedBy = actor;
         await db.SaveChangesAsync(ct);
