@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraHistory } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
+
+const INITIAL_ROWS = 8
 
 interface DistribucionesSectionProps {
   ticker: string
 }
 
 export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
+  const [showAll, setShowAll] = useState(false)
   const { data: history, isLoading, isError } = useQuery({
     queryKey: ['fibra-history', ticker, '1y'],
     queryFn: () => fetchFibraHistory(ticker, '1y'),
@@ -33,6 +37,7 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
 
   const yieldRaw = toNum(history?.annualizedYield)
   const dists = history?.distributions ?? []
+  const displayDists = showAll ? dists : dists.slice(0, INITIAL_ROWS)
 
   return (
     <div className="space-y-4">
@@ -61,7 +66,7 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
               </tr>
             </thead>
             <tbody>
-              {dists.map((d, i) => (
+              {displayDists.map((d, i) => (
                 <tr key={d.date} className={i % 2 === 0 ? '' : 'bg-muted/20'}>
                   <td className="px-4 py-2">{d.date}</td>
                   <td className="px-4 py-2 text-right tabular-nums">
@@ -71,6 +76,18 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
               ))}
             </tbody>
           </table>
+          {dists.length > INITIAL_ROWS && (
+            <div className="px-4 py-2 border-t border-border">
+              <button
+                type="button"
+                aria-expanded={showAll}
+                onClick={() => setShowAll(prev => !prev)}
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+              >
+                {showAll ? 'Ver menos' : `Ver historial completo (${dists.length})`}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

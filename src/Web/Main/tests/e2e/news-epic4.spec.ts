@@ -103,16 +103,16 @@ test.describe('Épica 4 - Noticias y Contenido', () => {
       await expect(page.getByText('fibra óptica')).not.toBeVisible()
     })
 
-    test('Ops permite cambiar AI_MODE, muestra auditoría y dispara resumen manual en modo Manual', async ({ page }) => {
+    test('Ops permite cambiar AI_MODE a On, muestra auditoría y dispara resumen manual', async ({ page }) => {
       await page.goto('http://127.0.0.1:4174/')
 
-      await expect(page.getByText('Cambia AI_MODE a Manual para habilitar este disparo.')).toBeVisible()
-
-      await page.getByRole('button', { name: 'Manual - disparar desde Ops' }).click()
+      await page.getByRole('button', { name: 'On - generar resumen al ingestar' }).click()
       await page.getByRole('button', { name: 'Guardar cambio' }).click()
 
       await expect(page.getByText(/por qa\.ops@test\.com/)).toBeVisible()
       await expect(page.getByText(/anterior: Off/)).toBeVisible()
+
+      await expect(page.getByText('En modo On, el pipeline ya genera resúmenes automáticamente. Este disparo regenera uno específico.')).toBeVisible()
 
       await page.getByPlaceholder('GUID del artículo de noticias').fill('no-es-guid')
       await expect(page.getByText('El ID debe ser un GUID válido')).toBeVisible()

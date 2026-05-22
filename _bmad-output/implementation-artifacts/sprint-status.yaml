@@ -1,5 +1,13 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-21
+# retrospectivas épicas 2, 3, 4 actualizadas — incluyen historias extendidas (2-6, 3-4, 3-5, 4-5-1, 4-5-3, 4-6)
+# story 3-5 done — code review pass (3 patches: retentionCutoff AddDays(-1), UpsertDailySnapshot catch duplicate key, ChangeTracker.Clear → Entry.Detach)
+# story 3-5 creada — DailySnapshot histórico 5 años + limpieza PriceSnapshot 2 días + trigger manual Ops
+# story 3-4 vuelve a review — 4 patches code review aplicados (race condition Upsert, HistoryStart estático, AmountPerUnit<=0, aria-expanded)
+# story 3-4 vuelve a in-progress — 4 patches code review (race condition Upsert, HistoryStart estático, AmountPerUnit<=0, aria-expanded)
+# story 2-6 done — code review pass (2 patches: header column order + isError handled), 56/56 tests
+# story 3-4 review — pipeline histórico distribuciones Yahoo Finance, índice único, seed 5 años, toggle frontend, 54/54 tests
+# story 2-6 creada — reorganización home + tabla universo fibras
 # story 4-6 done — code review pass limpio (2 patches: Gemini null log + UI mensaje)
 # epic-4 done — todas las historias completadas, auth hardening mergeado a main
 # story 4-3 hardening code review done — 4 patches aplicados (clearOpsAccessToken solo en 401, assertOpsAccessToken dispatch event, invalidateQueries en bootstrap, test e2e aislado)
@@ -52,6 +60,8 @@
 
 generated: 2026-05-15
 last_updated: 2026-05-21
+# retrospectivas épicas 2/3/4 actualizadas con historias extendidas — epic-2-retro-2026-05-21, epic-3-retro-2026-05-21, epic-4-retro-2026-05-21
+# story 3-4 done — 2ª pasada code review (9 patches aplicados)
 # story 3-4 creada — pipeline histórico distribuciones Yahoo Finance (5 años, idempotencia, catálogo completo)
 # story 4-3 done — Pass 8 code review limpio (0 patches)
 # story 4-3 vuelve a in-progress — 4 patches Pass 7 (P1-P4)
@@ -104,6 +114,8 @@ development_status:
   2-4-seo-prerender-y-accesibilidad-wcag-2-1-aa: done
   2-5-home-topmovers-tabla-y-ganadores-perdedores: done
   epic-2-retrospective: done
+  # story 2-6 creada — reorganización home (GainersLosers al grid, nueva Tabla Universo FIBRAS)
+  2-6-home-reorganizacion-y-tabla-universo-fibras: done
 
   # ── Épica 3: Mercado y Frescura de Datos ──────────────────────────────────
   epic-3: done
@@ -129,7 +141,12 @@ development_status:
 
   # ── 3.4: Pipeline histórico de distribuciones Yahoo Finance ─────────────
   # story 3-4 creada — pipeline 5 años, idempotencia, cobertura catálogo completo, historial expandible
-  3-4-pipeline-historico-distribuciones: ready-for-dev
+  3-4-pipeline-historico-distribuciones: done
+
+  # ── 3.5: DailySnapshot histórico + retención PriceSnapshot ──────────────
+  # story 3-5 creada — histórico 5 años candles Yahoo (idempotente), limpieza PriceSnapshot 2 días, trigger manual Ops
+  # story 3-5 patch — T10: endpoint manual DistributionPipelineJob
+  3-5-daily-snapshot-historico-y-limpieza-price-snapshots: done
 
   # ── 4.6: Display fixes + AiMode On (post-release improvements) ───────────
   # story 4-6 creada — og:image redirects, HTML snippet strip, AiMode Off/On, home 5 noticias

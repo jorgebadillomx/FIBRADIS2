@@ -83,6 +83,10 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **Race condition: dos requests concurrentes de AdminOps sobre el mismo artículo `Pending` pasan el guard de idempotencia y llaman a Gemini dos veces** [`AiModeEndpoints.cs:85-100`] — Endpoint admin-only de muy bajo volumen; worst case = cuota Gemini desperdiciada + segundo summary sobreescribe al primero de forma inocua. Resolver con `ExecuteUpdateAsync WHERE Status != Processed` atómico si el uso aumenta.
 - **`AiSummary` se persiste sin validar longitud máxima** [`GeminiAiSummaryService.cs:78`, `NewsRepository.cs:58`] — Columna `nvarchar(2048)`; 256 output tokens ≈ 800-1000 chars, bien bajo el límite, pero no hay truncación explícita. Si se excediera, `DbUpdateException` sería capturada como fallo de proveedor con mensaje "proveedor no disponible" que es engañoso. Agregar `text.Truncate(2048)` o aumentar límite de columna si se amplía `maxOutputTokens`.
 
+## Deferred from: code review of 2-6-home-reorganizacion-y-tabla-universo-fibras (2026-05-21)
+
+- **Sin roles ARIA de tabla en `FibraUniverseTable`** [`FibraUniverseTable.tsx:52-210`] — El grid CSS no lleva `role="table"/"row"/"columnheader"/"cell"`. Pre-existing pattern en GainersLosers y TopMovers (mismo enfoque visual). Revisar en historia de mejoras de accesibilidad WCAG si el score de audit lo requiere.
+
 ## Deferred from: code review of 4-5-1-scraping-imagen-ogimage-y-fallback-visual (2026-05-20)
 
 - **Regex backtracking teórico en OgImageScraper** [`OgImageScraper.cs`] — `[^>]*` bounded por `>` limita el backtracking; GeneratedRegex de .NET optimiza el patrón. Riesgo bajo en producción. Evaluar `RegexOptions.NonBacktracking` si se detecta CPU spikes en métricas.
@@ -118,6 +122,32 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 
 - **SSRF: destino del redirect no validado en OgImageScraper** [`ApiServiceExtensions.cs`] — `AllowAutoRedirect=true` permite que un redirect externo apunte a endpoints internos; `IsAllowedHostAsync` valida solo la URL de origen. Riesgo bajo por diseño (dev notes lo acepta explícitamente). Revisar junto con SSRF global si se amplía el scraping.
 - **CancellationToken swallowed en bloque AI del pipeline** [`NewsPipelineJob.cs`] — Si el job Hangfire se cancela durante la llamada a Gemini, `OperationCanceledException` es capturada por el `catch(Exception)` interno y el artículo queda como `Partial` permanentemente (deduplicador lo excluye en la próxima corrida). Recuperable via regeneración manual con el endpoint de trigger.
+
+## Deferred from: code review of 3-4-pipeline-historico-distribuciones — 2ª pasada (2026-05-21)
+
+- **`WithHistoryStartDate(2020-01-01)` estático vs ventana dinámica `AddYears(-5)`** [`ApiServiceExtensions.cs`] — No rompe en 2026 (filtro client-side absorbe el desfase). Actualizar si el piso de 2020 queda dentro de la ventana de 5 años solicitada.
+- **Conversión `ToDateTimeUtc()` → `DateOnly` puede desplazar un día** [`YahooFinanceClient.cs:GetDividendHistoryAsync`] — FIBRAs mexicanas no tienen dividendos cerca de medianoche UTC en práctica; revisar si aparecen desfases de fecha en logs de producción.
+- **`YahooQuotesHistory` singleton no implementa `IDisposable`** [`ApiServiceExtensions.cs`] — Patrón pre-existente del `YahooQuotes` singleton; abordar junto con la limpieza de singletons HTTP en Épica 5.
+- **Dos dividendos el mismo día para la misma FIBRA descarta el segundo** [`DistributionConfiguration.cs`] — Diseño intencional del índice único `(FibraId, PaymentDate)`; si Yahoo reporta ajustes intradiarios, el segundo queda silenciosamente descartado.
+
+## Deferred from: code review of 3-5-daily-snapshot-historico-y-limpieza-price-snapshots (2026-05-21)
+
+- **`SaveChangesAsync` por candle en backfill histórico** [`DailySnapshotHistoricalJob.cs`] — Decisión de diseño intencional siguiendo el patrón de `DistributionPipelineJob`. Para un job de backfill de única ejecución es aceptable; evaluar batching si el catálogo crece significativamente.
+- **`RecurringJob.AddOrUpdate<DistributionPipelineJob>` fue omitido en story 3.4 y añadido aquí** [`Program.cs`] — Omisión pre-existente. El comportamiento final es correcto; sin acción requerida.
+- **`DailySnapshotHistoricalJob` usa `DateTime.UtcNow` directo en lugar de `ITimeService`** [`DailySnapshotHistoricalJob.cs:19`] — El spec Dev Notes especifica explícitamente `DateTime.UtcNow.AddYears(-5)`. Violación menor de convención de tiempo para job de backfill único.
+- **Endpoint manual `/daily-snapshot-historical/run` sin guard contra re-enqueueing** [`OpsMarketEndpoints.cs`] — Múltiples POSTs acumulan jobs en la cola Hangfire; `[DisableConcurrentExecution(0)]` los serializa. Para un job de backfill manual de uso infrecuente es aceptable; agregar check via `IMonitoringApi` en Epic 5 si el abuso operacional se detecta.
+
+## Deferred from: code review of 3-4-pipeline-historico-distribuciones (2026-05-21)
+
+- **`CancellationToken.None` en schedule de Hangfire** [`Program.cs`] — Patrón pre-existente idéntico en `MarketPipelineJob` y `NewsPipelineJob`. Sin cancelación graceful en shutdown del host. Abordar junto con los otros jobs en Épica 5.
+- **`historyClient is null` devuelve `[]` silenciosamente** [`YahooFinanceClient.cs`] — Comportamiento intencional para test isolation, documentado en dev notes. Agregar `LogWarning` si se detecta null en producción (implicaría error en el DI).
+- **Sin rate limiting entre llamadas a Yahoo Finance** [`DistributionPipelineJob.cs`] — Pre-existente en toda la integración YahooQuotesApi. Un bloqueo de IP es indistinguible de "sin dividendos". Mitigar en Épica 5 con métricas de pipeline y alertas por inserted=0.
+- **`Take(60)` trunca "Ver historial completo" en teoría** [`MarketEndpoints.cs`] — Sin impacto real con catálogo actual (FIBRAs trimestrales: max ~20 registros / 5 años). Agregar paginación si se añaden FIBRAs de pago mensual.
+- **`FakeDistYahooClient` con dos constructores de lógica dividida** [`DistributionPipelineJobTests.cs`] — No puede combinar múltiples entries + throwForTicker. Refactorizar si se añaden tests más complejos.
+- **`YahooQuotesHistory.Inner` expone tipo interno** [`YahooQuotesHistory.cs`] — Diseño documentado en dev notes; wrapper creado para resolver colisión de DI, no para encapsulamiento. Evaluar encapsular en historia de refactor si el módulo crece.
+- **Sin test para `CapturedAt`** [`DistributionPipelineJobTests.cs`] — Campo de auditoría sin cobertura. Agregar en próxima iteración del módulo market.
+- **Null/empty `YahooTicker` sin guardia explícita** [`DistributionPipelineJob.cs`] — Pre-existente en todos los pipelines; catálogo controlado. Agregar guard defensivo si se abre la gestión del catálogo en Épica 5.
+- **React row key `d.date` puede colisionar** [`DistribucionesSection.tsx`] — El UIX garantiza unicidad en DB; sin impacto real. Usar `${d.date}-${i}` si se añade soporte para múltiples distribuciones por fecha.
 
 ## Deferred from: code review of 4-3-soporte-para-ai-mode-en-noticias-off-y-manual — Hardening Pass (2026-05-21)
 

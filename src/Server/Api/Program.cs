@@ -24,6 +24,7 @@ app.UseStaticFiles();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
+app.MapOpsMarket();
 app.MapAiMode();
 app.MapNewsBlocklist();
 app.MapNews();
@@ -53,6 +54,12 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         j => j.ExecuteAsync(CancellationToken.None),
         NewsPipelineSchedule.CronExpression,
         new RecurringJobOptions { TimeZone = mexicoTz });
+
+    RecurringJob.AddOrUpdate<DistributionPipelineJob>(
+        "distribution-pipeline",
+        j => j.ExecuteAsync(CancellationToken.None),
+        "0 6 * * *",
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 }
 
 app.Run();

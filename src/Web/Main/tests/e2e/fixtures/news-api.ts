@@ -8,6 +8,7 @@ type NewsArticle = {
   url: string
   snippet: string | null
   aiSummary: string | null
+  imageUrl: string | null
 }
 
 type NewsFixtureOptions = {
@@ -24,6 +25,7 @@ const defaultLatestNews: NewsArticle[] = [
     url: 'https://example.com/noticias/funo11-refinanciamiento',
     snippet: 'La emisora detalló los términos del refinanciamiento.',
     aiSummary: 'Resumen IA: FUNO11 refinanció pasivos para extender vencimientos y preservar liquidez.',
+    imageUrl: 'https://example.com/images/funo11-refinanciamiento.jpg',
   },
   {
     id: 'aaaaaaaa-2222-2222-2222-222222222222',
@@ -33,6 +35,7 @@ const defaultLatestNews: NewsArticle[] = [
     url: 'https://example.com/noticias/fmty14-ocupacion',
     snippet: 'La ocupación industrial aumentó durante el trimestre.',
     aiSummary: null,
+    imageUrl: null,
   },
 ]
 
@@ -46,6 +49,7 @@ const defaultFibraNews: Record<string, NewsArticle[]> = {
       url: 'https://example.com/noticias/funo11-desinversion',
       snippet: 'La emisora planea reciclar capital hacia proyectos logísticos.',
       aiSummary: 'Resumen IA: FUNO11 busca reciclar capital y concentrarse en activos con mayor rentabilidad.',
+      imageUrl: 'https://example.com/images/funo11-desinversion.jpg',
     },
     {
       id: 'bbbbbbbb-2222-2222-2222-222222222222',
@@ -55,6 +59,7 @@ const defaultFibraNews: Record<string, NewsArticle[]> = {
       url: 'https://example.com/noticias/funo11-analistas',
       snippet: 'El consenso ajustó estimados tras la última guía trimestral.',
       aiSummary: null,
+      imageUrl: null,
     },
   ],
 }
@@ -79,4 +84,20 @@ export async function mockNewsApi(page: Page, options: NewsFixtureOptions = {}) 
     const fibraId = parts[parts.length - 1] ?? ''
     return fulfillJson(route, 200, byFibraId[fibraId] ?? [])
   })
+}
+
+export async function mockNewsArticleByIdApi(page: Page, article: NewsArticle) {
+  await page.route(`**/api/v1/news/${article.id}`, (route) =>
+    fulfillJson(route, 200, article),
+  )
+}
+
+export async function mockNewsArticleByIdNotFound(page: Page, id: string) {
+  await page.route(`**/api/v1/news/${id}`, (route) =>
+    route.fulfill({
+      status: 404,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({ title: 'Not Found', status: 404 }),
+    }),
+  )
 }
