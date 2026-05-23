@@ -8,6 +8,8 @@ import {
   getStoredOpsAccessToken,
 } from '@/api/opsAuth'
 
+const PROACTIVE_REFRESH_MS = 4 * 60 * 60 * 1000 // 4 hours — well within 8-hour token lifetime
+
 type Props = {
   children: React.ReactNode
 }
@@ -57,6 +59,32 @@ export function OpsLoginGate({ children }: Props) {
     window.addEventListener(OPS_AUTH_REQUIRED_EVENT, handleAuthRequired)
     return () => window.removeEventListener(OPS_AUTH_REQUIRED_EVENT, handleAuthRequired)
   }, [queryClient])
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated') return
+
+    let active = true
+
+    const id = setInterval(async () => {
+      try {
+        const ok = await refreshOpsSession()
+        if (!active) return
+        if (!ok) {
+          clearOpsAccessToken()
+          queryClient.clear()
+          setPassword('')
+          setAuthStatus('anonymous')
+        }
+      } catch {
+        // Network error — keep session; a real 401 on the next API call will handle logout
+      }
+    }, PROACTIVE_REFRESH_MS)
+
+    return () => {
+      active = false
+      clearInterval(id)
+    }
+  }, [authStatus, queryClient])
 
   const loginMutation = useMutation({
     mutationFn: async () => {

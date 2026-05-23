@@ -34,24 +34,37 @@ export async function loginOps(email: string, password: string): Promise<void> {
   await persistAccessToken(data, 'La API no devolvió access token para AdminOps.')
 }
 
-export async function refreshOpsSession(): Promise<boolean> {
-  const { data, error } = await apiClient['/api/v1/auth/refresh'].POST({})
+// Deduplicates concurrent calls (e.g. React Strict Mode double-mount) so only one
+// HTTP request reaches the backend per refresh cycle, preventing token rotation races.
+let _refreshInFlight: Promise<boolean> | null = null
 
-  if (error) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'status' in error &&
-      typeof error.status === 'number' &&
-      error.status === 401
-    ) {
-      clearOpsAccessToken()
-      return false
+export function refreshOpsSession(): Promise<boolean> {
+  if (_refreshInFlight) return _refreshInFlight
+
+  _refreshInFlight = (async () => {
+    const { data, error } = await apiClient['/api/v1/auth/refresh'].POST({})
+
+    if (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        typeof error.status === 'number' &&
+        error.status === 401
+      ) {
+        // Do not call clearOpsAccessToken() here — the access token in sessionStorage
+        // may still be valid. Callers decide whether to clear based on their context.
+        return false
+      }
+
+      throw new Error(getOpsApiErrorMessage(error, 'No se pudo restaurar la sesión de Ops.', { signOutOn401: false }))
     }
 
-    throw new Error(getOpsApiErrorMessage(error, 'No se pudo restaurar la sesión de Ops.'))
-  }
+    await persistAccessToken(data, 'La API no devolvió access token al refrescar la sesión.')
+    return true
+  })().finally(() => {
+    _refreshInFlight = null
+  })
 
-  await persistAccessToken(data, 'La API no devolvió access token al refrescar la sesión.')
-  return true
+  return _refreshInFlight
 }
