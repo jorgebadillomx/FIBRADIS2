@@ -2,6 +2,14 @@
 
 Items diferidos durante code reviews. Cada sección tiene la historia origen y la fecha.
 
+## Deferred from: code review of ops-session-stability (2026-05-23)
+
+- **`_refreshInFlight` singleton no exporta reset para tests** [`src/Web/Ops/src/api/authApi.ts`] — La variable de módulo persiste entre tests si se agrega cobertura. Exportar una función `_resetRefreshInFlight()` o mover a factory para aislar en tests.
+- **`setPassword('')` persiste plaintext en estado React durante toda la sesión** [`OpsLoginGate.tsx`] — Con access token de 8h, la contraseña vive hasta 8h en memoria. Pre-existente; consider usar un ref en lugar de state, o limpiar el password en el effect de autenticación.
+- **Tab freeze / background throttle puede saltarse el refresh proactivo** [`OpsLoginGate.tsx`] — Chrome Memory Saver y iOS Safari pueden suspender `setInterval` en tabs en background. Añadir listener `document.visibilitychange` que llame `refreshOpsSession()` cuando el tab vuelva a ser visible.
+- **`AccessTokenMinutes` como string en lugar de número en JSON** [`appsettings.json`] — Pre-existente. El valor `"480"` debería ser `480` (sin comillas) para consistencia con JSON schema; C# lo parsea con `int.Parse` por lo que funciona, pero es frágil ante errores tipográficos.
+- **Sin fuente única de verdad para el lifetime del token** [`OpsLoginGate.tsx` / `appsettings.json`] — `PROACTIVE_REFRESH_MS = 4h` está hardcodeado en frontend independientemente del valor de `AccessTokenMinutes` en backend. Si el backend cambia el lifetime, el frontend no lo sabe. Considerar incluir `expiresIn` en el response de login/refresh para que el frontend derive el intervalo dinámicamente.
+
 ## Deferred from: code review of 4-1-ingesta-rss-blocklist-y-deduplicacion-de-noticias (2026-05-19)
 
 - **GUIDs de seed generados con MD5** [`NewsSeed.cs:GuidFromKey`] — Si se modifica o reordena `DefaultBlocklist`, los GUIDs cambian y EF emite DELETE+INSERT en la siguiente migración. Considerar GUIDs literales hardcodeados.
