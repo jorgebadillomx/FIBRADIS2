@@ -1,7 +1,8 @@
 # generated: 2026-05-15
-# last_updated: 2026-05-22
-# story 4-7-seleccion-modelo-ia-noticias done — code review pass (6 patches: newsModel lowercase, migration default, OperationCanceledException pipeline, triggerMutation race, SetAiModeRequest dead code, delay rutas error)
-# stories 4-5-4 y 4-7-editor-manual-body-text-ops done — code review completo (11 patches aplicados)
+# last_updated: 2026-05-23
+# story 4-9 done — code review pass (5 patches: DefaultDocumentModel Gemini, mensajes 503/log proveedor-agnósticos, NewsBodyTextRetryJob validación body y log level) + patch modelos deepseek-v4-flash/pro
+# story 4-8 done — AngleSharp DOM parser + SiteExtractionCatalog 22 sitios, 84/84 tests
+# story 4-7-seleccion-modelo-ia-noticias done — superada por 4-9 multi-proveedor (mergeada a main, cancelada en sprint)
 # retrospectivas épicas 2, 3, 4 actualizadas — incluyen historias extendidas (2-6, 3-4, 3-5, 4-5-1, 4-5-3, 4-6)
 # story 3-5 done — code review pass (3 patches: retentionCutoff AddDays(-1), UpsertDailySnapshot catch duplicate key, ChangeTracker.Clear → Entry.Detach)
 # story 3-5 creada — DailySnapshot histórico 5 años + limpieza PriceSnapshot 2 días + trigger manual Ops
@@ -62,7 +63,7 @@
 
 generated: 2026-05-15
 last_updated: 2026-05-22
-# story 4-8 creada — AngleSharp + SiteExtractionCatalog 20+ sitios — body_text con parser DOM
+# story 4-8 done — AngleSharp DOM parser + SiteExtractionCatalog 22 sitios, 84/84 tests
 # retrospectivas épicas 2/3/4 actualizadas con historias extendidas — epic-2-retro-2026-05-21, epic-3-retro-2026-05-21, epic-4-retro-2026-05-21
 # story 3-4 done — 2ª pasada code review (9 patches aplicados)
 # story 3-4 creada — pipeline histórico distribuciones Yahoo Finance (5 años, idempotencia, catálogo completo)
@@ -161,15 +162,21 @@ development_status:
   4-6-noticias-display-fixes-y-aimode-on: done
 
   # ── 4.7: Selección de modelo IA para noticias en Ops ─────────────────────
-  # story 4-7 creada — selector Gemini Flash/Pro en AiModeSection, delay 5s entre llamadas Gemini
-  4-7-seleccion-modelo-ia-noticias: done
+  # story 4-7 cancelada — superada por 4-9 (multi-proveedor); selector Flash/Pro mergeado a main como parte de 4-7-seleccion-modelo-ia
+  4-7-seleccion-modelo-ia-noticias: cancelled
 
-  # ── 4.8: Extracción body_text con AngleSharp + catálogo de sitios ─────────
-  # story 4-8 creada — reemplazar regex por parser DOM AngleSharp + SiteExtractionCatalog 20+ sitios
-  4-8-body-text-anglesharp-catalogo-sitios: ready-for-dev
+  # ── 4.9: Multi-proveedor AI — Gemini + DeepSeek seleccionable desde Ops ──
+  # story 4-9 creada — arquitectura multi-proveedor + DeepSeek + selector Ops
+  4-9-multi-provider-ai-noticias: done
+
+  # ── 4.8: Extracción body_text con AngleSharp + Catálogo de Sitios ─────────
+  # story 4-8 creada — reemplazar regex por parser DOM AngleSharp + SiteExtractionCatalog 22 sitios
+  4-8-body-text-anglesharp-catalogo-sitios: done
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
-  epic-5: backlog
+  epic-5: in-progress
+  # story 5-0 creada — OpsShell multi-pantalla + logs de errores + gestión de prompts de IA
+  5-0-ops-shell-navegacion-y-modulos: ready-for-dev
   5-1-dashboard-operativo-y-control-de-pipelines: backlog
   5-2-importacion-de-fundamentales-en-modo-manual: backlog
   5-3-gestion-del-catalogo-de-fibras-desde-ops: backlog

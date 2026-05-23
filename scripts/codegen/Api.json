@@ -137,6 +137,70 @@
         }
       }
     },
+    "/api/v1/ops/news-pipeline/run": {
+      "post": {
+        "tags": [
+          "Ops"
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/news-pipeline/retry-body-text": {
+      "post": {
+        "tags": [
+          "Ops"
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/market/daily-snapshot-historical/run": {
       "post": {
         "tags": [
@@ -497,6 +561,95 @@
           },
           "502": {
             "description": "Bad Gateway"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/ai-provider": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiProviderConfigDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AI"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAiProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized",
@@ -936,6 +1089,58 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AiProviderConfigDto": {
+        "required": [
+          "provider",
+          "modelId",
+          "updatedAt",
+          "updatedBy",
+          "availableProviders"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "availableProviders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiProviderOptionDto"
+            }
+          }
+        }
+      },
+      "AiProviderOptionDto": {
+        "required": [
+          "provider",
+          "models"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1580,6 +1785,21 @@
         "type": "object",
         "properties": {
           "accessToken": {
+            "type": "string"
+          }
+        }
+      },
+      "SetAiProviderRequest": {
+        "required": [
+          "provider",
+          "modelId"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "modelId": {
             "type": "string"
           }
         }

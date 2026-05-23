@@ -9,6 +9,12 @@ namespace Api.Endpoints.Ops;
 
 public static class AiModeEndpoints
 {
+    private static readonly IReadOnlySet<string> AllowedNewsModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+    };
+
     public static IEndpointRouteBuilder MapAiMode(this IEndpointRouteBuilder app)
     {
         var configGroup = app.MapGroup("/api/v1/ops/ai-mode")
@@ -134,6 +140,7 @@ public static class AiModeEndpoints
             if (article is null)
                 return Results.NotFound();
 
+
             var bodyText = string.IsNullOrWhiteSpace(request.BodyText) ? null : request.BodyText.Trim();
             await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
             return Results.NoContent();
@@ -146,7 +153,6 @@ public static class AiModeEndpoints
         newsGroup.MapPost("/{articleId:guid}/ai-summary", async (
             Guid articleId,
             INewsRepository newsRepo,
-            IAiModeRepository aiModeRepo,
             IArticleContentScraper articleContentScraper,
             IAiSummaryService summaryService,
             ILoggerFactory loggerFactory,
@@ -156,8 +162,6 @@ public static class AiModeEndpoints
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();
-
-            var config = await aiModeRepo.GetConfigAsync(ct);
 
             try
             {
@@ -169,24 +173,22 @@ public static class AiModeEndpoints
                         await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
                 }
 
-                var summary = await summaryService.GenerateSummaryAsync(
-                    article.Title, article.Snippet, bodyText, AiContentType.News, config.NewsModel, ct);
+                var summary = await summaryService.GenerateSummaryAsync(article.Title, article.Snippet, bodyText, AiContentType.News, ct);
 
                 // P4: null indica proveedor no configurado → 503
                 if (summary is null)
                 {
                     return Results.Problem(
                         statusCode: StatusCodes.Status503ServiceUnavailable,
-                        detail: "El servicio de IA no está configurado. Verifique la configuración de Gemini:ApiKey.");
+                        detail: "El servicio de IA no está configurado. Verifique la configuración del proveedor activo (Gemini:ApiKey o DeepSeek:ApiKey).");
                 }
 
                 await newsRepo.UpdateSummaryAsync(articleId, summary, NewsArticleStatus.Processed, ct);
-                await Task.Delay(TimeSpan.FromSeconds(5), ct);
                 return Results.NoContent();
             }
             catch (AiProviderConfigurationException ex)
             {
-                logger.LogError(ex, "Gemini configuration error while generating AI summary for news article {ArticleId}", articleId);
+                logger.LogError(ex, "AI provider configuration error while generating AI summary for news article {ArticleId}", articleId);
 
                 return Results.Problem(
                     statusCode: StatusCodes.Status503ServiceUnavailable,
@@ -213,7 +215,6 @@ public static class AiModeEndpoints
                         articleId);
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
                 return Results.Problem(
                     statusCode: StatusCodes.Status502BadGateway,
                     detail: "El proveedor de IA no está disponible. El artículo fue marcado como Partial.");
@@ -230,11 +231,84 @@ public static class AiModeEndpoints
         return app;
     }
 
-    private static readonly HashSet<string> AllowedNewsModels =
-        new(StringComparer.OrdinalIgnoreCase) { "gemini-2.5-flash", "gemini-2.5-pro" };
-
     private static bool NeedsBodyRefresh(string? bodyText)
-        => string.IsNullOrWhiteSpace(bodyText);
+        => string.IsNullOrWhiteSpace(bodyText)
+            || bodyText.Length < 200
+            || string.Equals(bodyText.Trim(), "Google News", StringComparison.OrdinalIgnoreCase);
 }
+
+public static class AiProviderEndpoints
+{
+    private static readonly IReadOnlyList<AiProviderOptionDto> AvailableProviders =
+    [
+        new("Gemini", ["gemini-2.5-flash", "gemini-2.5-pro"]),
+        new("DeepSeek", ["deepseek-v4-flash", "deepseek-v4-pro"]),
+    ];
+
+    public static IEndpointRouteBuilder MapAiProvider(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/ops/ai-provider")
+            .RequireAuthorization("AdminOps")
+            .WithTags("AI");
+
+        group.MapGet("/", async (
+            IAiProviderConfigRepository repo,
+            CancellationToken ct) =>
+        {
+            var config = await repo.GetConfigAsync(ct);
+            return Results.Ok(new AiProviderConfigDto(
+                config.Provider.ToString(),
+                config.ModelId,
+                config.UpdatedAt,
+                config.UpdatedBy,
+                AvailableProviders));
+        })
+        .Produces<AiProviderConfigDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPut("/", async (
+            SetAiProviderRequest request,
+            IAiProviderConfigRepository repo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            if (!Enum.TryParse<AiProvider>(request.Provider, ignoreCase: true, out var provider) || !Enum.IsDefined(provider))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["provider"] = [$"Valor inválido. Use: {string.Join(", ", Enum.GetNames<AiProvider>())}."],
+                });
+            }
+
+            var option = AvailableProviders.FirstOrDefault(p =>
+                string.Equals(p.Provider, request.Provider, StringComparison.OrdinalIgnoreCase));
+
+            if (option is null || !option.Models.Contains(request.ModelId, StringComparer.OrdinalIgnoreCase))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["modelId"] = [$"Modelo inválido para {provider}. Use: {string.Join(", ", option?.Models ?? [])}."],
+                });
+            }
+
+            var actor = ctx.User.Identity?.Name
+                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? "unknown";
+
+            await repo.SetProviderAsync(provider, request.ModelId, actor, ct);
+            return Results.NoContent();
+        })
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        return app;
+    }
+}
+
+public sealed record SetAiProviderRequest(string Provider, string ModelId);
 
 public sealed record UpdateAiModeRequest(string? Mode, string? NewsModel);

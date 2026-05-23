@@ -4,6 +4,7 @@ using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523003657_AddAiProviderConfig")]
+    partial class AddAiProviderConfig
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1426,12 +1429,6 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("mode");
 
-                    b.Property<string>("NewsModel")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("news_model");
-
                     b.Property<string>("PreviousMode")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
@@ -1455,7 +1452,6 @@ namespace Infrastructure.Persistence.Migrations
                         {
                             Id = 1,
                             Mode = "Off",
-                            NewsModel = "gemini-2.5-pro",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 19, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             UpdatedBy = "system"
                         });

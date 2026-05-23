@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using AngleSharp;
+using AngleSharp.Dom;
 using Application.News;
 using Microsoft.Extensions.Logging;
 
@@ -14,10 +16,6 @@ public partial class ArticleContentScraper(
     private const int MaxStoredChars = 16000;
     private const int MinUsefulLength = 200;
     private const int MinParagraphLength = 60;
-
-    // Max chars to scan after a content-class anchor when falling back to paragraphs.
-    // Limits regex work on large pages while covering most article bodies.
-    private const int ContentClassScanWindow = 40_000;
 
     public async Task<string?> TryGetArticleTextAsync(string url, CancellationToken ct = default)
     {
@@ -40,7 +38,8 @@ public partial class ArticleContentScraper(
             if (string.IsNullOrWhiteSpace(html))
                 return null;
 
-            var bodyText = ExtractBodyText(html);
+            var hostname = Uri.TryCreate(effectiveUrl, UriKind.Absolute, out var u) ? u.Host : null;
+            var bodyText = await ExtractBodyTextAsync(html, hostname);
             if (string.IsNullOrWhiteSpace(bodyText))
                 return null;
 
@@ -58,93 +57,153 @@ public partial class ArticleContentScraper(
     }
 
     // internal for unit testing
-    internal static string? ExtractBodyText(string html)
+    internal static async Task<string?> ExtractBodyTextAsync(string html, string? hostname = null)
     {
-        // Remove noise: scripts, styles, svgs, HTML comments
-        html = ScriptRegex().Replace(html, " ");
-        html = StyleRegex().Replace(html, " ");
-        html = SvgRegex().Replace(html, " ");
-        html = HtmlCommentRegex().Replace(html, " ");
+        var config = Configuration.Default;
+        var context = BrowsingContext.New(config);
+        var document = await context.OpenAsync(req => req.Content(html));
 
-        // Remove boilerplate structural elements before content extraction
-        html = NavBlockRegex().Replace(html, " ");
-        html = HeaderBlockRegex().Replace(html, " ");
-        html = FooterBlockRegex().Replace(html, " ");
-        html = AsideBlockRegex().Replace(html, " ");
+        RemoveBoilerplateNodes(document);
 
-        // Phase 1: HTML5 semantic containers (most specific, highest precision)
-        var fragment = TryExtractSemanticBlock(html);
+        // Phase 1: selectores del catálogo por sitio (mayor especificidad)
+        if (hostname != null && SiteExtractionCatalog.TryGetSelectors(hostname, out var catalogSelectors))
+        {
+            foreach (var selector in catalogSelectors)
+            {
+                var el = document.QuerySelector(selector);
+                if (el == null) continue;
+                var text = NormalizeText(el.TextContent);
+                if (PassesQualityGate(text)) return text;
+            }
+        }
 
-        // Phase 2: CMS content-class patterns — covers WordPress, Drupal, and Spanish
-        //   editorial platforms that do not use <article> or <main>
-        fragment ??= TryExtractByContentClassStart(html);
+        // Phase 2: contenedores semánticos HTML5
+        var fragment = TryExtractSemantic(document);
 
-        // Phase 3: paragraph-density fallback — paragraph-level extraction with
-        //   nav-paragraph filtering as last resort
-        fragment ??= ExtractFromParagraphs(html);
+        // Phase 3: selectores de clase CMS (WordPress, Drupal, editoriales en español)
+        fragment ??= TryExtractByContentClass(document);
 
-        if (string.IsNullOrWhiteSpace(fragment))
-            return null;
+        // Phase 4: densidad de párrafos como último recurso
+        fragment ??= ExtractFromParagraphs(document);
 
-        var text = StripTagsAndNormalize(fragment);
-        return PassesQualityGate(text) ? text : null;
-    }
+        if (!string.IsNullOrWhiteSpace(fragment) && PassesQualityGate(fragment))
+            return fragment;
 
-    private static string? TryExtractSemanticBlock(string html)
-    {
-        var match = ArticleBlockRegex().Match(html);
-        if (match.Success) return match.Value;
-
-        match = ArticleBodyPropRegex().Match(html);
-        if (match.Success) return match.Value;
-
-        match = MainBlockRegex().Match(html);
-        if (match.Success) return match.Value;
+        // Phase 5: og:description / meta description (umbral mínimo = 50 chars)
+        // Útil para SPAs, muros de pago parciales y portales con contenido en JS
+        var metaText = ExtractMetaDescription(document);
+        if (metaText != null)
+            return metaText;
 
         return null;
     }
 
-    // Find the opening tag of a CMS content-class div/section and extract paragraphs
-    // from the bounded window that follows it, avoiding the closing-tag matching problem.
-    private static string? TryExtractByContentClassStart(string html)
+    private static void RemoveBoilerplateNodes(IDocument document)
     {
-        var match = ContentClassStartRegex().Match(html);
-        if (!match.Success) return null;
+        // Scripts, estilos e iframes no aportan texto editorial
+        document.QuerySelectorAll("script, style, noscript, iframe, svg")
+            .ToList().ForEach(n => n.Remove());
 
-        var remaining = html.Length - match.Index;
-        var fragment = remaining > ContentClassScanWindow
-            ? html.Substring(match.Index, ContentClassScanWindow)
-            : html[match.Index..];
+        const string SemanticBoilerplate =
+            "nav, header, footer, aside, " +
+            "[role=navigation], [role=banner], [role=contentinfo], " +
+            "[role=complementary], [role=search]";
 
-        return ExtractFromParagraphs(fragment);
+        // Clases de contenido no editorial — exactas para evitar falsos positivos
+        const string ClassBoilerplate =
+            ".related, .related-articles, .related-posts, .related-content, .related-news, " +
+            ".newsletter, .newsletter-cta, .newsletter-signup, " +
+            ".subscribe, .subscription, .subscription-cta, " +
+            ".cookie-banner, .cookie-notice, .cookie-consent, " +
+            ".share-bar, .share-buttons, .social-share, .social-links, .social, " +
+            ".sidebar, .widget, .advertisement, .ads, .ad-unit, " +
+            ".promo, .promo-box, .tags, .tags-section, .tag-cloud, " +
+            ".comments, .comments-section, " +
+            "[data-component=related-articles], [data-component=newsletter]";
+
+        var combined = SemanticBoilerplate + ", " + ClassBoilerplate;
+        document.QuerySelectorAll(combined).ToList().ForEach(n => n.Remove());
     }
 
-    private static string? ExtractFromParagraphs(string html)
+    private static string? TryExtractSemantic(IDocument document)
     {
-        var useful = ParagraphContentRegex()
-            .Matches(html)
-            .Select(m => StripTagsAndNormalize(m.Groups[1].Value))
-            .Where(p => p.Length >= MinParagraphLength && !IsNavigationParagraph(p))
+        var el = document.QuerySelector("article")
+            ?? document.QuerySelector("[itemprop=articleBody]")
+            ?? document.QuerySelector("main");
+
+        if (el == null) return null;
+        var text = NormalizeText(el.TextContent);
+        return PassesQualityGate(text) ? text : null;
+    }
+
+    private static string? TryExtractByContentClass(IDocument document)
+    {
+        var selectors = new[]
+        {
+            // WordPress / genéricos
+            ".article-body", ".article-content", ".article__body", ".article__content",
+            ".entry-content", ".entry__content", ".post-content", ".post__content",
+            ".story-body", ".story__body", ".content-body",
+            // Editoriales en español / latinoamérica
+            ".nota-body", ".nota-cuerpo", ".nota-contenido", ".cuerpo-nota",
+            ".articulo-cuerpo", ".editorial-content",
+            // Drupal
+            ".field-body", ".field--name-body",
+            // CMS adicionales detectados en feeds de FIBRAs
+            ".notaContainer__body", ".story__content",
+            ".textonota", ".articulo",
+        };
+
+        foreach (var sel in selectors)
+        {
+            var el = document.QuerySelector(sel);
+            if (el == null) continue;
+            var text = NormalizeText(el.TextContent);
+            if (PassesQualityGate(text)) return text;
+        }
+        return null;
+    }
+
+    private static string? ExtractFromParagraphs(IDocument document)
+    {
+        var useful = document.QuerySelectorAll("p")
+            .Select(p => NormalizeText(p.TextContent))
+            .Where(t => t.Length >= MinParagraphLength && !IsNavigationParagraph(t))
             .ToList();
 
         return useful.Count >= 2 ? string.Join(" ", useful) : null;
     }
 
-    // Returns true when a paragraph looks like navigation/chrome rather than editorial text.
+    private static string? ExtractMetaDescription(IDocument document)
+    {
+        const int MinMetaLength = 50;
+        string?[] selectors =
+        [
+            document.QuerySelector("meta[property='og:description']")?.GetAttribute("content"),
+            document.QuerySelector("meta[name='description']")?.GetAttribute("content"),
+            document.QuerySelector("meta[name='twitter:description']")?.GetAttribute("content"),
+        ];
+        foreach (var raw in selectors)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) continue;
+            var text = NormalizeText(raw);
+            if (text.Length >= MinMetaLength &&
+                !string.Equals(text, "Google News", StringComparison.OrdinalIgnoreCase))
+                return text;
+        }
+        return null;
+    }
+
     private static bool IsNavigationParagraph(string text)
     {
-        // Two or more pipe separators → breadcrumb or nav bar
         if (text.Count(c => c == '|') >= 2) return true;
-
-        // Contains action words typical of nav/menu chrome
         if (NavKeywordRegex().IsMatch(text)) return true;
-
         return false;
     }
 
-    private static string StripTagsAndNormalize(string html)
+    private static string NormalizeText(string text)
     {
-        var text = TagRegex().Replace(html, " ");
+        text = TagRegex().Replace(text, " ");
         text = WebUtility.HtmlDecode(text);
         return WhitespaceRegex().Replace(text, " ").Trim();
     }
@@ -203,56 +262,11 @@ public partial class ArticleContentScraper(
         return false;
     }
 
-    [GeneratedRegex("""<script\b[^>]*>[\s\S]*?</script>""", RegexOptions.IgnoreCase)]
-    private static partial Regex ScriptRegex();
-
-    [GeneratedRegex("""<style\b[^>]*>[\s\S]*?</style>""", RegexOptions.IgnoreCase)]
-    private static partial Regex StyleRegex();
-
-    [GeneratedRegex("""<svg\b[^>]*>[\s\S]*?</svg>""", RegexOptions.IgnoreCase)]
-    private static partial Regex SvgRegex();
-
-    [GeneratedRegex("""<!--[\s\S]*?-->""")]
-    private static partial Regex HtmlCommentRegex();
-
-    [GeneratedRegex("""<nav\b[^>]*>[\s\S]*?</nav>""", RegexOptions.IgnoreCase)]
-    private static partial Regex NavBlockRegex();
-
-    [GeneratedRegex("""<header\b[^>]*>[\s\S]*?</header>""", RegexOptions.IgnoreCase)]
-    private static partial Regex HeaderBlockRegex();
-
-    [GeneratedRegex("""<footer\b[^>]*>[\s\S]*?</footer>""", RegexOptions.IgnoreCase)]
-    private static partial Regex FooterBlockRegex();
-
-    [GeneratedRegex("""<aside\b[^>]*>[\s\S]*?</aside>""", RegexOptions.IgnoreCase)]
-    private static partial Regex AsideBlockRegex();
-
-    [GeneratedRegex("""<article\b[^>]*>[\s\S]*?</article>""", RegexOptions.IgnoreCase)]
-    private static partial Regex ArticleBlockRegex();
-
-    // Backreference ensures closing tag matches the opening tag (div/section/article/span)
-    [GeneratedRegex("""<(div|section|article|span)\b[^>]+itemprop\s*=\s*"articleBody"[^>]*>[\s\S]*?</\1>""", RegexOptions.IgnoreCase)]
-    private static partial Regex ArticleBodyPropRegex();
-
-    [GeneratedRegex("""<main\b[^>]*>[\s\S]*?</main>""", RegexOptions.IgnoreCase)]
-    private static partial Regex MainBlockRegex();
-
-    // Matches the opening tag of a div/section whose class contains known editorial CMS patterns.
-    // Covers: WordPress (entry-content, post-content), Drupal (field-body, content-body),
-    // and common Spanish-language editorial CMSs (nota-body, nota-cuerpo, articulo-cuerpo).
-    [GeneratedRegex(
-        """<(?:div|section)\b[^>]*\bclass\s*=\s*"[^"]*(?:article[-_]body|article[-_]content|article__body|article__content|entry[-_]content|entry__content|post[-_]content|post__content|nota[-_]body|nota[-_]cuerpo|nota[-_]contenido|cuerpo[-_]nota|story[-_]body|story__body|content[-_]body|editorial[-_]content|article[-_]text|text[-_]article|articulo[-_]cuerpo|field[-_]body)[^"]*"[^>]*>""",
-        RegexOptions.IgnoreCase)]
-    private static partial Regex ContentClassStartRegex();
-
-    // Detects nav/chrome action words at word boundaries within paragraph text
+    // Detecta palabras de navegación/chrome en texto de párrafos
     [GeneratedRegex(
         """(?:^|\s)(?:buscar|search|suscr[íi]bete|subscribe|iniciar\s+sesi[oó]n|login|cerrar\s+sesi[oó]n|logout|s[íi]guenos|follow\s+us|compartir|share\s+this|ver\s+m[aá]s|leer\s+m[aá]s|read\s+more|ver\s+todos|see\s+all)(?:\s|[.,!?]|$)""",
         RegexOptions.IgnoreCase)]
     private static partial Regex NavKeywordRegex();
-
-    [GeneratedRegex("""<p\b[^>]*>([\s\S]*?)</p>""", RegexOptions.IgnoreCase)]
-    private static partial Regex ParagraphContentRegex();
 
     [GeneratedRegex("""<[^>]+>""")]
     private static partial Regex TagRegex();

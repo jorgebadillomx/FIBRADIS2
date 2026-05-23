@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SharedApiContracts.Auth;
+using SharedApiContracts.News;
 
 namespace Api.Tests;
 
@@ -134,6 +135,70 @@ public class AiModeOpsEndpointTests
         Assert.Equal("Resumen regenerado", repository.Article.AiSummary);
     }
 
+    // ─── AiProvider endpoints ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetAiProvider_ReturnsCurrentProviderConfig()
+    {
+        var providerRepo = new StubAiProviderConfigRepository(AiProvider.Gemini, "gemini-2.5-flash");
+        await using var factory = new AiProviderApiWebFactory(providerRepo);
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.GetAsync("/api/v1/ops/ai-provider");
+        var dto = await response.Content.ReadFromJsonAsync<AiProviderConfigDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(dto);
+        Assert.Equal("Gemini", dto.Provider);
+        Assert.Equal("gemini-2.5-flash", dto.ModelId);
+        Assert.NotEmpty(dto.AvailableProviders);
+    }
+
+    [Fact]
+    public async Task PutAiProvider_WithValidProviderAndModel_Returns204AndPersists()
+    {
+        var providerRepo = new StubAiProviderConfigRepository(AiProvider.Gemini, "gemini-2.5-flash");
+        await using var factory = new AiProviderApiWebFactory(providerRepo);
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PutAsJsonAsync("/api/v1/ops/ai-provider",
+            new { provider = "DeepSeek", modelId = "deepseek-v4-flash" });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(AiProvider.DeepSeek, providerRepo.SavedProvider);
+        Assert.Equal("deepseek-v4-flash", providerRepo.SavedModelId);
+    }
+
+    [Fact]
+    public async Task PutAiProvider_WithInvalidProvider_Returns400()
+    {
+        var providerRepo = new StubAiProviderConfigRepository(AiProvider.Gemini, "gemini-2.5-flash");
+        await using var factory = new AiProviderApiWebFactory(providerRepo);
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PutAsJsonAsync("/api/v1/ops/ai-provider",
+            new { provider = "ProveedorInexistente", modelId = "modelo" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutAiProvider_WithInvalidModelForProvider_Returns400()
+    {
+        var providerRepo = new StubAiProviderConfigRepository(AiProvider.Gemini, "gemini-2.5-flash");
+        await using var factory = new AiProviderApiWebFactory(providerRepo);
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PutAsJsonAsync("/api/v1/ops/ai-provider",
+            new { provider = "Gemini", modelId = "deepseek-v4-flash" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private static async Task<HttpClient> CreateAuthorizedClientAsync(ApiWebFactory factory)
     {
         var client = factory.CreateClient();
@@ -178,13 +243,13 @@ public class AiModeOpsEndpointTests
 
     private sealed class StubAiSummaryService(string? summary) : IAiSummaryService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, string? model = null, CancellationToken ct = default)
+        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
             => Task.FromResult(summary);
     }
 
     private sealed class ThrowingAiSummaryService(Exception exception) : IAiSummaryService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, string? model = null, CancellationToken ct = default)
+        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
             => Task.FromException<string?>(exception);
     }
 
@@ -282,5 +347,46 @@ public class AiModeOpsEndpointTests
 
         public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
             => Task.FromResult<(IReadOnlyList<NewsArticle>, int)>(([Article], 1));
+
+        public Task<IReadOnlyList<(Guid Id, string Url)>> GetNullBodyTextArticlesAsync(int maxArticles, int daysBack, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<(Guid Id, string Url)>>([]);
+    }
+
+    private sealed class AiProviderApiWebFactory(IAiProviderConfigRepository providerRepo) : ApiWebFactory
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IAiProviderConfigRepository>();
+                services.AddSingleton(providerRepo);
+                services.RemoveAll<IAiSummaryService>();
+                services.AddSingleton<IAiSummaryService>(new StubAiSummaryService("resumen"));
+            });
+        }
+    }
+
+    private sealed class StubAiProviderConfigRepository(AiProvider provider, string modelId) : IAiProviderConfigRepository
+    {
+        public AiProvider? SavedProvider { get; private set; }
+        public string? SavedModelId { get; private set; }
+
+        public Task<AiProviderConfig> GetConfigAsync(CancellationToken ct = default)
+            => Task.FromResult(new AiProviderConfig
+            {
+                Id = 1,
+                Provider = provider,
+                ModelId = modelId,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                UpdatedBy = "system",
+            });
+
+        public Task SetProviderAsync(AiProvider p, string m, string actor, CancellationToken ct = default)
+        {
+            SavedProvider = p;
+            SavedModelId = m;
+            return Task.CompletedTask;
+        }
     }
 }

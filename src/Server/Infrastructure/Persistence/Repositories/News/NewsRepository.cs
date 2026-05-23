@@ -100,4 +100,16 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .ToListAsync(ct);
         return (items, total);
     }
+
+    public async Task<IReadOnlyList<(Guid Id, string Url)>> GetNullBodyTextArticlesAsync(int maxArticles, int daysBack, CancellationToken ct = default)
+    {
+        var since = DateTimeOffset.UtcNow.AddDays(-daysBack);
+        var rows = await db.NewsArticles
+            .Where(n => n.BodyText == null && n.Url != null && n.CapturedAt >= since)
+            .OrderByDescending(n => n.CapturedAt)
+            .Take(maxArticles)
+            .Select(n => new { n.Id, n.Url })
+            .ToListAsync(ct);
+        return rows.Select(r => (r.Id, r.Url!)).ToList();
+    }
 }

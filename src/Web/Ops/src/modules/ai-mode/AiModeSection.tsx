@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchAiMode, setAiConfig, triggerAiSummary } from '@/api/aiModeApi'
-
-type NewsModel = 'gemini-2.5-flash' | 'gemini-2.5-pro'
+import { fetchAiMode, fetchAiProvider, setAiMode, setAiProvider, triggerAiSummary } from '@/api/aiModeApi'
 
 export function AiModeSection() {
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<'Off' | 'On' | null>(null)
-  const [selectedModel, setSelectedModel] = useState<NewsModel | null>(null)
   const [articleId, setArticleId] = useState('')
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string | null>(null)
 
   const modeQuery = useQuery({
     queryKey: ['ai-mode'],
@@ -17,10 +16,9 @@ export function AiModeSection() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: setAiConfig,
+    mutationFn: setAiMode,
     onSuccess: async () => {
       setSelected(null)
-      setSelectedModel(null)
       triggerMutation.reset()
       await queryClient.invalidateQueries({ queryKey: ['ai-mode'] })
     },
@@ -33,14 +31,35 @@ export function AiModeSection() {
     },
   })
 
-  const currentMode = modeQuery.data?.mode as 'Off' | 'On' | undefined
-  const currentModel = modeQuery.data?.newsModel as NewsModel | undefined
-  const pendingMode = selected ?? currentMode
-  const pendingModel = selectedModel ?? currentModel
+  const providerQuery = useQuery({
+    queryKey: ['ai-provider'],
+    queryFn: fetchAiProvider,
+    retry: false,
+  })
 
-  const modeChanged = selected !== null && selected !== currentMode
+  const saveProviderMutation = useMutation({
+    mutationFn: ({ provider, modelId }: { provider: string; modelId: string }) =>
+      setAiProvider(provider, modelId),
+    onSuccess: async () => {
+      setSelectedProvider(null)
+      setSelectedModel(null)
+      await queryClient.invalidateQueries({ queryKey: ['ai-provider'] })
+    },
+  })
+
+  const currentProvider = providerQuery.data?.provider
+  const currentModel = providerQuery.data?.modelId
+  const pendingProvider = selectedProvider ?? currentProvider
+  const availableModels =
+    providerQuery.data?.availableProviders.find((p) => p.provider === pendingProvider)?.models ?? []
+  const pendingModel = selectedModel ?? (pendingProvider === currentProvider ? currentModel : availableModels[0])
+
+  const providerChanged = selectedProvider !== null && selectedProvider !== currentProvider
   const modelChanged = selectedModel !== null && selectedModel !== currentModel
-  const hasChanges = modeChanged || modelChanged
+  const providerOrModelChanged = providerChanged || modelChanged
+
+  const currentMode = modeQuery.data?.mode as 'Off' | 'On' | undefined
+  const pendingMode = selected ?? currentMode
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const isValidUuid = UUID_REGEX.test(articleId.trim())
@@ -79,39 +98,12 @@ export function AiModeSection() {
             ))}
           </div>
 
-          <div className="mt-4 flex flex-col gap-2">
-            <p className="text-xs font-medium text-muted-foreground">Modelo IA</p>
-            <div className="flex flex-col gap-3 md:flex-row">
-              {(['gemini-2.5-flash', 'gemini-2.5-pro'] as const).map((model) => (
-                <button
-                  key={model}
-                  type="button"
-                  className={[
-                    'rounded-xl border px-5 py-3 text-sm font-medium transition',
-                    pendingModel === model
-                      ? 'border-teal-700 bg-teal-700 text-white'
-                      : 'border-border bg-white text-slate-700 hover:border-teal-600',
-                  ].join(' ')}
-                  disabled={saveMutation.isPending}
-                  onClick={() => setSelectedModel(model)}
-                >
-                  {model === 'gemini-2.5-flash' ? 'Flash (gemini-2.5-flash)' : 'Pro (gemini-2.5-pro)'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {hasChanges ? (
+          {selected !== null && selected !== currentMode ? (
             <div className="mt-4 flex items-center gap-3">
               <button
                 className="h-10 rounded-xl bg-teal-700 px-5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-400"
-                disabled={saveMutation.isPending || triggerMutation.isPending}
-                onClick={() =>
-                  saveMutation.mutate({
-                    mode: modeChanged ? (pendingMode as 'Off' | 'On') : undefined,
-                    newsModel: modelChanged ? (pendingModel as NewsModel) : undefined,
-                  })
-                }
+                disabled={saveMutation.isPending}
+                onClick={() => saveMutation.mutate(selected)}
                 type="button"
               >
                 {saveMutation.isPending ? 'Guardando...' : 'Guardar cambio'}
@@ -119,10 +111,7 @@ export function AiModeSection() {
               <button
                 className="text-sm text-muted-foreground hover:text-foreground"
                 disabled={saveMutation.isPending}
-                onClick={() => {
-                  setSelected(null)
-                  setSelectedModel(null)
-                }}
+                onClick={() => setSelected(null)}
                 type="button"
               >
                 Cancelar
@@ -135,6 +124,117 @@ export function AiModeSection() {
           ) : null}
 
           <div className="mt-6 rounded-xl border border-border/80 bg-slate-50/80 p-4">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold tracking-tight">Proveedor de IA</h3>
+              <p className="text-sm text-muted-foreground">
+                Selecciona el proveedor y modelo que usará el pipeline y los disparos manuales.
+              </p>
+            </div>
+
+            {providerQuery.isLoading ? (
+              <p className="mt-4 text-sm text-muted-foreground">Cargando configuración...</p>
+            ) : providerQuery.isError ? (
+              <p className="mt-4 text-sm text-destructive">{providerQuery.error.message}</p>
+            ) : (
+              <>
+                <div className="mt-4 flex flex-col gap-3 md:flex-row">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-muted-foreground">Proveedor</label>
+                    <div className="flex gap-2">
+                      {providerQuery.data?.availableProviders.map((p) => (
+                        <button
+                          key={p.provider}
+                          type="button"
+                          className={[
+                            'rounded-xl border px-4 py-2 text-sm font-medium transition',
+                            pendingProvider === p.provider
+                              ? 'border-teal-700 bg-teal-700 text-white'
+                              : 'border-border bg-white text-slate-700 hover:border-teal-600',
+                          ].join(' ')}
+                          disabled={saveProviderMutation.isPending}
+                          onClick={() => {
+                            setSelectedProvider(p.provider)
+                            setSelectedModel(null)
+                          }}
+                        >
+                          {p.provider}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-muted-foreground">Modelo</label>
+                    <div className="flex gap-2">
+                      {availableModels.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={[
+                            'rounded-xl border px-4 py-2 text-sm font-medium transition',
+                            pendingModel === m
+                              ? 'border-teal-700 bg-teal-700 text-white'
+                              : 'border-border bg-white text-slate-700 hover:border-teal-600',
+                          ].join(' ')}
+                          disabled={saveProviderMutation.isPending}
+                          onClick={() => setSelectedModel(m)}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {providerOrModelChanged ? (
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      className="h-10 rounded-xl bg-teal-700 px-5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-400"
+                      disabled={saveProviderMutation.isPending}
+                      onClick={() =>
+                        saveProviderMutation.mutate({
+                          provider: pendingProvider ?? '',
+                          modelId: pendingModel ?? '',
+                        })
+                      }
+                      type="button"
+                    >
+                      {saveProviderMutation.isPending ? 'Guardando...' : 'Guardar proveedor'}
+                    </button>
+                    <button
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                      disabled={saveProviderMutation.isPending}
+                      onClick={() => {
+                        setSelectedProvider(null)
+                        setSelectedModel(null)
+                        saveProviderMutation.reset()
+                      }}
+                      type="button"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : null}
+
+                {saveProviderMutation.isError ? (
+                  <p className="mt-3 text-sm text-destructive">{saveProviderMutation.error.message}</p>
+                ) : null}
+
+                {saveProviderMutation.isSuccess ? (
+                  <p className="mt-3 text-sm text-teal-700">Proveedor actualizado correctamente.</p>
+                ) : null}
+
+                {providerQuery.data ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Activo: {providerQuery.data.provider} · {providerQuery.data.modelId}
+                    {providerQuery.data.updatedBy ? ` · por ${providerQuery.data.updatedBy}` : ''}
+                  </p>
+                ) : null}
+              </>
+            )}
+          </div>
+
+          <div className="mt-4 rounded-xl border border-border/80 bg-slate-50/80 p-4">
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-semibold tracking-tight">Generación manual de resumen</h3>
               <p className="text-sm text-muted-foreground">
@@ -155,7 +255,7 @@ export function AiModeSection() {
               />
               <button
                 className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                disabled={!isValidUuid || triggerMutation.isPending || saveMutation.isPending}
+                disabled={!isValidUuid || triggerMutation.isPending}
                 onClick={() => triggerMutation.mutate(articleId.trim())}
                 type="button"
               >

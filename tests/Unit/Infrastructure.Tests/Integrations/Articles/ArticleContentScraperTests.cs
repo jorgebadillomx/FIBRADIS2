@@ -311,6 +311,119 @@ public class ArticleContentScraperTests
         Assert.Null(body);
     }
 
+    // ── AC 2: bug de article anidado resuelto ─────────────────────────────────
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_WithNestedArticle_ExtractsOuterArticleNotInner()
+    {
+        var handler = HtmlHandler("""
+            <html>
+              <body>
+                <article>
+                  <h1>Fibra Uno aumenta distribución trimestral</h1>
+                  <p>Fibra Uno anunció un incremento del 7% en su distribución trimestral por CBFI, superando las expectativas del consenso de analistas del sector inmobiliario mexicano.</p>
+                  <p>El NOI comparable del portafolio industrial y comercial creció 9.3% en términos reales, reflejo de la alta ocupación y la indexación de contratos a inflación.</p>
+                  <p>El management confirmó que la estrategia de reciclaje de capital permitirá mantener el crecimiento de distribuciones en los próximos cuatro trimestres.</p>
+                  <div class="related">
+                    <article>Artículo relacionado: FMTY también aumenta su distribución este trimestre.</article>
+                  </div>
+                </article>
+              </body>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("incremento del 7%", body);
+        Assert.Contains("reciclaje de capital", body);
+        Assert.DoesNotContain("FMTY también aumenta", body);
+        Assert.DoesNotContain("Artículo relacionado", body);
+    }
+
+    // ── AC 3: catálogo tiene prioridad sobre selector genérico ─────────────────
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_WithCatalogMatch_UsesCatalogSelectorFirst()
+    {
+        // El HTML tiene <article> con texto genérico Y .nota-body con el contenido editorial real.
+        // El catálogo de elfinanciero.com.mx debe priorizar .nota-body sobre <article>.
+        var handler = HtmlHandler("""
+            <html>
+              <body>
+                <article>
+                  <p>Este texto genérico del article no debe aparecer en el body_text extraído.</p>
+                  <p>Segundo párrafo genérico que tampoco debe capturarse si el catálogo funciona.</p>
+                </article>
+                <div class="nota-body">
+                  <p>Fibra Danhos reportó resultados del tercer trimestre con un incremento del 11% en el NOI de su portafolio de centros comerciales premium en la Ciudad de México.</p>
+                  <p>La ocupación del portafolio alcanzó el 93.5% al cierre del trimestre, impulsada por la apertura de nuevas marcas internacionales en sus plazas insignia.</p>
+                  <p>El CFO destacó que los contratos de arrendamiento a largo plazo con cláusulas de ajuste anual aseguran visibilidad de flujos para los próximos cinco años.</p>
+                </div>
+              </body>
+            </html>
+            """);
+
+        // Usar hostname de elfinanciero.com.mx — presente en SiteExtractionCatalog
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://www.elfinanciero.com.mx/mercados/2026/fibra-danhos-resultados");
+
+        Assert.NotNull(body);
+        Assert.Contains("incremento del 11%", body);
+        Assert.Contains("contratos de arrendamiento a largo plazo", body);
+        Assert.DoesNotContain("texto genérico del article", body);
+        Assert.DoesNotContain("Segundo párrafo genérico", body);
+    }
+
+    // ── Phase 5: og:description / meta description fallback ──────────────────
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_WhenSpaWithOgDescription_ReturnsMetaDescription()
+    {
+        // SPA que no tiene body_text procesable pero sí og:description (ej. Vivanuncios)
+        var handler = HtmlHandler("""
+            <html>
+              <head>
+                <meta property="og:description" content="Fibra Mty reportó un incremento de 12% en sus ingresos operativos durante el primer trimestre, impulsado por la alta demanda de espacios industriales en la zona noreste del país." />
+              </head>
+              <body>
+                <script>window.__INITIAL_STATE__ = {};</script>
+                <div class="spa-root"></div>
+              </body>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticias/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("Fibra Mty reportó un incremento de 12%", body);
+    }
+
+    [Fact]
+    public async Task TryGetArticleTextAsync_WhenArticleBodyExistsOgDescriptionIsIgnored()
+    {
+        // Phases 1-4 deben ganar; og:description no debe usarse cuando ya hay contenido
+        var handler = HtmlHandler("""
+            <html>
+              <head>
+                <meta property="og:description" content="Resumen corto del artículo en og:description que NO debe aparecer." />
+              </head>
+              <body>
+                <article>
+                  <p>Fibra Uno anunció la adquisición de un portafolio industrial por 200 millones de dólares en el corredor Bajío, ampliando su presencia en nearshoring.</p>
+                  <p>La operación eleva el total de metros cuadrados arrendables del fideicomiso a 9.5 millones, con una tasa de ocupación del 97.8% al cierre del trimestre.</p>
+                  <p>Los analistas de Banorte elevaron su precio objetivo a 35 pesos por CBFI ante la visibilidad de flujos que brinda el nuevo portafolio.</p>
+                </article>
+              </body>
+            </html>
+            """);
+
+        var body = await MakeScraper(handler).TryGetArticleTextAsync("https://example.com/noticias/noticia");
+
+        Assert.NotNull(body);
+        Assert.Contains("portafolio industrial por 200 millones", body);
+        Assert.DoesNotContain("Resumen corto del artículo en og:description", body);
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     private static ArticleContentScraper MakeScraper(StubHttpMessageHandler handler)

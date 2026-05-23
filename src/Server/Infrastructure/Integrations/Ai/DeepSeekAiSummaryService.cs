@@ -8,14 +8,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Integrations.Ai;
 
-public class GeminiAiSummaryService(
+public class DeepSeekAiSummaryService(
     HttpClient httpClient,
     IConfiguration configuration,
     IAiProviderConfigRepository providerRepo,
-    ILogger<GeminiAiSummaryService> logger) : IAiSummaryService
+    ILogger<DeepSeekAiSummaryService> logger) : IAiSummaryService
 {
-    private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
-    private const string DefaultDocumentModel = "gemini-2.5-pro";
+    private const string BaseUrl = "https://api.deepseek.com/chat/completions";
+    private const string DefaultDocumentModel = "deepseek-v4-pro";
     private const int DefaultMaxOutputTokens = 768;
     private const int RetryMaxOutputTokens = 1024;
     private const int MinimumShortSummaryLength = 180;
@@ -32,10 +32,10 @@ public class GeminiAiSummaryService(
         AiContentType contentType = AiContentType.News,
         CancellationToken ct = default)
     {
-        var apiKey = configuration["Gemini:ApiKey"];
+        var apiKey = configuration["DeepSeek:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            logger.LogWarning("Gemini:ApiKey no está configurado. El resumen AI no está disponible.");
+            logger.LogWarning("DeepSeek:ApiKey no está configurado. El resumen AI no está disponible.");
             return null;
         }
 
@@ -43,6 +43,7 @@ public class GeminiAiSummaryService(
         var model = contentType == AiContentType.Document
             ? DefaultDocumentModel
             : providerConfig.ModelId;
+
         var summary = await GenerateSummaryCoreAsync(
             model,
             apiKey,
@@ -54,7 +55,7 @@ public class GeminiAiSummaryService(
             return summary;
 
         logger.LogWarning(
-            "Gemini devolvió un resumen corto o incompleto para modelo {Model}. Longitud: {Length}. Reintentando con prompt reforzado.",
+            "DeepSeek devolvió un resumen corto o incompleto para modelo {Model}. Longitud: {Length}. Reintentando con prompt reforzado.",
             model,
             summary.Length);
 
@@ -69,7 +70,7 @@ public class GeminiAiSummaryService(
             return retriedSummary;
 
         if (contentType == AiContentType.News && HasLongBody(bodyText))
-            throw new InvalidOperationException("Gemini devolvió un resumen incompleto incluso tras múltiples intentos.");
+            throw new InvalidOperationException("DeepSeek devolvió un resumen incompleto incluso tras múltiples intentos.");
 
         return retriedSummary.Length >= summary.Length ? retriedSummary : summary;
     }
@@ -78,55 +79,53 @@ public class GeminiAiSummaryService(
         string model,
         string apiKey,
         string prompt,
-        int maxOutputTokens,
+        int maxTokens,
         CancellationToken ct)
     {
-        var url = $"{BaseUrl}/{model}:generateContent?key={apiKey}";
         var body = new
         {
-            contents = new[]
-            {
-                new { parts = new[] { new { text = prompt } } },
-            },
-            generationConfig = new { maxOutputTokens },
+            model,
+            messages = new[] { new { role = "user", content = prompt } },
+            max_tokens = maxTokens,
         };
 
-        using var response = await SendRequestAsync(url, body, model, ct);
+        using var response = await SendRequestAsync(apiKey, body, model, ct);
         using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
         var root = doc.RootElement;
 
-        if (!root.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
+        if (!root.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
         {
-            logger.LogWarning("Gemini devolvió respuesta sin candidatos para modelo {Model}", model);
-            throw new InvalidOperationException("Gemini devolvió una respuesta vacía sin candidatos.");
+            logger.LogWarning("DeepSeek devolvió respuesta sin choices para modelo {Model}", model);
+            throw new InvalidOperationException("DeepSeek devolvió una respuesta vacía sin choices.");
         }
 
-        var first = candidates[0];
-        if (!first.TryGetProperty("content", out var content))
-            throw new InvalidOperationException("Gemini devolvió una respuesta sin contenido generado.");
+        var first = choices[0];
+        if (!first.TryGetProperty("message", out var message))
+            throw new InvalidOperationException("DeepSeek devolvió una respuesta sin mensaje.");
 
-        if (!content.TryGetProperty("parts", out var parts) || parts.GetArrayLength() == 0)
-            throw new InvalidOperationException("Gemini devolvió una respuesta sin partes de contenido.");
+        if (!message.TryGetProperty("content", out var contentElement))
+            throw new InvalidOperationException("DeepSeek devolvió un mensaje sin contenido.");
 
-        if (!parts[0].TryGetProperty("text", out var textElement))
-            throw new InvalidOperationException("Gemini devolvió una respuesta sin texto en la primera parte.");
-
-        var text = textElement.GetString();
+        var text = contentElement.GetString();
         if (string.IsNullOrWhiteSpace(text))
-            throw new InvalidOperationException("Gemini devolvió una respuesta con texto vacío.");
+            throw new InvalidOperationException("DeepSeek devolvió una respuesta con texto vacío.");
 
         return text.Trim();
     }
 
     private async Task<HttpResponseMessage> SendRequestAsync(
-        string url,
+        string apiKey,
         object body,
         string model,
         CancellationToken ct)
     {
         try
         {
-            var response = await httpClient.PostAsJsonAsync(url, body, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Post, BaseUrl);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+            request.Content = JsonContent.Create(body);
+
+            var response = await httpClient.SendAsync(request, ct);
 
             if (response.IsSuccessStatusCode)
                 return response;
@@ -136,17 +135,17 @@ public class GeminiAiSummaryService(
             if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
             {
                 logger.LogError(
-                    "Gemini rechazó la credencial para modelo {Model}. Status: {StatusCode}. Body: {Body}",
+                    "DeepSeek rechazó la credencial para modelo {Model}. Status: {StatusCode}. Body: {Body}",
                     model,
                     (int)response.StatusCode,
                     responseBody);
 
                 throw new AiProviderConfigurationException(
-                    "La credencial de Gemini fue rechazada. Verifique Gemini:ApiKey y genere una nueva API key si la actual fue revocada o reportada como filtrada.");
+                    "La credencial de DeepSeek fue rechazada. Verifique DeepSeek:ApiKey.");
             }
 
             logger.LogError(
-                "Gemini devolvió error para modelo {Model}. Status: {StatusCode}. Body: {Body}",
+                "DeepSeek devolvió error para modelo {Model}. Status: {StatusCode}. Body: {Body}",
                 model,
                 (int)response.StatusCode,
                 responseBody);
@@ -156,7 +155,7 @@ public class GeminiAiSummaryService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Error al llamar a Gemini API con modelo {Model}", model);
+            logger.LogError(ex, "Error al llamar a DeepSeek API con modelo {Model}", model);
             throw;
         }
     }

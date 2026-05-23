@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../../scripts/codegen</OpenApiDocumentsDirectory>
     <OpenApiDocumentName>v1</OpenApiDocumentName>
+    <UserSecretsId>db8c95c1-1550-4db1-9e1d-76687a76ce0d</UserSecretsId>
   </PropertyGroup>
 
   <!--
@@ -13,9 +14,7 @@
     the MSBuild process before the Exec task spawns dotnet-getdocument.dll, so the child
     process inherits it and loads appsettings.Development.json (real dev secret).
   -->
-  <UsingTask TaskName="SetEnvVarInProcess"
-             TaskFactory="RoslynCodeTaskFactory"
-             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+  <UsingTask TaskName="SetEnvVarInProcess" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <Name ParameterType="System.String" Required="true" />
       <Value ParameterType="System.String" Required="true" />

@@ -230,7 +230,7 @@ public class GeminiAiSummaryServiceTests
             requestedUrls.Add(request.RequestUri!.ToString());
             return Task.FromResult(responses.Dequeue());
         });
-        var service = CreateService(handler);
+        var service = CreateService(handler, modelId: "gemini-2.5-pro");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.GenerateSummaryAsync("Titulo", "Snippet", new string('A', 3000)));
 
@@ -262,7 +262,7 @@ public class GeminiAiSummaryServiceTests
     }
 
     [Fact]
-    public async Task GenerateSummaryAsync_UsesProModel_ForNewsContent()
+    public async Task GenerateSummaryAsync_UsesModelFromRepository_ForNewsContent()
     {
         string? capturedUrl = null;
         var handler = new StubHttpMessageHandler(request =>
@@ -280,7 +280,7 @@ public class GeminiAiSummaryServiceTests
                 }
                 """));
         });
-        var service = CreateService(handler);
+        var service = CreateService(handler, modelId: "gemini-2.5-pro");
 
         await service.GenerateSummaryAsync("Titulo", "Snippet", contentType: AiContentType.News);
 
@@ -289,7 +289,7 @@ public class GeminiAiSummaryServiceTests
     }
 
     [Fact]
-    public async Task GenerateSummaryAsync_UsesProModel_ForDocumentContent()
+    public async Task GenerateSummaryAsync_UsesModelFromRepository_ForDocumentContent()
     {
         string? capturedUrl = null;
         var handler = new StubHttpMessageHandler(request =>
@@ -307,7 +307,7 @@ public class GeminiAiSummaryServiceTests
                 }
                 """));
         });
-        var service = CreateService(handler);
+        var service = CreateService(handler, modelId: "gemini-2.5-pro");
 
         await service.GenerateSummaryAsync("Titulo documento", null, contentType: AiContentType.Document);
 
@@ -316,7 +316,7 @@ public class GeminiAiSummaryServiceTests
     }
 
     [Fact]
-    public async Task GenerateSummaryAsync_UsesConfiguredNewsModel_WhenOverridden()
+    public async Task GenerateSummaryAsync_UsesCustomModelFromRepository()
     {
         string? capturedUrl = null;
         var handler = new StubHttpMessageHandler(request =>
@@ -334,111 +334,18 @@ public class GeminiAiSummaryServiceTests
                 }
                 """));
         });
-        var service = CreateService(handler, new Dictionary<string, string?>
-        {
-            ["Gemini:ApiKey"] = "test-key",
-            ["Gemini:NewsModel"] = "gemini-custom-news-model",
-        });
+        var service = CreateService(handler, modelId: "gemini-custom-model");
 
         await service.GenerateSummaryAsync("Titulo", "Snippet", contentType: AiContentType.News);
 
         Assert.NotNull(capturedUrl);
-        Assert.Contains("gemini-custom-news-model", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GenerateSummaryAsync_UsesDefaultNewsModel_WhenConfiguredValueIsEmpty()
-    {
-        string? capturedUrl = null;
-        var handler = new StubHttpMessageHandler(request =>
-        {
-            capturedUrl = request.RequestUri?.ToString();
-            return Task.FromResult(CreateJsonResponse("""
-                {
-                  "candidates": [
-                    {
-                      "content": {
-                        "parts": [{ "text": "Fibra Danhos informó una novedad relevante para el mercado. El contenido sugiere una implicación concreta para valuación, distribución o flujo del portafolio." }]
-                      }
-                    }
-                  ]
-                }
-                """));
-        });
-        var service = CreateService(handler, new Dictionary<string, string?>
-        {
-            ["Gemini:ApiKey"] = "test-key",
-            ["Gemini:NewsModel"] = "",
-        });
-
-        await service.GenerateSummaryAsync("Titulo", "Snippet", contentType: AiContentType.News);
-
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("gemini-2.5-pro", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GenerateSummaryAsync_UsesExplicitModelParameter_WhenProvided()
-    {
-        string? capturedUrl = null;
-        var handler = new StubHttpMessageHandler(request =>
-        {
-            capturedUrl = request.RequestUri?.ToString();
-            return Task.FromResult(CreateJsonResponse("""
-                {
-                  "candidates": [
-                    {
-                      "content": {
-                        "parts": [{ "text": "Fibra Danhos anunció resultados relevantes. La lectura es constructiva para el portafolio del inversionista con visibilidad en flujos." }]
-                      }
-                    }
-                  ]
-                }
-                """));
-        });
-        var service = CreateService(handler);
-
-        await service.GenerateSummaryAsync("Titulo", "Snippet", model: "gemini-2.5-flash");
-
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("gemini-2.5-flash", capturedUrl);
-        Assert.DoesNotContain("gemini-2.5-pro", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GenerateSummaryAsync_UsesDefaultDocumentModel_WhenConfiguredValueIsEmpty()
-    {
-        string? capturedUrl = null;
-        var handler = new StubHttpMessageHandler(request =>
-        {
-            capturedUrl = request.RequestUri?.ToString();
-            return Task.FromResult(CreateJsonResponse("""
-                {
-                  "candidates": [
-                    {
-                      "content": {
-                        "parts": [{ "text": "El documento resume información financiera y operativa sustancial. También añade señales suficientes para una lectura analítica de continuidad, riesgos y materialidad para el inversionista." }]
-                      }
-                    }
-                  ]
-                }
-                """));
-        });
-        var service = CreateService(handler, new Dictionary<string, string?>
-        {
-            ["Gemini:ApiKey"] = "test-key",
-            ["Gemini:DocumentModel"] = "",
-        });
-
-        await service.GenerateSummaryAsync("Titulo", null, contentType: AiContentType.Document);
-
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("gemini-2.5-pro", capturedUrl);
+        Assert.Contains("gemini-custom-model", capturedUrl);
     }
 
     private static IAiSummaryService CreateService(
         HttpMessageHandler handler,
-        IReadOnlyDictionary<string, string?>? settings = null)
+        IReadOnlyDictionary<string, string?>? settings = null,
+        string modelId = "gemini-2.5-flash")
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(settings ?? new Dictionary<string, string?>
@@ -450,6 +357,7 @@ public class GeminiAiSummaryServiceTests
         return new GeminiAiSummaryService(
             new HttpClient(handler),
             configuration,
+            new FakeAiProviderConfigRepository(modelId),
             NullLogger<GeminiAiSummaryService>.Instance);
     }
 
@@ -464,5 +372,14 @@ public class GeminiAiSummaryServiceTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             => responseFactory(request);
+    }
+
+    internal sealed class FakeAiProviderConfigRepository(string modelId) : IAiProviderConfigRepository
+    {
+        public Task<AiProviderConfig> GetConfigAsync(CancellationToken ct = default)
+            => Task.FromResult(new AiProviderConfig { Id = 1, Provider = AiProvider.Gemini, ModelId = modelId });
+
+        public Task SetProviderAsync(AiProvider provider, string modelId, string actor, CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 }

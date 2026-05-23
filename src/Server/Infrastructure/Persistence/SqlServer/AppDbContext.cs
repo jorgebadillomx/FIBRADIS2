@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NewsArticleFibra> NewsArticleFibras => Set<NewsArticleFibra>();
     public DbSet<BlocklistTerm> BlocklistTerms => Set<BlocklistTerm>();
     public DbSet<AiModeConfig> AiModeConfigs => Set<AiModeConfig>();
+    public DbSet<AiProviderConfig> AiProviderConfigs => Set<AiProviderConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

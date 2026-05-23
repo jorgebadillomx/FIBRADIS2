@@ -64,6 +64,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<MarketPipelineJob>();
         builder.Services.AddScoped<DailySnapshotHistoricalJob>();
         builder.Services.AddScoped<NewsPipelineJob>();
+        builder.Services.AddScoped<NewsBodyTextRetryJob>();
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
         builder.Services.AddScoped<IAiModeRepository, AiModeRepository>();
@@ -78,10 +79,16 @@ public static class ApiServiceExtensions
                     .Build()));
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
         builder.Services.AddScoped<DistributionPipelineJob>();
-        builder.Services.AddHttpClient<IAiSummaryService, GeminiAiSummaryService>(client =>
+        builder.Services.AddScoped<IAiProviderConfigRepository, AiProviderConfigRepository>();
+        builder.Services.AddHttpClient<GeminiAiSummaryService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
         });
+        builder.Services.AddHttpClient<DeepSeekAiSummaryService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        builder.Services.AddScoped<IAiSummaryService, RoutingAiSummaryService>();
         builder.Services.AddHttpClient<IRssClient, GoogleNewsRssClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);

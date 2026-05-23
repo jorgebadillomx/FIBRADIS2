@@ -180,7 +180,7 @@ public class NewsPipelineJobTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithAiModeOn_PassesNewsModelFromConfigToSummaryService()
+    public async Task ExecuteAsync_WithAiModeOn_CallsAiSummaryServiceAndSavesResult()
     {
         var newsRepo = new FakeNewsRepository();
         var summaryService = new FakeAiSummaryService("Resumen flash.");
@@ -201,7 +201,7 @@ public class NewsPipelineJobTests
             newsRepo,
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
-            new FakeAiModeRepository(AiMode.On, newsModel: "gemini-2.5-flash"),
+            new FakeAiModeRepository(AiMode.On),
             new FakeOgImageScraper(null),
             new FakeArticleContentScraper(null),
             summaryService,
@@ -209,9 +209,9 @@ public class NewsPipelineJobTests
 
         await job.ExecuteAsync();
 
-        Assert.Equal("gemini-2.5-flash", summaryService.LastModel);
         var article = Assert.Single(newsRepo.SavedArticles);
         Assert.Equal(NewsArticleStatus.Processed, article.Status);
+        Assert.Equal("Resumen flash.", article.AiSummary);
     }
 
     private static NewsPipelineJob CreateJob(FakeNewsRepository newsRepo, AiMode mode)
@@ -318,6 +318,9 @@ internal sealed class FakeNewsRepository : INewsRepository
 
     public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
         => Task.FromResult<(IReadOnlyList<NewsArticle>, int)>(([],  0));
+
+    public Task<IReadOnlyList<(Guid Id, string Url)>> GetNullBodyTextArticlesAsync(int maxArticles, int daysBack, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<(Guid Id, string Url)>>([]);
 }
 
 internal sealed class FakeNewsBlocklistRepository(IReadOnlyList<string> terms) : IBlocklistRepository
@@ -422,18 +425,13 @@ internal sealed class FakeArticleContentScraper(string? bodyText) : IArticleCont
 
 internal sealed class FakeAiSummaryService(string? summary = null, bool shouldThrow = false) : IAiSummaryService
 {
-    public string? LastModel { get; private set; }
-
     public Task<string?> GenerateSummaryAsync(
         string title,
         string? snippet,
         string? bodyText = null,
         AiContentType contentType = AiContentType.News,
-        string? model = null,
         CancellationToken ct = default)
     {
-        LastModel = model;
-
         if (shouldThrow)
             throw new InvalidOperationException("AI summary service failed.");
 

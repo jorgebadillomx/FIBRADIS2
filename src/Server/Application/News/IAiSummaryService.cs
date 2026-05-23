@@ -9,6 +9,5 @@ public interface IAiSummaryService
         string? snippet,
         string? bodyText = null,
         AiContentType contentType = AiContentType.News,
-        string? model = null,
         CancellationToken ct = default);
 }
