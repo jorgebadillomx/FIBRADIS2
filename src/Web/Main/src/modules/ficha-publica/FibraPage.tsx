@@ -1,6 +1,8 @@
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
+import { fetchFundamentalesPublic } from '@/api/fundamentalesApi'
+import type { FundamentalesData } from './sections/fundamentales'
 import { FibraNotFound } from './FibraNotFound'
 import { PrecioSection } from './sections/PrecioSection'
 import { MercadoSection } from './sections/MercadoSection'
@@ -74,6 +76,30 @@ export function FibraPage() {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
+
+  const { data: fundamentalesDto } = useQuery({
+    queryKey: ['fundamentales', ticker],
+    queryFn: () => fetchFundamentalesPublic(ticker!),
+    enabled: !!ticker,
+    staleTime: 5 * 60_000,
+  })
+
+  const toFundamentalNum = (v: null | number | string | undefined): number | null =>
+    v == null ? null : Number(v)
+
+  const fundamentalesData: FundamentalesData | undefined = fundamentalesDto
+    ? {
+        periodsAgo: typeof fundamentalesDto.periodsAgo === 'number' ? fundamentalesDto.periodsAgo : undefined,
+        items: [
+          { label: 'Cap Rate', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.capRate) },
+          { label: 'NAV por CBFI', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.navPerCbfi) },
+          { label: 'LTV', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.ltv) },
+          { label: 'Margen NOI', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.noiMargin) },
+          { label: 'Margen FFO', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.ffoMargin) },
+          { label: 'Dist. Trimestral', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.quarterlyDistribution) },
+        ],
+      }
+    : undefined
 
   const marketData = snapshots.find(s => s.ticker === fibra?.ticker) ?? null
 
@@ -175,7 +201,7 @@ export function FibraPage() {
 
           <section id="fundamentales" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.fundamentales} />
-            <FundamentalesSection />
+            <FundamentalesSection data={fundamentalesData} />
           </section>
 
           <section id="distribuciones" className="scroll-mt-32 space-y-4">

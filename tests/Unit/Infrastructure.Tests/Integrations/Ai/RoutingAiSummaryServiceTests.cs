@@ -70,7 +70,12 @@ public class RoutingAiSummaryServiceTests
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["Gemini:ApiKey"] = "test-key" })
             .Build();
-        return new GeminiAiSummaryService(new System.Net.Http.HttpClient(handler), config, repo, NullLogger<GeminiAiSummaryService>.Instance);
+        return new GeminiAiSummaryService(
+            new System.Net.Http.HttpClient(handler),
+            config,
+            repo,
+            new FakePromptRepo(),
+            NullLogger<GeminiAiSummaryService>.Instance);
     }
 
     private static DeepSeekAiSummaryService BuildDeepSeek(HttpMessageHandler handler, IAiProviderConfigRepository repo)
@@ -78,7 +83,12 @@ public class RoutingAiSummaryServiceTests
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["DeepSeek:ApiKey"] = "test-key" })
             .Build();
-        return new DeepSeekAiSummaryService(new System.Net.Http.HttpClient(handler), config, repo, NullLogger<DeepSeekAiSummaryService>.Instance);
+        return new DeepSeekAiSummaryService(
+            new System.Net.Http.HttpClient(handler),
+            config,
+            repo,
+            new FakePromptRepo(),
+            NullLogger<DeepSeekAiSummaryService>.Instance);
     }
 
     private static System.Net.Http.HttpResponseMessage BuildGeminiResponse(string text)
@@ -119,6 +129,15 @@ public class RoutingAiSummaryServiceTests
             => Task.FromResult(new AiProviderConfig { Id = 1, Provider = provider, ModelId = modelId });
 
         public Task SetProviderAsync(AiProvider p, string m, string actor, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+
+    private sealed class FakePromptRepo : IAiPromptRepository
+    {
+        public Task<AiPrompt?> GetPromptAsync(string contentType, CancellationToken ct = default)
+            => Task.FromResult<AiPrompt?>(null);
+
+        public Task SetPromptAsync(string contentType, string template, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
     }
 

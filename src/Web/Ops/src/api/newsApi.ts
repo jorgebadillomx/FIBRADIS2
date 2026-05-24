@@ -47,12 +47,17 @@ export async function deleteBlocklistTerm(id: string): Promise<void> {
 export type OpsNewsArticle = components['schemas']['OpsNewsArticleDto']
 export type OpsNewsPage = components['schemas']['PagedResultOfOpsNewsArticleDto']
 
-export async function fetchOpsNewsList(page = 1, pageSize = 20): Promise<OpsNewsPage> {
+export async function fetchOpsNewsList(
+  page = 1,
+  pageSize = 20,
+  search?: string,
+  hasAiSummary?: boolean,
+): Promise<OpsNewsPage> {
   assertOpsAccessToken()
 
   const { data, error } = await apiClient['/api/v1/ops/news'].GET({
     headers: getOpsAuthHeaders(),
-    params: { query: { page, pageSize } },
+    params: { query: { page, pageSize, search, hasAiSummary } },
   })
 
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al obtener noticias: ${JSON.stringify(error)}`))

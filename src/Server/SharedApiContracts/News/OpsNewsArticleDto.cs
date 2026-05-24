@@ -9,4 +9,5 @@ public sealed record OpsNewsArticleDto(
     string Status,
     int? BodyTextLength,
     string? BodyTextPreview,
-    bool HasAiSummary);
+    bool HasAiSummary,
+    string? AiSummaryPreview);

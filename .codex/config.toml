@@ -1,2 +1,10 @@
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
+
+[mcp_servers.mem0]
+args = [
+    "-y",
+    "@mem0ai/mem0-mcp",
+]
+command = "npx"
+env_vars = ["MEM0_API_KEY"]

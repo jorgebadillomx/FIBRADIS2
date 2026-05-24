@@ -39,7 +39,7 @@ export function FundamentalesSection({ data }: Props) {
       ) : (
         <div className="rounded-lg border border-border bg-surface-elevated px-4 py-8 flex flex-col items-center justify-center gap-2">
           <p className="text-sm font-medium text-muted-foreground">Sin fundamentales disponibles</p>
-          <p className="text-xs text-muted-foreground/60">Los datos fundamentales estarán disponibles en Épica 5</p>
+          <p className="text-xs text-muted-foreground/60">No hay datos de fundamentales disponibles para esta FIBRA.</p>
         </div>
       )}
     </div>

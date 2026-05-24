@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure; // IDbContextOptionsConfigur
 using Microsoft.EntityFrameworkCore.Storage; // InMemoryDatabaseRoot
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Tests;
 
@@ -18,10 +19,15 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     // Explicit root per-instance: aísla completamente el store en memoria
     // aunque EF Core InMemory use cachés estáticas por nombre.
     private readonly InMemoryDatabaseRoot _dbRoot = new();
+    private readonly string _databaseName = $"ApiTests-{Guid.NewGuid():N}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.ConfigureLogging(logging =>
+        {
+            logging.ClearProviders();
+        });
 
         builder.ConfigureAppConfiguration(config =>
         {
@@ -48,7 +54,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             foreach (var d in toRemove) services.Remove(d);
 
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase("ApiTests", _dbRoot));
+                options.UseInMemoryDatabase(_databaseName, _dbRoot));
         });
     }
 

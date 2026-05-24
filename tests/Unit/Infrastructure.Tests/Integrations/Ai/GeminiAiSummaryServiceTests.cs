@@ -342,10 +342,68 @@ public class GeminiAiSummaryServiceTests
         Assert.Contains("gemini-custom-model", capturedUrl);
     }
 
+    [Fact]
+    public async Task GenerateSummaryAsync_UsesPromptTemplateFromRepository_WhenAvailable()
+    {
+        string? capturedPrompt = null;
+        var handler = new StubHttpMessageHandler(async request =>
+        {
+            using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
+            capturedPrompt = doc.RootElement.GetProperty("contents")[0].GetProperty("parts")[0].GetProperty("text").GetString();
+            return CreateJsonResponse("""
+                {
+                  "candidates": [
+                    {
+                      "content": {
+                        "parts": [{ "text": "Resumen suficientemente largo para pasar el control de calidad. Segunda oración completa aquí. Tercera oración completa aquí." }]
+                      }
+                    }
+                  ]
+                }
+                """);
+        });
+        var service = CreateService(handler, promptTemplate: "Plantilla custom\nTítulo: {title}\n{snippet_section}\n{body_section}\n{strictness_instruction}");
+
+        await service.GenerateSummaryAsync("Titulo", "Snippet");
+
+        Assert.NotNull(capturedPrompt);
+        Assert.Contains("Plantilla custom", capturedPrompt);
+        Assert.Contains("Título: Titulo", capturedPrompt);
+    }
+
+    [Fact]
+    public async Task GenerateSummaryAsync_UsesFallbackPrompt_WhenRepositoryReturnsNull()
+    {
+        string? capturedPrompt = null;
+        var handler = new StubHttpMessageHandler(async request =>
+        {
+            using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
+            capturedPrompt = doc.RootElement.GetProperty("contents")[0].GetProperty("parts")[0].GetProperty("text").GetString();
+            return CreateJsonResponse("""
+                {
+                  "candidates": [
+                    {
+                      "content": {
+                        "parts": [{ "text": "Resumen suficientemente largo para pasar el control de calidad. Segunda oración completa aquí. Tercera oración completa aquí." }]
+                      }
+                    }
+                  ]
+                }
+                """);
+        });
+        var service = CreateService(handler);
+
+        await service.GenerateSummaryAsync("Titulo", "Snippet");
+
+        Assert.NotNull(capturedPrompt);
+        Assert.Contains("Eres un analista experto en FIBRAs mexicanas", capturedPrompt);
+    }
+
     private static IAiSummaryService CreateService(
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string?>? settings = null,
-        string modelId = "gemini-2.5-flash")
+        string modelId = "gemini-2.5-flash",
+        string? promptTemplate = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(settings ?? new Dictionary<string, string?>
@@ -358,6 +416,7 @@ public class GeminiAiSummaryServiceTests
             new HttpClient(handler),
             configuration,
             new FakeAiProviderConfigRepository(modelId),
+            new FakeAiPromptRepository(promptTemplate),
             NullLogger<GeminiAiSummaryService>.Instance);
     }
 
@@ -380,6 +439,24 @@ public class GeminiAiSummaryServiceTests
             => Task.FromResult(new AiProviderConfig { Id = 1, Provider = AiProvider.Gemini, ModelId = modelId });
 
         public Task SetProviderAsync(AiProvider provider, string modelId, string actor, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+
+    internal sealed class FakeAiPromptRepository(string? template = null) : IAiPromptRepository
+    {
+        public Task<AiPrompt?> GetPromptAsync(string contentType, CancellationToken ct = default)
+            => Task.FromResult(template is null
+                ? null
+                : new AiPrompt
+                {
+                    Id = 1,
+                    ContentType = contentType,
+                    PromptTemplate = template,
+                    UpdatedAt = DateTimeOffset.UtcNow,
+                    UpdatedBy = "test",
+                });
+
+        public Task SetPromptAsync(string contentType, string template, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
     }
 }

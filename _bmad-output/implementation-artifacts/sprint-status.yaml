@@ -1,5 +1,7 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-23
+# story 5-2 code review pass — 14 patches aplicados (P1-P14): handleReprocess UUID fix, cache invalidation key, test UpdateStatusAsync idempotent, 403 tests, null guard UpdateStatusAsync, UUID validation form, isNaN guard numerics, Guid.NewGuid() explicit, IO try/catch, double-confirm guard, financial period sort, PdfUploadedAt field, GET /pdf endpoint + Ver PDF button, year regex restrict 20XX
+# story 5-0 done — code review pass (14 patches: try/catch LogErrorAsync, truncar ErrorType/AiContext, search limit, contentType lowercase, UPSERT atómico, mutations separadas AiPromptsPage, catch-all router, JSON format, pipeline canonical, tests búsqueda y placeholders, límite 4000 chars, Take(100) pipeline-logs)
 # story 4-9 done — code review pass (5 patches: DefaultDocumentModel Gemini, mensajes 503/log proveedor-agnósticos, NewsBodyTextRetryJob validación body y log level) + patch modelos deepseek-v4-flash/pro
 # story 4-8 done — AngleSharp DOM parser + SiteExtractionCatalog 22 sitios, 84/84 tests
 # story 4-7-seleccion-modelo-ia-noticias done — superada por 4-9 multi-proveedor (mergeada a main, cancelada en sprint)
@@ -62,7 +64,9 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-22
+last_updated: 2026-05-23
+# story 5-3 creada — gestión CRUD + soft delete catálogo FIBRAs desde Ops
+# story 5-1 creada — dashboard operativo, PipelineRunLog, Run Now auditado, DashboardPage
 # story 4-8 done — AngleSharp DOM parser + SiteExtractionCatalog 22 sitios, 84/84 tests
 # retrospectivas épicas 2/3/4 actualizadas con historias extendidas — epic-2-retro-2026-05-21, epic-3-retro-2026-05-21, epic-4-retro-2026-05-21
 # story 3-4 done — 2ª pasada code review (9 patches aplicados)
@@ -176,10 +180,13 @@ development_status:
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
   epic-5: in-progress
   # story 5-0 creada — OpsShell multi-pantalla + logs de errores + gestión de prompts de IA
-  5-0-ops-shell-navegacion-y-modulos: ready-for-dev
-  5-1-dashboard-operativo-y-control-de-pipelines: backlog
-  5-2-importacion-de-fundamentales-en-modo-manual: backlog
-  5-3-gestion-del-catalogo-de-fibras-desde-ops: backlog
+  5-0-ops-shell-navegacion-y-modulos: done
+  # story 5-1 creada — dashboard operativo: estado de pipelines, historial, errores y "Run Now" auditado
+  5-1-dashboard-operativo-y-control-de-pipelines: done
+  # story 5-2 creada — importación JSON fundamentales, preview + confirm, historial Ops, endpoint público Main
+  # story 5-2 review — import → preview → confirm, 7 unit tests + 12 integration tests, endpoint público Main SPA
+  5-2-importacion-de-fundamentales-en-modo-manual: in-progress
+  5-3-gestion-del-catalogo-de-fibras-desde-ops: ready-for-dev
   5-4-configuracion-operativa-desde-ops-sin-redespliegue: backlog
   epic-5-retrospective: optional
 

@@ -90,9 +90,28 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .Take(count)
             .ToListAsync(ct);
 
-    public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, CancellationToken ct = default)
     {
-        var query = db.NewsArticles.OrderByDescending(n => n.PublishedAt);
+        var query = db.NewsArticles.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var trimmedSearch = search.Trim();
+            query = query.Where(a =>
+                a.Title.Contains(trimmedSearch)
+                || (a.BodyText != null && a.BodyText.Contains(trimmedSearch))
+                || (a.AiSummary != null && a.AiSummary.Contains(trimmedSearch)));
+        }
+
+        if (hasAiSummary is true)
+        {
+            query = query.Where(a => a.AiSummary != null);
+        }
+        else if (hasAiSummary is false)
+        {
+            query = query.Where(a => a.AiSummary == null);
+        }
+
+        query = query.OrderByDescending(n => n.PublishedAt);
         var total = await query.CountAsync(ct);
         var items = await query
             .Skip((page - 1) * pageSize)

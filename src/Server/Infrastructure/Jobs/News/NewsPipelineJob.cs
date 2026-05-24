@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Application.Catalog;
+using Application.Jobs;
 using Application.News;
 using Domain.Catalog;
+using Domain.Jobs;
 using Domain.News;
 using Microsoft.Extensions.Logging;
 
@@ -12,9 +15,12 @@ public class NewsPipelineJob(
     IBlocklistRepository blocklistRepo,
     IRssClient rssClient,
     IAiModeRepository aiModeRepo,
+    IAiProviderConfigRepository aiProviderConfigRepo,
     IOgImageScraper ogImageScraper,
     IArticleContentScraper articleContentScraper,
     IAiSummaryService summaryService,
+    IPipelineErrorLogRepository pipelineErrorLogRepo,
+    IPipelineRunLogRepository pipelineRunLogRepo,
     ILogger<NewsPipelineJob> logger)
 {
     private static readonly string[] GeneralQueries =
@@ -25,130 +31,237 @@ public class NewsPipelineJob(
 
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
-        var currentMode = AiMode.Off;
+        var startedAt = DateTimeOffset.UtcNow;
+        var status = "Failed";
+        var fetched = 0;
+        var filteredIn = 0;
+        var saved = 0;
+        var errors = 0;
+        string? details = null;
+
         try
         {
-            var config = await aiModeRepo.GetConfigAsync(ct);
-            currentMode = config.Mode;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to read AI mode configuration; falling back to Off for this pipeline run.");
-        }
+            var currentMode = AiMode.Off;
+            try
+            {
+                var config = await aiModeRepo.GetConfigAsync(ct);
+                currentMode = config.Mode;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to read AI mode configuration; falling back to Off for this pipeline run.");
+            }
 
-        var fibras = await fibraRepo.GetAllActiveAsync(ct);
-        var fibraMatchInfos = fibras
-            .Select(f => new FibraMatchInfo(f.Id, f.Ticker, f.NameVariants.AsReadOnly()))
-            .ToList();
-        var blocklistTerms = await blocklistRepo.GetAllTermsAsync(ct);
-        var since24h = DateTimeOffset.UtcNow.AddHours(-24);
+            var fibras = await fibraRepo.GetAllActiveAsync(ct);
+            var fibraMatchInfos = fibras
+                .Select(f => new FibraMatchInfo(f.Id, f.Ticker, f.NameVariants.AsReadOnly()))
+                .ToList();
+            var blocklistTerms = await blocklistRepo.GetAllTermsAsync(ct);
+            var since24h = DateTimeOffset.UtcNow.AddHours(-24);
 
-        var allItems = new List<RssItem>();
+            var allItems = new List<RssItem>();
 
-        foreach (var fibra in fibras)
-        {
-            foreach (var query in BuildFibraQueries(fibra))
+            foreach (var fibra in fibras)
+            {
+                foreach (var query in BuildFibraQueries(fibra))
+                {
+                    var items = await rssClient.FetchAsync(query, ct);
+                    allItems.AddRange(items);
+                }
+            }
+
+            foreach (var query in GeneralQueries)
             {
                 var items = await rssClient.FetchAsync(query, ct);
                 allItems.AddRange(items);
             }
-        }
 
-        foreach (var query in GeneralQueries)
+            var candidateUrls = allItems
+                .Select(item => item.Url)
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var existingUrls = new HashSet<string>(
+                await newsRepo.GetExistingUrlsAsync(candidateUrls, ct),
+                StringComparer.OrdinalIgnoreCase);
+            var recentTitles = await newsRepo.GetRecentNormalizedTitlesAsync(since24h, ct);
+            var filteredItems = NewsDeduplicator.Filter(allItems, existingUrls, recentTitles, blocklistTerms);
+
+            fetched = allItems.Count;
+            filteredIn = filteredItems.Count;
+            var providerConfig = await aiProviderConfigRepo.GetConfigAsync(ct);
+
+            foreach (var item in filteredItems)
+            {
+                try
+                {
+                    var imageUrl = !string.IsNullOrWhiteSpace(item.Url)
+                        ? await ogImageScraper.TryGetOgImageAsync(item.Url, ct)
+                        : null;
+                    var bodyText = !string.IsNullOrWhiteSpace(item.Url)
+                        ? await articleContentScraper.TryGetArticleTextAsync(item.Url, ct)
+                        : null;
+
+                    string? aiSummary = null;
+                    var finalStatus = NewsArticleStatus.Processed;
+
+                    if (currentMode == AiMode.On)
+                    {
+                        try
+                        {
+                            aiSummary = await summaryService.GenerateSummaryAsync(
+                                item.Title, item.Snippet, bodyText, AiContentType.News, ct);
+                            if (aiSummary is not null)
+                            {
+                                finalStatus = NewsArticleStatus.Processed;
+                            }
+                            else
+                            {
+                                logger.LogWarning("AI summary returned null for '{Url}'; article saved with Partial status", item.Url);
+                                finalStatus = NewsArticleStatus.Partial;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "AI summary failed for '{Url}'; article saved without summary", item.Url);
+                            var aiSummaryErrorType = ex.GetType().Name;
+                            var aiSummaryAiContext = $"El pipeline de noticias falló al generar el resumen de IA para el artículo '{item.Title}' desde '{item.Url}' con fuente {item.Source}. El proveedor activo era {providerConfig.Provider}/{providerConfig.ModelId} y el artículo {(string.IsNullOrWhiteSpace(bodyText) ? "no tenía" : "sí tenía")} body_text disponible al momento del error. El artículo se guardará como Partial para permitir revisión operativa posterior.";
+                            try
+                            {
+                                await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
+                                {
+                                    Pipeline = "News",
+                                    Timestamp = DateTimeOffset.UtcNow,
+                                    ErrorType = aiSummaryErrorType.Length > 100 ? aiSummaryErrorType[..100] : aiSummaryErrorType,
+                                    Message = ex.Message,
+                                    Context = JsonSerializer.Serialize(new
+                                    {
+                                        item.Title,
+                                        item.Url,
+                                        item.Source,
+                                        currentMode = currentMode.ToString(),
+                                        provider = providerConfig.Provider.ToString(),
+                                        model = providerConfig.ModelId,
+                                        hasBodyText = !string.IsNullOrWhiteSpace(bodyText),
+                                    }),
+                                    AiContext = aiSummaryAiContext.Length > 800 ? aiSummaryAiContext[..800] : aiSummaryAiContext,
+                                }, ct);
+                            }
+                            catch (Exception logEx)
+                            {
+                                logger.LogWarning(logEx, "Failed to write pipeline error log entry for AI summary failure on '{Url}'", item.Url);
+                            }
+                            finalStatus = NewsArticleStatus.Partial;
+                        }
+
+                        await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                    }
+
+                    var article = new NewsArticle
+                    {
+                        Title = item.Title,
+                        TitleNormalized = NewsDeduplicator.NormalizeTitle(item.Title),
+                        Source = item.Source,
+                        PublishedAt = item.PublishedAt,
+                        Url = item.Url,
+                        Snippet = item.Snippet,
+                        BodyText = bodyText,
+                        ImageUrl = imageUrl,
+                        AiSummary = aiSummary,
+                        Status = finalStatus,
+                        CapturedAt = DateTimeOffset.UtcNow,
+                    };
+                    var fibraIds = NewsAssociator.Associate(item, fibraMatchInfos);
+
+                    await newsRepo.AddWithLinksAsync(article, fibraIds, ct);
+                    saved++;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to save news article '{Url}'", item.Url);
+                    var saveErrorType = ex.GetType().Name;
+                    var saveAiContext = $"El pipeline de noticias falló al persistir el artículo '{item.Title}' desde la URL '{item.Url}' con fuente {item.Source}. El artículo ya había pasado blocklist y deduplicación, por lo que el fallo ocurrió en el guardado final o en la asociación con FIBRAs dentro de la base de datos. Revise restricciones, datos nulos inesperados o errores transitorios de persistencia.";
+                    try
+                    {
+                        await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
+                        {
+                            Pipeline = "News",
+                            Timestamp = DateTimeOffset.UtcNow,
+                            ErrorType = saveErrorType.Length > 100 ? saveErrorType[..100] : saveErrorType,
+                            Message = ex.Message,
+                            Context = JsonSerializer.Serialize(new
+                            {
+                                item.Title,
+                                item.Url,
+                                item.Source,
+                            }),
+                            AiContext = saveAiContext.Length > 800 ? saveAiContext[..800] : saveAiContext,
+                        }, ct);
+                    }
+                    catch (Exception logEx)
+                    {
+                        logger.LogWarning(logEx, "Failed to write pipeline error log entry for save failure on '{Url}'", item.Url);
+                    }
+                    errors++;
+                }
+            }
+
+            logger.LogInformation(
+                "News pipeline complete — fetched: {Fetched}, filtered_in: {FilteredIn}, saved: {Saved}, errors: {Errors}",
+                fetched,
+                filteredIn,
+                saved,
+                errors);
+
+            status = "Completed";
+            details = JsonSerializer.Serialize(new
+            {
+                fetched,
+                filteredIn,
+                saved,
+                errors,
+            });
+        }
+        catch (OperationCanceledException)
         {
-            var items = await rssClient.FetchAsync(query, ct);
-            allItems.AddRange(items);
+            throw;
         }
-
-        var candidateUrls = allItems
-            .Select(item => item.Url)
-            .Where(url => !string.IsNullOrWhiteSpace(url))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        var existingUrls = new HashSet<string>(
-            await newsRepo.GetExistingUrlsAsync(candidateUrls, ct),
-            StringComparer.OrdinalIgnoreCase);
-        var recentTitles = await newsRepo.GetRecentNormalizedTitlesAsync(since24h, ct);
-        var filteredItems = NewsDeduplicator.Filter(allItems, existingUrls, recentTitles, blocklistTerms);
-
-        int saved = 0, errors = 0;
-
-        foreach (var item in filteredItems)
+        catch (Exception)
+        {
+            details ??= JsonSerializer.Serialize(new
+            {
+                fetched,
+                filteredIn,
+                saved,
+                errors,
+            });
+            throw;
+        }
+        finally
         {
             try
             {
-                var imageUrl = !string.IsNullOrWhiteSpace(item.Url)
-                    ? await ogImageScraper.TryGetOgImageAsync(item.Url, ct)
-                    : null;
-                var bodyText = !string.IsNullOrWhiteSpace(item.Url)
-                    ? await articleContentScraper.TryGetArticleTextAsync(item.Url, ct)
-                    : null;
-
-                string? aiSummary = null;
-                var finalStatus = NewsArticleStatus.Processed;
-
-                if (currentMode == AiMode.On)
+                await pipelineRunLogRepo.AddAsync(new PipelineRunLog
                 {
-                    try
-                    {
-                        aiSummary = await summaryService.GenerateSummaryAsync(
-                            item.Title, item.Snippet, bodyText, AiContentType.News, ct);
-                        if (aiSummary is not null)
-                        {
-                            finalStatus = NewsArticleStatus.Processed;
-                        }
-                        else
-                        {
-                            logger.LogWarning("AI summary returned null for '{Url}'; article saved with Partial status", item.Url);
-                            finalStatus = NewsArticleStatus.Partial;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "AI summary failed for '{Url}'; article saved without summary", item.Url);
-                        finalStatus = NewsArticleStatus.Partial;
-                    }
-
-                    await Task.Delay(TimeSpan.FromSeconds(5), ct);
-                }
-
-                var article = new NewsArticle
-                {
-                    Title = item.Title,
-                    TitleNormalized = NewsDeduplicator.NormalizeTitle(item.Title),
-                    Source = item.Source,
-                    PublishedAt = item.PublishedAt,
-                    Url = item.Url,
-                    Snippet = item.Snippet,
-                    BodyText = bodyText,
-                    ImageUrl = imageUrl,
-                    AiSummary = aiSummary,
-                    Status = finalStatus,
-                    CapturedAt = DateTimeOffset.UtcNow,
-                };
-                var fibraIds = NewsAssociator.Associate(item, fibraMatchInfos);
-
-                await newsRepo.AddWithLinksAsync(article, fibraIds, ct);
-                saved++;
+                    Pipeline = "News",
+                    StartedAt = startedAt,
+                    CompletedAt = DateTimeOffset.UtcNow,
+                    Status = status,
+                    ItemsProcessed = saved,
+                    ErrorCount = errors,
+                    Details = details,
+                }, CancellationToken.None);
             }
-            catch (OperationCanceledException)
+            catch (Exception logEx)
             {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to save news article '{Url}'", item.Url);
-                errors++;
+                logger.LogWarning(logEx, "Failed to write PipelineRunLog for News pipeline");
             }
         }
-
-        logger.LogInformation(
-            "News pipeline complete — fetched: {Fetched}, filtered_in: {FilteredIn}, saved: {Saved}, errors: {Errors}",
-            allItems.Count,
-            filteredItems.Count,
-            saved,
-            errors);
     }
 
     private static IEnumerable<string> BuildFibraQueries(Fibra fibra)

@@ -91,10 +91,46 @@ public class DeepSeekAiSummaryServiceTests
         Assert.Equal("deepseek-v4-pro", capturedModel);
     }
 
+    [Fact]
+    public async Task GenerateSummaryAsync_UsesPromptTemplateFromRepository_WhenAvailable()
+    {
+        string? capturedPrompt = null;
+        var sut = CreateService(new StubHandler(async request =>
+        {
+            using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
+            capturedPrompt = doc.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
+            return BuildResponse("Resumen analítico completo con suficientes oraciones. Segunda oración aquí. Tercera oración.");
+        }), promptTemplate: "Plantilla DeepSeek\nTítulo: {title}\n{snippet_section}\n{body_section}\n{strictness_instruction}");
+
+        await sut.GenerateSummaryAsync("Título", "Snippet");
+
+        Assert.NotNull(capturedPrompt);
+        Assert.Contains("Plantilla DeepSeek", capturedPrompt);
+        Assert.Contains("Título: Título", capturedPrompt);
+    }
+
+    [Fact]
+    public async Task GenerateSummaryAsync_UsesFallbackPrompt_WhenRepositoryReturnsNull()
+    {
+        string? capturedPrompt = null;
+        var sut = CreateService(new StubHandler(async request =>
+        {
+            using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
+            capturedPrompt = doc.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
+            return BuildResponse("Resumen analítico completo con suficientes oraciones. Segunda oración aquí. Tercera oración.");
+        }));
+
+        await sut.GenerateSummaryAsync("Título", "Snippet");
+
+        Assert.NotNull(capturedPrompt);
+        Assert.Contains("Eres un analista experto en FIBRAs mexicanas", capturedPrompt);
+    }
+
     private static DeepSeekAiSummaryService CreateService(
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string?>? settings = null,
-        string modelId = "deepseek-v4-flash")
+        string modelId = "deepseek-v4-flash",
+        string? promptTemplate = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(settings ?? new Dictionary<string, string?>
@@ -109,6 +145,7 @@ public class DeepSeekAiSummaryServiceTests
             new HttpClient(handler),
             configuration,
             fakeRepo,
+            new FakeAiPromptRepository(promptTemplate),
             NullLogger<DeepSeekAiSummaryService>.Instance);
     }
 
@@ -133,6 +170,24 @@ public class DeepSeekAiSummaryServiceTests
             => Task.FromResult(new AiProviderConfig { Id = 1, Provider = AiProvider.DeepSeek, ModelId = modelId });
 
         public Task SetProviderAsync(AiProvider provider, string m, string actor, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+
+    private sealed class FakeAiPromptRepository(string? template = null) : IAiPromptRepository
+    {
+        public Task<AiPrompt?> GetPromptAsync(string contentType, CancellationToken ct = default)
+            => Task.FromResult(template is null
+                ? null
+                : new AiPrompt
+                {
+                    Id = 1,
+                    ContentType = contentType,
+                    PromptTemplate = template,
+                    UpdatedAt = DateTimeOffset.UtcNow,
+                    UpdatedBy = "test",
+                });
+
+        public Task SetPromptAsync(string contentType, string template, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
     }
 
