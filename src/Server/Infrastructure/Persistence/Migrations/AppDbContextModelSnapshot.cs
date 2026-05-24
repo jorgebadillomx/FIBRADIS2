@@ -500,6 +500,212 @@ namespace Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Domain.Fundamentals.FundamentalRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<decimal?>("CapRate")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("cap_rate");
+
+                    b.Property<DateTimeOffset>("CapturedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("captured_at")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<DateTimeOffset?>("ConfirmedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("confirmed_at");
+
+                    b.Property<string>("ConfirmedBy")
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("confirmed_by");
+
+                    b.Property<string>("ErrorReason")
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("error_reason");
+
+                    b.Property<decimal?>("FfoMargin")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("ffo_margin");
+
+                    b.Property<Guid>("FibraId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("fibra_id");
+
+                    b.Property<string>("ImportedBy")
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("imported_by");
+
+                    b.Property<bool>("IsPossibleUpdate")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_possible_update");
+
+                    b.Property<decimal?>("Ltv")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("ltv");
+
+                    b.Property<decimal?>("NavPerCbfi")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("nav_per_cbfi");
+
+                    b.Property<decimal?>("NoiMargin")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("noi_margin");
+
+                    b.Property<string>("PdfReference")
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("pdf_reference");
+
+                    b.Property<DateTimeOffset?>("PdfUploadedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("pdf_uploaded_at");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("period");
+
+                    b.Property<string>("ProcessingMode")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("processing_mode");
+
+                    b.Property<decimal?>("QuarterlyDistribution")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("quarterly_distribution");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("summary");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FibraId", "Period", "Status")
+                        .HasDatabaseName("IX_FundamentalRecord_FibraId_Period_Status");
+
+                    b.ToTable("FundamentalRecord", "fundamentals");
+                });
+
+            modelBuilder.Entity("Domain.Jobs.PipelineErrorLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("AiContext")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ai_context");
+
+                    b.Property<string>("Context")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("context");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<string>("ErrorType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("error_type");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Pipeline")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("pipeline");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Pipeline", "CreatedAt")
+                        .HasDatabaseName("IX_PipelineErrorLog_Pipeline_CreatedAt");
+
+                    b.ToTable("PipelineErrorLog", "jobs");
+                });
+
+            modelBuilder.Entity("Domain.Jobs.PipelineRunLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("details");
+
+                    b.Property<int?>("ErrorCount")
+                        .HasColumnType("int")
+                        .HasColumnName("error_count");
+
+                    b.Property<int?>("ItemsProcessed")
+                        .HasColumnType("int")
+                        .HasColumnName("items_processed");
+
+                    b.Property<string>("Pipeline")
+                        .IsRequired()
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("pipeline");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TriggeredBy")
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("triggered_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Pipeline", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("IX_PipelineRunLog_Pipeline_StartedAt");
+
+                    b.ToTable("PipelineRunLog", "jobs");
+                });
+
             modelBuilder.Entity("Domain.Market.DailySnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1461,6 +1667,63 @@ namespace Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Domain.News.AiPrompt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("content_type");
+
+                    b.Property<string>("PromptTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("prompt_template");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentType")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_AiPrompt_ContentType");
+
+                    b.ToTable("AiPrompt", "ai");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ContentType = "news",
+                            PromptTemplate = "Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.\n{strictness_instruction}\nTítulo: {title}\n{snippet_section}\n{body_section}\nIncluye: el hecho central, su relevancia para el sector de FIBRAs o bienes raíces en México, los datos más materiales del artículo cuando existan, y una lectura analítica breve para el inversionista.\nSi el artículo contiene cifras, fechas, montos, porcentajes, dividendos, emisiones, ocupación, adquisiciones o guidance, intégralos en el resumen.\nNo escribas menos de 5 oraciones si el cuerpo del artículo está disponible. Responde solo con el resumen, sin preámbulos.",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            UpdatedBy = "system"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ContentType = "document",
+                            PromptTemplate = "Eres un analista experto en FIBRAs mexicanas y documentos financieros corporativos del sector inmobiliario en México.\n{strictness_instruction}\nTítulo: {title}\n{snippet_section}\n{body_section}\nResume el hecho central del documento, su relevancia para fundamentales, los datos cuantitativos más materiales y una lectura analítica breve para un inversionista.\nSi el documento contiene cifras, guidance, rentas, NOI, AFFO, FFO, ocupación, adquisiciones, deuda o cap rates, intégralos en el resumen.\nNo escribas menos de 5 oraciones si el cuerpo del documento está disponible. Responde solo con el resumen, sin preámbulos.",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            UpdatedBy = "system"
+                        });
+                });
+
             modelBuilder.Entity("Domain.News.AiProviderConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -1698,6 +1961,15 @@ namespace Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Fundamentals.FundamentalRecord", b =>
+                {
+                    b.HasOne("Domain.Catalog.Fibra", null)
+                        .WithMany()
+                        .HasForeignKey("FibraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.News.NewsArticleFibra", b =>

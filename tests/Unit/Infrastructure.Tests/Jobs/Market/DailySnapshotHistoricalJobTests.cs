@@ -159,6 +159,9 @@ internal sealed class FakeHistoricalFibraRepository(IReadOnlyList<Fibra> fibras)
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
 
+    public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
+
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);
 }

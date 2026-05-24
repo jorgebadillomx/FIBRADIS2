@@ -1,5 +1,7 @@
 using Application.Catalog;
+using Application.Jobs;
 using Application.Market;
+using Domain.Jobs;
 using Domain.Catalog;
 using Domain.Market;
 using Infrastructure.Integrations.Yahoo;
@@ -21,7 +23,32 @@ public class MarketPipelineJobTests
         FakeFibraRepository fibraRepo,
         FakeYahooClient yahoo,
         FakeMarketRepository marketRepo)
-        => new(bmv, time, fibraRepo, yahoo, marketRepo, NullLogger<MarketPipelineJob>.Instance);
+        => new(
+            bmv,
+            time,
+            fibraRepo,
+            yahoo,
+            marketRepo,
+            new FakeMarketPipelineErrorLogRepository(),
+            new FakeMarketPipelineRunLogRepository(),
+            NullLogger<MarketPipelineJob>.Instance);
+
+    private static MarketPipelineJob Build(
+        FakeBmvSchedule bmv,
+        FakeTimeService time,
+        FakeFibraRepository fibraRepo,
+        FakeYahooClient yahoo,
+        FakeMarketRepository marketRepo,
+        FakeMarketPipelineRunLogRepository runLogRepo)
+        => new(
+            bmv,
+            time,
+            fibraRepo,
+            yahoo,
+            marketRepo,
+            new FakeMarketPipelineErrorLogRepository(),
+            runLogRepo,
+            NullLogger<MarketPipelineJob>.Instance);
 
     [Fact]
     public async Task ExecuteAsync_WhenOutsideTradingHours_DoesNotCallYahooClient()
@@ -131,6 +158,28 @@ public class MarketPipelineJobTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_OutsideTradingHours_WritesPipelineRunLogCompleted()
+    {
+        var runLogRepo = new FakeMarketPipelineRunLogRepository();
+        var job = Build(
+            new FakeBmvSchedule(isTradingHours: false),
+            new FakeTimeService(_tradingUtc),
+            new FakeFibraRepository([_fibraFuno]),
+            new FakeYahooClient(),
+            new FakeMarketRepository(),
+            runLogRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Single(runLogRepo.Entries);
+        var entry = runLogRepo.Entries[0];
+        Assert.Equal("Completed", entry.Status);
+        Assert.Equal(0, entry.ItemsProcessed);
+        Assert.Null(entry.TriggeredBy);
+        Assert.Contains("outside-trading-hours", entry.Details);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_DeletesOldPriceSnapshotsUsingCurrentUtcDate()
     {
         var marketRepo = new FakeMarketRepository();
@@ -170,6 +219,9 @@ internal sealed class FakeFibraRepository(IReadOnlyList<Fibra> fibras) : IFibraR
 
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
+
+    public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);
@@ -246,4 +298,30 @@ internal sealed class FakeMarketRepository : IMarketRepository
 
     public Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default)
         => Task.FromResult(true);
+}
+
+internal sealed class FakeMarketPipelineErrorLogRepository : IPipelineErrorLogRepository
+{
+    public Task LogErrorAsync(PipelineErrorLog entry, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task<(IReadOnlyList<PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
+        => Task.FromResult<(IReadOnlyList<PipelineErrorLog>, int)>(([], 0));
+}
+
+internal sealed class FakeMarketPipelineRunLogRepository : IPipelineRunLogRepository
+{
+    public List<PipelineRunLog> Entries { get; } = [];
+
+    public Task AddAsync(PipelineRunLog entry, CancellationToken ct = default)
+    {
+        Entries.Add(entry);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<PipelineRunLog>> GetRecentAsync(string? pipeline, int take, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<PipelineRunLog>>([]);
+
+    public Task<PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
+        => Task.FromResult<PipelineRunLog?>(null);
 }

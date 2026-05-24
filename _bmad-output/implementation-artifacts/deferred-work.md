@@ -2,6 +2,30 @@
 
 Items diferidos durante code reviews. Cada sección tiene la historia origen y la fecha.
 
+## Deferred from: code review of 5-2-importacion-de-fundamentales-en-modo-manual (2026-05-23)
+
+- **W1: GetByFibraAsync sin paginación** [`FundamentalRepository.cs:23`] — Retorna todos los registros históricos por FIBRA sin límite. Añadir paginación en historia futura de historial Ops cuando el volumen de datos sea relevante.
+- **W2: Magic strings de status sin constantes** [`FundamentalRecord.cs`] — "pending", "partial", "processed", "error" repetidos en dominio, repositorio, endpoints y tests sin fuente única. Extraer en enum o clase de constantes en refactor futuro.
+- **W3: Uploads PDF concurrentes pueden corromper archivo** [`OpsFundamentalsEndpoints.cs:205`] — File.Create trunca el archivo si dos uploads del mismo record llegan simultáneamente. File locking o nombrado único por timestamp para MVP; implementar si el uso concurrent se detecta en producción.
+- **W4: Case sensitivity en GetByTickerAsync** [`FundamentalsEndpoints.cs`] — Problema pre-existente del módulo catalog: si un ticker está en minúsculas en la BD, GetByTickerAsync con input en mayúsculas retorna null. Resolver en historia de gestión de catálogo (Épica 5).
+
+## Deferred from: code review of 5-0-ops-shell-navegacion-y-modulos (2026-05-23)
+
+- **D1: Fallback hardcoded AiPromptTemplateDefaults sin validación de placeholders** [`src/Server/Infrastructure/Integrations/Ai/AiPromptTemplateDefaults.cs`] — El fallback no se valida automáticamente para contener los mismos placeholders que el código de interpolación espera. Riesgo de regresión silenciosa si el template se modifica en el futuro.
+- **D2: GetPromptAsync puede lanzar excepción sin try/catch en BuildPromptAsync** [`src/Server/Infrastructure/Integrations/Ai/GeminiAiSummaryService.cs`, `DeepSeekAiSummaryService.cs`] — El job lo atrapa pero no distingue entre fallo de IA y fallo de BD del prompt. Mejora de observabilidad futura.
+- **D3: CreatedAt HasDefaultValueSql("getutcdate()") sin ValueGeneratedOnAdd — letra muerta** [`src/Server/Infrastructure/Persistence/SqlServer/Configurations/Jobs/PipelineErrorLogConfiguration.cs`] — EF envía el valor de C# en el INSERT; la SQL default nunca se ejecuta. Inconsistencia no funcional.
+- **D4: PipelineErrorLog sin mecanismo de retención o purga** [`src/Server/Application/Jobs/IPipelineErrorLogRepository.cs`] — La tabla puede crecer indefinidamente. Agregar `DeleteOldEntriesAsync` o un job de limpieza en Épica 5.
+- **D6: PipelineRunLog sin mecanismo de retención o purga** [`src/Server/Application/Jobs/IPipelineRunLogRepository.cs`] — La nueva tabla de auditoría de ejecuciones también crece indefinidamente. Agregar `DeleteOldEntriesAsync` o un job de limpieza en una historia futura de Ops.
+- **D5: Mensaje de validación PUT ai-prompts no especifica qué placeholder falta** [`src/Server/Api/Endpoints/Ops/OpsAiPromptEndpoints.cs`] — Siempre muestra los tres placeholders aunque solo falte uno. Mejora menor de UX.
+
+## Deferred from: code review of 5-1-dashboard-operativo-y-control-de-pipelines (2026-05-23)
+
+- **`GetActor` puede retornar GUID si falta claim de email** [`OpsMarketEndpoints.cs`] — Fallback a `ClaimTypes.NameIdentifier` es un GUID/sub opaco, no un email. Sigue el patrón Dev Notes; email siempre presente para AdminOps con JWT actual. Revisar si se añaden tipos de token sin email.
+- **Dashboard muestra "Sin datos" tras trigger manual** [`DashboardPage.tsx`] — `GetLastCompletedAsync` excluye Queued, el badge no cambia hasta job completado. UX improvement: añadir optimistic update o mensaje "En cola..." usando el entry Queued visible en recentRuns.
+- **`PipelineRunLogConfiguration` sin índice en columna `Status`** [`PipelineRunLogConfiguration.cs`] — `GetLastCompletedAsync` filtra por `(Pipeline, Status IN ...)` con solo índice en `(Pipeline, StartedAt)`. Optimización prematura dado volumen operativo actual; revisar si el historial crece significativamente.
+- **`OpsMarketEndpoints` contiene rutas del pipeline de noticias** [`OpsMarketEndpoints.cs`] — Naming confusion pre-existente de story 5-0. Mover `newsGroup` a `OpsNewsPipelineEndpoints.cs` en refactor futuro.
+- **Jobs registran `OperationCanceledException` como `Status="Failed"`** — Shutdown limpio de Hangfire deja pipelines mostrando "Fallando". Por diseño per spec actual. Añadir `Status="Cancelled"` en futura historia de observabilidad si genera ruido operativo.
+
 ## Deferred from: code review of ops-session-stability (2026-05-23)
 
 - **`_refreshInFlight` singleton no exporta reset para tests** [`src/Web/Ops/src/api/authApi.ts`] — La variable de módulo persiste entre tests si se agrega cobertura. Exportar una función `_resetRefreshInFlight()` o mover a factory para aislar en tests.

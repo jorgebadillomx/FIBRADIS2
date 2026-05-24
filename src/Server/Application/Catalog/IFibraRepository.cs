@@ -7,5 +7,7 @@ public interface IFibraRepository
 
     Task<Domain.Catalog.Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default);
 
+    Task<Domain.Catalog.Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
     Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllActiveAsync(CancellationToken ct = default);
 }

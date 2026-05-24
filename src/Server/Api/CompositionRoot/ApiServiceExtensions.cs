@@ -2,6 +2,7 @@ using Api.Authentication;
 using Api.HealthChecks;
 using Application.Auth;
 using Application.Catalog;
+using Application.Jobs;
 using Application.Market;
 using Application.News;
 using Hangfire;
@@ -14,7 +15,10 @@ using Infrastructure.Integrations.Yahoo;
 using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
+using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Catalog;
+using Infrastructure.Persistence.Repositories.Fundamentals;
+using Infrastructure.Persistence.Repositories.Jobs;
 using Infrastructure.Persistence.Repositories.Market;
 using Infrastructure.Persistence.Repositories.News;
 using Infrastructure.Persistence.SqlServer;
@@ -68,6 +72,10 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
         builder.Services.AddScoped<IAiModeRepository, AiModeRepository>();
+        builder.Services.AddScoped<IAiPromptRepository, AiPromptRepository>();
+        builder.Services.AddScoped<IPipelineErrorLogRepository, PipelineErrorLogRepository>();
+        builder.Services.AddScoped<IPipelineRunLogRepository, PipelineRunLogRepository>();
+        builder.Services.AddScoped<IFundamentalRepository, FundamentalRepository>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
@@ -151,6 +159,7 @@ public static class ApiServiceExtensions
         {
             // Tests o entornos sin connection string: registro mínimo sin storage ni servidor
             builder.Services.AddHangfire(_ => { });
+            builder.Services.AddSingleton<IBackgroundJobClient, InMemoryBackgroundJobClient>();
         }
 
         // Health checks — siempre registrar

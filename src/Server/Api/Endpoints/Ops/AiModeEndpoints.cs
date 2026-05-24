@@ -93,12 +93,23 @@ public static class AiModeEndpoints
             INewsRepository newsRepo,
             CancellationToken ct,
             int page = 1,
-            int pageSize = 20) =>
+            int pageSize = 20,
+            string? search = null,
+            bool? hasAiSummary = null) =>
         {
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var (items, total) = await newsRepo.GetPagedForOpsAsync(page, pageSize, ct);
+            var trimmedSearch = search?.Trim();
+            if (trimmedSearch?.Length > 200)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["search"] = ["El parámetro search no puede superar los 200 caracteres."],
+                });
+            }
+
+            var (items, total) = await newsRepo.GetPagedForOpsAsync(page, pageSize, trimmedSearch, hasAiSummary, ct);
             var dtos = items.Select(a => new OpsNewsArticleDto(
                 a.Id,
                 a.Title,
@@ -108,7 +119,8 @@ public static class AiModeEndpoints
                 a.Status.ToString(),
                 a.BodyText?.Length,
                 a.BodyText is not null ? a.BodyText[..Math.Min(200, a.BodyText.Length)] : null,
-                a.AiSummary is not null)).ToList();
+                a.AiSummary is not null,
+                a.AiSummary is not null ? a.AiSummary[..Math.Min(300, a.AiSummary.Length)] : null)).ToList();
             return Results.Ok(new PagedResult<OpsNewsArticleDto>(dtos, page, pageSize, total));
         })
         .Produces<PagedResult<OpsNewsArticleDto>>(StatusCodes.Status200OK)
@@ -123,7 +135,7 @@ public static class AiModeEndpoints
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();
-            return Results.Ok(new OpsNewsBodyDto(article.Id, article.BodyText));
+            return Results.Ok(new OpsNewsBodyDto(article.Id, article.BodyText, article.AiSummary));
         })
         .Produces<OpsNewsBodyDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)

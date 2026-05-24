@@ -1,0 +1,489 @@
+# Historia 5.3: Gestión del Catálogo de FIBRAs desde Ops
+
+Status: ready-for-dev
+
+## Story
+
+Como AdminOps,
+quiero agregar nuevas FIBRAs, editar metadatos de FIBRAs existentes y realizar borrado suave (desactivación) de FIBRAs desde la sección de catálogo de Ops,
+para que el universo activo de FIBRAs se mantenga preciso sin acceso directo a la base de datos ni redespliegue.
+
+## Acceptance Criteria
+
+### AC1 — Crear nueva FIBRA desde Ops
+
+**Dado que** completo los campos requeridos para una nueva FIBRA (ticker, nombre completo, nombre corto, sector, mercado, moneda) y la envío,
+**Entonces**:
+- La FIBRA se agrega al catálogo con `State = Active` y `CreatedAt = DateTimeOffset.UtcNow`
+- Aparece en `GET /api/v1/fibras` en el universo activo
+- Está disponible inmediatamente para la ingesta del pipeline de mercado y la asociación de noticias
+- La acción queda auditada con actor y timestamp
+
+### AC2 — Editar metadatos de FIBRA existente
+
+**Dado que** edito cualquier campo editable de FUNO11 (nombre completo, nombre corto, sector, mercado, moneda, SiteUrl, InvestorUrl, ReportsUrl, YahooTicker, variantes de nombre) y guardo,
+**Entonces**:
+- Los metadatos se actualizan en la base de datos
+- El siguiente ciclo del pipeline de noticias usa las variantes de nombre actualizadas en sus queries RSS
+- La respuesta del endpoint devuelve los datos actualizados
+
+### AC3 — Desactivar FIBRA (soft delete)
+
+**Dado que** desactivo DANHOS13 desde la pantalla de catálogo en Ops,
+**Entonces**:
+- `DANHOS13.State = Inactive`
+- DANHOS13 queda excluida de `GET /api/v1/fibras` (que filtra por `State = Active`) y por tanto del pipeline de mercado y las queries de noticias
+- Todos sus datos históricos (precios, fundamentales, noticias) siguen siendo accesibles vía URL directa `GET /api/v1/fibras/DANHOS13`
+- La acción queda auditada
+
+### AC4 — Validación de ticker duplicado
+
+**Dado que** intento crear una nueva FIBRA con un ticker que ya existe en el catálogo,
+**Entonces**:
+- El endpoint retorna `409 Conflict` con `domainCode = "TICKER_ALREADY_EXISTS"` y `detail = "El ticker ya existe en el catálogo."`
+- No se crea ningún registro
+
+### AC5 — Validación de campos requeridos
+
+**Dado que** envío un payload de creación con campos faltantes o inválidos (ticker vacío, ticker > 20 chars, moneda no reconocida, etc.),
+**Entonces**:
+- El endpoint retorna `400 Bad Request` con detalles de validación
+
+### AC6 — Endpoints protegidos AdminOps
+
+**Dado que** intento llamar a cualquier endpoint de catálogo Ops sin token o con rol `User`,
+**Entonces** recibo `401` o `403` respectivamente.
+
+### AC7 — Sin regresiones en catálogo público
+
+Todos los tests existentes del catálogo público pasan tras los cambios.
+
+---
+
+## Tasks / Subtasks
+
+### Backend — Repositorio
+
+- [ ] **T1: Extender `IFibraRepository` con métodos de escritura**
+  - [ ] T1.1 En `src/Server/Application/Catalog/IFibraRepository.cs`, agregar:
+    ```csharp
+    Task AddAsync(Domain.Catalog.Fibra fibra, CancellationToken ct = default);
+    Task UpdateAsync(Domain.Catalog.Fibra fibra, CancellationToken ct = default);
+    Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct = default);
+    ```
+
+- [ ] **T2: Implementar métodos en `FibraRepository`**
+  - [ ] T2.1 En `src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs`:
+    ```csharp
+    public async Task AddAsync(Fibra fibra, CancellationToken ct = default)
+    {
+        db.Fibras.Add(fibra);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateAsync(Fibra fibra, CancellationToken ct = default)
+    {
+        db.Fibras.Update(fibra);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct = default)
+        => await db.Fibras.AnyAsync(f => f.Ticker == ticker.ToUpper(), ct);
+    ```
+
+  - [ ] T2.2 Actualizar fake repos en tests unitarios (ver Dev Notes — Fake Repos):
+    - `FakeFibraRepository` en `MarketPipelineJobTests.cs`
+    - `FakeDistFibraRepository` en `DistributionPipelineJobTests.cs`
+    - `FakeNewsFibraRepository` en `NewsPipelineJobTests.cs`
+    - `FakeHistoricalFibraRepository` en `DailySnapshotHistoricalJobTests.cs`
+    - Agregar implementaciones stub de los 3 métodos nuevos en cada uno
+
+### Backend — SharedApiContracts
+
+- [ ] **T3: DTOs de Ops para catálogo**
+  - [ ] T3.1 Crear `src/Server/SharedApiContracts/Catalog/CreateFibraRequest.cs`:
+    ```csharp
+    public sealed record CreateFibraRequest(
+        string Ticker,          // requerido, max 20, ToUpper en handler
+        string YahooTicker,     // requerido, max 32
+        string FullName,        // requerido, max 256
+        string ShortName,       // requerido, max 64
+        string Sector,          // requerido, max 64
+        string Market,          // requerido, max 32
+        string Currency,        // requerido, max 8
+        string? SiteUrl,        // opcional, max 512
+        string? InvestorUrl,    // opcional, max 512
+        string? ReportsUrl,     // opcional, max 512
+        IReadOnlyList<string>? NameVariants);  // opcional
+    ```
+  - [ ] T3.2 Crear `src/Server/SharedApiContracts/Catalog/UpdateFibraRequest.cs`:
+    ```csharp
+    public sealed record UpdateFibraRequest(
+        string YahooTicker,
+        string FullName,
+        string ShortName,
+        string Sector,
+        string Market,
+        string Currency,
+        string? SiteUrl,
+        string? InvestorUrl,
+        string? ReportsUrl,
+        IReadOnlyList<string>? NameVariants);  // null = no modificar; lista vacía = borrar variantes
+    ```
+    **Nota**: el Ticker y State NO son editables vía `UpdateFibraRequest`. El Ticker es inmutable; el State se cambia con el endpoint de deactivate.
+
+### Backend — API Endpoints
+
+- [ ] **T4: Crear `OpsCatalogEndpoints.cs`**
+  - [ ] T4.1 Crear `src/Server/Api/Endpoints/Ops/OpsCatalogEndpoints.cs`:
+
+    **`GET /api/v1/ops/catalog`** (lista TODAS — activas e inactivas):
+    - Llama `IFibraRepository.GetAllAsync()` (nuevo método — ver Dev Notes)
+    - Retorna `IReadOnlyList<FibraDetail>` con todas las FIBRAs (incluyendo inactivas)
+    - Útil para que el AdminOps vea y gestione el universo completo
+    - `RequireAuthorization("AdminOps")`
+
+    **`POST /api/v1/ops/catalog`** (AC1, AC4, AC5):
+    - Recibe `CreateFibraRequest`
+    - Valida campos: Ticker no vacío (max 20), YahooTicker no vacío (max 32), FullName (max 256), ShortName (max 64), Sector (max 64), Market (max 32), Currency (max 8)
+    - Normaliza: `Ticker = request.Ticker.Trim().ToUpper()`, `YahooTicker = request.YahooTicker.Trim()`
+    - Verifica duplicado: `await repo.ExistsByTickerAsync(ticker)` → si existe: `409 Conflict`
+    - Extrae actor del JWT (patrón `GetActor(ctx)`)
+    - Crea `new Fibra { Id = Guid.NewGuid(), ..., State = FibraState.Active, CreatedAt = DateTime.UtcNow }`
+    - Llama `repo.AddAsync(fibra)`
+    - Retorna `201 Created` con `FibraDetail` del objeto creado
+    - `RequireAuthorization("AdminOps")`
+
+    **`PUT /api/v1/ops/catalog/{ticker}`** (AC2):
+    - Recibe `UpdateFibraRequest`
+    - Carga fibra por ticker (incluyendo inactivas — `GetByTickerAsync` ya no filtra por estado)
+    - Si no existe: `404`
+    - Actualiza campos mutables en la entidad cargada: `fibra.YahooTicker = ...`, etc.
+    - Si `request.NameVariants != null`: `fibra.NameVariants = request.NameVariants.ToList()`
+    - Llama `repo.UpdateAsync(fibra)`
+    - Retorna `200 OK` con `FibraDetail` actualizado
+    - `RequireAuthorization("AdminOps")`
+
+    **`POST /api/v1/ops/catalog/{ticker}/deactivate`** (AC3):
+    - Carga fibra por ticker
+    - Si no existe: `404`
+    - Si ya está inactiva: `200 OK` (idempotente)
+    - Establece `fibra.State = FibraState.Inactive`
+    - Llama `repo.UpdateAsync(fibra)`
+    - Retorna `200 OK` con `FibraDetail` actualizado
+    - `RequireAuthorization("AdminOps")`
+
+    **`POST /api/v1/ops/catalog/{ticker}/activate`** (simetría con deactivate, necesario para revertir):
+    - Carga fibra por ticker
+    - Si no existe: `404`
+    - Si ya está activa: `200 OK` (idempotente)
+    - Establece `fibra.State = FibraState.Active`
+    - Llama `repo.UpdateAsync(fibra)`
+    - Retorna `200 OK` con `FibraDetail` actualizado
+    - `RequireAuthorization("AdminOps")`
+
+  - [ ] T4.2 Registrar en `src/Server/Api/Program.cs`:
+    ```csharp
+    app.MapOpsCatalog();
+    ```
+
+- [ ] **T5: Extender `IFibraRepository` con `GetAllAsync`**
+  - [ ] T5.1 Agregar a `IFibraRepository.cs`:
+    ```csharp
+    Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllAsync(CancellationToken ct = default);
+    ```
+  - [ ] T5.2 Implementar en `FibraRepository.cs`:
+    ```csharp
+    public async Task<IReadOnlyList<Fibra>> GetAllAsync(CancellationToken ct = default)
+        => await db.Fibras.OrderBy(f => f.Ticker).ToListAsync(ct);
+    ```
+  - [ ] T5.3 Agregar stub en cada fake repo de tests unitarios
+
+- [ ] **T6: Regenerar SharedApiClient**
+  - [ ] T6.1 `npm run codegen:api` — actualiza `scripts/codegen/Api.json` y `src/Web/SharedApiClient/schema.d.ts`
+
+### Frontend — Ops SPA
+
+- [ ] **T7: API client**
+  - [ ] T7.1 Crear `src/Web/Ops/src/api/catalogApi.ts`:
+    - Patrón idéntico a `fundamentalsApi.ts`: `createPathBasedClient<paths>({ baseUrl: '' })`
+    - Usar `assertOpsAccessToken()` y `getOpsAuthHeaders()` en cada función
+    - Exportar funciones:
+      ```typescript
+      fetchOpsCatalog(): Promise<FibraDetail[]>
+      createFibra(payload: CreateFibraRequest): Promise<FibraDetail>
+      updateFibra(ticker: string, payload: UpdateFibraRequest): Promise<FibraDetail>
+      deactivateFibra(ticker: string): Promise<FibraDetail>
+      activateFibra(ticker: string): Promise<FibraDetail>
+      ```
+
+- [ ] **T8: Módulo CatalogPage**
+  - [ ] T8.1 Crear `src/Web/Ops/src/pages/CatalogPage.tsx`:
+    - Encabezado: "Catálogo de FIBRAs"
+    - Estado local: `{ mode: 'list' | 'create' | 'edit', selected: FibraDetail | null }`
+    - Cuando `mode === 'list'`: renderiza `CatalogTable` + botón "Agregar FIBRA"
+    - Cuando `mode === 'create'`: renderiza `FibraForm` (sin datos iniciales)
+    - Cuando `mode === 'edit'`: renderiza `FibraForm` con datos de `selected` prellenados
+
+  - [ ] T8.2 Crear `src/Web/Ops/src/modules/catalog/CatalogTable.tsx`:
+    - Props: `{ fibras: FibraDetail[], onEdit: (f: FibraDetail) => void, onToggleState: (f: FibraDetail) => void }`
+    - Tabla con columnas: Ticker, Nombre completo, Sector, Mercado, Moneda, Estado (badge), Acciones
+    - Badge: verde = "Active", gris = "Inactive"
+    - Columna Acciones: botón "Editar" → `onEdit(f)`; botón "Desactivar" (si activa) o "Activar" (si inactiva) → `onToggleState(f)`
+    - Usar `useMutation` para las llamadas de activar/desactivar, con `invalidateQueries(['ops-catalog'])` on success
+    - Loading state en los botones de estado mientras la mutación está pendiente
+
+  - [ ] T8.3 Crear `src/Web/Ops/src/modules/catalog/FibraForm.tsx`:
+    - Props: `{ initialData?: FibraDetail, onSuccess: () => void, onCancel: () => void }`
+    - Si `initialData` presente: modo edición (título "Editar FIBRA"); si no: modo creación (título "Nueva FIBRA")
+    - Campos:
+      - Ticker: `string` — solo en modo creación (disabled en modo edición)
+      - YahooTicker: `string`, requerido
+      - FullName: `string`, requerido
+      - ShortName: `string`, requerido
+      - Sector: `string`, requerido
+      - Market: `string`, requerido
+      - Currency: `string`, requerido
+      - SiteUrl: `string`, opcional
+      - InvestorUrl: `string`, opcional
+      - ReportsUrl: `string`, opcional
+      - NameVariants: lista editable de strings (agregar/quitar variantes con botón "+")
+    - Validación con React Hook Form (sin `@hookform/resolvers`, patrón igual que 5-2)
+    - Submit → llama `createFibra` o `updateFibra` según modo
+    - En éxito: muestra "✓ FIBRA guardada" y llama `onSuccess()` → vuelve a la lista
+    - Error 409: muestra mensaje "El ticker ya existe en el catálogo."
+    - Botón "Cancelar" → llama `onCancel()` sin guardar
+
+- [ ] **T9: Routing + navegación**
+  - [ ] T9.1 En `src/Web/Ops/src/main.tsx`: agregar ruta `{ path: 'catalog', element: <CatalogPage /> }`
+  - [ ] T9.2 En `src/Web/Ops/src/components/OpsShell.tsx`: agregar item de nav entre "Dashboard" y "AI Config":
+    ```typescript
+    { label: 'Catálogo', to: '/catalog', description: 'Agregar, editar y desactivar FIBRAs del universo.' },
+    ```
+
+### Tests
+
+- [ ] **T10: Unit tests backend**
+  - [ ] T10.1 Crear `tests/Unit/Infrastructure.Tests/Persistence/Repositories/FibraRepositoryTests.cs`:
+    - `AddAsync_PersistsFibra`: crea fibra → `GetByTickerAsync` la retorna
+    - `AddAsync_DuplicateTicker_Throws`: agregar dos FIBRAs con mismo ticker lanza excepción DB
+    - `ExistsByTickerAsync_ExistingTicker_ReturnsTrue`
+    - `ExistsByTickerAsync_NonExistentTicker_ReturnsFalse`
+    - `ExistsByTickerAsync_CaseInsensitive`: "FUNO11" existe → "funo11" también retorna true
+    - `UpdateAsync_UpdatesFields`: modificar `FullName` → `GetByTickerAsync` retorna nombre actualizado
+    - `UpdateAsync_DeactivatesFibra`: cambiar `State = Inactive` → `GetAllActiveAsync` no la retorna
+    - `GetAllAsync_ReturnsAllIncludingInactive`: incluye FIBRAs inactivas
+
+- [ ] **T11: Integration tests backend**
+  - [ ] T11.1 Crear `tests/Integration/Api.Tests/Ops/CatalogOpsEndpointTests.cs`:
+    - `POST /ops/catalog` con payload completo y token AdminOps → `201 Created`, responde `FibraDetail` con ticker correcto
+    - `POST /ops/catalog` con ticker duplicado → `409 Conflict`, `domainCode = "TICKER_ALREADY_EXISTS"`
+    - `POST /ops/catalog` con campos requeridos vacíos → `400 Bad Request`
+    - `POST /ops/catalog` sin token → `401`
+    - `POST /ops/catalog` con rol User → `403`
+    - `PUT /ops/catalog/{ticker}` actualiza nombre y variantes → `200 OK`, campo `fullName` actualizado en respuesta
+    - `PUT /ops/catalog/FAKE999` → `404`
+    - `POST /ops/catalog/DANHOS13/deactivate` → `200 OK`, campo `state` = "Inactive" en respuesta
+    - `POST /ops/catalog/DANHOS13/deactivate` segunda vez (idempotente) → `200 OK`
+    - `POST /ops/catalog/DANHOS13/activate` → `200 OK`, campo `state` = "Active"
+    - `GET /ops/catalog` con token AdminOps → `200 OK`, lista incluye FIBRAs inactivas
+    - `GET /ops/catalog` sin token → `401`
+    - `GET /api/v1/fibras` tras desactivar DANHOS13 → lista pública NO contiene DANHOS13
+
+---
+
+## Dev Notes
+
+### Prerequisito: story 5-2 en estado `done` (actualmente en `review`)
+
+Story 5-2 está en review. Esta historia NO modifica archivos de 5-2 (schema `fundamentals`, endpoints de fundamentals). Sin embargo, sí extiende `IFibraRepository` que fue ampliada en 5-2 con `GetByIdAsync`. Verificar que el branch `story/5-3-catalogo-ops` está basado en `main` (post-merge de 5-2) antes de implementar. Si 5-2 aún no está mergeada, considerar hacer rebase del branch una vez mergeada.
+
+### `GetByTickerAsync` ya consulta sin filtrar por State
+
+Revisar `FibraRepository.GetByTickerAsync`:
+```csharp
+=> await db.Fibras.FirstOrDefaultAsync(f => f.Ticker == ticker.ToUpper(), ct);
+```
+No filtra por `State`, lo que es correcto: el endpoint público de ficha individual ya retorna FIBRAs inactivas por ticker directo (AC3). Los endpoints de Ops que necesitan operar sobre FIBRAs inactivas (PUT, deactivate, activate) pueden usar el mismo método.
+
+### Extender `IFibraRepository` — impacto en fake repos
+
+Cada vez que se agrega un método a `IFibraRepository`, los cuatro fake repos en los tests unitarios deben implementarlo. Son:
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/MarketPipelineJobTests.cs` — clase `FakeFibraRepository`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/DistributionPipelineJobTests.cs` — clase `FakeDistFibraRepository`
+- `tests/Unit/Infrastructure.Tests/Jobs/News/NewsPipelineJobTests.cs` — clase `FakeNewsFibraRepository`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/DailySnapshotHistoricalJobTests.cs` — clase `FakeHistoricalFibraRepository`
+
+Patrón de implementación stub (copiado de historia 5-2):
+```csharp
+public Task AddAsync(Fibra fibra, CancellationToken ct) => Task.CompletedTask;
+public Task UpdateAsync(Fibra fibra, CancellationToken ct) => Task.CompletedTask;
+public Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct) => Task.FromResult(false);
+public Task<IReadOnlyList<Fibra>> GetAllAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<Fibra>>([]);
+```
+
+### Auditoría en MVP — logging en lugar de tabla dedicada
+
+La historia requiere que las acciones queden "auditadas con actor y timestamp". Para MVP, la auditoría se implementa como logging estructurado en el handler (no como tabla de auditoría en BD). Ejemplo:
+```csharp
+logger.LogInformation("Ops {Action} FIBRA {Ticker} by {Actor} at {Timestamp}",
+    "CREATE", fibra.Ticker, actor, DateTimeOffset.UtcNow);
+```
+**No** crear tabla de auditoría ni `IAuditRepository` en esta historia — eso es parte de la historia 5-4 (Configuración Operativa). Esta historia solo usa `ILogger` en los handlers.
+
+Para inyectar el logger en el endpoint Minimal API:
+```csharp
+group.MapPost("/", async (
+    CreateFibraRequest request,
+    IFibraRepository repo,
+    ILogger<OpsCatalogEndpoints> logger,
+    HttpContext ctx,
+    CancellationToken ct) => { ... })
+```
+
+### Extracción del actor en endpoints
+
+Mismo helper `GetActor(HttpContext)` ya definido en `OpsMarketEndpoints.cs`:
+```csharp
+private static string GetActor(HttpContext ctx)
+    => ctx.User.Identity?.Name
+       ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+       ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+       ?? "unknown";
+```
+Definirlo como `private static string GetActor(HttpContext ctx)` dentro de la clase `OpsCatalogEndpoints`.
+
+### Actualizar `FibraDetail` o crear nuevo DTO
+
+`FibraDetail` existente en `SharedApiContracts/Catalog/FibraDetail.cs` ya tiene todos los campos necesarios para la respuesta de los endpoints Ops (Id, Ticker, FullName, ShortName, Sector, Market, Currency, State, SiteUrl, InvestorUrl, ReportsUrl, NameVariants, CreatedAt). **No crear un nuevo DTO** — reusar `FibraDetail` para las respuestas de los endpoints Ops.
+
+### Mapeo de respuesta FibraDetail
+
+Helper privado en `OpsCatalogEndpoints.cs`:
+```csharp
+private static FibraDetail ToDto(Fibra f) => new(
+    f.Id, f.Ticker, f.FullName, f.ShortName,
+    f.Sector, f.Market, f.Currency, f.State.ToString(),
+    f.SiteUrl, f.InvestorUrl, f.ReportsUrl,
+    f.NameVariants.AsReadOnly(), f.CreatedAt);
+```
+
+### NameVariants — campo editable en frontend
+
+`NameVariants` está configurado en `FibraConfiguration.cs` como JSON serializado en `nvarchar(max)`. EF Core lo deserializa automáticamente. El campo existe en la entidad como `List<string>`. **No requiere migración de BD** para hacerlo editable desde Ops — la columna ya existe.
+
+### GET /ops/catalog — retorna FIBRAs activas + inactivas
+
+El endpoint público `GET /api/v1/fibras` filtra por `State = Active`. El endpoint Ops `GET /api/v1/ops/catalog` debe retornar todas (activas e inactivas) para que el AdminOps pueda ver y reactivar FIBRAs desactivadas. Requiere el nuevo método `GetAllAsync` en el repositorio.
+
+### Validación de Ticker — normalización
+
+El ticker debe normalizarse a mayúsculas antes de la verificación de duplicados y la creación. EF Core ya aplica `ticker.ToUpper()` en `GetByTickerAsync` y `ExistsByTickerAsync`. En el handler de create:
+```csharp
+var ticker = request.Ticker.Trim().ToUpper();
+if (await repo.ExistsByTickerAsync(ticker, ct))
+    return Results.Problem(
+        title: "Ticker duplicado",
+        detail: "El ticker ya existe en el catálogo.",
+        statusCode: 409,
+        extensions: new Dictionary<string, object?> { ["domainCode"] = "TICKER_ALREADY_EXISTS" });
+```
+
+### Test de integración — setup de autenticación
+
+Los tests de integración de Ops usan la misma factory `ApiWebFactory` y el patrón de autenticación ya establecido. Ver `FundamentalsImportTests.cs` como referencia directa del patrón más reciente:
+```csharp
+await factory.SeedUsersAsync();
+var loginResp = await client.PostAsJsonAsync("/api/v1/auth/login", new { email = "adminops@test.com", password = "ops123" });
+var tokenJson = await loginResp.Content.ReadAsStringAsync();
+using var tokenDoc = JsonDocument.Parse(tokenJson);
+var token = tokenDoc.RootElement.GetProperty("accessToken").GetString()!;
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+```
+
+La fibra DANHOS13 ya existe en el seed de `CatalogSeed.HasData`. Para los tests de deactivate/activate, no es necesario seedear — solo llamar `await factory.SeedCatalogAsync()` para `EnsureCreatedAsync()` que dispara el `HasData`.
+
+### `noUnusedLocals: true` en tsconfig del Ops SPA
+
+Cada import declarado en los nuevos archivos `.tsx`/`.ts` DEBE usarse. Revisar antes de compilar.
+
+### Variantes de nombre en FibraForm — sin dependencias adicionales
+
+Implementar la lista editable de variantes con estado local de React (no instalar dependencias nuevas):
+```typescript
+const [variants, setVariants] = useState<string[]>(initialData?.nameVariants ?? [])
+const addVariant = () => setVariants(v => [...v, ''])
+const updateVariant = (i: number, val: string) => setVariants(v => v.map((s, idx) => idx === i ? val : s))
+const removeVariant = (i: number) => setVariants(v => v.filter((_, idx) => idx !== i))
+```
+
+### Archivos a crear/modificar
+
+**Nuevos (backend):**
+- `src/Server/Api/Endpoints/Ops/OpsCatalogEndpoints.cs`
+- `src/Server/SharedApiContracts/Catalog/CreateFibraRequest.cs`
+- `src/Server/SharedApiContracts/Catalog/UpdateFibraRequest.cs`
+
+**Modificados (backend):**
+- `src/Server/Application/Catalog/IFibraRepository.cs` — agregar `AddAsync`, `UpdateAsync`, `ExistsByTickerAsync`, `GetAllAsync`
+- `src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs` — implementar los 4 métodos
+- `src/Server/Api/Program.cs` — `app.MapOpsCatalog()`
+- `scripts/codegen/Api.json` + `src/Web/SharedApiClient/schema.d.ts` — regenerar
+
+**Nuevos (frontend Ops):**
+- `src/Web/Ops/src/api/catalogApi.ts`
+- `src/Web/Ops/src/modules/catalog/CatalogTable.tsx`
+- `src/Web/Ops/src/modules/catalog/FibraForm.tsx`
+- `src/Web/Ops/src/pages/CatalogPage.tsx`
+
+**Modificados (frontend Ops):**
+- `src/Web/Ops/src/main.tsx` — agregar ruta `/catalog`
+- `src/Web/Ops/src/components/OpsShell.tsx` — agregar item de nav "Catálogo"
+
+**Tests nuevos:**
+- `tests/Unit/Infrastructure.Tests/Persistence/Repositories/FibraRepositoryTests.cs`
+- `tests/Integration/Api.Tests/Ops/CatalogOpsEndpointTests.cs`
+
+**Tests modificados (fake repos):**
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/MarketPipelineJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/DistributionPipelineJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/News/NewsPipelineJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/DailySnapshotHistoricalJobTests.cs`
+
+### Referencias
+
+- `[Source: epics.md#FR-39]` — CRUD + soft delete de catálogo desde Ops
+- `[Source: src/Server/Domain/Catalog/Fibra.cs]` — entidad con todos los campos editables
+- `[Source: src/Server/Application/Catalog/IFibraRepository.cs]` — interfaz actual con `GetByIdAsync` añadido en 5-2
+- `[Source: src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs]` — implementación actual
+- `[Source: src/Server/Api/Endpoints/Ops/AiModeEndpoints.cs]` — patrón GetActor + endpoints Ops
+- `[Source: src/Server/Api/Endpoints/Ops/OpsFundamentalsEndpoints.cs]` — patrón más reciente de endpoints Ops (historia 5-2)
+- `[Source: src/Server/Api/Endpoints/Public/CatalogEndpoints.cs]` — patrón endpoint público + ToDto
+- `[Source: src/Server/SharedApiContracts/Catalog/FibraDetail.cs]` — DTO existente a reusar como respuesta
+- `[Source: src/Server/Infrastructure/Persistence/SqlServer/Configurations/Catalog/FibraConfiguration.cs]` — name_variants ya mapeado como JSON
+- `[Source: tests/Integration/Api.Tests/Fundamentals/FundamentalsImportTests.cs]` — patrón de test de integración Ops más reciente
+- `[Source: _bmad-output/planning-artifacts/convenciones-fibradis.md#EF Core — nunca Task.WhenAll]` — queries secuenciales
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+
+_(pending)_
+
+### Debug Log References
+
+_(pending)_
+
+### Completion Notes List
+
+_(pending)_
+
+### File List
+
+_(pending)_
+
+### Change Log
+
+_(pending)_

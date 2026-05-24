@@ -1,7 +1,6 @@
 import { createPathBasedClient } from 'openapi-fetch'
 import type { components, paths } from '@fibradis/shared-api-client'
 import {
-  clearOpsAccessToken,
   getOpsApiErrorMessage,
   storeOpsAccessToken,
 } from '@/api/opsAuth'

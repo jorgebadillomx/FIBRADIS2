@@ -32,9 +32,12 @@ public class NewsPipelineJobTests
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(AiMode.Off),
+            new FakeAiProviderConfigRepository(),
             new FakeOgImageScraper(null),
             new FakeArticleContentScraper(null),
             new FakeAiSummaryService("resumen"),
+            new FakePipelineErrorLogRepository(),
+            new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -167,9 +170,12 @@ public class NewsPipelineJobTests
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(AiMode.Off),
+            new FakeAiProviderConfigRepository(),
             scraper,
             new FakeArticleContentScraper(null),
             new FakeAiSummaryService("resumen"),
+            new FakePipelineErrorLogRepository(),
+            new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -202,9 +208,12 @@ public class NewsPipelineJobTests
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(AiMode.On),
+            new FakeAiProviderConfigRepository(),
             new FakeOgImageScraper(null),
             new FakeArticleContentScraper(null),
             summaryService,
+            new FakePipelineErrorLogRepository(),
+            new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -243,9 +252,12 @@ public class NewsPipelineJobTests
             new FakeNewsBlocklistRepository([]),
             new FakeRssClient(rssItems),
             new FakeAiModeRepository(mode, shouldThrowOnModeLookup),
+            new FakeAiProviderConfigRepository(),
             ogImageScraper ?? new FakeOgImageScraper(null),
             articleContentScraper ?? new FakeArticleContentScraper(null),
             summaryService ?? new FakeAiSummaryService("resumen"),
+            new FakePipelineErrorLogRepository(),
+            new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
     }
 }
@@ -257,6 +269,9 @@ internal sealed class FakeNewsFibraRepository(IReadOnlyList<Fibra> fibras) : IFi
 
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
+
+    public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);
@@ -316,7 +331,7 @@ internal sealed class FakeNewsRepository : INewsRepository
     public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
 
-    public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, CancellationToken ct = default)
+    public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, CancellationToken ct = default)
         => Task.FromResult<(IReadOnlyList<NewsArticle>, int)>(([],  0));
 
     public Task<IReadOnlyList<(Guid Id, string Url)>> GetNullBodyTextArticlesAsync(int maxArticles, int daysBack, CancellationToken ct = default)
@@ -393,6 +408,53 @@ internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLo
         _config.UpdatedBy = actor;
         return Task.CompletedTask;
     }
+}
+
+internal sealed class FakeAiProviderConfigRepository : IAiProviderConfigRepository
+{
+    public Task<AiProviderConfig> GetConfigAsync(CancellationToken ct = default)
+        => Task.FromResult(new AiProviderConfig
+        {
+            Id = 1,
+            Provider = AiProvider.Gemini,
+            ModelId = "gemini-2.5-flash",
+            UpdatedAt = DateTimeOffset.UtcNow,
+            UpdatedBy = "test",
+        });
+
+    public Task SetProviderAsync(AiProvider provider, string modelId, string actor, CancellationToken ct = default)
+        => Task.CompletedTask;
+}
+
+internal sealed class FakePipelineErrorLogRepository : Application.Jobs.IPipelineErrorLogRepository
+{
+    public List<Domain.Jobs.PipelineErrorLog> Entries { get; } = [];
+
+    public Task LogErrorAsync(Domain.Jobs.PipelineErrorLog entry, CancellationToken ct = default)
+    {
+        Entries.Add(entry);
+        return Task.CompletedTask;
+    }
+
+    public Task<(IReadOnlyList<Domain.Jobs.PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
+        => Task.FromResult<(IReadOnlyList<Domain.Jobs.PipelineErrorLog>, int)>((Entries, Entries.Count));
+}
+
+internal sealed class FakePipelineRunLogRepository : Application.Jobs.IPipelineRunLogRepository
+{
+    public List<Domain.Jobs.PipelineRunLog> Entries { get; } = [];
+
+    public Task AddAsync(Domain.Jobs.PipelineRunLog entry, CancellationToken ct = default)
+    {
+        Entries.Add(entry);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<Domain.Jobs.PipelineRunLog>> GetRecentAsync(string? pipeline, int take, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<Domain.Jobs.PipelineRunLog>>(Entries);
+
+    public Task<Domain.Jobs.PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
+        => Task.FromResult(Entries.LastOrDefault(x => x.Pipeline == pipeline && x.Status != "Queued"));
 }
 
 internal sealed class FakeRssClient(IReadOnlyList<RssItem> items) : IRssClient

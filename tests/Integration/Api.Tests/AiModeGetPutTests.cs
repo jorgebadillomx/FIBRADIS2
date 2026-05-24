@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.Tests;
 
@@ -154,6 +156,78 @@ public class AiModeGetPutTests(ApiWebFactory factory) : IClassFixture<ApiWebFact
     }
 
     [Fact]
+    public async Task GetOpsNewsList_WithSearch_ReturnsOnlyMatchingArticles()
+    {
+        await _factory.SeedNewsAsync();
+
+        var response = await _client.GetAsync("/api/v1/ops/news?search=FUNO");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 1, "Expected at least one article matching 'FUNO'");
+        Assert.All(items.EnumerateArray(), item =>
+        {
+            var title = item.GetProperty("title").GetString() ?? "";
+            var preview = item.GetProperty("aiSummaryPreview").GetString() ?? "";
+            Assert.True(
+                title.Contains("FUNO", StringComparison.OrdinalIgnoreCase)
+                || preview.Contains("FUNO", StringComparison.OrdinalIgnoreCase),
+                $"Article '{title}' does not contain 'FUNO' in any visible field");
+        });
+    }
+
+    [Fact]
+    public async Task GetOpsNewsList_WithSearch_NonExistentTerm_ReturnsEmpty()
+    {
+        await _factory.SeedNewsAsync();
+
+        var response = await _client.GetAsync("/api/v1/ops/news?search=XYZ_TERMINO_INEXISTENTE_12345");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var items = doc.RootElement.GetProperty("items");
+        Assert.Equal(0, items.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task GetOpsNewsList_WithSearch_BodyTextTerm_ReturnsMatchingArticles()
+    {
+        await _factory.SeedNewsAsync();
+
+        // "prueba" appears in the seeded article's BodyText but not in its title
+        var response = await _client.GetAsync("/api/v1/ops/news?search=prueba");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 1, "Expected at least one article matching body text search 'prueba'");
+    }
+
+    [Fact]
+    public async Task GetOpsNewsList_WithHasAiSummaryTrue_ReturnsOnlyArticlesWithSummary()
+    {
+        await _factory.SeedNewsAsync();
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.SqlServer.AppDbContext>();
+        var article = await db.NewsArticles.FirstAsync(a => a.Id == ApiWebFactory.TestNewsArticleId);
+        article.AiSummary = "Resumen IA de prueba";
+        await db.SaveChangesAsync();
+
+        var response = await _client.GetAsync("/api/v1/ops/news?hasAiSummary=true");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var items = doc.RootElement.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 1);
+        Assert.All(items.EnumerateArray(), item =>
+        {
+            Assert.True(item.GetProperty("hasAiSummary").GetBoolean());
+            Assert.Equal("Resumen IA de prueba", item.GetProperty("aiSummaryPreview").GetString());
+        });
+    }
+
+    [Fact]
     public async Task GetOpsNewsList_WithoutToken_Returns401()
     {
         var response = await _factory.CreateClient().GetAsync("/api/v1/ops/news");
@@ -175,6 +249,7 @@ public class AiModeGetPutTests(ApiWebFactory factory) : IClassFixture<ApiWebFact
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.True(doc.RootElement.TryGetProperty("id", out _), "missing: id");
         Assert.True(doc.RootElement.TryGetProperty("bodyText", out _), "missing: bodyText");
+        Assert.True(doc.RootElement.TryGetProperty("aiSummary", out _), "missing: aiSummary");
     }
 
     [Fact]

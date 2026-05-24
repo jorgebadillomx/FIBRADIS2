@@ -1,6 +1,8 @@
 using Application.Catalog;
+using Application.Jobs;
 using Application.Market;
 using Domain.Catalog;
+using Domain.Jobs;
 using Domain.Market;
 using Infrastructure.Integrations.Yahoo;
 using Infrastructure.Jobs.Market;
@@ -25,7 +27,26 @@ public class DistributionPipelineJobTests
         FakeDistFibraRepository fibraRepo,
         FakeDistYahooClient yahoo,
         FakeDistMarketRepository marketRepo)
-        => new(fibraRepo, yahoo, marketRepo, NullLogger<DistributionPipelineJob>.Instance);
+        => new(
+            fibraRepo,
+            yahoo,
+            marketRepo,
+            new FakeDistributionPipelineErrorLogRepository(),
+            new FakeDistributionPipelineRunLogRepository(),
+            NullLogger<DistributionPipelineJob>.Instance);
+
+    private static DistributionPipelineJob Build(
+        FakeDistFibraRepository fibraRepo,
+        FakeDistYahooClient yahoo,
+        FakeDistMarketRepository marketRepo,
+        FakeDistributionPipelineRunLogRepository runLogRepo)
+        => new(
+            fibraRepo,
+            yahoo,
+            marketRepo,
+            new FakeDistributionPipelineErrorLogRepository(),
+            runLogRepo,
+            NullLogger<DistributionPipelineJob>.Instance);
 
     [Fact]
     public async Task ExecuteAsync_WhenYahooReturnsNoDividends_InsertsNothing()
@@ -122,6 +143,25 @@ public class DistributionPipelineJobTests
 
         Assert.Equal(0, yahoo.CallCount);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenNoActiveFibras_WritesPipelineRunLogCompleted()
+    {
+        var runLogRepo = new FakeDistributionPipelineRunLogRepository();
+        var job = Build(
+            new FakeDistFibraRepository([]),
+            new FakeDistYahooClient(),
+            new FakeDistMarketRepository(),
+            runLogRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Single(runLogRepo.Entries);
+        var entry = runLogRepo.Entries[0];
+        Assert.Equal("Completed", entry.Status);
+        Assert.Equal(0, entry.ItemsProcessed);
+        Assert.Null(entry.TriggeredBy);
+    }
 }
 
 // ── Fakes ────────────────────────────────────────────────────────────────────
@@ -134,6 +174,9 @@ internal sealed class FakeDistFibraRepository(IReadOnlyList<Fibra> fibras) : IFi
 
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
+
+    public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);
@@ -223,4 +266,30 @@ internal sealed class FakeDistMarketRepository : IMarketRepository
 
     public Task AddDistributionAsync(Distribution dist, CancellationToken ct = default)
         => Task.CompletedTask;
+}
+
+internal sealed class FakeDistributionPipelineErrorLogRepository : IPipelineErrorLogRepository
+{
+    public Task LogErrorAsync(PipelineErrorLog entry, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task<(IReadOnlyList<PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
+        => Task.FromResult<(IReadOnlyList<PipelineErrorLog>, int)>(([], 0));
+}
+
+internal sealed class FakeDistributionPipelineRunLogRepository : IPipelineRunLogRepository
+{
+    public List<PipelineRunLog> Entries { get; } = [];
+
+    public Task AddAsync(PipelineRunLog entry, CancellationToken ct = default)
+    {
+        Entries.Add(entry);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<PipelineRunLog>> GetRecentAsync(string? pipeline, int take, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<PipelineRunLog>>([]);
+
+    public Task<PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
+        => Task.FromResult<PipelineRunLog?>(null);
 }

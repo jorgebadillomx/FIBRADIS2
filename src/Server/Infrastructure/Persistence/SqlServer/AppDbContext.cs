@@ -1,5 +1,7 @@
 using Domain.Auth;
 using Domain.Catalog;
+using Domain.Fundamentals;
+using Domain.Jobs;
 using Domain.Market;
 using Domain.News;
 using Infrastructure.Persistence.Seed;
@@ -21,6 +23,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BlocklistTerm> BlocklistTerms => Set<BlocklistTerm>();
     public DbSet<AiModeConfig> AiModeConfigs => Set<AiModeConfig>();
     public DbSet<AiProviderConfig> AiProviderConfigs => Set<AiProviderConfig>();
+    public DbSet<AiPrompt> AiPrompts => Set<AiPrompt>();
+    public DbSet<PipelineErrorLog> PipelineErrorLogs => Set<PipelineErrorLog>();
+    public DbSet<PipelineRunLog> PipelineRunLogs => Set<PipelineRunLog>();
+    public DbSet<FundamentalRecord> FundamentalRecords => Set<FundamentalRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -295,6 +295,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/market/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Accepted */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/market/daily-snapshot-historical/run": {
         parameters: {
             query?: never;
@@ -391,6 +442,59 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PipelineDashboardDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -510,6 +614,8 @@ export interface paths {
                 query?: {
                     page?: number | string;
                     pageSize?: number | string;
+                    search?: string;
+                    hasAiSummary?: boolean;
                 };
                 header?: never;
                 path?: never;
@@ -855,6 +961,186 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/ai-prompts/{contentType}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    contentType: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AiPromptDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    contentType: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateAiPromptRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/pipeline-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    pipeline?: string;
+                    page?: number | string;
+                    pageSize?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfPipelineErrorLogDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1313,6 +1599,370 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/fundamentals/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ImportFundamentalsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalPreviewDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/fundamentals/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalRecordDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/fundamentals/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file: components["schemas"]["IFormFile"];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/fundamentals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    fibraId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalRecordDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fundamentals/{ticker}/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    ticker: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalesPublicDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1324,6 +1974,13 @@ export interface components {
             updatedAt: string;
             updatedBy: null | string;
             previousMode: null | string;
+        };
+        AiPromptDto: {
+            contentType: string;
+            promptTemplate: string;
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy: string;
         };
         AiProviderConfigDto: {
             provider: string;
@@ -1393,6 +2050,70 @@ export interface components {
             state: string;
             siteUrl: null | string;
         };
+        FundamentalesPublicDto: {
+            period: string;
+            /** Format: int32 */
+            periodsAgo: null | number | string;
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+            /** Format: double */
+            quarterlyDistribution: null | number | string;
+            summary: null | string;
+            /** Format: date-time */
+            capturedAt: string;
+        };
+        FundamentalPreviewDto: {
+            /** Format: uuid */
+            id: string;
+            fibraTicker: string;
+            period: string;
+            status: string;
+            isPossibleUpdate: boolean;
+            warningMessage: null | string;
+            presentFields: string[];
+            missingFields: string[];
+            pdfReference: null | string;
+            /** Format: date-time */
+            capturedAt: string;
+        };
+        FundamentalRecordDto: {
+            /** Format: uuid */
+            id: string;
+            fibraTicker: string;
+            period: string;
+            status: string;
+            isPossibleUpdate: boolean;
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+            /** Format: double */
+            quarterlyDistribution: null | number | string;
+            summary: null | string;
+            pdfReference: null | string;
+            /** Format: date-time */
+            pdfUploadedAt: null | string;
+            importedBy: null | string;
+            confirmedBy: null | string;
+            /** Format: date-time */
+            capturedAt: string;
+            /** Format: date-time */
+            confirmedAt: null | string;
+        };
         HttpValidationProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -1403,6 +2124,27 @@ export interface components {
             errors?: {
                 [key: string]: string[];
             };
+        };
+        /** Format: binary */
+        IFormFile: string;
+        ImportFundamentalsRequest: {
+            /** Format: uuid */
+            fibraId: string;
+            period: string;
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+            /** Format: double */
+            quarterlyDistribution: null | number | string;
+            summary: null | string;
+            pdfReference: null | string;
         };
         LoginRequest: {
             email: string;
@@ -1455,11 +2197,13 @@ export interface components {
             bodyTextLength: null | number | string;
             bodyTextPreview: null | string;
             hasAiSummary: boolean;
+            aiSummaryPreview: null | string;
         };
         OpsNewsBodyDto: {
             /** Format: uuid */
             id: string;
             bodyText: null | string;
+            aiSummary: null | string;
         };
         PagedResultOfFibraListItem: {
             items: components["schemas"]["FibraListItem"][];
@@ -1479,6 +2223,61 @@ export interface components {
             /** Format: int32 */
             total: number | string;
         };
+        PagedResultOfPipelineErrorLogDto: {
+            items: components["schemas"]["PipelineErrorLogDto"][];
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+            /** Format: int32 */
+            total: number | string;
+        };
+        PipelineDashboardDto: {
+            pipelines: components["schemas"]["PipelineStatusDto"][];
+            recentErrors: components["schemas"]["PipelineErrorLogDto"][];
+        };
+        PipelineErrorLogDto: {
+            /** Format: uuid */
+            id: string;
+            pipeline: string;
+            /** Format: date-time */
+            timestamp: string;
+            errorType: string;
+            message: string;
+            context: null | string;
+            aiContext: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PipelineRunLogDto: {
+            /** Format: uuid */
+            id: string;
+            pipeline: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            completedAt: null | string;
+            status: string;
+            /** Format: int32 */
+            itemsProcessed: null | number | string;
+            /** Format: int32 */
+            errorCount: null | number | string;
+            triggeredBy: null | string;
+            details: null | string;
+        };
+        PipelineStatusDto: {
+            pipeline: string;
+            derivedStatus: string;
+            /** Format: date-time */
+            lastRunAt: null | string;
+            /** Format: int32 */
+            lastDurationSeconds: null | number | string;
+            /** Format: int32 */
+            lastItemsProcessed: null | number | string;
+            /** Format: int32 */
+            lastErrorCount: null | number | string;
+            recentRuns: components["schemas"]["PipelineRunLogDto"][];
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -1490,13 +2289,16 @@ export interface components {
         RefreshResponse: {
             accessToken: string;
         };
+        SetAiProviderRequest: {
+            provider: string;
+            modelId: string;
+        };
         UpdateAiModeRequest: {
             mode: null | string;
             newsModel: null | string;
         };
-        SetAiProviderRequest: {
-            provider: string;
-            modelId: string;
+        UpdateAiPromptRequest: {
+            promptTemplate: string;
         };
         UpdateBodyTextRequest: {
             bodyText: null | string;

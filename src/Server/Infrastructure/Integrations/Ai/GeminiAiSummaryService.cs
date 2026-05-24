@@ -12,6 +12,7 @@ public class GeminiAiSummaryService(
     HttpClient httpClient,
     IConfiguration configuration,
     IAiProviderConfigRepository providerRepo,
+    IAiPromptRepository promptRepo,
     ILogger<GeminiAiSummaryService> logger) : IAiSummaryService
 {
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -46,7 +47,7 @@ public class GeminiAiSummaryService(
         var summary = await GenerateSummaryCoreAsync(
             model,
             apiKey,
-            BuildPrompt(title, snippet, bodyText, requiresElaboration: false),
+            await BuildPromptAsync(title, snippet, bodyText, contentType, requiresElaboration: false, ct),
             DefaultMaxOutputTokens,
             ct);
 
@@ -61,7 +62,7 @@ public class GeminiAiSummaryService(
         var retriedSummary = await GenerateSummaryCoreAsync(
             model,
             apiKey,
-            BuildPrompt(title, snippet, bodyText, requiresElaboration: true),
+            await BuildPromptAsync(title, snippet, bodyText, contentType, requiresElaboration: true, ct),
             RetryMaxOutputTokens,
             ct);
 
@@ -161,8 +162,17 @@ public class GeminiAiSummaryService(
         }
     }
 
-    private static string BuildPrompt(string title, string? snippet, string? bodyText, bool requiresElaboration)
+    private async Task<string> BuildPromptAsync(
+        string title,
+        string? snippet,
+        string? bodyText,
+        AiContentType contentType,
+        bool requiresElaboration,
+        CancellationToken ct)
     {
+        var contentTypeKey = AiPromptTemplateDefaults.ResolveContentType(contentType);
+        var template = (await promptRepo.GetPromptAsync(contentTypeKey, ct))?.PromptTemplate
+            ?? AiPromptTemplateDefaults.GetTemplate(contentTypeKey);
         var strictness = requiresElaboration
             ? "La respuesta debe estar completa, cerrar la idea final y no puede quedar truncada. Escribe entre 6 y 8 oraciones completas, con un mínimo de 450 caracteres, análisis suficiente para un inversionista y sin frases telegráficas."
             : "Redacta un resumen analítico en español de entre 5 y 7 oraciones sobre esta noticia. Debe ser un texto sustancial, no una nota breve.";
@@ -179,16 +189,11 @@ public class GeminiAiSummaryService(
             ? "Fragmento RSS no disponible."
             : $"Fragmento RSS: {snippet}";
 
-        return $"""
-            Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
-            {strictness}
-            Título: {title}
-            {snippetSection}
-            {bodySection}
-            Incluye: el hecho central, su relevancia para el sector de FIBRAs o bienes raíces en México, los datos más materiales del artículo cuando existan, y una lectura analítica breve para el inversionista.
-            Si el artículo contiene cifras, fechas, montos, porcentajes, dividendos, emisiones, ocupación, adquisiciones o guidance, intégralos en el resumen.
-            No escribas menos de 5 oraciones si el cuerpo del artículo está disponible. Responde solo con el resumen, sin preámbulos.
-            """;
+        return template
+            .Replace("{strictness_instruction}", strictness, StringComparison.Ordinal)
+            .Replace("{title}", title, StringComparison.Ordinal)
+            .Replace("{snippet_section}", snippetSection, StringComparison.Ordinal)
+            .Replace("{body_section}", bodySection, StringComparison.Ordinal);
     }
 
     private static bool IsAcceptableSummary(string summary, string? bodyText)

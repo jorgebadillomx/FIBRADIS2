@@ -25,12 +25,17 @@ app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
 app.MapOpsMarket();
+app.MapOpsDashboard();
 app.MapAiMode();
 app.MapAiProvider();
+app.MapOpsAiPrompts();
+app.MapOpsPipelineLogs();
 app.MapNewsBlocklist();
 app.MapNews();
 app.MapCatalog();
 app.MapMarket();
+app.MapOpsFundamentals();
+app.MapFundamentalsPublic();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("index.html");
