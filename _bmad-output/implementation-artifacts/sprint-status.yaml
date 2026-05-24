@@ -185,7 +185,8 @@ development_status:
   5-1-dashboard-operativo-y-control-de-pipelines: done
   # story 5-2 creada — importación JSON fundamentales, preview + confirm, historial Ops, endpoint público Main
   # story 5-2 review — import → preview → confirm, 7 unit tests + 12 integration tests, endpoint público Main SPA
-  5-2-importacion-de-fundamentales-en-modo-manual: in-progress
+  # story 5-2 done — code review 14 patches (UUID fix, cache key, idempotencia, 403 tests, isNaN guard, year regex, PdfUploadedAt) — mergeado a main junto con 5-0 y 5-1
+  5-2-importacion-de-fundamentales-en-modo-manual: done
   5-3-gestion-del-catalogo-de-fibras-desde-ops: ready-for-dev
   5-4-configuracion-operativa-desde-ops-sin-redespliegue: backlog
   epic-5-retrospective: optional
