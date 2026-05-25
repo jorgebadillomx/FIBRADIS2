@@ -3,12 +3,14 @@ import { cn } from '@/shared/lib/utils'
 
 const navigationItems = [
   { label: 'Dashboard', to: '/dashboard', description: 'Estado de pipelines, errores y disparos manuales.' },
+  { label: 'Catálogo', to: '/catalog', description: 'Agregar, editar y desactivar FIBRAs del universo.' },
   { label: 'AI Config', to: '/ai-config', description: 'Modo, proveedor y disparos manuales.' },
   { label: 'Noticias', to: '/noticias', description: 'Curación de body text y resúmenes IA.' },
   { label: 'Blocklist', to: '/blocklist', description: 'Términos excluidos del pipeline RSS.' },
   { label: 'Logs del Pipeline', to: '/pipeline-logs', description: 'Errores estructurados listos para diagnóstico.' },
   { label: 'Fundamentales', to: '/fundamentals', description: 'Importar, revisar y confirmar datos financieros por FIBRA.' },
   { label: 'Prompts de IA', to: '/ai-prompts', description: 'Templates editables sin redespliegue.' },
+  { label: 'Configuración', to: '/config', description: 'Parámetros operativos del sistema sin redespliegue.' },
 ]
 
 export function OpsShell() {

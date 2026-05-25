@@ -1,6 +1,6 @@
 # Historia 5.3: Gestión del Catálogo de FIBRAs desde Ops
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -64,16 +64,16 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
 
 ### Backend — Repositorio
 
-- [ ] **T1: Extender `IFibraRepository` con métodos de escritura**
-  - [ ] T1.1 En `src/Server/Application/Catalog/IFibraRepository.cs`, agregar:
+- [x] **T1: Extender `IFibraRepository` con métodos de escritura**
+  - [x] T1.1 En `src/Server/Application/Catalog/IFibraRepository.cs`, agregar:
     ```csharp
     Task AddAsync(Domain.Catalog.Fibra fibra, CancellationToken ct = default);
     Task UpdateAsync(Domain.Catalog.Fibra fibra, CancellationToken ct = default);
     Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct = default);
     ```
 
-- [ ] **T2: Implementar métodos en `FibraRepository`**
-  - [ ] T2.1 En `src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs`:
+- [x] **T2: Implementar métodos en `FibraRepository`**
+  - [x] T2.1 En `src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs`:
     ```csharp
     public async Task AddAsync(Fibra fibra, CancellationToken ct = default)
     {
@@ -91,7 +91,7 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
         => await db.Fibras.AnyAsync(f => f.Ticker == ticker.ToUpper(), ct);
     ```
 
-  - [ ] T2.2 Actualizar fake repos en tests unitarios (ver Dev Notes — Fake Repos):
+  - [x] T2.2 Actualizar fake repos en tests unitarios (ver Dev Notes — Fake Repos):
     - `FakeFibraRepository` en `MarketPipelineJobTests.cs`
     - `FakeDistFibraRepository` en `DistributionPipelineJobTests.cs`
     - `FakeNewsFibraRepository` en `NewsPipelineJobTests.cs`
@@ -100,8 +100,8 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
 
 ### Backend — SharedApiContracts
 
-- [ ] **T3: DTOs de Ops para catálogo**
-  - [ ] T3.1 Crear `src/Server/SharedApiContracts/Catalog/CreateFibraRequest.cs`:
+- [x] **T3: DTOs de Ops para catálogo**
+  - [x] T3.1 Crear `src/Server/SharedApiContracts/Catalog/CreateFibraRequest.cs`:
     ```csharp
     public sealed record CreateFibraRequest(
         string Ticker,          // requerido, max 20, ToUpper en handler
@@ -116,7 +116,7 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
         string? ReportsUrl,     // opcional, max 512
         IReadOnlyList<string>? NameVariants);  // opcional
     ```
-  - [ ] T3.2 Crear `src/Server/SharedApiContracts/Catalog/UpdateFibraRequest.cs`:
+  - [x] T3.2 Crear `src/Server/SharedApiContracts/Catalog/UpdateFibraRequest.cs`:
     ```csharp
     public sealed record UpdateFibraRequest(
         string YahooTicker,
@@ -134,8 +134,8 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
 
 ### Backend — API Endpoints
 
-- [ ] **T4: Crear `OpsCatalogEndpoints.cs`**
-  - [ ] T4.1 Crear `src/Server/Api/Endpoints/Ops/OpsCatalogEndpoints.cs`:
+- [x] **T4: Crear `OpsCatalogEndpoints.cs`**
+  - [x] T4.1 Crear `src/Server/Api/Endpoints/Ops/OpsCatalogEndpoints.cs`:
 
     **`GET /api/v1/ops/catalog`** (lista TODAS — activas e inactivas):
     - Llama `IFibraRepository.GetAllAsync()` (nuevo método — ver Dev Notes)
@@ -182,30 +182,30 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
     - Retorna `200 OK` con `FibraDetail` actualizado
     - `RequireAuthorization("AdminOps")`
 
-  - [ ] T4.2 Registrar en `src/Server/Api/Program.cs`:
+  - [x] T4.2 Registrar en `src/Server/Api/Program.cs`:
     ```csharp
     app.MapOpsCatalog();
     ```
 
-- [ ] **T5: Extender `IFibraRepository` con `GetAllAsync`**
-  - [ ] T5.1 Agregar a `IFibraRepository.cs`:
+- [x] **T5: Extender `IFibraRepository` con `GetAllAsync`**
+  - [x] T5.1 Agregar a `IFibraRepository.cs`:
     ```csharp
     Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllAsync(CancellationToken ct = default);
     ```
-  - [ ] T5.2 Implementar en `FibraRepository.cs`:
+  - [x] T5.2 Implementar en `FibraRepository.cs`:
     ```csharp
     public async Task<IReadOnlyList<Fibra>> GetAllAsync(CancellationToken ct = default)
         => await db.Fibras.OrderBy(f => f.Ticker).ToListAsync(ct);
     ```
-  - [ ] T5.3 Agregar stub en cada fake repo de tests unitarios
+  - [x] T5.3 Agregar stub en cada fake repo de tests unitarios
 
-- [ ] **T6: Regenerar SharedApiClient**
-  - [ ] T6.1 `npm run codegen:api` — actualiza `scripts/codegen/Api.json` y `src/Web/SharedApiClient/schema.d.ts`
+- [x] **T6: Regenerar SharedApiClient**
+  - [x] T6.1 `npm run codegen:api` — actualiza `scripts/codegen/Api.json` y `src/Web/SharedApiClient/schema.d.ts`
 
 ### Frontend — Ops SPA
 
-- [ ] **T7: API client**
-  - [ ] T7.1 Crear `src/Web/Ops/src/api/catalogApi.ts`:
+- [x] **T7: API client**
+  - [x] T7.1 Crear `src/Web/Ops/src/api/catalogApi.ts`:
     - Patrón idéntico a `fundamentalsApi.ts`: `createPathBasedClient<paths>({ baseUrl: '' })`
     - Usar `assertOpsAccessToken()` y `getOpsAuthHeaders()` en cada función
     - Exportar funciones:
@@ -217,15 +217,15 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
       activateFibra(ticker: string): Promise<FibraDetail>
       ```
 
-- [ ] **T8: Módulo CatalogPage**
-  - [ ] T8.1 Crear `src/Web/Ops/src/pages/CatalogPage.tsx`:
+- [x] **T8: Módulo CatalogPage**
+  - [x] T8.1 Crear `src/Web/Ops/src/pages/CatalogPage.tsx`:
     - Encabezado: "Catálogo de FIBRAs"
     - Estado local: `{ mode: 'list' | 'create' | 'edit', selected: FibraDetail | null }`
     - Cuando `mode === 'list'`: renderiza `CatalogTable` + botón "Agregar FIBRA"
     - Cuando `mode === 'create'`: renderiza `FibraForm` (sin datos iniciales)
     - Cuando `mode === 'edit'`: renderiza `FibraForm` con datos de `selected` prellenados
 
-  - [ ] T8.2 Crear `src/Web/Ops/src/modules/catalog/CatalogTable.tsx`:
+  - [x] T8.2 Crear `src/Web/Ops/src/modules/catalog/CatalogTable.tsx`:
     - Props: `{ fibras: FibraDetail[], onEdit: (f: FibraDetail) => void, onToggleState: (f: FibraDetail) => void }`
     - Tabla con columnas: Ticker, Nombre completo, Sector, Mercado, Moneda, Estado (badge), Acciones
     - Badge: verde = "Active", gris = "Inactive"
@@ -233,7 +233,7 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
     - Usar `useMutation` para las llamadas de activar/desactivar, con `invalidateQueries(['ops-catalog'])` on success
     - Loading state en los botones de estado mientras la mutación está pendiente
 
-  - [ ] T8.3 Crear `src/Web/Ops/src/modules/catalog/FibraForm.tsx`:
+  - [x] T8.3 Crear `src/Web/Ops/src/modules/catalog/FibraForm.tsx`:
     - Props: `{ initialData?: FibraDetail, onSuccess: () => void, onCancel: () => void }`
     - Si `initialData` presente: modo edición (título "Editar FIBRA"); si no: modo creación (título "Nueva FIBRA")
     - Campos:
@@ -254,17 +254,17 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
     - Error 409: muestra mensaje "El ticker ya existe en el catálogo."
     - Botón "Cancelar" → llama `onCancel()` sin guardar
 
-- [ ] **T9: Routing + navegación**
-  - [ ] T9.1 En `src/Web/Ops/src/main.tsx`: agregar ruta `{ path: 'catalog', element: <CatalogPage /> }`
-  - [ ] T9.2 En `src/Web/Ops/src/components/OpsShell.tsx`: agregar item de nav entre "Dashboard" y "AI Config":
+- [x] **T9: Routing + navegación**
+  - [x] T9.1 En `src/Web/Ops/src/main.tsx`: agregar ruta `{ path: 'catalog', element: <CatalogPage /> }`
+  - [x] T9.2 En `src/Web/Ops/src/components/OpsShell.tsx`: agregar item de nav entre "Dashboard" y "AI Config":
     ```typescript
     { label: 'Catálogo', to: '/catalog', description: 'Agregar, editar y desactivar FIBRAs del universo.' },
     ```
 
 ### Tests
 
-- [ ] **T10: Unit tests backend**
-  - [ ] T10.1 Crear `tests/Unit/Infrastructure.Tests/Persistence/Repositories/FibraRepositoryTests.cs`:
+- [x] **T10: Unit tests backend**
+  - [x] T10.1 Crear `tests/Unit/Infrastructure.Tests/Persistence/Repositories/FibraRepositoryTests.cs`:
     - `AddAsync_PersistsFibra`: crea fibra → `GetByTickerAsync` la retorna
     - `AddAsync_DuplicateTicker_Throws`: agregar dos FIBRAs con mismo ticker lanza excepción DB
     - `ExistsByTickerAsync_ExistingTicker_ReturnsTrue`
@@ -274,8 +274,8 @@ Todos los tests existentes del catálogo público pasan tras los cambios.
     - `UpdateAsync_DeactivatesFibra`: cambiar `State = Inactive` → `GetAllActiveAsync` no la retorna
     - `GetAllAsync_ReturnsAllIncludingInactive`: incluye FIBRAs inactivas
 
-- [ ] **T11: Integration tests backend**
-  - [ ] T11.1 Crear `tests/Integration/Api.Tests/Ops/CatalogOpsEndpointTests.cs`:
+- [x] **T11: Integration tests backend**
+  - [x] T11.1 Crear `tests/Integration/Api.Tests/Ops/CatalogOpsEndpointTests.cs`:
     - `POST /ops/catalog` con payload completo y token AdminOps → `201 Created`, responde `FibraDetail` con ticker correcto
     - `POST /ops/catalog` con ticker duplicado → `409 Conflict`, `domainCode = "TICKER_ALREADY_EXISTS"`
     - `POST /ops/catalog` con campos requeridos vacíos → `400 Bad Request`
@@ -470,20 +470,83 @@ const removeVariant = (i: number) => setVariants(v => v.filter((_, idx) => idx !
 
 ### Agent Model Used
 
-_(pending)_
+GPT-5 Codex
 
 ### Debug Log References
 
-_(pending)_
+- `git checkout -b story/5-3-gestion-del-catalogo-de-fibras-desde-ops`
+- `npm run codegen:api`
+- `dotnet test .\tests\Unit\Infrastructure.Tests\Infrastructure.Tests.csproj --configuration Release`
+- `dotnet test .\tests\Integration\Api.Tests\Api.Tests.csproj`
+- `npm run build --workspace=src/Web/Ops`
+- `npm run build --workspace=src/Web/Main`
 
 ### Completion Notes List
 
-_(pending)_
+- Se agregó CRUD operativo para catálogo con endpoints AdminOps protegidos: listado completo, alta, edición, activate/deactivate idempotentes y auditoría por logging con actor + timestamp.
+- `IFibraRepository` ahora soporta escritura (`AddAsync`, `UpdateAsync`, `ExistsByTickerAsync`, `GetAllAsync`) y se actualizaron todos los fake repos impactados.
+- `FibraDetail` se amplió con `YahooTicker` para soportar edición completa desde Ops; se regeneró OpenAPI (`scripts/codegen/Api.json`, `src/Web/SharedApiClient/schema.d.ts`).
+- Se implementó la pantalla `/catalog` en Ops con tabla, formulario create/edit, mutaciones de estado y feedback de éxito/error.
+- Validaciones ejecutadas y pasando: `123/123` unit tests backend, `155/155` integration tests backend, `npm run build --workspace=src/Web/Ops`, `npm run build --workspace=src/Web/Main`.
 
 ### File List
 
-_(pending)_
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `scripts/codegen/Api.json`
+- `src/Server/Api/Endpoints/Ops/OpsCatalogEndpoints.cs`
+- `src/Server/Api/Endpoints/Public/CatalogEndpoints.cs`
+- `src/Server/Api/Program.cs`
+- `src/Server/Application/Catalog/IFibraRepository.cs`
+- `src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs`
+- `src/Server/SharedApiContracts/Catalog/CreateFibraRequest.cs`
+- `src/Server/SharedApiContracts/Catalog/FibraDetail.cs`
+- `src/Server/SharedApiContracts/Catalog/UpdateFibraRequest.cs`
+- `src/Web/Ops/src/api/catalogApi.ts`
+- `src/Web/Ops/src/components/OpsShell.tsx`
+- `src/Web/Ops/src/main.tsx`
+- `src/Web/Ops/src/modules/catalog/CatalogTable.tsx`
+- `src/Web/Ops/src/modules/catalog/FibraForm.tsx`
+- `src/Web/Ops/src/pages/CatalogPage.tsx`
+- `src/Web/SharedApiClient/schema.d.ts`
+- `tests/Integration/Api.Tests/Ops/CatalogOpsEndpointTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/DailySnapshotHistoricalJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/DistributionPipelineJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/Market/MarketPipelineJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/News/NewsPipelineJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Persistence/Repositories/FibraRepositoryTests.cs`
 
 ### Change Log
 
-_(pending)_
+- 2026-05-23: Implementado catálogo Ops 5.3 end-to-end: repositorio extensible con escritura, endpoints AdminOps CRUD + soft delete/reactivate auditados, DTOs OpenAPI regenerados, UI `/catalog` en Ops y cobertura nueva de tests unitarios/integración. Status → review.
+- 2026-05-23: Code review AI — 13 patches aplicados (P1–P13), 5 findings diferidos (D1–D5). Migración `DateTimeOffset`, race-condition 409, validación moneda, seed test, normalización ticker, React key, pendingTicker stale, scheme URL, AddAsync normaliza ticker, cleanup DisposeAsync, tautología FibraForm, log idempotente, test 400 body. Fix adicional: `catalog-seed.ts` (Main SPA) con `yahooTicker` faltante. 115 unit + 155 integration tests verdes. Status → done.
+
+---
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+**Patches:**
+
+- [x] [Review][Patch] P13 [Media]: Migrar `Fibra.CreatedAt` y `FibraDetail.CreatedAt` a `DateTimeOffset` — La Dev Note exige `DateTimeOffset.UtcNow`; el código actual usa `timestamp.UtcDateTime` perdiendo el offset. Requiere migración EF Core + actualizar seed y tests. Decisión: migrar ahora antes de que haya consumers externos en producción. [`FibraDetail.cs:13`, `OpsCatalogEndpoints.cs:79`, `ApiWebFactory.cs`]
+
+- [x] [Review][Patch] P1 [Alta]: Race condition TOCTOU + DbUpdateException→500 — El endpoint hace `ExistsByTickerAsync` y luego `AddAsync`; entre ambas llamadas, una solicitud concurrente puede crear el mismo ticker. `AddAsync` tiene una segunda guarda que lanza `DbUpdateException`, pero el endpoint no la captura → el caller recibe 500 en lugar de 409. Fix: capturar `DbUpdateException` en el handler POST y retornar 409, o confiar únicamente en la restricción de BD. [`OpsCatalogEndpoints.cs:53`, `FibraRepository.cs:10`]
+- [x] [Review][Patch] P2 [Alta]: Validación currency sobreescribe error de max-length — Si `currency = "PESOMEXICANO"` (> 8 chars y no en allowed list), `AddRequired` escribe el error de longitud y luego la validación de `AllowedCurrencies` lo sobreescribe con "Moneda no reconocida." El cliente nunca ve el mensaje correcto. Fix: agregar `else if` o verificar que el campo no tenga error previo antes de aplicar la validación de moneda. [`OpsCatalogEndpoints.cs:241`]
+- [x] [Review][Patch] P3 [Media]: Seed INACTIVA1 sin YahooTicker — `ApiWebFactory.SeedCatalogAsync` crea `INACTIVA1` sin campo `YahooTicker`. Tras añadir `YahooTicker` como requerido en `FibraDetail`, `ToDto(INACTIVA1)` emite `null` para ese campo. En SQL Server real fallaría la constraint NOT NULL. Fix: añadir `YahooTicker = "INACTIVA1.MX"` al seed. [`ApiWebFactory.cs:131`]
+- [x] [Review][Patch] P4 [Media]: Path ticker sin normalizar en PUT/deactivate/activate — El ticker del path se pasa sin `.ToUpperInvariant()` a `GetByTickerAsync`. La búsqueda funciona porque el repo normaliza internamente, pero los callers directos de la API con minúsculas quedan sin cobertura de tests y el patrón es inconsistente. Fix: normalizar en el handler antes del lookup. [`OpsCatalogEndpoints.cs:113,160,196`]
+- [x] [Review][Patch] P5 [Media]: FibraForm variantes con key compuesta index+valor — `key={\`${index}-${variant}\`}` cambia en cada keystroke → React desmonta/remonta el `<input>`, perdiendo foco al escribir. Fix: usar solo `key={index}` (las variantes no se reordenan). [`FibraForm.tsx:244`]
+- [x] [Review][Patch] P6 [Media]: pendingTicker con variables obsoletos en CatalogTable — TanStack Query v5 no limpia `variables` tras el éxito. Si `activateMutation.variables = "FUNO11"` (stale) y se ejecuta `deactivateMutation` para "DANHOS13", `pendingTicker` queda fijo en "FUNO11" → el botón de DANHOS13 no muestra el estado de carga. Fix: usar `activateMutation.isPending ? activateMutation.variables : deactivateMutation.isPending ? deactivateMutation.variables : null`. [`CatalogTable.tsx:29`]
+- [x] [Review][Patch] P7 [Media]: AddOptionalUrl acepta schemes no-HTTP (SSRF) — `Uri.TryCreate` acepta `file://`, `ftp://`, `javascript:`, `data:` e IPs internas. Fix: validar que el scheme sea `https` (o `http`) antes de aceptar la URL. [`OpsCatalogEndpoints.cs:295`]
+- [x] [Review][Patch] P8 [Media]: AddAsync no normaliza ticker antes de persistir — Si se llama `AddAsync` con un ticker en minúsculas directamente (fuera del endpoint), la entidad se persiste con casing incorrecto. Fix: añadir `fibra.Ticker = fibra.Ticker.ToUpperInvariant()` al inicio de `AddAsync`. [`FibraRepository.cs:10`]
+- [x] [Review][Patch] P9 [Media]: Tests comparten estado mutable — `DisposeAsync` no limpia; `PublicCatalog_AfterDeactivate_ExcludesDanhos13` desactiva DANHOS13 sin revertir → tests posteriores que asumen DANHOS13 activo pueden fallar según orden de ejecución. Fix: reactivar DANHOS13 al final del test o resetear la BD en `DisposeAsync`. [`CatalogOpsEndpointTests.cs:36,193`]
+- [x] [Review][Patch] P10 [Baja]: Condición 409 en FibraForm es tautología — Ambas ramas del ternario renderizan `mutation.error.message`. El condicional no hace nada. Fix: eliminar el ternario y mostrar directamente `{mutation.error.message}`. [`FibraForm.tsx:269`]
+- [x] [Review][Patch] P11 [Baja]: Log de auditoría se dispara en no-op deactivate/activate — Cuando el estado ya es el solicitado (idempotente), el código omite `UpdateAsync` pero igual registra "DEACTIVATE"/"ACTIVATE" en el log. Fix: mover el `LogInformation` dentro del bloque `if (fibra.State != ...)`. [`OpsCatalogEndpoints.cs:172,208`]
+- [x] [Review][Patch] P12 [Baja]: Test 400 no valida el cuerpo (AC5 parcial) — El test verifica el status code 400 pero no que la respuesta contenga detalles de validación por campo. Fix: deserializar `HttpValidationProblemDetails` y verificar que algún campo tenga error. [`CatalogOpsEndpointTests.cs:65`]
+
+**Deferred:**
+
+- [x] [Review][Defer] D1: GetAllAsync sin paginación ni límite [`FibraRepository.cs:53`] — deferred, aceptable para el tamaño actual del catálogo (~6 FIBRAs); añadir paginación cuando el catálogo crezca
+- [x] [Review][Defer] D2: `State` serializado como `ToString()` sin contrato explícito [`OpsCatalogEndpoints.cs:349`] — deferred, patrón consistente en el proyecto; considerar JsonConverter si hay clients heterogéneos
+- [x] [Review][Defer] D3: ILoggerFactory instanciado por request en vez de ILogger<T> [`OpsCatalogEndpoints.cs:43`] — deferred, impacto de performance despreciable para endpoint Ops de baja frecuencia
+- [x] [Review][Defer] D4: `UpdateAsync` llama `db.Fibras.Update()` en entidad ya tracked [`FibraRepository.cs:21`] — deferred, genera UPDATE completo en vez de diferencial pero correcto; refactorizar con cambio de EF tracking en futura épica
+- [x] [Review][Defer] D5: `GetActor` fallback a "unknown" sin log de advertencia [`OpsCatalogEndpoints.cs:352`] — deferred, riesgo bajo para MVP con AdminOps autenticado; añadir `LogWarning` en siguiente historia de auditoría

@@ -15,5 +15,5 @@ public class Fibra
     public string? InvestorUrl { get; set; }
     public string? ReportsUrl { get; set; }
     public List<string> NameVariants { get; set; } = [];
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }

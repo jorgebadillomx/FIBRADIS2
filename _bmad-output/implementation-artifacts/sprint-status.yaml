@@ -64,7 +64,12 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-23
+last_updated: 2026-05-25
+# decisión arquitectónica epic-6: cálculo NAV en backend (Opción A) — GET /api/v1/ops/config sigue AdminOps-only; endpoint portafolio lee OperationalConfig directamente en servidor
+# retrospectivas épica 4 y épica 5 completadas — epic-4-retro-2026-05-25 (supersede 2026-05-21, añade 4-5-4/4-7-editor/4-8/4-9), epic-5-retro-2026-05-25 (5 historias, ~54 patches, 22 deferred, action items Epic 6)
+# epic-3-retro-2026-05-21 confirmada al día — cubre 3-4 y 3-5, no requiere actualización
+# story 5-4 done — code review 3 patches (P1: tests 403 PUT+GET audit-log, P2: startup cron guard, P3: orden descendente audit log). 16/16 integration tests + 7/7 unit tests verdes
+# story 5-3 done — code review 13 patches (P1–P13): DateTimeOffset migration, TOCTOU 409, currency validation, seed YahooTicker, ticker normalize, React key, pendingTicker stale, URL scheme, AddAsync normalize, DisposeAsync cleanup, FibraForm tautology, audit log no-op, test 400 body + catalog-seed.ts Main SPA fix. 115 unit + 155 integration tests verdes
 # story 5-3 creada — gestión CRUD + soft delete catálogo FIBRAs desde Ops
 # story 5-1 creada — dashboard operativo, PipelineRunLog, Run Now auditado, DashboardPage
 # story 4-8 done — AngleSharp DOM parser + SiteExtractionCatalog 22 sitios, 84/84 tests
@@ -178,7 +183,7 @@ development_status:
   4-8-body-text-anglesharp-catalogo-sitios: done
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
-  epic-5: in-progress
+  epic-5: done
   # story 5-0 creada — OpsShell multi-pantalla + logs de errores + gestión de prompts de IA
   5-0-ops-shell-navegacion-y-modulos: done
   # story 5-1 creada — dashboard operativo: estado de pipelines, historial, errores y "Run Now" auditado
@@ -187,9 +192,10 @@ development_status:
   # story 5-2 review — import → preview → confirm, 7 unit tests + 12 integration tests, endpoint público Main SPA
   # story 5-2 done — code review 14 patches (UUID fix, cache key, idempotencia, 403 tests, isNaN guard, year regex, PdfUploadedAt) — mergeado a main junto con 5-0 y 5-1
   5-2-importacion-de-fundamentales-en-modo-manual: done
-  5-3-gestion-del-catalogo-de-fibras-desde-ops: ready-for-dev
-  5-4-configuracion-operativa-desde-ops-sin-redespliegue: backlog
-  epic-5-retrospective: optional
+  5-3-gestion-del-catalogo-de-fibras-desde-ops: done
+  # story 5-4 creada — configuración operativa: commission_factor, avg_periods, cadencia noticias, audit log
+  5-4-configuracion-operativa-desde-ops-sin-redespliegue: done
+  epic-5-retrospective: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog

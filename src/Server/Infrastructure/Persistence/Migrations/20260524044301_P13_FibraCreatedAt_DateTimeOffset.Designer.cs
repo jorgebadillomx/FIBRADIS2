@@ -4,6 +4,7 @@ using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260524044301_P13_FibraCreatedAt_DateTimeOffset")]
+    partial class P13_FibraCreatedAt_DateTimeOffset
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1950,90 +1953,6 @@ namespace Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_NewsArticleFibra_FibraId");
 
                     b.ToTable("NewsArticleFibra", "news");
-                });
-
-            modelBuilder.Entity("Domain.Ops.ConfigAuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Actor")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .HasColumnName("actor");
-
-                    b.Property<DateTimeOffset>("ChangedAt")
-                        .HasColumnType("datetimeoffset")
-                        .HasColumnName("changed_at");
-
-                    b.Property<string>("FieldName")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .HasColumnName("field_name");
-
-                    b.Property<string>("NewValue")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)")
-                        .HasColumnName("new_value");
-
-                    b.Property<string>("PreviousValue")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)")
-                        .HasColumnName("previous_value");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChangedAt");
-
-                    b.ToTable("ConfigAuditLog", "ops");
-                });
-
-            modelBuilder.Entity("Domain.Ops.OperationalConfig", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    b.Property<int>("AvgPeriods")
-                        .HasColumnType("int")
-                        .HasColumnName("avg_periods");
-
-                    b.Property<decimal>("CommissionFactor")
-                        .HasPrecision(10, 6)
-                        .HasColumnType("decimal(10,6)")
-                        .HasColumnName("commission_factor");
-
-                    b.Property<int>("NewsCadenceMinutes")
-                        .HasColumnType("int")
-                        .HasColumnName("news_cadence_minutes");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("datetimeoffset")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("OperationalConfig", "ops");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AvgPeriods = 4,
-                            CommissionFactor = 0.006m,
-                            NewsCadenceMinutes = 60,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UpdatedBy = "system"
-                        });
                 });
 
             modelBuilder.Entity("Domain.Auth.RefreshToken", b =>

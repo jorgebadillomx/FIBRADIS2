@@ -28,6 +28,7 @@
 
   <Target Name="EnsureDevelopmentEnvForOpenApiGeneration" BeforeTargets="GenerateOpenApiDocuments">
     <SetEnvVarInProcess Name="ASPNETCORE_ENVIRONMENT" Value="Development" />
+    <SetEnvVarInProcess Name="FIBRADIS_SKIP_STARTUP_DB_READS" Value="1" />
   </Target>
 
   <ItemGroup>
