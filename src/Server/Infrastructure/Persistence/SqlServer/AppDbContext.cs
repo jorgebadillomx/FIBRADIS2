@@ -4,6 +4,7 @@ using Domain.Fundamentals;
 using Domain.Jobs;
 using Domain.Market;
 using Domain.News;
+using Domain.Ops;
 using Infrastructure.Persistence.Seed;
 using Infrastructure.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PipelineErrorLog> PipelineErrorLogs => Set<PipelineErrorLog>();
     public DbSet<PipelineRunLog> PipelineRunLogs => Set<PipelineRunLog>();
     public DbSet<FundamentalRecord> FundamentalRecords => Set<FundamentalRecord>();
+    public DbSet<OperationalConfig> OperationalConfigs => Set<OperationalConfig>();
+    public DbSet<ConfigAuditLog> ConfigAuditLogs => Set<ConfigAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

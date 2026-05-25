@@ -43,7 +43,7 @@ public static class CatalogEndpoints
                     extensions: new Dictionary<string, object?> { ["domainCode"] = "FIBRA_NOT_FOUND" });
 
             return Results.Ok(new FibraDetail(
-                fibra.Id, fibra.Ticker, fibra.FullName, fibra.ShortName,
+                fibra.Id, fibra.Ticker, fibra.YahooTicker, fibra.FullName, fibra.ShortName,
                 fibra.Sector, fibra.Market, fibra.Currency, fibra.State.ToString(),
                 fibra.SiteUrl, fibra.InvestorUrl, fibra.ReportsUrl,
                 fibra.NameVariants.AsReadOnly(), fibra.CreatedAt));

@@ -152,6 +152,12 @@ public class DailySnapshotHistoricalJobTests
 
 internal sealed class FakeHistoricalFibraRepository(IReadOnlyList<Fibra> fibras) : IFibraRepository
 {
+    public Task AddAsync(Fibra fibra, CancellationToken ct = default) => Task.CompletedTask;
+
+    public Task UpdateAsync(Fibra fibra, CancellationToken ct = default) => Task.CompletedTask;
+
+    public Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct = default) => Task.FromResult(false);
+
     public Task<(IReadOnlyList<Fibra> Items, int Total)> GetActivePagedAsync(
         FibraFilter filter, CancellationToken ct = default)
         => Task.FromResult<(IReadOnlyList<Fibra>, int)>((fibras, fibras.Count));
@@ -161,6 +167,9 @@ internal sealed class FakeHistoricalFibraRepository(IReadOnlyList<Fibra> fibras)
 
     public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
+
+    public Task<IReadOnlyList<Fibra>> GetAllAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<Fibra>>([]);
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);

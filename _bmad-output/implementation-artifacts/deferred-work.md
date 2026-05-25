@@ -1,6 +1,21 @@
 # Deferred Work
 
+## Deferred from: code review of 5-4-configuracion-operativa-desde-ops-sin-redespliegue (2026-05-25)
+
+- **D1: Sin transacción entre `SaveChangesAsync` y `Hangfire.AddOrUpdate`** [`src/Server/Api/Endpoints/Ops/OpsConfigEndpoints.cs`] — Si Hangfire falla post-commit, la BD tiene la nueva cadencia pero el job mantiene el schedule anterior. Mitiga: el arranque lee BD y corrige. Implementar compensación si se detecta el fallo en producción.
+- **D2: Race condition teórico en PUT concurrente** [`src/Server/Api/Endpoints/Ops/OpsConfigEndpoints.cs`] — Dos PUTs simultáneos pueden llamar `Hangfire.AddOrUpdate` dos veces con el mismo cron (idempotente). Admin-only, probabilidad despreciable. Resolver con rowversion/`IsConcurrencyToken` en `OperationalConfig` si se añade UI multi-usuario.
+- **D3: Validaciones de negocio solo en capa HTTP** [`src/Server/Infrastructure/Persistence/Repositories/Ops/OperationalConfigRepository.cs`] — `commissionFactor > 0 && <= 0.1` y `avgPeriods` 1–20 no se validan en el repositorio. Patrón ya aceptado en `AiModeConfig` y otros repos del proyecto.
+- **D4: `FIBRADIS_SKIP_STARTUP_DB_READS` env var redundante con try/catch** [`src/Server/Api/Program.cs`] — El guard extra previene leer la BD durante generación de OpenAPI en build-time; el try/catch ya lo cubre. Simplificar al try/catch solo en refactor de Program.cs.
+
 Items diferidos durante code reviews. Cada sección tiene la historia origen y la fecha.
+
+## Deferred from: code review of 5-3-gestion-del-catalogo-de-fibras-desde-ops (2026-05-23)
+
+- **D1: GetAllAsync sin paginación ni límite** [`FibraRepository.cs:53`] — Aceptable para el tamaño actual del catálogo (~6 FIBRAs); añadir paginación cuando el catálogo crezca.
+- **D2: `State` serializado como `ToString()` sin contrato explícito** [`OpsCatalogEndpoints.cs:349`] — Patrón consistente en el proyecto; considerar JsonConverter si hay clients heterogéneos en el futuro.
+- **D3: ILoggerFactory instanciado por request** [`OpsCatalogEndpoints.cs:43`] — Impacto de performance despreciable para endpoint Ops de baja frecuencia; refactorizar a ILogger<T> en limpieza general.
+- **D4: `UpdateAsync` llama `db.Fibras.Update()` en entidad ya tracked** [`FibraRepository.cs:21`] — Genera UPDATE completo en vez de diferencial, pero correcto; refactorizar con mejora de EF tracking en futura épica.
+- **D5: `GetActor` fallback a "unknown" sin log de advertencia** [`OpsCatalogEndpoints.cs:352`] — Riesgo bajo para MVP con AdminOps autenticado; añadir `LogWarning` en siguiente historia de auditoría (historia 5-4).
 
 ## Deferred from: code review of 5-2-importacion-de-fundamentales-en-modo-manual (2026-05-23)
 

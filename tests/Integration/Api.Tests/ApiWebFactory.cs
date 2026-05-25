@@ -129,6 +129,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             {
                 Id = Guid.Parse("cccccccc-0000-0000-0000-000000000001"),
                 Ticker = "INACTIVA1",
+                YahooTicker = "INACTIVA1.MX",
                 FullName = "Fibra Inactiva Test",
                 ShortName = "Inactiva",
                 Sector = "Diversificado",
@@ -136,7 +137,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 Currency = "MXN",
                 State = FibraState.Inactive,
                 NameVariants = [],
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow,
             });
             await db.SaveChangesAsync();
         }

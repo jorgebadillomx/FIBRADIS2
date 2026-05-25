@@ -53,7 +53,7 @@ public static class CatalogSeed
             InvestorUrl = investorUrl,
             ReportsUrl = reportsUrl,
             NameVariants = nameVariants,
-            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
 
     // GUID determinista basado en MD5 del ticker completo — garantiza unicidad sin importar longitud o prefijos comunes
