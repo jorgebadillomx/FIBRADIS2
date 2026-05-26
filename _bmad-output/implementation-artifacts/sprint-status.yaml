@@ -1,3 +1,4 @@
+# story 5-5 done — code review 6 patches aplicados (P1: doble copia MemoryStream, P2: log PDF sin texto, P3: error silencioso upload + validación tamaño frontend, P4: badge Error IA con mensaje y dismiss, P5: ProblemDetails parsing, P6: test positivo PdfMarkdownExtractor). 3/3 unit tests verdes
 # generated: 2026-05-15
 # last_updated: 2026-05-31
 # story 8-2 done — code review pass (0 patches, 8 defers: ReactMarkdown sin sanitize, fetchAllFibras cap 100, count label, debounce, useMemo, error state breadcrumb, shortName search, direct-hit test)
@@ -209,6 +210,11 @@ development_status:
   # story 5-4 creada — configuración operativa: commission_factor, avg_periods, cadencia noticias, audit log
   5-4-configuracion-operativa-desde-ops-sin-redespliegue: done
   epic-5-retrospective: done
+
+  # ── 5-5: Fundamentales — Catálogo selectivo, PDF→MD e IA desde Markdown ──
+  # story 5-5 creada — FIBRA dropdown catálogo, Período dropdown, PDF→MD, MarkdownContent en BD, ai-summary endpoint, tooltips
+  # story 5-5 review — PdfPig extracción MD, endpoint ai-summary, FundamentalsHistory refactorizado, 132 unit + 174 integration tests verdes
+  5-5-fundamentales-catalogo-pdf-md-y-summary-ia: done
 
   # ── 5-6: Extracción de KPIs desde PDF vía IA ─────────────────────────────
   # story 5-6 creada — endpoint stateless extract-kpis, flujo IA en formulario de importación, relajar validación 0 campos en /import
