@@ -83,16 +83,18 @@ export function NoticiaPage() {
           />
         </div>
 
-        <h1 className="mb-2 text-2xl font-bold leading-tight">{article.title}</h1>
+        <h1 className="mb-2 font-playfair text-3xl md:text-4xl font-bold leading-tight text-foreground">
+          {article.title}
+        </h1>
 
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="mb-8 text-sm text-muted-foreground">
           {article.source} · {formatRelativeTime(article.publishedAt)}
         </p>
 
         {summary ? (
-          <div className="mb-8">
+          <div className="mb-8 rounded-lg border border-border bg-card p-5">
             {article.aiSummary ? (
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">
                 Resumen IA
               </p>
             ) : null}
@@ -105,9 +107,9 @@ export function NoticiaPage() {
             href={safeExternalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 cursor-pointer"
           >
-            Leer más en {article.source} →
+            Leer nota completa en {article.source} →
           </a>
         ) : null}
       </div>

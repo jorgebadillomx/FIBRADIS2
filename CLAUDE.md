@@ -28,6 +28,20 @@ python scripts/memory/memory_cli.py search "<tema>"     # buscar
 python scripts/memory/memory_cli.py add "<memoria>"     # guardar
 python scripts/memory/memory_cli.py list                # listar todo
 ```
+## Design Skills
+
+### frontend-design
+Before building or refactoring any React component or UI, read:
+.claude/skills/frontend-design/SKILL.md
+
+### ui-ux-pro-max
+Use to generate design systems and get style/color/typography recommendations.
+Search command:
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --stack react
+
+## Design System
+When working on UI, always read design-system/MASTER.md first.
+If a page-specific file exists in design-system/pages/, prioritize it over MASTER.md.
 
 ## Flujo de Trabajo
 

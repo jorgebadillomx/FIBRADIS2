@@ -10,8 +10,20 @@ export function HomePage() {
       <meta name="description" content="Descubre y analiza FIBRAs del mercado mexicano (BMV). Precios, fundamentales, distribuciones y noticias en tiempo real." />
       <link rel="canonical" href="https://fibradis.mx/" />
 
+      {/* Hero editorial */}
+      <section className="border-b border-border py-10">
+        <div className="container mx-auto px-4">
+          <h1 className="font-playfair text-4xl md:text-5xl font-bold text-foreground leading-tight">
+            El universo de FIBRAs<br />
+            <em className="not-italic text-primary">del mercado mexicano.</em>
+          </h1>
+          <p className="mt-3 text-muted-foreground text-base max-w-lg leading-relaxed">
+            Precios, fundamentales, distribuciones y noticias consolidadas en un solo lugar.
+          </p>
+        </div>
+      </section>
+
       <div className="container mx-auto px-4 py-6 space-y-8">
-        <h1 className="sr-only">FIBRADIS — Plataforma de análisis de FIBRAs</h1>
         <section aria-labelledby="heading-precio">
           <h2 id="heading-precio" className="sr-only">Precios de mercado</h2>
           <PriceCarousel />

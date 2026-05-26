@@ -37,31 +37,36 @@
   --color-brand: var(--brand);
   --color-brand-muted: var(--brand-muted);
   --color-surface-elevated: var(--surface-elevated);
+  --color-gold: var(--gold);
+
+  /* Typography */
+  --font-playfair: 'Playfair Display', Georgia, serif;
+  --font-plex: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  /* shadcn base palette */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* FIBRADIS — verde bosque + gris claro */
+  --background: #F4F6F8;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+  --primary: #1A4A3A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1E293B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F1F5F9;
+  --accent-foreground: #1E293B;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #1A4A3A;
 
   /* FIBRADIS brand — plusvalía, Fresh, subida de precio */
   --positive: oklch(0.527 0.154 150.069);
@@ -75,12 +80,15 @@
   --warning: oklch(0.769 0.188 70.08);
   --warning-muted: oklch(0.769 0.188 70.08 / 0.14);
 
-  /* FIBRADIS brand — acción primaria, score, links activos */
-  --brand: oklch(0.546 0.245 262.881);
-  --brand-muted: oklch(0.546 0.245 262.881 / 0.1);
+  /* FIBRADIS brand — verde bosque para links activos y hover */
+  --brand: #1A4A3A;
+  --brand-muted: #1A4A3A1a;
+
+  /* Dorado para CTA y acento premium */
+  --gold: #9A7B2E;
 
   /* Superficie elevada para KPI cards y filas expandidas */
-  --surface-elevated: oklch(0.991 0 0);
+  --surface-elevated: #FFFFFF;
 }
 
 .dark {
@@ -115,7 +123,8 @@ body {
   margin: 0;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -16,20 +16,25 @@ export function PublicLayout() {
         className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       >
         <div className="container mx-auto flex h-14 items-center gap-6 px-4">
-          <a href="/" className="text-lg font-semibold tracking-tight">FIBRADIS</a>
+          <a href="/" className="font-playfair text-xl font-bold text-primary tracking-tight shrink-0">
+            FIBRADIS
+          </a>
           <nav
             aria-label="Navegación principal"
-            className="hidden md:flex items-center gap-4 text-sm text-muted-foreground"
+            className="hidden md:flex items-center gap-5 text-sm text-muted-foreground"
           >
-            <a href="/mercado" className="hover:text-foreground transition-colors">Mercado</a>
-            <a href="/catalogo" className="hover:text-foreground transition-colors">Catálogo</a>
-            <a href="/noticias" className="hover:text-foreground transition-colors">Noticias</a>
+            <a href="/mercado" className="hover:text-foreground transition-colors duration-150">Mercado</a>
+            <a href="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</a>
+            <a href="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</a>
           </nav>
           <div className="flex-1 min-w-0 flex justify-center">
             <GlobalSearch />
           </div>
-          <div className="flex items-center gap-2">
-            <a href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="/login"
+              className="text-sm font-medium px-3 py-1.5 rounded border border-border text-foreground hover:border-primary hover:text-primary transition-colors duration-150 cursor-pointer"
+            >
               Iniciar sesión
             </a>
           </div>
