@@ -21,6 +21,16 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
             .ThenByDescending(r => r.Period.Substring(1, 1))
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<string>> GetProcessedPeriodsAsync(Guid fibraId, CancellationToken ct)
+        => await db.FundamentalRecords
+            .Where(r => r.FibraId == fibraId && r.Status == "processed" && r.Period.Length == 7)
+            .Select(r => r.Period)
+            .Distinct()
+            .OrderByDescending(p => p.Substring(3, 4))
+            .ThenByDescending(p => p.Substring(1, 1))
+            .Take(12)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<FundamentalRecord>> GetByFibraAsync(Guid fibraId, CancellationToken ct)
         => await db.FundamentalRecords
             .Where(r => r.FibraId == fibraId)

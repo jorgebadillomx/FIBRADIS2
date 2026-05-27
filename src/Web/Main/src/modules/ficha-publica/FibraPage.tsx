@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
-import { fetchFundamentalesPublic } from '@/api/fundamentalesApi'
+import { fetchFundamentalesPublic, fetchFundamentalesAvailablePeriods } from '@/api/fundamentalesApi'
 import type { FundamentalesData } from './sections/fundamentales'
 import { FibraNotFound } from './FibraNotFound'
 import { PrecioSection } from './sections/PrecioSection'
@@ -64,6 +65,7 @@ const SECTION_TITLES: Record<string, string> = {
 
 export function FibraPage() {
   const { ticker } = useParams<{ ticker: string }>()
+  const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined)
 
   const { data: fibra, isLoading, isError } = useQuery({
     queryKey: ['fibra', ticker],
@@ -78,10 +80,19 @@ export function FibraPage() {
     refetchInterval: 5 * 60_000,
   })
 
-  const { data: fundamentalesDto } = useQuery({
-    queryKey: ['fundamentales', ticker],
-    queryFn: () => fetchFundamentalesPublic(ticker!),
+  const { data: availablePeriods = [], isFetched: periodsFetched } = useQuery({
+    queryKey: ['fundamentales-periods', ticker],
+    queryFn: () => fetchFundamentalesAvailablePeriods(ticker!),
     enabled: !!ticker,
+    staleTime: 5 * 60_000,
+  })
+
+  const activePeriod = selectedPeriod ?? availablePeriods[0]
+
+  const { data: fundamentalesDto } = useQuery({
+    queryKey: ['fundamentales', ticker, activePeriod],
+    queryFn: () => fetchFundamentalesPublic(ticker!, activePeriod),
+    enabled: !!ticker && periodsFetched,
     staleTime: 5 * 60_000,
   })
 
@@ -207,7 +218,21 @@ export function FibraPage() {
           </section>
 
           <section id="fundamentales" className="scroll-mt-32 space-y-4">
-            <SectionHeader title={SECTION_TITLES.fundamentales} />
+            <div className="flex items-center justify-between gap-4">
+              <SectionHeader title={SECTION_TITLES.fundamentales} />
+              {availablePeriods.length > 1 && (
+                <select
+                  value={activePeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="shrink-0 rounded-lg border border-border bg-background px-2 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+                  aria-label="Seleccionar período de fundamentales"
+                >
+                  {availablePeriods.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <FundamentalesSection data={fundamentalesData} />
           </section>
 

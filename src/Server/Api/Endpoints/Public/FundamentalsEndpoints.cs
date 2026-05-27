@@ -1,5 +1,7 @@
 using Application.Catalog;
 using Application.Fundamentals;
+using Domain.Fundamentals;
+using Microsoft.AspNetCore.Mvc;
 using SharedApiContracts.Fundamentals;
 
 namespace Api.Endpoints.Public;
@@ -12,6 +14,7 @@ public static class FundamentalsEndpoints
 
         group.MapGet("/{ticker}/latest", async (
             string ticker,
+            [FromQuery] string? period,
             IFibraRepository fibraRepo,
             IFundamentalRepository fundamentalRepo,
             CancellationToken ct) =>
@@ -24,7 +27,10 @@ public static class FundamentalsEndpoints
                     statusCode: StatusCodes.Status404NotFound,
                     extensions: new Dictionary<string, object?> { ["domainCode"] = "FIBRA_NOT_FOUND" });
 
-            var record = await fundamentalRepo.GetLatestProcessedByFibraAsync(fibra.Id, ct);
+            FundamentalRecord? record = string.IsNullOrWhiteSpace(period)
+                ? await fundamentalRepo.GetLatestProcessedByFibraAsync(fibra.Id, ct)
+                : await fundamentalRepo.GetProcessedByFibraAndPeriodAsync(fibra.Id, period.Trim().ToUpperInvariant(), ct);
+
             if (record is null)
                 return Results.NotFound();
 
@@ -43,6 +49,27 @@ public static class FundamentalsEndpoints
         })
         .AllowAnonymous()
         .Produces<FundamentalesPublicDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{ticker}/periods", async (
+            string ticker,
+            IFibraRepository fibraRepo,
+            IFundamentalRepository fundamentalRepo,
+            CancellationToken ct) =>
+        {
+            var fibra = await fibraRepo.GetByTickerAsync(ticker, ct);
+            if (fibra is null)
+                return Results.Problem(
+                    title: "FIBRA no encontrada",
+                    detail: $"No existe una FIBRA con ticker '{ticker}'.",
+                    statusCode: StatusCodes.Status404NotFound,
+                    extensions: new Dictionary<string, object?> { ["domainCode"] = "FIBRA_NOT_FOUND" });
+
+            var periods = await fundamentalRepo.GetProcessedPeriodsAsync(fibra.Id, ct);
+            return Results.Ok(periods);
+        })
+        .AllowAnonymous()
+        .Produces<IReadOnlyList<string>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
         return app;

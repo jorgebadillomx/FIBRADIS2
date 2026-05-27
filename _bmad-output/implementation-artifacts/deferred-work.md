@@ -9,6 +9,10 @@
 
 Items diferidos durante code reviews. Cada sección tiene la historia origen y la fecha.
 
+## Deferred from: spec-ops-pdf-feedback-main-period-selector (2026-05-27)
+
+- **D5: Selector de período no indica truncamiento** [`src/Web/Main/src/modules/ficha-publica/FibraPage.tsx`] — El endpoint retorna máximo 12 períodos sin notificar al frontend que hay más. Si una FIBRA acumula >12 períodos procesados, los más antiguos no son accesibles. Considerar agregar un header `X-Total-Count` o un campo `truncated: bool` en la respuesta.
+
 ## Deferred from: code review of 5-3-gestion-del-catalogo-de-fibras-desde-ops (2026-05-23)
 
 - **D1: GetAllAsync sin paginación ni límite** [`FibraRepository.cs:53`] — Aceptable para el tamaño actual del catálogo (~6 FIBRAs); añadir paginación cuando el catálogo crezca.

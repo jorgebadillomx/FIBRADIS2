@@ -16,6 +16,7 @@ interface Props {
 export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
   const queryClient = useQueryClient()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [pdfDownloadErrors, setPdfDownloadErrors] = useState<Record<string, string>>({})
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['fundamentals', fibraId],
@@ -29,6 +30,7 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
   }
 
   const handlePdfDownload = async (id: string, ticker: string) => {
+    setPdfDownloadErrors((prev) => { const next = { ...prev }; delete next[id]; return next })
     try {
       const blob = await downloadFundamentalPdf(id)
       const url = URL.createObjectURL(blob)
@@ -38,7 +40,8 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {
-      console.error('Error al descargar PDF:', e)
+      const msg = e instanceof Error ? e.message : 'Error al descargar el PDF'
+      setPdfDownloadErrors((prev) => ({ ...prev, [id]: msg }))
     }
   }
 
@@ -76,6 +79,7 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
               record={r}
               fibraId={fibraId}
               fileInputRefs={fileInputRefs}
+              pdfDownloadError={pdfDownloadErrors[r.id]}
               onPdfUpload={handlePdfUpload}
               onPdfDownload={handlePdfDownload}
               onReprocess={onReprocess}
@@ -91,6 +95,7 @@ interface RowProps {
   record: FundamentalRecordDto
   fibraId: string
   fileInputRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>
+  pdfDownloadError?: string
   onPdfUpload: (id: string, file: File) => Promise<void>
   onPdfDownload: (id: string, ticker: string) => Promise<void>
   onReprocess: (record: FundamentalRecordDto) => void
@@ -101,6 +106,7 @@ const MAX_PDF_BYTES = 20 * 1024 * 1024
 function HistoryRow({
   record: r,
   fileInputRefs,
+  pdfDownloadError,
   onPdfUpload,
   onPdfDownload,
   onReprocess,
@@ -183,6 +189,9 @@ function HistoryRow({
         </div>
         {pdfUploadError && (
           <p className="mt-1 text-xs text-red-500">{pdfUploadError}</p>
+        )}
+        {pdfDownloadError && (
+          <p className="mt-1 text-xs text-red-500">{pdfDownloadError}</p>
         )}
       </td>
     </tr>
