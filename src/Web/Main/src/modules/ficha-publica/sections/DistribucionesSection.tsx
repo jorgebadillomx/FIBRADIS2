@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraHistory } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
+import { getDistributionPeriodLabel, inferDistributionCadence } from './distribuciones'
 
 const INITIAL_ROWS = 8
 
@@ -38,6 +39,7 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
   const yieldRaw = toNum(history?.annualizedYield)
   const dists = history?.distributions ?? []
   const displayDists = showAll ? dists : dists.slice(0, INITIAL_ROWS)
+  const cadence = inferDistributionCadence(dists)
 
   return (
     <div className="space-y-4">
@@ -57,10 +59,11 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
           <p className="text-sm text-muted-foreground">Sin distribuciones registradas</p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface-elevated overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground">
+                <th className="text-left px-4 py-2 font-medium">Periodo</th>
                 <th className="text-left px-4 py-2 font-medium">Fecha de pago</th>
                 <th className="text-right px-4 py-2 font-medium">Monto por CBFI</th>
               </tr>
@@ -68,7 +71,10 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
             <tbody>
               {displayDists.map((d, i) => (
                 <tr key={d.date} className={i % 2 === 0 ? '' : 'bg-muted/20'}>
-                  <td className="px-4 py-2">{d.date}</td>
+                  <td className="px-4 py-2 font-medium text-foreground/85 whitespace-nowrap">
+                    {getDistributionPeriodLabel(d.date, cadence)}
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">{d.date}</td>
                   <td className="px-4 py-2 text-right tabular-nums">
                     ${toNum(d.amountPerUnit)?.toFixed(4) ?? '—'}
                   </td>

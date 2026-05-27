@@ -6,7 +6,7 @@ const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
 export type AiPromptDto = components['schemas']['AiPromptDto']
 
-export async function fetchAiPrompt(contentType: 'news' | 'document'): Promise<AiPromptDto> {
+export async function fetchAiPrompt(contentType: 'news' | 'kpi_extraction'): Promise<AiPromptDto> {
   assertOpsAccessToken()
 
   const { data, error } = await apiClient['/api/v1/ops/ai-prompts/{contentType}'].GET({
@@ -19,7 +19,7 @@ export async function fetchAiPrompt(contentType: 'news' | 'document'): Promise<A
   return data
 }
 
-export async function updateAiPrompt(contentType: 'news' | 'document', promptTemplate: string): Promise<void> {
+export async function updateAiPrompt(contentType: 'news' | 'kpi_extraction', promptTemplate: string): Promise<void> {
   assertOpsAccessToken()
 
   const { error } = await apiClient['/api/v1/ops/ai-prompts/{contentType}'].PUT({

@@ -18,4 +18,6 @@ public sealed record FundamentalRecordDto(
     string? ImportedBy,
     string? ConfirmedBy,
     DateTimeOffset CapturedAt,
-    DateTimeOffset? ConfirmedAt);
+    DateTimeOffset? ConfirmedAt,
+    bool HasMarkdownContent = false,
+    IReadOnlyDictionary<string, string>? FieldNotes = null);

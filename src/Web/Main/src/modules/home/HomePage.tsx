@@ -28,24 +28,26 @@ export function HomePage() {
           <h2 id="heading-precio" className="sr-only">Precios de mercado</h2>
           <PriceCarousel />
         </section>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+          <div className="min-w-0 space-y-6">
             <section aria-labelledby="heading-ranking">
               <h2 id="heading-ranking" className="sr-only">Ganadores y perdedores del día</h2>
               <GainersLosers />
             </section>
+
+            <section aria-labelledby="heading-universo">
+              <h2 id="heading-universo" className="sr-only">Universo FIBRAS</h2>
+              <FibraUniverseTable />
+            </section>
           </div>
-          <div>
+
+          <aside className="xl:sticky xl:top-28">
             <section aria-labelledby="heading-noticias">
               <h2 id="heading-noticias" className="sr-only">Noticias recientes</h2>
               <NewsSection />
             </section>
-          </div>
+          </aside>
         </div>
-        <section aria-labelledby="heading-universo">
-          <h2 id="heading-universo" className="sr-only">Universo FIBRAS</h2>
-          <FibraUniverseTable />
-        </section>
       </div>
     </>
   )

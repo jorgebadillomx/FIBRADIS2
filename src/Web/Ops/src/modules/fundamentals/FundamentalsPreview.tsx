@@ -29,6 +29,12 @@ export function FundamentalsPreview({ preview, onCancel, onConfirmed }: Props) {
         )}
       </div>
 
+      {preview.hasMarkdownContent && (
+        <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+          MD disponible
+        </span>
+      )}
+
       {preview.warningMessage && (
         <div className="rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-sm text-orange-800">
           {preview.warningMessage}
@@ -69,6 +75,7 @@ export function FundamentalsPreview({ preview, onCancel, onConfirmed }: Props) {
 
       <div className="flex gap-3 pt-2">
         <button
+          type="button"
           onClick={() => confirm.mutate()}
           disabled={confirm.isPending}
           className="flex-1 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition"
@@ -76,6 +83,7 @@ export function FundamentalsPreview({ preview, onCancel, onConfirmed }: Props) {
           {confirm.isPending ? 'Confirmando…' : preview.isPossibleUpdate ? 'Reprocess' : 'Confirmar'}
         </button>
         <button
+          type="button"
           onClick={onCancel}
           disabled={confirm.isPending}
           className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"

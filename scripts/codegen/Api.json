@@ -1402,6 +1402,76 @@
         }
       }
     },
+    "/api/v1/ops/fundamentals/extract-kpis": {
+      "post": {
+        "tags": [
+          "Fundamentals"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiExtractionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/fundamentals/{id}/confirm": {
       "post": {
         "tags": [
@@ -1559,6 +1629,72 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/fundamentals/{id}/extract-kpis": {
+      "post": {
+        "tags": [
+          "Fundamentals"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundamentalRecordDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway"
           },
           "401": {
             "description": "Unauthorized",
@@ -2555,6 +2691,7 @@
           "ffoMargin",
           "quarterlyDistribution",
           "summary",
+          "fieldNotes",
           "capturedAt"
         ],
         "type": "object",
@@ -2631,6 +2768,15 @@
               "string"
             ]
           },
+          "fieldNotes": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
           "capturedAt": {
             "type": "string",
             "format": "date-time"
@@ -2695,6 +2841,10 @@
           "capturedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "hasMarkdownContent": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2832,6 +2982,19 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "hasMarkdownContent": {
+            "type": "boolean",
+            "default": false
+          },
+          "fieldNotes": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2973,6 +3136,144 @@
               "null",
               "string"
             ]
+          },
+          "fieldNotes": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "KpiExtractionDto": {
+        "required": [
+          "capRate",
+          "capRateNote",
+          "navPerCbfi",
+          "navPerCbfiNote",
+          "ltv",
+          "ltvNote",
+          "noiMargin",
+          "noiMarginNote",
+          "ffoMargin",
+          "ffoMarginNote",
+          "quarterlyDistribution",
+          "quarterlyDistributionNote",
+          "summary",
+          "extractionNotes",
+          "markdownLength"
+        ],
+        "type": "object",
+        "properties": {
+          "capRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "capRateNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "navPerCbfi": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "navPerCbfiNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ltv": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ltvNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "noiMargin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "noiMarginNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ffoMargin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ffoMarginNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quarterlyDistribution": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "quarterlyDistributionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extractionNotes": {
+            "type": "string"
+          },
+          "markdownLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

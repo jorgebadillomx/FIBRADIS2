@@ -7,6 +7,7 @@ const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 export type ImportFundamentalsRequest = components['schemas']['ImportFundamentalsRequest']
 export type FundamentalPreviewDto = components['schemas']['FundamentalPreviewDto']
 export type FundamentalRecordDto = components['schemas']['FundamentalRecordDto']
+export type KpiExtractionDto = components['schemas']['KpiExtractionDto']
 
 export async function importFundamentals(payload: ImportFundamentalsRequest): Promise<FundamentalPreviewDto> {
   assertOpsAccessToken()
@@ -59,7 +60,7 @@ export async function downloadFundamentalPdf(id: string): Promise<Blob> {
   return response.blob()
 }
 
-export async function uploadFundamentalPdf(id: string, file: File): Promise<{ path: string }> {
+export async function uploadFundamentalPdf(id: string, file: File): Promise<{ path: string; markdownExtracted: boolean }> {
   assertOpsAccessToken()
 
   const formData = new FormData()
@@ -77,5 +78,35 @@ export async function uploadFundamentalPdf(id: string, file: File): Promise<{ pa
     throw new Error(`Error al subir PDF: ${response.status} ${text}`)
   }
 
-  return response.json() as Promise<{ path: string }>
+  return response.json() as Promise<{ path: string; markdownExtracted: boolean }>
 }
+
+export async function extractKpisFromPdf(file: File): Promise<KpiExtractionDto> {
+  assertOpsAccessToken()
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch('/api/v1/ops/fundamentals/extract-kpis', {
+    method: 'POST',
+    headers: getOpsAuthHeaders(),
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    let detail = `${response.status} ${text}`
+    try {
+      const json = JSON.parse(text) as { detail?: string; title?: string; errors?: Record<string, string[]> }
+      const firstError = json.detail ?? json.title ?? Object.values(json.errors ?? {})[0]?.[0]
+      if (firstError) detail = firstError
+    } catch {
+      // Non-JSON response.
+    }
+
+    throw new Error(`Error al extraer KPIs: ${detail}`)
+  }
+
+  return response.json() as Promise<KpiExtractionDto>
+}
+

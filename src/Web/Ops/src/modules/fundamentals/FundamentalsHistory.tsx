@@ -1,7 +1,12 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FundamentalRecordDto } from '@/api/fundamentalsApi'
-import { downloadFundamentalPdf, fetchFundamentalsByFibra, uploadFundamentalPdf } from '@/api/fundamentalsApi'
+import {
+  downloadFundamentalPdf,
+  fetchFundamentalsByFibra,
+  uploadFundamentalPdf,
+} from '@/api/fundamentalsApi'
+import { KPI_DEFINITIONS, type KpiKey } from '@/lib/kpi-definitions'
 
 interface Props {
   fibraId: string
@@ -19,12 +24,8 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
   })
 
   const handlePdfUpload = async (id: string, file: File) => {
-    try {
-      await uploadFundamentalPdf(id, file)
-      queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] })
-    } catch (e) {
-      console.error('Error al subir PDF:', e)
-    }
+    await uploadFundamentalPdf(id, file)
+    queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] })
   }
 
   const handlePdfDownload = async (id: string, ticker: string) => {
@@ -56,12 +57,13 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
           <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <th className="py-2 pr-3">Período</th>
             <th className="py-2 pr-3">Estado</th>
-            <th className="py-2 pr-3">Cap Rate</th>
-            <th className="py-2 pr-3">NAV</th>
-            <th className="py-2 pr-3">LTV</th>
-            <th className="py-2 pr-3">NOI</th>
-            <th className="py-2 pr-3">FFO</th>
-            <th className="py-2 pr-3">Dist. Trim.</th>
+            <th className="py-2 pr-3"><KpiHeader kpiKey="capRate" /></th>
+            <th className="py-2 pr-3"><KpiHeader kpiKey="navPerCbfi" /></th>
+            <th className="py-2 pr-3"><KpiHeader kpiKey="ltv" /></th>
+            <th className="py-2 pr-3"><KpiHeader kpiKey="noiMargin" /></th>
+            <th className="py-2 pr-3"><KpiHeader kpiKey="ffoMargin" /></th>
+            <th className="py-2 pr-3"><KpiHeader kpiKey="quarterlyDistribution" /></th>
+            <th className="py-2 pr-3">MD</th>
             <th className="py-2 pr-3">Importado por</th>
             <th className="py-2 pr-3">Fecha</th>
             <th className="py-2">Acciones</th>
@@ -69,66 +71,155 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {records.map((r) => (
-            <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-              <td className="py-2 pr-3 font-mono font-medium">{r.period}</td>
-              <td className="py-2 pr-3">
-                <RecordStatusBadge status={r.status} isPossibleUpdate={r.isPossibleUpdate} />
-              </td>
-              <td className="py-2 pr-3 tabular-nums">{r.capRate ?? '—'}</td>
-              <td className="py-2 pr-3 tabular-nums">{r.navPerCbfi ?? '—'}</td>
-              <td className="py-2 pr-3 tabular-nums">{r.ltv ?? '—'}</td>
-              <td className="py-2 pr-3 tabular-nums">{r.noiMargin ?? '—'}</td>
-              <td className="py-2 pr-3 tabular-nums">{r.ffoMargin ?? '—'}</td>
-              <td className="py-2 pr-3 tabular-nums">{r.quarterlyDistribution ?? '—'}</td>
-              <td className="py-2 pr-3 text-slate-500">{r.importedBy ?? '—'}</td>
-              <td className="py-2 pr-3 text-slate-500 whitespace-nowrap">
-                {new Date(r.capturedAt).toLocaleDateString('es-MX')}
-              </td>
-              <td className="py-2">
-                <div className="flex gap-2">
-                  {(r.status === 'processed' || r.status === 'partial') && (
-                    <button
-                      onClick={() => onReprocess(r)}
-                      className="rounded-lg bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700 hover:bg-orange-200 transition"
-                    >
-                      Reprocess
-                    </button>
-                  )}
-                  {r.pdfReference ? (
-                    <button
-                      type="button"
-                      onClick={() => handlePdfDownload(r.id, r.fibraTicker)}
-                      className="rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition"
-                    >
-                      Ver PDF
-                    </button>
-                  ) : (
-                    <>
-                      <input
-                        ref={(el) => { fileInputRefs.current[r.id] = el }}
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handlePdfUpload(r.id, file)
-                        }}
-                      />
-                      <button
-                        onClick={() => fileInputRefs.current[r.id]?.click()}
-                        className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
-                      >
-                        Subir PDF
-                      </button>
-                    </>
-                  )}
-                </div>
-              </td>
-            </tr>
+            <HistoryRow
+              key={r.id}
+              record={r}
+              fibraId={fibraId}
+              fileInputRefs={fileInputRefs}
+              onPdfUpload={handlePdfUpload}
+              onPdfDownload={handlePdfDownload}
+              onReprocess={onReprocess}
+            />
           ))}
         </tbody>
       </table>
     </div>
+  )
+}
+
+interface RowProps {
+  record: FundamentalRecordDto
+  fibraId: string
+  fileInputRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>
+  onPdfUpload: (id: string, file: File) => Promise<void>
+  onPdfDownload: (id: string, ticker: string) => Promise<void>
+  onReprocess: (record: FundamentalRecordDto) => void
+}
+
+const MAX_PDF_BYTES = 20 * 1024 * 1024
+
+function HistoryRow({
+  record: r,
+  fileInputRefs,
+  onPdfUpload,
+  onPdfDownload,
+  onReprocess,
+}: RowProps) {
+  const [pdfUploadError, setPdfUploadError] = useState<string | null>(null)
+
+  return (
+    <tr className="hover:bg-slate-50 transition-colors">
+      <td className="py-2 pr-3 font-mono font-medium">{r.period}</td>
+      <td className="py-2 pr-3">
+        <RecordStatusBadge status={r.status} isPossibleUpdate={r.isPossibleUpdate} />
+      </td>
+      <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="capRate" value={r.capRate} note={r.fieldNotes?.capRate} /></td>
+      <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="navPerCbfi" value={r.navPerCbfi} note={r.fieldNotes?.navPerCbfi} /></td>
+      <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="ltv" value={r.ltv} note={r.fieldNotes?.ltv} /></td>
+      <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="noiMargin" value={r.noiMargin} note={r.fieldNotes?.noiMargin} /></td>
+      <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="ffoMargin" value={r.ffoMargin} note={r.fieldNotes?.ffoMargin} /></td>
+      <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="quarterlyDistribution" value={r.quarterlyDistribution} note={r.fieldNotes?.quarterlyDistribution} /></td>
+      <td className="py-2 pr-3">
+        {r.hasMarkdownContent ? (
+          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">MD</span>
+        ) : (
+          <span className="text-slate-300 text-xs">—</span>
+        )}
+      </td>
+      <td className="py-2 pr-3 text-slate-500">{r.importedBy ?? '—'}</td>
+      <td className="py-2 pr-3 text-slate-500 whitespace-nowrap">
+        {new Date(r.capturedAt).toLocaleDateString('es-MX')}
+      </td>
+      <td className="py-2">
+        <div className="flex flex-wrap gap-2">
+          {(r.status === 'processed' || r.status === 'partial') && (
+            <button
+              type="button"
+              onClick={() => onReprocess(r)}
+              className="rounded-lg bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700 hover:bg-orange-200 transition"
+            >
+              Reprocess
+            </button>
+          )}
+
+          {r.pdfReference ? (
+            <button
+              type="button"
+              onClick={() => onPdfDownload(r.id, r.fibraTicker)}
+              className="rounded-lg bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition"
+            >
+              Ver PDF
+            </button>
+          ) : (
+            <>
+              <input
+                ref={(el) => { fileInputRefs.current[r.id] = el }}
+                type="file"
+                accept="application/pdf"
+                aria-label="Seleccionar PDF para subir"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  if (file.size > MAX_PDF_BYTES) {
+                    setPdfUploadError('El archivo excede el límite de 20 MB.')
+                    return
+                  }
+                  setPdfUploadError(null)
+                  onPdfUpload(r.id, file).catch((err: unknown) => {
+                    setPdfUploadError(err instanceof Error ? err.message : 'Error al subir PDF')
+                  })
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRefs.current[r.id]?.click()}
+                className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
+              >
+                Subir PDF
+              </button>
+            </>
+          )}
+        </div>
+        {pdfUploadError && (
+          <p className="mt-1 text-xs text-red-500">{pdfUploadError}</p>
+        )}
+      </td>
+    </tr>
+  )
+}
+
+function KpiHeader({ kpiKey }: { kpiKey: KpiKey }) {
+  const definition = KPI_DEFINITIONS[kpiKey]
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span>{definition.label}</span>
+      <span className="cursor-help select-none text-[10px] text-slate-400" title={definition.formula}>
+        ⓘ
+      </span>
+    </span>
+  )
+}
+
+function KpiCell({ kpiKey, value, note }: { kpiKey: KpiKey; value: number | string | null; note?: string }) {
+  if (value == null) {
+    return <span>—</span>
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span>{value}</span>
+      {note && (
+        <span
+          className="cursor-help select-none text-[10px] text-slate-400"
+          title={note}
+          aria-label={`Nota IA de ${KPI_DEFINITIONS[kpiKey].label}`}
+        >
+          ⓘ
+        </span>
+      )}
+    </span>
   )
 }
 

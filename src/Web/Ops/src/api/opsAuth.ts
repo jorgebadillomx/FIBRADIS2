@@ -6,6 +6,7 @@ type ApiErrorShape = {
   message?: string
   status?: number
   title?: string
+  errors?: Record<string, string[]>
 }
 
 type OpsApiErrorOptions = {
@@ -73,6 +74,11 @@ export function getOpsApiErrorMessage(
 
     if (typeof typedError.message === 'string' && typedError.message.length > 0) {
       return typedError.message
+    }
+
+    if (typedError.errors && typeof typedError.errors === 'object') {
+      const firstField = Object.values(typedError.errors).find((msgs) => msgs.length > 0)
+      if (firstField) return firstField[0]
     }
 
     if (typeof typedError.title === 'string' && typedError.title.length > 0) {

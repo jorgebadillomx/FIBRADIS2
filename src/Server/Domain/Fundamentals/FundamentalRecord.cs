@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Domain.Fundamentals;
 
 public class FundamentalRecord
@@ -7,13 +9,15 @@ public class FundamentalRecord
     public string Period { get; init; } = "";
     public string Status { get; set; } = "";
     public string ProcessingMode { get; init; } = "manual";
-    public decimal? CapRate { get; init; }
-    public decimal? NavPerCbfi { get; init; }
-    public decimal? Ltv { get; init; }
-    public decimal? NoiMargin { get; init; }
-    public decimal? FfoMargin { get; init; }
-    public decimal? QuarterlyDistribution { get; init; }
-    public string? Summary { get; init; }
+    public decimal? CapRate { get; set; }
+    public decimal? NavPerCbfi { get; set; }
+    public decimal? Ltv { get; set; }
+    public decimal? NoiMargin { get; set; }
+    public decimal? FfoMargin { get; set; }
+    public decimal? QuarterlyDistribution { get; set; }
+    public string? Summary { get; set; }
+    public string? MarkdownContent { get; set; }
+    public string? FieldNotesJson { get; private set; }
     public string? PdfReference { get; set; }
     public DateTimeOffset? PdfUploadedAt { get; set; }
     public bool IsPossibleUpdate { get; init; }
@@ -22,4 +26,26 @@ public class FundamentalRecord
     public DateTimeOffset CapturedAt { get; init; }
     public DateTimeOffset? ConfirmedAt { get; set; }
     public string? ErrorReason { get; init; }
+
+    public void SetFieldNotes(Dictionary<string, string?>? notes)
+    {
+        FieldNotesJson = notes is { Count: > 0 }
+            ? JsonSerializer.Serialize(notes)
+            : null;
+    }
+
+    public Dictionary<string, string>? GetFieldNotes()
+    {
+        if (string.IsNullOrWhiteSpace(FieldNotesJson)) return null;
+        try
+        {
+            var raw = JsonSerializer.Deserialize<Dictionary<string, string?>>(FieldNotesJson);
+            if (raw is null) return null;
+            var filtered = raw
+                .Where(kv => kv.Value is not null)
+                .ToDictionary(kv => kv.Key, kv => kv.Value!);
+            return filtered.Count > 0 ? filtered : null;
+        }
+        catch (JsonException) { return null; }
+    }
 }

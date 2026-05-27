@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchLatestNews } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
-import { getArticleImageUrl, SECTOR_IMAGES } from '@/shared/lib/news-image-fallback'
+import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 
 function NewsSectionSkeleton() {
   return (
@@ -60,18 +60,21 @@ export function NewsSection() {
             return (
               <article key={article.id} className="px-4 py-3">
                 <Link to={`/noticias/${article.id}`} className="block">
-                  <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
-                    <img
-                      src={getArticleImageUrl(article)}
-                      alt={`Imagen de la nota: ${article.title}`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null
-                        event.currentTarget.src = SECTOR_IMAGES.otro
-                      }}
-                    />
-                  </div>
+                  {getArticleImageUrl(article) ? (
+                    <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
+                      <img
+                        src={getArticleImageUrl(article)!}
+                        alt={`Imagen de la nota: ${article.title}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null
+                          event.currentTarget.style.display = 'none'
+                          event.currentTarget.parentElement!.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  ) : null}
                   <div className="hover:text-brand transition-colors">
                     <h4 className="text-sm font-medium leading-5">{article.title}</h4>
                   </div>

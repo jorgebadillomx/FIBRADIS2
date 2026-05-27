@@ -62,36 +62,59 @@ export function MercadoSection({ ticker, week52High, week52Low, volume }: Mercad
         </div>
       </div>
 
-      {/* Selector de período */}
-      <div className="flex items-center gap-2">
-        {SELECTORS.map((s) => (
-          <button
-            key={s}
-            aria-pressed={active === s ? 'true' : 'false'}
-            onClick={() => {
-              setActive(s)
-              setPeriod(PERIOD_MAP[s])
-            }}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-              active === s
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+      <div className="rounded-2xl border border-border bg-surface-elevated shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-border px-4 py-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Cierres diarios
+            </p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h3 className="font-playfair text-2xl font-semibold text-foreground">
+                Evoluci&oacute;n del precio
+              </h3>
+              <span className="rounded-full border border-brand/15 bg-brand-muted px-2.5 py-1 text-xs font-medium text-brand">
+                Serie {active}
+              </span>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              La serie muestra el cierre por d&iacute;a para que el cambio de tendencia y los puntos de giro
+              sean visibles con claridad.
+            </p>
+          </div>
 
-      {isLoadingHistory ? (
-        <div className="rounded-lg border border-border bg-muted/20 animate-pulse h-48" />
-      ) : isHistoryError ? (
-        <div className="rounded-lg border border-border bg-muted/20 flex items-center justify-center h-48">
-          <p className="text-sm text-muted-foreground">Error al cargar historial de precios</p>
+          <div className="flex items-center gap-2 rounded-full bg-muted p-1">
+            {SELECTORS.map((s) => (
+              <button
+                key={s}
+                aria-pressed={active === s ? 'true' : 'false'}
+                onClick={() => {
+                  setActive(s)
+                  setPeriod(PERIOD_MAP[s])
+                }}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                  active === s
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : (
-        <PriceChart data={history?.priceHistory ?? []} />
-      )}
+
+        <div className="p-4">
+          {isLoadingHistory ? (
+            <div className="h-72 animate-pulse rounded-xl border border-border bg-muted/20" />
+          ) : isHistoryError ? (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-border bg-muted/20">
+              <p className="text-sm text-muted-foreground">Error al cargar historial de precios</p>
+            </div>
+          ) : (
+            <PriceChart data={history?.priceHistory ?? []} periodLabel={active} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

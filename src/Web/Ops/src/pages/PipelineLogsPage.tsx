@@ -4,7 +4,7 @@ import { fetchPipelineLogs, type PipelineLogPipeline } from '@/api/pipelineLogsA
 import { cn } from '@/shared/lib/utils'
 
 const pageSize = 50
-const pipelines: PipelineLogPipeline[] = ['all', 'Market', 'News', 'Distribution', 'BodyTextRetry']
+const pipelines: PipelineLogPipeline[] = ['all', 'Market', 'News', 'Distribution', 'BodyTextRetry', 'ManualAiSummary']
 
 function getPipelineBadgeClass(pipeline: string) {
   switch (pipeline) {
@@ -16,6 +16,8 @@ function getPipelineBadgeClass(pipeline: string) {
       return 'bg-amber-100 text-amber-800'
     case 'BodyTextRetry':
       return 'bg-violet-100 text-violet-800'
+    case 'ManualAiSummary':
+      return 'bg-rose-100 text-rose-800'
     default:
       return 'bg-slate-100 text-slate-700'
   }

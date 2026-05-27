@@ -52,4 +52,44 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
         record.PdfUploadedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task UpdateMarkdownContentAsync(Guid id, string markdownContent, CancellationToken ct)
+    {
+        var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (record is null) throw new InvalidOperationException($"FundamentalRecord {id} not found during markdown update.");
+        record.MarkdownContent = markdownContent;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateKpiExtractionAsync(Guid id, KpiExtractionResult result, CancellationToken ct)
+    {
+        var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (record is null) throw new InvalidOperationException($"FundamentalRecord {id} not found during KPI extraction update.");
+
+        record.CapRate = result.CapRate;
+        record.NavPerCbfi = result.NavPerCbfi;
+        record.Ltv = result.Ltv;
+        record.NoiMargin = result.NoiMargin;
+        record.FfoMargin = result.FfoMargin;
+        record.QuarterlyDistribution = result.QuarterlyDistribution;
+        record.Summary = result.Summary;
+
+        record.SetFieldNotes(new Dictionary<string, string?>
+        {
+            ["capRate"] = result.CapRateNote,
+            ["navPerCbfi"] = result.NavPerCbfiNote,
+            ["ltv"] = result.LtvNote,
+            ["noiMargin"] = result.NoiMarginNote,
+            ["ffoMargin"] = result.FfoMarginNote,
+            ["quarterlyDistribution"] = result.QuarterlyDistributionNote,
+            ["extractionNotes"] = result.ExtractionNotes,
+        });
+
+        var hasAnyKpi = result.CapRate.HasValue || result.NavPerCbfi.HasValue || result.Ltv.HasValue
+            || result.NoiMargin.HasValue || result.FfoMargin.HasValue || result.QuarterlyDistribution.HasValue;
+
+        record.Status = hasAnyKpi ? "partial" : "error";
+
+        await db.SaveChangesAsync(ct);
+    }
 }

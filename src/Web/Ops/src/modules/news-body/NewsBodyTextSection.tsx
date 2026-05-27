@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import ReactMarkdown from 'react-markdown'
 import {
   fetchOpsNewsList,
   fetchOpsNewsBody,
@@ -14,6 +15,7 @@ export function NewsBodyTextSection() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [hasAiSummaryFilter, setHasAiSummaryFilter] = useState<'all' | 'with' | 'without'>('all')
+  const [editedFilter, setEditedFilter] = useState<'all' | 'edited' | 'not-edited'>('all')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState<string>('')
@@ -30,16 +32,17 @@ export function NewsBodyTextSection() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, hasAiSummaryFilter])
+  }, [debouncedSearch, hasAiSummaryFilter, editedFilter])
 
   const listQuery = useQuery({
-    queryKey: ['ops-news-list', page, pageSize, debouncedSearch, hasAiSummaryFilter],
+    queryKey: ['ops-news-list', page, pageSize, debouncedSearch, hasAiSummaryFilter, editedFilter],
     queryFn: () =>
       fetchOpsNewsList(
         page,
         pageSize,
         debouncedSearch || undefined,
         hasAiSummaryFilter === 'all' ? undefined : hasAiSummaryFilter === 'with',
+        editedFilter === 'all' ? undefined : editedFilter === 'edited',
       ),
     retry: false,
   })
@@ -117,7 +120,7 @@ export function NewsBodyTextSection() {
               />
             </div>
 
-            <div className="lg:w-56">
+            <div className="lg:w-48">
               <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground" htmlFor="ops-news-ai-filter">
                 Resumen IA
               </label>
@@ -130,6 +133,22 @@ export function NewsBodyTextSection() {
                 <option value="all">Todos</option>
                 <option value="with">Con resumen IA</option>
                 <option value="without">Sin resumen IA</option>
+              </select>
+            </div>
+
+            <div className="lg:w-48">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground" htmlFor="ops-news-edited-filter">
+                Edición manual
+              </label>
+              <select
+                className="mt-2 h-11 w-full rounded-xl border border-border bg-white px-4 text-sm outline-none transition focus:border-teal-600"
+                id="ops-news-edited-filter"
+                onChange={(event) => setEditedFilter(event.target.value as 'all' | 'edited' | 'not-edited')}
+                value={editedFilter}
+              >
+                <option value="all">Todos</option>
+                <option value="edited">Editados</option>
+                <option value="not-edited">Sin editar</option>
               </select>
             </div>
           </div>
@@ -202,6 +221,14 @@ export function NewsBodyTextSection() {
                         IA
                       </span>
                     ) : null}
+                    {article.manuallyEditedAt ? (
+                      <span
+                        className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700"
+                        title={`Editado: ${new Date(article.manuallyEditedAt).toLocaleString('es-MX')}`}
+                      >
+                        Editado
+                      </span>
+                    ) : null}
                     {savedId === article.id ? (
                       <span className="ml-2 text-xs text-teal-600">✓ Guardado</span>
                     ) : null}
@@ -246,8 +273,8 @@ export function NewsBodyTextSection() {
                           {bodyQuery.data?.aiSummary ? (
                             <div className="rounded-2xl border border-teal-200 bg-white px-4 py-3">
                               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Resumen de IA</p>
-                              <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                                {bodyQuery.data.aiSummary}
+                              <div className="mt-2 text-sm leading-7 text-slate-700 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-3 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1 [&>strong]:font-semibold [&>h1]:font-bold [&>h2]:font-semibold [&>h3]:font-semibold">
+                                <ReactMarkdown>{bodyQuery.data.aiSummary}</ReactMarkdown>
                               </div>
                             </div>
                           ) : null}

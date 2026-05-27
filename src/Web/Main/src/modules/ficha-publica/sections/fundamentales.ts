@@ -1,7 +1,11 @@
+import type { KpiKey } from '@/shared/lib/kpi-definitions'
+
 export interface FundamentalItem {
   label: string
+  kpiKey: KpiKey
   period: string
   value: number | null
+  note?: string
 }
 
 export interface FundamentalesData {

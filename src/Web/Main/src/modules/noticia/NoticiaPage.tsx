@@ -1,8 +1,9 @@
 import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
+import ReactMarkdown from 'react-markdown'
 import { fetchArticleById } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
-import { getArticleImageUrl, SECTOR_IMAGES } from '@/shared/lib/news-image-fallback'
+import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
 
 const DEFAULT_TITLE = 'FIBRADIS'
@@ -70,18 +71,21 @@ export function NoticiaPage() {
       <meta name="description" content={pageDescription} />
 
       <div className="container mx-auto max-w-2xl px-4 py-8">
-        <div className="mb-6 aspect-video overflow-hidden rounded-xl bg-muted">
-          <img
-            src={imageUrl}
-            alt={article.title}
-            className="h-full w-full object-cover"
-            loading="eager"
-            onError={(event) => {
-              event.currentTarget.onerror = null
-              event.currentTarget.src = SECTOR_IMAGES.otro
-            }}
-          />
-        </div>
+        {imageUrl ? (
+          <div className="mb-6 aspect-video overflow-hidden rounded-xl bg-muted">
+            <img
+              src={imageUrl}
+              alt={article.title}
+              className="h-full w-full object-cover"
+              loading="eager"
+              onError={(event) => {
+                event.currentTarget.onerror = null
+                event.currentTarget.style.display = 'none'
+                event.currentTarget.parentElement!.style.display = 'none'
+              }}
+            />
+          </div>
+        ) : null}
 
         <h1 className="mb-2 font-playfair text-3xl md:text-4xl font-bold leading-tight text-foreground">
           {article.title}
@@ -98,7 +102,13 @@ export function NoticiaPage() {
                 Resumen IA
               </p>
             ) : null}
-            <p className="text-base leading-relaxed text-foreground">{summary}</p>
+            {article.aiSummary ? (
+              <div className="text-base leading-relaxed text-foreground [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-3 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1 [&>strong]:font-semibold">
+                <ReactMarkdown>{summary}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-base leading-relaxed text-foreground">{summary}</p>
+            )}
           </div>
         ) : null}
 
