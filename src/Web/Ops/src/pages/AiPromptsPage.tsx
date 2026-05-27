@@ -64,9 +64,9 @@ export function AiPromptsPage() {
         </p>
       </div>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-2">
+      <div className="mt-6 flex flex-col gap-5">
         {sections.map(({ contentType, label, placeholders, query, mutation }) => (
-          <section className={`rounded-2xl border border-border/80 bg-slate-50/70 p-5${contentType === 'kpi_extraction' ? ' xl:col-span-2' : ''}`} key={contentType}>
+          <section className="rounded-2xl border border-border/80 bg-slate-50/70 p-5" key={contentType}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold tracking-tight">{label}</h3>

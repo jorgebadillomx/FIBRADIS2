@@ -44,7 +44,9 @@ export async function deleteBlocklistTerm(id: string): Promise<void> {
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al eliminar término: ${JSON.stringify(error)}`))
 }
 
-export type OpsNewsArticle = components['schemas']['OpsNewsArticleDto']
+export type OpsNewsArticle = components['schemas']['OpsNewsArticleDto'] & {
+  manuallyEditedAt?: string | null
+}
 export type OpsNewsPage = components['schemas']['PagedResultOfOpsNewsArticleDto']
 
 export async function fetchOpsNewsList(

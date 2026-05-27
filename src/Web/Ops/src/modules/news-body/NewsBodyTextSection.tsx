@@ -7,6 +7,7 @@ import {
   updateNewsBodyText,
   type OpsNewsArticle,
 } from '@/api/newsApi'
+import { ManualSummaryTriggerSection } from '@/modules/news-body/ManualSummaryTriggerSection'
 
 export function NewsBodyTextSection() {
   const queryClient = useQueryClient()
@@ -104,6 +105,10 @@ export function NewsBodyTextSection() {
         </p>
       </div>
 
+      <div className="mt-6">
+        <ManualSummaryTriggerSection />
+      </div>
+
       <div className="mt-6 overflow-hidden rounded-2xl border border-border/80">
         <div className="border-b border-border/80 bg-slate-50/70 px-4 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -190,8 +195,14 @@ export function NewsBodyTextSection() {
               </tr>
             ) : null}
 
-            {listQuery.data?.items.map((article) => (
-              <Fragment key={article.id}>
+            {listQuery.data?.items.map((article) => {
+              const manuallyEditedAt =
+                'manuallyEditedAt' in article && typeof article.manuallyEditedAt === 'string'
+                  ? article.manuallyEditedAt
+                  : null
+
+              return (
+                <Fragment key={article.id}>
                 <tr
                   className="border-t border-border/70 text-sm"
                 >
@@ -221,10 +232,10 @@ export function NewsBodyTextSection() {
                         IA
                       </span>
                     ) : null}
-                    {article.manuallyEditedAt ? (
+                    {manuallyEditedAt ? (
                       <span
                         className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700"
-                        title={`Editado: ${new Date(article.manuallyEditedAt).toLocaleString('es-MX')}`}
+                        title={`Editado: ${new Date(manuallyEditedAt).toLocaleString('es-MX')}`}
                       >
                         Editado
                       </span>
@@ -310,8 +321,9 @@ export function NewsBodyTextSection() {
                     </td>
                   </tr>
                 ) : null}
-              </Fragment>
-            ))}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
       </div>
