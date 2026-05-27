@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchAiPrompt, updateAiPrompt } from '@/api/aiPromptsApi'
 
-type PromptContentType = 'news' | 'document'
+type PromptContentType = 'news' | 'kpi_extraction'
 
 export function AiPromptsPage() {
   const queryClient = useQueryClient()
   const [templates, setTemplates] = useState<Record<PromptContentType, string>>({
     news: '',
-    document: '',
+    kpi_extraction: '',
   })
 
   const newsQuery = useQuery({
@@ -17,9 +17,9 @@ export function AiPromptsPage() {
     retry: false,
   })
 
-  const documentQuery = useQuery({
-    queryKey: ['ai-prompt', 'document'],
-    queryFn: () => fetchAiPrompt('document'),
+  const kpiQuery = useQuery({
+    queryKey: ['ai-prompt', 'kpi_extraction'],
+    queryFn: () => fetchAiPrompt('kpi_extraction'),
     retry: false,
   })
 
@@ -30,10 +30,10 @@ export function AiPromptsPage() {
   }, [newsQuery.data])
 
   useEffect(() => {
-    if (documentQuery.data) {
-      setTemplates((current) => ({ ...current, document: documentQuery.data.promptTemplate }))
+    if (kpiQuery.data) {
+      setTemplates((current) => ({ ...current, kpi_extraction: kpiQuery.data.promptTemplate }))
     }
-  }, [documentQuery.data])
+  }, [kpiQuery.data])
 
   const newsMutation = useMutation({
     mutationFn: (promptTemplate: string) => updateAiPrompt('news', promptTemplate),
@@ -42,16 +42,16 @@ export function AiPromptsPage() {
     },
   })
 
-  const documentMutation = useMutation({
-    mutationFn: (promptTemplate: string) => updateAiPrompt('document', promptTemplate),
+  const kpiMutation = useMutation({
+    mutationFn: (promptTemplate: string) => updateAiPrompt('kpi_extraction', promptTemplate),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['ai-prompt', 'document'] })
+      await queryClient.invalidateQueries({ queryKey: ['ai-prompt', 'kpi_extraction'] })
     },
   })
 
   const sections = [
-    { contentType: 'news' as const, label: 'Prompt de noticias', query: newsQuery, mutation: newsMutation },
-    { contentType: 'document' as const, label: 'Prompt de documentos', query: documentQuery, mutation: documentMutation },
+    { contentType: 'news' as const, label: 'Prompt de noticias', placeholders: '{title}, {snippet_section}, {body_section}', query: newsQuery, mutation: newsMutation },
+    { contentType: 'kpi_extraction' as const, label: 'Prompt de extracción KPI', placeholders: '{markdown_content}', query: kpiQuery, mutation: kpiMutation },
   ]
 
   return (
@@ -65,13 +65,13 @@ export function AiPromptsPage() {
       </div>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-2">
-        {sections.map(({ contentType, label, query, mutation }) => (
-          <section className="rounded-2xl border border-border/80 bg-slate-50/70 p-5" key={contentType}>
+        {sections.map(({ contentType, label, placeholders, query, mutation }) => (
+          <section className={`rounded-2xl border border-border/80 bg-slate-50/70 p-5${contentType === 'kpi_extraction' ? ' xl:col-span-2' : ''}`} key={contentType}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold tracking-tight">{label}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Placeholders requeridos: `{ '{title}' }`, `{ '{snippet_section}' }`, `{ '{body_section}' }`.
+                  Placeholder requerido: <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">{placeholders}</code>
                 </p>
               </div>
               <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-teal-800">
@@ -87,7 +87,7 @@ export function AiPromptsPage() {
               <>
                 <textarea
                   aria-label={label}
-                  className="mt-4 h-[24rem] w-full rounded-2xl border border-border bg-white px-4 py-3 font-mono text-sm leading-7 outline-none transition focus:border-teal-600"
+                  className={`mt-4 w-full rounded-2xl border border-border bg-white px-4 py-3 font-mono text-sm leading-7 outline-none transition focus:border-teal-600 ${contentType === 'kpi_extraction' ? 'h-[48rem]' : 'h-[24rem]'}`}
                   onChange={(event) =>
                     setTemplates((current) => ({
                       ...current,

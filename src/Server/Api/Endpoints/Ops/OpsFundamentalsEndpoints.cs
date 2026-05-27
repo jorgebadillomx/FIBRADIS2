@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Application.Catalog;
 using Application.Fundamentals;
 using Domain.Fundamentals;
+using Infrastructure.Integrations.Pdf;
+using Microsoft.Extensions.Logging;
 using SharedApiContracts.Fundamentals;
 
 namespace Api.Endpoints.Ops;
@@ -11,6 +14,21 @@ public static partial class OpsFundamentalsEndpoints
 {
     [GeneratedRegex(@"^Q[1-4]-20\d{2}$")]
     private static partial Regex PeriodRegex();
+
+    private static IReadOnlyDictionary<string, string>? DeserializeFieldNotes(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string?>>(json);
+            if (dict is null) return null;
+            var filtered = dict
+                .Where(kv => kv.Value is not null)
+                .ToDictionary(kv => kv.Key, kv => kv.Value!);
+            return filtered.Count > 0 ? filtered : null;
+        }
+        catch { return null; }
+    }
 
     public static IEndpointRouteBuilder MapOpsFundamentals(this IEndpointRouteBuilder app)
     {
@@ -57,15 +75,7 @@ public static partial class OpsFundamentalsEndpoints
             Check("ffoMargin", request.FfoMargin);
             Check("quarterlyDistribution", request.QuarterlyDistribution);
 
-            if (presentFields.Count == 0)
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["fields"] = ["Se requiere al menos un campo numérico con valor."],
-                });
-            }
-
-            var status = presentFields.Count < 6 ? "partial" : "pending";
+            var status = presentFields.Count >= 6 ? "pending" : "partial";
 
             var existing = await repo.GetProcessedByFibraAndPeriodAsync(request.FibraId, period, ct);
             var isPossibleUpdate = existing is not null;
@@ -98,6 +108,9 @@ public static partial class OpsFundamentalsEndpoints
                 CapturedAt = DateTimeOffset.UtcNow,
             };
 
+            if (request.FieldNotes is { Count: > 0 })
+                record.SetFieldNotes(request.FieldNotes.ToDictionary(kv => kv.Key, kv => (string?)kv.Value));
+
             await repo.AddAsync(record, ct);
 
             return Results.Ok(new FundamentalPreviewDto(
@@ -110,10 +123,99 @@ public static partial class OpsFundamentalsEndpoints
                 PresentFields: presentFields.AsReadOnly(),
                 MissingFields: missingFields.AsReadOnly(),
                 PdfReference: record.PdfReference,
-                CapturedAt: record.CapturedAt));
+                CapturedAt: record.CapturedAt,
+                HasMarkdownContent: !string.IsNullOrWhiteSpace(record.MarkdownContent)));
         })
         .Produces<FundamentalPreviewDto>(StatusCodes.Status200OK)
         .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPost("/extract-kpis", async (
+            IFormFile file,
+            IKpiExtractorService kpiExtractor,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
+        {
+            var logger = loggerFactory.CreateLogger("OpsFundamentals");
+
+            if (!string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["file"] = ["Solo se aceptan archivos PDF."],
+                });
+            }
+
+            const long maxSizeBytes = 20L * 1024 * 1024;
+            if (file.Length > maxSizeBytes)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["file"] = ["El archivo excede el tamaño máximo de 20 MB."],
+                });
+            }
+
+            string markdown;
+            try
+            {
+                await using var stream = file.OpenReadStream();
+                markdown = PdfMarkdownExtractor.Extract(stream);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Error al extraer texto del PDF");
+                markdown = string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return Results.Ok(new KpiExtractionDto(
+                    CapRate: null, CapRateNote: null,
+                    NavPerCbfi: null, NavPerCbfiNote: null,
+                    Ltv: null, LtvNote: null,
+                    NoiMargin: null, NoiMarginNote: null,
+                    FfoMargin: null, FfoMarginNote: null,
+                    QuarterlyDistribution: null, QuarterlyDistributionNote: null,
+                    Summary: null,
+                    ExtractionNotes: "PDF sin texto extraíble. Puede ser un PDF escaneado que requiere OCR.",
+                    MarkdownLength: 0));
+            }
+
+            KpiExtractionResult result;
+            try
+            {
+                result = await kpiExtractor.ExtractAsync(markdown, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Error al extraer KPIs desde PDF");
+                return Results.Problem(
+                    statusCode: StatusCodes.Status502BadGateway,
+                    detail: "El proveedor de IA no está disponible.");
+            }
+
+            return Results.Ok(new KpiExtractionDto(
+                CapRate: result.CapRate,
+                CapRateNote: result.CapRateNote,
+                NavPerCbfi: result.NavPerCbfi,
+                NavPerCbfiNote: result.NavPerCbfiNote,
+                Ltv: result.Ltv,
+                LtvNote: result.LtvNote,
+                NoiMargin: result.NoiMargin,
+                NoiMarginNote: result.NoiMarginNote,
+                FfoMargin: result.FfoMargin,
+                FfoMarginNote: result.FfoMarginNote,
+                QuarterlyDistribution: result.QuarterlyDistribution,
+                QuarterlyDistributionNote: result.QuarterlyDistributionNote,
+                Summary: result.Summary,
+                ExtractionNotes: result.ExtractionNotes ?? string.Empty,
+                MarkdownLength: markdown.Length));
+        })
+        .DisableAntiforgery()
+        .Produces<KpiExtractionDto>(StatusCodes.Status200OK)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status502BadGateway)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
@@ -164,7 +266,9 @@ public static partial class OpsFundamentalsEndpoints
                 ImportedBy: record.ImportedBy,
                 ConfirmedBy: actor,
                 CapturedAt: record.CapturedAt,
-                ConfirmedAt: confirmedAt));
+                ConfirmedAt: confirmedAt,
+                HasMarkdownContent: !string.IsNullOrWhiteSpace(record.MarkdownContent),
+                FieldNotes: DeserializeFieldNotes(record.FieldNotesJson)));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -177,6 +281,7 @@ public static partial class OpsFundamentalsEndpoints
             IFormFile file,
             IFundamentalRepository repo,
             IConfiguration config,
+            ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
             var record = await repo.GetByIdAsync(id, ct);
@@ -220,7 +325,24 @@ public static partial class OpsFundamentalsEndpoints
             var relativePath = $"uploads/fundamentals/{fileName}";
             await repo.UpdatePdfReferenceAsync(id, relativePath, ct);
 
-            return Results.Ok(new { path = relativePath });
+            var markdownExtracted = false;
+            try
+            {
+                await using var mdStream = File.OpenRead(fullPath);
+                var markdown = PdfMarkdownExtractor.Extract(mdStream);
+                if (!string.IsNullOrWhiteSpace(markdown))
+                {
+                    await repo.UpdateMarkdownContentAsync(id, markdown, ct);
+                    markdownExtracted = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = loggerFactory.CreateLogger("OpsFundamentals");
+                logger.LogWarning(ex, "No se pudo extraer markdown del PDF {RecordId}", id);
+            }
+
+            return Results.Ok(new { path = relativePath, markdownExtracted });
         })
         .DisableAntiforgery()
         .Produces(StatusCodes.Status200OK)
@@ -249,6 +371,74 @@ public static partial class OpsFundamentalsEndpoints
         })
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPost("/{id:guid}/extract-kpis", async (
+            Guid id,
+            IFundamentalRepository repo,
+            IFibraRepository fibraRepo,
+            IKpiExtractorService kpiExtractor,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
+        {
+            var logger = loggerFactory.CreateLogger("OpsFundamentals");
+            var record = await repo.GetByIdAsync(id, ct);
+            if (record is null)
+                return Results.NotFound();
+
+            if (string.IsNullOrWhiteSpace(record.MarkdownContent))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["markdownContent"] = ["El registro no tiene contenido markdown. Sube el PDF primero."],
+                });
+            }
+
+            KpiExtractionResult result;
+            try
+            {
+                result = await kpiExtractor.ExtractAsync(record.MarkdownContent, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Error al extraer KPIs para registro {RecordId}", id);
+                return Results.Problem(
+                    statusCode: StatusCodes.Status502BadGateway,
+                    detail: "El proveedor de IA no está disponible.");
+            }
+
+            await repo.UpdateKpiExtractionAsync(id, result, ct);
+
+            var updated = await repo.GetByIdAsync(id, ct);
+            var fibra = await fibraRepo.GetByIdAsync(record.FibraId, ct);
+
+            return Results.Ok(new FundamentalRecordDto(
+                Id: updated!.Id,
+                FibraTicker: fibra?.Ticker ?? record.FibraId.ToString(),
+                Period: updated.Period,
+                Status: updated.Status,
+                IsPossibleUpdate: updated.IsPossibleUpdate,
+                CapRate: updated.CapRate,
+                NavPerCbfi: updated.NavPerCbfi,
+                Ltv: updated.Ltv,
+                NoiMargin: updated.NoiMargin,
+                FfoMargin: updated.FfoMargin,
+                QuarterlyDistribution: updated.QuarterlyDistribution,
+                Summary: updated.Summary,
+                PdfReference: updated.PdfReference,
+                PdfUploadedAt: updated.PdfUploadedAt,
+                ImportedBy: updated.ImportedBy,
+                ConfirmedBy: updated.ConfirmedBy,
+                CapturedAt: updated.CapturedAt,
+                ConfirmedAt: updated.ConfirmedAt,
+                HasMarkdownContent: !string.IsNullOrWhiteSpace(updated.MarkdownContent),
+                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson)));
+        })
+        .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status502BadGateway)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
@@ -286,7 +476,9 @@ public static partial class OpsFundamentalsEndpoints
                 ImportedBy: r.ImportedBy,
                 ConfirmedBy: r.ConfirmedBy,
                 CapturedAt: r.CapturedAt,
-                ConfirmedAt: r.ConfirmedAt)).ToList();
+                ConfirmedAt: r.ConfirmedAt,
+                HasMarkdownContent: !string.IsNullOrWhiteSpace(r.MarkdownContent),
+                FieldNotes: DeserializeFieldNotes(r.FieldNotesJson))).ToList();
 
             return Results.Ok(dtos);
         })

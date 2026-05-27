@@ -11,4 +11,6 @@ public interface IFundamentalRepository
     Task AddAsync(FundamentalRecord record, CancellationToken ct);
     Task UpdateStatusAsync(Guid id, string status, string? confirmedBy, DateTimeOffset? confirmedAt, CancellationToken ct);
     Task UpdatePdfReferenceAsync(Guid id, string pdfReference, CancellationToken ct);
+    Task UpdateMarkdownContentAsync(Guid id, string markdownContent, CancellationToken ct);
+    Task UpdateKpiExtractionAsync(Guid id, KpiExtractionResult result, CancellationToken ct);
 }

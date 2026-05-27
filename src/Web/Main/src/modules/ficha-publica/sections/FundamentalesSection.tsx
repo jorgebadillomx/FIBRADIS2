@@ -4,6 +4,7 @@ import {
   shouldShowFundamentalesWarning,
   type FundamentalesData,
 } from './fundamentales'
+import { KpiLabel } from '@/shared/ui/KpiLabel'
 
 interface Props {
   data?: FundamentalesData
@@ -26,11 +27,18 @@ export function FundamentalesSection({ data }: Props) {
             {items.map((item) => (
               <tr key={`${item.label}-${item.period}`} className="hover:bg-muted/40 transition-colors">
                 <td className="py-2.5 pr-4">
-                  <span className="text-foreground">{item.label}</span>
+                  <KpiLabel kpiKey={item.kpiKey} label={item.label} />
                   <span className="ml-2 text-xs text-muted-foreground/70">{item.period}</span>
                 </td>
-                <td className="py-2.5 text-right font-mono font-medium tabular-nums">
-                  {formatFundamentalValue(item.value)}
+                <td className="py-2.5 text-right">
+                  <div className="font-mono font-medium tabular-nums">
+                    {formatFundamentalValue(item.value)}
+                  </div>
+                  {item.note && (
+                    <div className="mt-0.5 text-left text-xs italic text-muted-foreground">
+                      {item.note}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

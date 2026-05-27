@@ -10,4 +10,5 @@ public sealed record FundamentalPreviewDto(
     IReadOnlyList<string> PresentFields,
     IReadOnlyList<string> MissingFields,
     string? PdfReference,
-    DateTimeOffset CapturedAt);
+    DateTimeOffset CapturedAt,
+    bool HasMarkdownContent = false);

@@ -13,6 +13,7 @@ import { ReportesSection } from './sections/ReportesSection'
 import { FreshnessBadge } from '@/shared/ui/freshness-badge'
 import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
 import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
+import { KPI_DEFINITIONS, type KpiKey } from '@/shared/lib/kpi-definitions'
 
 function SectionHeader({ title }: { title: string }) {
   return (
@@ -90,14 +91,20 @@ export function FibraPage() {
   const fundamentalesData: FundamentalesData | undefined = fundamentalesDto
     ? {
         periodsAgo: typeof fundamentalesDto.periodsAgo === 'number' ? fundamentalesDto.periodsAgo : undefined,
-        items: [
-          { label: 'Cap Rate', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.capRate) },
-          { label: 'NAV por CBFI', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.navPerCbfi) },
-          { label: 'LTV', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.ltv) },
-          { label: 'Margen NOI', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.noiMargin) },
-          { label: 'Margen FFO', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.ffoMargin) },
-          { label: 'Dist. Trimestral', period: fundamentalesDto.period, value: toFundamentalNum(fundamentalesDto.quarterlyDistribution) },
-        ],
+        items: ([
+          'capRate',
+          'navPerCbfi',
+          'ltv',
+          'noiMargin',
+          'ffoMargin',
+          'quarterlyDistribution',
+        ] as const).map((key) => ({
+          label: KPI_DEFINITIONS[key].label,
+          kpiKey: key as KpiKey,
+          period: fundamentalesDto.period,
+          value: toFundamentalNum(fundamentalesDto[key]),
+          note: fundamentalesDto.fieldNotes?.[key] ?? undefined,
+        })),
       }
     : undefined
 

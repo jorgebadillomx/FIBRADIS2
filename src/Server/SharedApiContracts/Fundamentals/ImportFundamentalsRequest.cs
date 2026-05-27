@@ -10,4 +10,5 @@ public sealed record ImportFundamentalsRequest(
     decimal? FfoMargin,
     decimal? QuarterlyDistribution,
     string? Summary,
-    string? PdfReference);
+    string? PdfReference,
+    IReadOnlyDictionary<string, string>? FieldNotes = null);

@@ -22,8 +22,8 @@ export function getSectorImageUrl(sector?: string | null): string {
   return SECTOR_IMAGES[key] ?? SECTOR_IMAGES.otro
 }
 
-export function getArticleImageUrl(article: ArticleLike, fibra?: FibraLike): string {
-  return article.imageUrl ?? fibra?.logoUrl ?? getSectorImageUrl(fibra?.sector)
+export function getArticleImageUrl(article: ArticleLike, fibra?: FibraLike): string | null {
+  return article.imageUrl ?? fibra?.logoUrl ?? null
 }
 
 export { SECTOR_IMAGES }

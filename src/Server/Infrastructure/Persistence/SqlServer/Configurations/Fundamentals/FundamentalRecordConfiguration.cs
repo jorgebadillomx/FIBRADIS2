@@ -91,6 +91,14 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
         builder.Property(x => x.ConfirmedAt)
             .HasColumnName("confirmed_at");
 
+        builder.Property(x => x.MarkdownContent)
+            .HasColumnName("markdown_content")
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(x => x.FieldNotesJson)
+            .HasColumnName("FieldNotesJson")
+            .HasColumnType("nvarchar(max)");
+
         builder.Property(x => x.ErrorReason)
             .HasColumnName("error_reason")
             .HasColumnType("nvarchar(500)");

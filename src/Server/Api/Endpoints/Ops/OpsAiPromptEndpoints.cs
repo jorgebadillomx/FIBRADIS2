@@ -10,15 +10,11 @@ public static class OpsAiPromptEndpoints
     private static readonly string[] AllowedContentTypes =
     [
         AiPromptTemplateDefaults.NewsContentType,
-        AiPromptTemplateDefaults.DocumentContentType,
+        AiPromptTemplateDefaults.KpiExtractionContentType,
     ];
 
-    private static readonly string[] RequiredPlaceholders =
-    [
-        "{title}",
-        "{snippet_section}",
-        "{body_section}",
-    ];
+    private static readonly string[] NewsRequiredPlaceholders = ["{title}", "{snippet_section}", "{body_section}"];
+    private static readonly string[] KpiRequiredPlaceholders = ["{markdown_content}"];
 
     public static IEndpointRouteBuilder MapOpsAiPrompts(this IEndpointRouteBuilder app)
     {
@@ -35,7 +31,7 @@ public static class OpsAiPromptEndpoints
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["contentType"] = ["Valor inválido. Use 'news' o 'document'."],
+                    ["contentType"] = ["Valor inválido. Use 'news' o 'kpi_extraction'."],
                 });
             }
 
@@ -71,7 +67,7 @@ public static class OpsAiPromptEndpoints
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["contentType"] = ["Valor inválido. Use 'news' o 'document'."],
+                    ["contentType"] = ["Valor inválido. Use 'news' o 'kpi_extraction'."],
                 });
             }
 
@@ -83,22 +79,29 @@ public static class OpsAiPromptEndpoints
                 });
             }
 
-            if (request.PromptTemplate.Length > 4000)
+            var isKpi = string.Equals(contentType, AiPromptTemplateDefaults.KpiExtractionContentType, StringComparison.OrdinalIgnoreCase);
+            var maxChars = isKpi ? 10_000 : 4_000;
+
+            if (request.PromptTemplate.Length > maxChars)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["promptTemplate"] = ["El template no puede superar los 4000 caracteres."],
+                    ["promptTemplate"] = [$"El template no puede superar los {maxChars} caracteres."],
                 });
             }
 
-            var missing = RequiredPlaceholders
+            var requiredPlaceholders = isKpi ? KpiRequiredPlaceholders : NewsRequiredPlaceholders;
+            var missing = requiredPlaceholders
                 .Where(placeholder => !request.PromptTemplate.Contains(placeholder, StringComparison.Ordinal))
                 .ToArray();
             if (missing.Length > 0)
             {
+                var expected = isKpi
+                    ? "{markdown_content}"
+                    : "{title}, {snippet_section}, {body_section}";
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["promptTemplate"] = ["El template debe contener los placeholders: {title}, {snippet_section}, {body_section}"],
+                    ["promptTemplate"] = [$"El template debe contener los placeholders: {expected}"],
                 });
             }
 

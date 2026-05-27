@@ -42,9 +42,9 @@ public class AiPromptConfiguration : IEntityTypeConfiguration<AiPrompt>
             new AiPrompt
             {
                 Id = 2,
-                ContentType = AiPromptTemplateDefaults.DocumentContentType,
-                PromptTemplate = AiPromptTemplateDefaults.Document,
-                UpdatedAt = new DateTimeOffset(2026, 5, 23, 0, 0, 0, TimeSpan.Zero),
+                ContentType = AiPromptTemplateDefaults.KpiExtractionContentType,
+                PromptTemplate = AiPromptTemplateDefaults.KpiExtraction,
+                UpdatedAt = new DateTimeOffset(2026, 5, 26, 0, 0, 0, TimeSpan.Zero),
                 UpdatedBy = "system",
             });
     }

@@ -38,6 +38,7 @@ public static class FundamentalsEndpoints
                 FfoMargin: record.FfoMargin,
                 QuarterlyDistribution: record.QuarterlyDistribution,
                 Summary: record.Summary,
+                FieldNotes: record.GetFieldNotes(),
                 CapturedAt: record.CapturedAt));
         })
         .AllowAnonymous()

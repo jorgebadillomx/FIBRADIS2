@@ -10,4 +10,5 @@ public sealed record FundamentalesPublicDto(
     decimal? FfoMargin,
     decimal? QuarterlyDistribution,
     string? Summary,
+    Dictionary<string, string>? FieldNotes,
     DateTimeOffset CapturedAt);

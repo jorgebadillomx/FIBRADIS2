@@ -101,6 +101,15 @@ public static class ApiServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         builder.Services.AddScoped<IAiSummaryService, RoutingAiSummaryService>();
+        builder.Services.AddHttpClient<GeminiKpiExtractorService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(120);
+        });
+        builder.Services.AddHttpClient<DeepSeekKpiExtractorService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(120);
+        });
+        builder.Services.AddScoped<IKpiExtractorService, RoutingKpiExtractorService>();
         builder.Services.AddHttpClient<IRssClient, GoogleNewsRssClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
