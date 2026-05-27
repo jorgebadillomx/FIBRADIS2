@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import type { FundamentalPreviewDto } from '@/api/fundamentalsApi'
@@ -44,6 +44,7 @@ interface FormValues {
 
 interface Props {
   onPreview: (preview: FundamentalPreviewDto, fibraId: string) => void
+  onFibraChange?: (fibraId: string) => void
 }
 
 function FieldInfo({ title }: { title: string }) {
@@ -58,7 +59,7 @@ function FieldInfo({ title }: { title: string }) {
   )
 }
 
-export function FundamentalsImportForm({ onPreview }: Props) {
+export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [fieldNotes, setFieldNotes] = useState<Partial<Record<KpiKey, string>>>({})
@@ -71,7 +72,7 @@ export function FundamentalsImportForm({ onPreview }: Props) {
     queryFn: fetchOpsCatalog,
   })
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       fibraId: '', period: PERIODS[0],
       capRate: '', navPerCbfi: '', ltv: '',
@@ -79,6 +80,11 @@ export function FundamentalsImportForm({ onPreview }: Props) {
       summary: '',
     },
   })
+
+  const watchedFibraId = watch('fibraId')
+  useEffect(() => {
+    if (watchedFibraId) onFibraChange?.(watchedFibraId)
+  }, [watchedFibraId, onFibraChange])
 
   const toNum = (s: string) => { const n = parseFloat(s); return isNaN(n) ? null : n }
 
