@@ -24,8 +24,8 @@ export function FundamentalsPage() {
     selectedFibraId: null,
   })
 
-  const handlePreview = (preview: FundamentalPreviewDto, fibraId: string) => {
-    setState({ step: 'preview', preview, selectedFibraId: fibraId })
+  const handlePreview = (preview: FundamentalPreviewDto, fibraId: string, record: FundamentalRecordDto) => {
+    setState({ step: 'preview', preview, previewRecord: record, selectedFibraId: fibraId })
   }
 
   const handleCancel = () => {

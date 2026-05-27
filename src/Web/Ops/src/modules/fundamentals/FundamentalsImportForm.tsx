@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import type { FundamentalPreviewDto } from '@/api/fundamentalsApi'
+import type { FundamentalPreviewDto, FundamentalRecordDto } from '@/api/fundamentalsApi'
 import { extractKpisFromPdf, importFundamentals, uploadFundamentalPdf } from '@/api/fundamentalsApi'
 import { fetchOpsCatalog } from '@/api/catalogApi'
 import type { KpiKey } from '@/lib/kpi-definitions'
@@ -43,7 +43,7 @@ interface FormValues {
 }
 
 interface Props {
-  onPreview: (preview: FundamentalPreviewDto, fibraId: string) => void
+  onPreview: (preview: FundamentalPreviewDto, fibraId: string, record: FundamentalRecordDto) => void
   onFibraChange?: (fibraId: string) => void
 }
 
@@ -66,6 +66,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
   const [extractionState, setExtractionState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [extractionError, setExtractionError] = useState<string | null>(null)
   const [extractedKpiCount, setExtractedKpiCount] = useState(0)
+  const [extractionNotesFromAi, setExtractionNotesFromAi] = useState<string | null>(null)
 
   const { data: catalog = [], isLoading: catalogLoading } = useQuery({
     queryKey: ['catalog-ops'],
@@ -93,6 +94,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
     setExtractionError(null)
     setFieldNotes({})
     setExtractedKpiCount(0)
+    setExtractionNotesFromAi(null)
 
     try {
       const result = await extractKpisFromPdf(file)
@@ -114,6 +116,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
 
       setFieldNotes(notes)
       setExtractedKpiCount(count)
+      setExtractionNotesFromAi(result.extractionNotes || null)
       setExtractionState('done')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al extraer KPIs desde el PDF'
@@ -128,6 +131,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
     setExtractionError(null)
     setFieldNotes({})
     setExtractedKpiCount(0)
+    setExtractionNotesFromAi(null)
 
     if (file) {
       // Auto-extract on file selection
@@ -138,32 +142,57 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const notes = fieldNotes
-      const aiErrorNote = extractionState === 'error' && extractionError
-        ? { extractionNotes: extractionError }
-        : {}
+      const extractionNotesToSave = extractionNotesFromAi
+        ?? (extractionState === 'error' && extractionError ? extractionError : null)
+      const allNotes: Record<string, string> = {
+        ...notes,
+        ...(extractionNotesToSave ? { extractionNotes: extractionNotesToSave } : {}),
+      }
 
-      const preview = await importFundamentals({
-        fibraId: values.fibraId,
-        period: values.period,
+      const kpiValues = {
         capRate: toNum(values.capRate),
         navPerCbfi: toNum(values.navPerCbfi),
         ltv: toNum(values.ltv),
         noiMargin: toNum(values.noiMargin),
         ffoMargin: toNum(values.ffoMargin),
         quarterlyDistribution: toNum(values.quarterlyDistribution),
+      }
+
+      const preview = await importFundamentals({
+        fibraId: values.fibraId,
+        period: values.period,
+        ...kpiValues,
         summary: values.summary.trim() || null,
         pdfReference: null,
-        fieldNotes: { ...notes, ...aiErrorNote },
+        fieldNotes: Object.keys(allNotes).length > 0 ? allNotes : undefined,
       })
 
       if (pdfFile) {
         await uploadFundamentalPdf(preview.id, pdfFile)
       }
 
-      return { preview, fibraId: values.fibraId }
+      const syntheticRecord: FundamentalRecordDto = {
+        id: preview.id,
+        fibraTicker: preview.fibraTicker,
+        period: preview.period,
+        status: preview.status,
+        isPossibleUpdate: preview.isPossibleUpdate,
+        ...kpiValues,
+        summary: values.summary.trim() || null,
+        pdfReference: preview.pdfReference,
+        pdfUploadedAt: null,
+        importedBy: null,
+        confirmedBy: null,
+        capturedAt: preview.capturedAt,
+        confirmedAt: null,
+        hasMarkdownContent: preview.hasMarkdownContent,
+        fieldNotes: Object.keys(allNotes).length > 0 ? allNotes : undefined,
+      }
+
+      return { preview, fibraId: values.fibraId, record: syntheticRecord }
     },
-    onSuccess: ({ preview, fibraId }) => {
-      onPreview(preview, fibraId)
+    onSuccess: ({ preview, fibraId, record }) => {
+      onPreview(preview, fibraId, record)
     },
   })
 
