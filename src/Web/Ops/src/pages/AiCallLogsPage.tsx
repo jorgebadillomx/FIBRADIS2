@@ -117,16 +117,15 @@ export function AiCallLogsPage() {
                     <tr className="border-t border-teal-100 bg-teal-50/45">
                       <td className="px-4 py-5" colSpan={6}>
                         <div className="grid gap-4 lg:grid-cols-2">
-                          {/* Llamada — input enviado a la IA */}
+                          {/* Llamada — JSON exacto enviado a la IA */}
                           <div className="rounded-2xl border border-slate-200 bg-slate-950 p-4 text-slate-100">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                              Llamada — input enviado ({item.promptLength.toLocaleString()} chars total)
+                              Llamada — request HTTP ({item.promptLength.toLocaleString()} chars input)
                             </p>
-                            <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs leading-6">
-                              {item.inputPreview ?? 'Sin preview del input.'}
-                              {item.inputPreview && item.promptLength > 2000 && (
-                                <span className="text-slate-500">{`\n\n… [${(item.promptLength - 2000).toLocaleString()} chars más]`}</span>
-                              )}
+                            <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap text-xs leading-6">
+                              {item.requestRaw
+                                ? (() => { try { return JSON.stringify(JSON.parse(item.requestRaw), null, 2) } catch { return item.requestRaw } })()
+                                : 'Sin datos de llamada.'}
                             </pre>
                           </div>
                           {/* Respuesta */}

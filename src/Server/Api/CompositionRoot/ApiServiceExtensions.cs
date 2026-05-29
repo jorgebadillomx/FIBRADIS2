@@ -95,23 +95,24 @@ public static class ApiServiceExtensions
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
         builder.Services.AddScoped<DistributionPipelineJob>();
         builder.Services.AddScoped<IAiProviderConfigRepository, AiProviderConfigRepository>();
+        builder.Services.AddTransient<AiCapturingHandler>();
         builder.Services.AddHttpClient<GeminiAiSummaryService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
-        });
+        }).AddHttpMessageHandler<AiCapturingHandler>();
         builder.Services.AddHttpClient<DeepSeekAiSummaryService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
-        });
+        }).AddHttpMessageHandler<AiCapturingHandler>();
         builder.Services.AddScoped<IAiSummaryService, RoutingAiSummaryService>();
         builder.Services.AddHttpClient<GeminiKpiExtractorService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(120);
-        });
+        }).AddHttpMessageHandler<AiCapturingHandler>();
         builder.Services.AddHttpClient<DeepSeekKpiExtractorService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(120);
-        });
+        }).AddHttpMessageHandler<AiCapturingHandler>();
         builder.Services.AddScoped<IKpiExtractorService, RoutingKpiExtractorService>();
         builder.Services.AddHttpClient<IRssClient, GoogleNewsRssClient>(client =>
         {

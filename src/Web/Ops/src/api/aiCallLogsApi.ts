@@ -9,7 +9,7 @@ export interface AiCallLogDto {
   promptLength: number
   durationMs: number
   success: boolean
-  inputPreview: string | null
+  requestRaw: string | null
   responseRaw: string | null
   errorMessage: string | null
   context: string | null

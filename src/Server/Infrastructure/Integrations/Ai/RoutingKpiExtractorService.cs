@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using Application.Ai;
 using Application.Fundamentals;
 using Application.News;
@@ -14,13 +13,11 @@ public class RoutingKpiExtractorService(
     IAiProviderConfigRepository providerRepo,
     IAiCallLogRepository callLogRepo) : IKpiExtractorService
 {
-    private const int PreviewChars = 2000;
-
     public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
     {
         var config = await providerRepo.GetConfigAsync(ct);
         var sw = Stopwatch.StartNew();
-        var preview = markdownContent.Length > PreviewChars ? markdownContent[..PreviewChars] : markdownContent;
+        var rawData = AiCallRawData.Begin();
 
         KpiExtractionResult result;
         try
@@ -36,20 +33,23 @@ public class RoutingKpiExtractorService(
         {
             sw.Stop();
             await TryLogAsync("KpiExtraction", config.Provider.ToString(), config.ModelId,
-                markdownContent.Length, sw.ElapsedMilliseconds, false, preview, null, ex.Message);
+                markdownContent.Length, sw.ElapsedMilliseconds, false,
+                rawData.RequestBody, rawData.ResponseBody, ex.Message);
             throw;
         }
 
         sw.Stop();
         await TryLogAsync("KpiExtraction", config.Provider.ToString(), config.ModelId,
             markdownContent.Length, sw.ElapsedMilliseconds, result.Success,
-            preview, JsonSerializer.Serialize(result), result.Success ? null : result.ExtractionNotes);
+            rawData.RequestBody, rawData.ResponseBody,
+            result.Success ? null : result.ExtractionNotes);
 
         return result;
     }
 
     private async Task TryLogAsync(string operation, string provider, string modelId,
-        int promptLength, long durationMs, bool success, string? inputPreview, string? responseRaw, string? errorMessage)
+        int promptLength, long durationMs, bool success,
+        string? requestRaw, string? responseRaw, string? errorMessage)
     {
         try
         {
@@ -62,7 +62,7 @@ public class RoutingKpiExtractorService(
                 PromptLength = promptLength,
                 DurationMs = durationMs,
                 Success = success,
-                InputPreview = inputPreview,
+                RequestRaw = requestRaw,
                 ResponseRaw = responseRaw,
                 ErrorMessage = errorMessage,
             }, CancellationToken.None);
