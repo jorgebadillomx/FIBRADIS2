@@ -1,3 +1,4 @@
+using Domain.Ai;
 using Domain.Auth;
 using Domain.Catalog;
 using Domain.Fundamentals;
@@ -30,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FundamentalRecord> FundamentalRecords => Set<FundamentalRecord>();
     public DbSet<OperationalConfig> OperationalConfigs => Set<OperationalConfig>();
     public DbSet<ConfigAuditLog> ConfigAuditLogs => Set<ConfigAuditLog>();
+    public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

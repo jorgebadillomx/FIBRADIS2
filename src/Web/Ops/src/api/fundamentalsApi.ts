@@ -81,13 +81,37 @@ export async function uploadFundamentalPdf(id: string, file: File): Promise<{ pa
   return response.json() as Promise<{ path: string; markdownExtracted: boolean }>
 }
 
-export async function extractKpisFromPdf(file: File): Promise<KpiExtractionDto> {
+export interface PdfUploadResultDto {
+  id: string
+  fibraTicker: string
+  period: string
+  markdownExtracted: boolean
+  isPossibleUpdate: boolean
+  warningMessage?: string | null
+}
+
+export interface PatchKpisRequest {
+  capRate?: number | null
+  navPerCbfi?: number | null
+  ltv?: number | null
+  noiMargin?: number | null
+  ffoMargin?: number | null
+  quarterlyDistribution?: number | null
+  summary?: string | null
+}
+
+export async function uploadPdfWithRecord(
+  fibraId: string,
+  period: string,
+  file: File,
+): Promise<PdfUploadResultDto> {
   assertOpsAccessToken()
 
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await fetch('/api/v1/ops/fundamentals/extract-kpis', {
+  const params = new URLSearchParams({ fibraId, period })
+  const response = await fetch(`/api/v1/ops/fundamentals/upload-pdf?${params}`, {
     method: 'POST',
     headers: getOpsAuthHeaders(),
     body: formData,
@@ -100,13 +124,49 @@ export async function extractKpisFromPdf(file: File): Promise<KpiExtractionDto> 
       const json = JSON.parse(text) as { detail?: string; title?: string; errors?: Record<string, string[]> }
       const firstError = json.detail ?? json.title ?? Object.values(json.errors ?? {})[0]?.[0]
       if (firstError) detail = firstError
-    } catch {
-      // Non-JSON response.
-    }
+    } catch { /* non-JSON */ }
+    throw new Error(`Error al subir PDF: ${detail}`)
+  }
 
+  return response.json() as Promise<PdfUploadResultDto>
+}
+
+export async function triggerKpiExtraction(id: string): Promise<FundamentalRecordDto> {
+  assertOpsAccessToken()
+
+  const response = await fetch(`/api/v1/ops/fundamentals/${id}/extract-kpis`, {
+    method: 'POST',
+    headers: getOpsAuthHeaders(),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    let detail = `${response.status} ${text}`
+    try {
+      const json = JSON.parse(text) as { detail?: string; title?: string; errors?: Record<string, string[]> }
+      const firstError = json.detail ?? json.title ?? Object.values(json.errors ?? {})[0]?.[0]
+      if (firstError) detail = firstError
+    } catch { /* non-JSON */ }
     throw new Error(`Error al extraer KPIs: ${detail}`)
   }
 
-  return response.json() as Promise<KpiExtractionDto>
+  return response.json() as Promise<FundamentalRecordDto>
+}
+
+export async function patchKpis(id: string, values: PatchKpisRequest): Promise<FundamentalRecordDto> {
+  assertOpsAccessToken()
+
+  const response = await fetch(`/api/v1/ops/fundamentals/${id}/kpis`, {
+    method: 'PATCH',
+    headers: { ...getOpsAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(values),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Error al guardar KPIs: ${response.status} ${text}`)
+  }
+
+  return response.json() as Promise<FundamentalRecordDto>
 }
 

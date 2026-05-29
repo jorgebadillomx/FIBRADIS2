@@ -28,6 +28,12 @@ dist/
 Thumbs.db
 desktop.ini
 
+## Dev scripts runtime
+.dev-wt-pid
+
+## Uploaded files
+src/Server/Api/wwwroot/uploads/
+
 ## IDE
 .idea/
 *.iml

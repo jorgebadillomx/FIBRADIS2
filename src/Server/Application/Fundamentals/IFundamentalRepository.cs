@@ -14,4 +14,5 @@ public interface IFundamentalRepository
     Task UpdatePdfReferenceAsync(Guid id, string pdfReference, CancellationToken ct);
     Task UpdateMarkdownContentAsync(Guid id, string markdownContent, CancellationToken ct);
     Task UpdateKpiExtractionAsync(Guid id, KpiExtractionResult result, CancellationToken ct);
+    Task UpdateKpisManualAsync(Guid id, decimal? capRate, decimal? navPerCbfi, decimal? ltv, decimal? noiMargin, decimal? ffoMargin, decimal? quarterlyDistribution, string? summary, CancellationToken ct);
 }

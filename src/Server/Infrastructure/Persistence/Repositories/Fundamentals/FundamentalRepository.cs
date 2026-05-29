@@ -92,13 +92,35 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
             ["noiMargin"] = result.NoiMarginNote,
             ["ffoMargin"] = result.FfoMarginNote,
             ["quarterlyDistribution"] = result.QuarterlyDistributionNote,
-            ["extractionNotes"] = result.ExtractionNotes,
         });
+
+        record.ErrorReason = string.IsNullOrWhiteSpace(result.ExtractionNotes) ? null : result.ExtractionNotes;
 
         var hasAnyKpi = result.CapRate.HasValue || result.NavPerCbfi.HasValue || result.Ltv.HasValue
             || result.NoiMargin.HasValue || result.FfoMargin.HasValue || result.QuarterlyDistribution.HasValue;
 
         record.Status = hasAnyKpi ? "partial" : "error";
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateKpisManualAsync(
+        Guid id,
+        decimal? capRate, decimal? navPerCbfi, decimal? ltv,
+        decimal? noiMargin, decimal? ffoMargin, decimal? quarterlyDistribution,
+        string? summary,
+        CancellationToken ct)
+    {
+        var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (record is null) throw new InvalidOperationException($"FundamentalRecord {id} not found during manual KPI update.");
+
+        record.CapRate = capRate;
+        record.NavPerCbfi = navPerCbfi;
+        record.Ltv = ltv;
+        record.NoiMargin = noiMargin;
+        record.FfoMargin = ffoMargin;
+        record.QuarterlyDistribution = quarterlyDistribution;
+        record.Summary = summary;
 
         await db.SaveChangesAsync(ct);
     }

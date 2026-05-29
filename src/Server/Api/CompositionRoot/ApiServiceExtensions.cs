@@ -18,6 +18,8 @@ using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Catalog;
+using Application.Ai;
+using Infrastructure.Persistence.Repositories.Ai;
 using Infrastructure.Persistence.Repositories.Fundamentals;
 using Infrastructure.Persistence.Repositories.Jobs;
 using Infrastructure.Persistence.Repositories.Market;
@@ -80,6 +82,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IPipelineErrorLogRepository, PipelineErrorLogRepository>();
         builder.Services.AddScoped<IPipelineRunLogRepository, PipelineRunLogRepository>();
         builder.Services.AddScoped<IFundamentalRepository, FundamentalRepository>();
+        builder.Services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());

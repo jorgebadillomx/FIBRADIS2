@@ -8,6 +8,7 @@ const navigationItems = [
   { label: 'Noticias', to: '/noticias', description: 'Curación de body text y resúmenes IA.' },
   { label: 'Blocklist', to: '/blocklist', description: 'Términos excluidos del pipeline RSS.' },
   { label: 'Logs del Pipeline', to: '/pipeline-logs', description: 'Errores estructurados listos para diagnóstico.' },
+  { label: 'Llamadas IA', to: '/ai-call-logs', description: 'Historial de llamadas al proveedor de IA con respuestas.' },
   { label: 'Fundamentales', to: '/fundamentals', description: 'Importar, revisar y confirmar datos financieros por FIBRA.' },
   { label: 'Prompts de IA', to: '/ai-prompts', description: 'Templates editables sin redespliegue.' },
   { label: 'Configuración', to: '/config', description: 'Parámetros operativos del sistema sin redespliegue.' },

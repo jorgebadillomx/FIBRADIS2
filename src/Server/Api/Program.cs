@@ -32,6 +32,7 @@ app.MapAiMode();
 app.MapAiProvider();
 app.MapOpsAiPrompts();
 app.MapOpsPipelineLogs();
+app.MapOpsAiCallLogs();
 app.MapNewsBlocklist();
 app.MapNews();
 app.MapCatalog();

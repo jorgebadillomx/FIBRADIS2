@@ -1,9 +1,14 @@
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Application.Catalog;
 using Application.Fundamentals;
+using Application.Jobs;
+using Application.News;
 using Domain.Fundamentals;
+using Domain.Jobs;
+using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Pdf;
 using Microsoft.Extensions.Logging;
 using SharedApiContracts.Fundamentals;
@@ -14,6 +19,8 @@ public static partial class OpsFundamentalsEndpoints
 {
     [GeneratedRegex(@"^Q[1-4]-20\d{2}$")]
     private static partial Regex PeriodRegex();
+
+    private sealed record DiagnoseExtractionRequest(string Markdown);
 
     private static IReadOnlyDictionary<string, string>? DeserializeFieldNotes(string? json)
     {
@@ -131,13 +138,36 @@ public static partial class OpsFundamentalsEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
-        group.MapPost("/extract-kpis", async (
+        group.MapPost("/upload-pdf", async (
             IFormFile file,
-            IKpiExtractorService kpiExtractor,
+            Guid fibraId,
+            string period,
+            IFundamentalRepository repo,
+            IFibraRepository fibraRepo,
+            IConfiguration config,
+            IPipelineErrorLogRepository errorLogRepo,
             ILoggerFactory loggerFactory,
+            HttpContext ctx,
             CancellationToken ct) =>
         {
             var logger = loggerFactory.CreateLogger("OpsFundamentals");
+
+            if (!PeriodRegex().IsMatch(period))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["period"] = ["Formato inválido. Use 'Q1-2024', 'Q2-2024', etc."],
+                });
+            }
+
+            var fibra = await fibraRepo.GetByIdAsync(fibraId, ct);
+            if (fibra is null)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["fibraId"] = [$"No existe una FIBRA con id '{fibraId}'."],
+                });
+            }
 
             if (!string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
             {
@@ -156,66 +186,107 @@ public static partial class OpsFundamentalsEndpoints
                 });
             }
 
-            string markdown;
+            var existing = await repo.GetProcessedByFibraAndPeriodAsync(fibraId, period, ct);
+            var isPossibleUpdate = existing is not null;
+
+            var actor = ctx.User.Identity?.Name
+                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? "unknown";
+
+            var id = Guid.NewGuid();
+            var basePath = config["Uploads:BasePath"] ?? "wwwroot/uploads/fundamentals";
+            Directory.CreateDirectory(basePath);
+            var fileName = $"{id}.pdf";
+            var fullPath = Path.Combine(basePath, fileName);
+
             try
             {
-                await using var stream = file.OpenReadStream();
-                markdown = PdfMarkdownExtractor.Extract(stream);
+                await using var stream = File.Create(fullPath);
+                await file.CopyToAsync(stream, ct);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (IOException ex)
             {
-                logger.LogWarning(ex, "Error al extraer texto del PDF");
-                markdown = string.Empty;
-            }
+                logger.LogError(ex, "Error al guardar PDF en disco para record {RecordId}", id);
+                try
+                {
+                    await errorLogRepo.LogErrorAsync(new PipelineErrorLog
+                    {
+                        Pipeline = "Fundamentals",
+                        Timestamp = DateTimeOffset.UtcNow,
+                        ErrorType = ex.GetType().Name.Length > 100 ? ex.GetType().Name[..100] : ex.GetType().Name,
+                        Message = ex.Message,
+                        Context = JsonSerializer.Serialize(new { recordId = id, fibraId, period, fileName }),
+                        AiContext = $"Error al guardar el archivo PDF en disco para la importación de fundamentales de {fibra.Ticker} / {period}.",
+                    }, CancellationToken.None);
+                }
+                catch (Exception logEx) { logger.LogWarning(logEx, "No se pudo guardar en PipelineErrorLog"); }
 
-            if (string.IsNullOrWhiteSpace(markdown))
-            {
-                return Results.Ok(new KpiExtractionDto(
-                    CapRate: null, CapRateNote: null,
-                    NavPerCbfi: null, NavPerCbfiNote: null,
-                    Ltv: null, LtvNote: null,
-                    NoiMargin: null, NoiMarginNote: null,
-                    FfoMargin: null, FfoMarginNote: null,
-                    QuarterlyDistribution: null, QuarterlyDistributionNote: null,
-                    Summary: null,
-                    ExtractionNotes: "PDF sin texto extraíble. Puede ser un PDF escaneado que requiere OCR.",
-                    MarkdownLength: 0));
-            }
-
-            KpiExtractionResult result;
-            try
-            {
-                result = await kpiExtractor.ExtractAsync(markdown, ct);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.LogError(ex, "Error al extraer KPIs desde PDF");
                 return Results.Problem(
-                    statusCode: StatusCodes.Status502BadGateway,
-                    detail: "El proveedor de IA no está disponible.");
+                    title: "Error al guardar el archivo",
+                    detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            return Results.Ok(new KpiExtractionDto(
-                CapRate: result.CapRate,
-                CapRateNote: result.CapRateNote,
-                NavPerCbfi: result.NavPerCbfi,
-                NavPerCbfiNote: result.NavPerCbfiNote,
-                Ltv: result.Ltv,
-                LtvNote: result.LtvNote,
-                NoiMargin: result.NoiMargin,
-                NoiMarginNote: result.NoiMarginNote,
-                FfoMargin: result.FfoMargin,
-                FfoMarginNote: result.FfoMarginNote,
-                QuarterlyDistribution: result.QuarterlyDistribution,
-                QuarterlyDistributionNote: result.QuarterlyDistributionNote,
-                Summary: result.Summary,
-                ExtractionNotes: result.ExtractionNotes ?? string.Empty,
-                MarkdownLength: markdown.Length));
+            var relativePath = $"uploads/fundamentals/{fileName}";
+            var markdownExtracted = false;
+            string? markdownContent = null;
+
+            try
+            {
+                await using var mdStream = File.OpenRead(fullPath);
+                markdownContent = MarkdownCompactor.Compact(PdfMarkdownExtractor.Extract(mdStream));
+                markdownExtracted = !string.IsNullOrWhiteSpace(markdownContent);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "No se pudo extraer markdown del PDF para record {RecordId}", id);
+                try
+                {
+                    await errorLogRepo.LogErrorAsync(new PipelineErrorLog
+                    {
+                        Pipeline = "Fundamentals",
+                        Timestamp = DateTimeOffset.UtcNow,
+                        ErrorType = ex.GetType().Name.Length > 100 ? ex.GetType().Name[..100] : ex.GetType().Name,
+                        Message = ex.Message,
+                        Context = JsonSerializer.Serialize(new { recordId = id, fibraId, period }),
+                        AiContext = $"Error al extraer y compactar el texto markdown del PDF de {fibra.Ticker} / {period}. El PDF se guardó en disco pero el MarkdownContent quedará vacío.",
+                    }, CancellationToken.None);
+                }
+                catch (Exception logEx) { logger.LogWarning(logEx, "No se pudo guardar en PipelineErrorLog"); }
+            }
+
+            var record = new FundamentalRecord
+            {
+                Id = id,
+                FibraId = fibraId,
+                Period = period,
+                Status = "pending",
+                ProcessingMode = "ai",
+                MarkdownContent = markdownContent,
+                PdfReference = relativePath,
+                PdfUploadedAt = DateTimeOffset.UtcNow,
+                IsPossibleUpdate = isPossibleUpdate,
+                ImportedBy = actor,
+                CapturedAt = DateTimeOffset.UtcNow,
+            };
+
+            await repo.AddAsync(record, ct);
+
+            return Results.Ok(new PdfUploadResultDto(
+                Id: id,
+                FibraTicker: fibra.Ticker,
+                Period: period,
+                MarkdownExtracted: markdownExtracted,
+                IsPossibleUpdate: isPossibleUpdate,
+                WarningMessage: isPossibleUpdate
+                    ? $"Ya existe un registro procesado para {fibra.Ticker} / {period}."
+                    : null));
         })
         .DisableAntiforgery()
-        .Produces<KpiExtractionDto>(StatusCodes.Status200OK)
+        .Produces<PdfUploadResultDto>(StatusCodes.Status200OK)
         .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status502BadGateway)
+        .Produces(StatusCodes.Status500InternalServerError)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
@@ -329,7 +400,7 @@ public static partial class OpsFundamentalsEndpoints
             try
             {
                 await using var mdStream = File.OpenRead(fullPath);
-                var markdown = PdfMarkdownExtractor.Extract(mdStream);
+                var markdown = MarkdownCompactor.Compact(PdfMarkdownExtractor.Extract(mdStream));
                 if (!string.IsNullOrWhiteSpace(markdown))
                 {
                     await repo.UpdateMarkdownContentAsync(id, markdown, ct);
@@ -379,6 +450,7 @@ public static partial class OpsFundamentalsEndpoints
             IFundamentalRepository repo,
             IFibraRepository fibraRepo,
             IKpiExtractorService kpiExtractor,
+            IPipelineErrorLogRepository errorLogRepo,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
@@ -389,6 +461,20 @@ public static partial class OpsFundamentalsEndpoints
 
             if (string.IsNullOrWhiteSpace(record.MarkdownContent))
             {
+                try
+                {
+                    await errorLogRepo.LogErrorAsync(new PipelineErrorLog
+                    {
+                        Pipeline = "Fundamentals",
+                        Timestamp = DateTimeOffset.UtcNow,
+                        ErrorType = "EmptyMarkdown",
+                        Message = "El registro no tiene MarkdownContent al intentar extraer KPIs.",
+                        Context = JsonSerializer.Serialize(new { recordId = id, fibraId = record.FibraId, period = record.Period }),
+                        AiContext = $"No se pudo extraer KPIs del registro {id} ({record.Period}) porque el MarkdownContent está vacío. El PDF pudo no tener texto extraíble.",
+                    }, CancellationToken.None);
+                }
+                catch (Exception logEx) { logger.LogWarning(logEx, "No se pudo guardar en PipelineErrorLog"); }
+
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     ["markdownContent"] = ["El registro no tiene contenido markdown. Sube el PDF primero."],
@@ -403,6 +489,20 @@ public static partial class OpsFundamentalsEndpoints
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogError(ex, "Error al extraer KPIs para registro {RecordId}", id);
+                try
+                {
+                    await errorLogRepo.LogErrorAsync(new PipelineErrorLog
+                    {
+                        Pipeline = "Fundamentals",
+                        Timestamp = DateTimeOffset.UtcNow,
+                        ErrorType = ex.GetType().Name.Length > 100 ? ex.GetType().Name[..100] : ex.GetType().Name,
+                        Message = ex.Message,
+                        Context = JsonSerializer.Serialize(new { recordId = id, fibraId = record.FibraId, period = record.Period, markdownLength = record.MarkdownContent.Length }),
+                        AiContext = $"El extractor de KPIs por IA falló para el registro {id} de {record.Period}. El proveedor de IA devolvió un error. El markdown tenía {record.MarkdownContent.Length} caracteres.",
+                    }, CancellationToken.None);
+                }
+                catch (Exception logEx) { logger.LogWarning(logEx, "No se pudo guardar en PipelineErrorLog"); }
+
                 return Results.Problem(
                     statusCode: StatusCodes.Status502BadGateway,
                     detail: "El proveedor de IA no está disponible.");
@@ -439,6 +539,54 @@ public static partial class OpsFundamentalsEndpoints
         .Produces(StatusCodes.Status404NotFound)
         .ProducesValidationProblem(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status502BadGateway)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPatch("/{id:guid}/kpis", async (
+            Guid id,
+            PatchKpisRequest request,
+            IFundamentalRepository repo,
+            IFibraRepository fibraRepo,
+            CancellationToken ct) =>
+        {
+            var record = await repo.GetByIdAsync(id, ct);
+            if (record is null)
+                return Results.NotFound();
+
+            await repo.UpdateKpisManualAsync(
+                id,
+                request.CapRate, request.NavPerCbfi, request.Ltv,
+                request.NoiMargin, request.FfoMargin, request.QuarterlyDistribution,
+                request.Summary,
+                ct);
+
+            var updated = await repo.GetByIdAsync(id, ct);
+            var fibra = await fibraRepo.GetByIdAsync(record.FibraId, ct);
+
+            return Results.Ok(new FundamentalRecordDto(
+                Id: updated!.Id,
+                FibraTicker: fibra?.Ticker ?? record.FibraId.ToString(),
+                Period: updated.Period,
+                Status: updated.Status,
+                IsPossibleUpdate: updated.IsPossibleUpdate,
+                CapRate: updated.CapRate,
+                NavPerCbfi: updated.NavPerCbfi,
+                Ltv: updated.Ltv,
+                NoiMargin: updated.NoiMargin,
+                FfoMargin: updated.FfoMargin,
+                QuarterlyDistribution: updated.QuarterlyDistribution,
+                Summary: updated.Summary,
+                PdfReference: updated.PdfReference,
+                PdfUploadedAt: updated.PdfUploadedAt,
+                ImportedBy: updated.ImportedBy,
+                ConfirmedBy: updated.ConfirmedBy,
+                CapturedAt: updated.CapturedAt,
+                ConfirmedAt: updated.ConfirmedAt,
+                HasMarkdownContent: !string.IsNullOrWhiteSpace(updated.MarkdownContent),
+                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson)));
+        })
+        .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
@@ -484,6 +632,104 @@ public static partial class OpsFundamentalsEndpoints
         })
         .Produces<IReadOnlyList<FundamentalRecordDto>>(StatusCodes.Status200OK)
         .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        // TEMPORAL: diagnóstico — eliminar cuando se resuelva la regresión de la IA
+        group.MapPost("/diagnose-extraction", async (
+            DiagnoseExtractionRequest request,
+            IConfiguration config,
+            IAiProviderConfigRepository providerRepo,
+            IAiPromptRepository promptRepo,
+            IHttpClientFactory httpClientFactory,
+            CancellationToken ct) =>
+        {
+            const int maxChars = 80_000;
+            const string geminiBase = "https://generativelanguage.googleapis.com/v1beta/models";
+
+            var apiKey = config["Gemini:ApiKey"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+                return Results.Problem("Gemini:ApiKey no está configurado.", statusCode: StatusCodes.Status500InternalServerError);
+
+            var providerConfig = await providerRepo.GetConfigAsync(ct);
+            var storedPrompt = await promptRepo.GetPromptAsync(AiPromptTemplateDefaults.KpiExtractionContentType, ct);
+            var promptTemplate = storedPrompt?.PromptTemplate ?? AiPromptTemplateDefaults.KpiExtraction;
+            var promptSource = storedPrompt is not null ? "db" : "default";
+
+            var markdown = request.Markdown;
+            var wasTruncated = false;
+            if (markdown.Length > maxChars)
+            {
+                markdown = markdown[..maxChars];
+                wasTruncated = true;
+            }
+
+            var prompt = promptTemplate.Replace("{markdown_content}", markdown, StringComparison.Ordinal);
+            var url = $"{geminiBase}/{providerConfig.ModelId}:generateContent?key={apiKey}";
+
+            var body = new
+            {
+                contents = new[] { new { parts = new[] { new { text = prompt } } } },
+                generationConfig = new { maxOutputTokens = 2048, responseMimeType = "application/json" },
+            };
+
+            using var http = httpClientFactory.CreateClient();
+            http.Timeout = TimeSpan.FromSeconds(120);
+            using var httpResponse = await http.PostAsJsonAsync(url, body, ct);
+            var rawApiBody = await httpResponse.Content.ReadAsStringAsync(ct);
+
+            string? extractedText = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(rawApiBody);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                {
+                    var candidate = candidates[0];
+                    if (candidate.TryGetProperty("content", out var content) &&
+                        content.TryGetProperty("parts", out var parts) &&
+                        parts.GetArrayLength() > 0 &&
+                        parts[0].TryGetProperty("text", out var textProp))
+                    {
+                        extractedText = textProp.GetString();
+                    }
+                }
+            }
+            catch { /* rawApiBody still returned below */ }
+
+            JsonElement? parsedKpis = null;
+            if (!string.IsNullOrWhiteSpace(extractedText))
+            {
+                var jsonStr = extractedText;
+                var start = jsonStr.IndexOf('{');
+                var end = jsonStr.LastIndexOf('}');
+                if (start >= 0 && end > start)
+                    jsonStr = jsonStr[start..(end + 1)];
+                try
+                {
+                    var kpisDoc = JsonDocument.Parse(jsonStr);
+                    parsedKpis = kpisDoc.RootElement.Clone();
+                }
+                catch { /* JSON inválido — se retorna null */ }
+            }
+
+            return Results.Ok(new
+            {
+                Provider = providerConfig.Provider.ToString(),
+                Model = providerConfig.ModelId,
+                PromptSource = promptSource,
+                OriginalMarkdownLength = request.Markdown.Length,
+                SentMarkdownLength = markdown.Length,
+                WasTruncated = wasTruncated,
+                HttpStatus = (int)httpResponse.StatusCode,
+                PromptUsed = prompt,
+                RawGeminiApiResponse = rawApiBody,
+                ExtractedText = extractedText,
+                ParsedKpis = parsedKpis,
+            });
+        })
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 

@@ -25,7 +25,7 @@ public class FundamentalRecord
     public string? ConfirmedBy { get; set; }
     public DateTimeOffset CapturedAt { get; init; }
     public DateTimeOffset? ConfirmedAt { get; set; }
-    public string? ErrorReason { get; init; }
+    public string? ErrorReason { get; set; }
 
     public void SetFieldNotes(Dictionary<string, string?>? notes)
     {

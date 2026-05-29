@@ -2,7 +2,13 @@ import { useRef, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import type { FundamentalPreviewDto, FundamentalRecordDto } from '@/api/fundamentalsApi'
-import { extractKpisFromPdf, importFundamentals, uploadFundamentalPdf } from '@/api/fundamentalsApi'
+import {
+  importFundamentals,
+  uploadPdfWithRecord,
+  triggerKpiExtraction,
+  patchKpis,
+  confirmFundamentals,
+} from '@/api/fundamentalsApi'
 import { fetchOpsCatalog } from '@/api/catalogApi'
 import type { KpiKey } from '@/lib/kpi-definitions'
 
@@ -59,21 +65,25 @@ function FieldInfo({ title }: { title: string }) {
   )
 }
 
+type AiStep = 'idle' | 'uploading' | 'extracting' | 'done' | 'error'
+
 export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [fieldNotes, setFieldNotes] = useState<Partial<Record<KpiKey, string>>>({})
-  const [extractionState, setExtractionState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-  const [extractionError, setExtractionError] = useState<string | null>(null)
-  const [extractedKpiCount, setExtractedKpiCount] = useState(0)
-  const [extractionNotesFromAi, setExtractionNotesFromAi] = useState<string | null>(null)
+
+  // AI flow state
+  const [aiStep, setAiStep] = useState<AiStep>('idle')
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [pendingRecordId, setPendingRecordId] = useState<string | null>(null)
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
 
   const { data: catalog = [], isLoading: catalogLoading } = useQuery({
     queryKey: ['catalog-ops'],
     queryFn: fetchOpsCatalog,
   })
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       fibraId: '', period: PERIODS[0],
       capRate: '', navPerCbfi: '', ltv: '',
@@ -89,87 +99,36 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
 
   const toNum = (s: string) => { const n = parseFloat(s); return isNaN(n) ? null : n }
 
-  const runExtraction = async (file: File) => {
-    setExtractionState('loading')
-    setExtractionError(null)
+  const isConfirmMode = pendingRecordId !== null
+
+  const resetAiState = () => {
+    setAiStep('idle')
+    setAiError(null)
+    setPendingRecordId(null)
+    setWarningMessage(null)
     setFieldNotes({})
-    setExtractedKpiCount(0)
-    setExtractionNotesFromAi(null)
-
-    try {
-      const result = await extractKpisFromPdf(file)
-      const numericFields = ['capRate', 'navPerCbfi', 'ltv', 'noiMargin', 'ffoMargin', 'quarterlyDistribution'] as const
-      const notes: Partial<Record<KpiKey, string>> = {}
-      let count = 0
-
-      for (const field of numericFields) {
-        if (result[field] != null) {
-          setValue(field, String(result[field]), { shouldDirty: true })
-          count++
-        }
-        const noteKey = `${field}Note` as const
-        const note = result[noteKey]
-        if (note) notes[field] = note
-      }
-
-      if (result.summary) setValue('summary', result.summary, { shouldDirty: true })
-
-      setFieldNotes(notes)
-      setExtractedKpiCount(count)
-      setExtractionNotesFromAi(result.extractionNotes || null)
-      setExtractionState('done')
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al extraer KPIs desde el PDF'
-      setExtractionError(msg)
-      setExtractionState('error')
-    }
   }
 
   const handleFileChange = (file: File | null) => {
     setPdfFile(file)
-    setExtractionState('idle')
-    setExtractionError(null)
-    setFieldNotes({})
-    setExtractedKpiCount(0)
-    setExtractionNotesFromAi(null)
-
-    if (file) {
-      // Auto-extract on file selection
-      void runExtraction(file)
-    }
+    resetAiState()
   }
 
-  const mutation = useMutation({
+  // Manual import flow (no PDF)
+  const manualMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const notes = fieldNotes
-      const extractionNotesToSave = extractionNotesFromAi
-        ?? (extractionState === 'error' && extractionError ? extractionError : null)
-      const allNotes: Record<string, string> = {
-        ...notes,
-        ...(extractionNotesToSave ? { extractionNotes: extractionNotesToSave } : {}),
-      }
-
-      const kpiValues = {
+      const preview = await importFundamentals({
+        fibraId: values.fibraId,
+        period: values.period,
         capRate: toNum(values.capRate),
         navPerCbfi: toNum(values.navPerCbfi),
         ltv: toNum(values.ltv),
         noiMargin: toNum(values.noiMargin),
         ffoMargin: toNum(values.ffoMargin),
         quarterlyDistribution: toNum(values.quarterlyDistribution),
-      }
-
-      const preview = await importFundamentals({
-        fibraId: values.fibraId,
-        period: values.period,
-        ...kpiValues,
         summary: values.summary.trim() || null,
         pdfReference: null,
-        fieldNotes: Object.keys(allNotes).length > 0 ? allNotes : undefined,
       })
-
-      if (pdfFile) {
-        await uploadFundamentalPdf(preview.id, pdfFile)
-      }
 
       const syntheticRecord: FundamentalRecordDto = {
         id: preview.id,
@@ -177,7 +136,12 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
         period: preview.period,
         status: preview.status,
         isPossibleUpdate: preview.isPossibleUpdate,
-        ...kpiValues,
+        capRate: toNum(values.capRate),
+        navPerCbfi: toNum(values.navPerCbfi),
+        ltv: toNum(values.ltv),
+        noiMargin: toNum(values.noiMargin),
+        ffoMargin: toNum(values.ffoMargin),
+        quarterlyDistribution: toNum(values.quarterlyDistribution),
         summary: values.summary.trim() || null,
         pdfReference: preview.pdfReference,
         pdfUploadedAt: null,
@@ -185,8 +149,8 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
         confirmedBy: null,
         capturedAt: preview.capturedAt,
         confirmedAt: null,
-        hasMarkdownContent: preview.hasMarkdownContent,
-        fieldNotes: Object.keys(allNotes).length > 0 ? allNotes : undefined,
+        hasMarkdownContent: false,
+        fieldNotes: undefined,
       }
 
       return { preview, fibraId: values.fibraId, record: syntheticRecord }
@@ -196,12 +160,114 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
     },
   })
 
-  const onSubmit = handleSubmit((values) => {
-    mutation.mutate(values)
+  // AI confirm flow (PDF was uploaded + AI extracted)
+  const confirmMutation = useMutation({
+    mutationFn: async (values: FormValues) => {
+      if (!pendingRecordId) throw new Error('No hay registro pendiente.')
+
+      // Save any user edits before confirming
+      await patchKpis(pendingRecordId, {
+        capRate: toNum(values.capRate),
+        navPerCbfi: toNum(values.navPerCbfi),
+        ltv: toNum(values.ltv),
+        noiMargin: toNum(values.noiMargin),
+        ffoMargin: toNum(values.ffoMargin),
+        quarterlyDistribution: toNum(values.quarterlyDistribution),
+        summary: values.summary.trim() || null,
+      })
+
+      const record = await confirmFundamentals(pendingRecordId)
+
+      const syntheticPreview: FundamentalPreviewDto = {
+        id: record.id,
+        fibraTicker: record.fibraTicker,
+        period: record.period,
+        status: record.status,
+        isPossibleUpdate: record.isPossibleUpdate,
+        warningMessage: null,
+        presentFields: [],
+        missingFields: [],
+        pdfReference: record.pdfReference ?? null,
+        capturedAt: record.capturedAt,
+        hasMarkdownContent: record.hasMarkdownContent,
+      }
+
+      return { preview: syntheticPreview, fibraId: values.fibraId, record }
+    },
+    onSuccess: ({ preview, fibraId, record }) => {
+      onPreview(preview, fibraId, record)
+    },
   })
 
-  const isExtracting = extractionState === 'loading'
-  const isPending = mutation.isPending
+  const onSubmit = handleSubmit(async (values) => {
+    if (!pdfFile) {
+      // Manual flow
+      manualMutation.mutate(values)
+      return
+    }
+
+    if (isConfirmMode) {
+      // AI flow: confirm
+      confirmMutation.mutate(values)
+      return
+    }
+
+    // AI flow: Paso 1 → Paso 2
+    setAiError(null)
+    setAiStep('uploading')
+
+    let recordId: string
+    try {
+      const uploadResult = await uploadPdfWithRecord(values.fibraId, values.period, pdfFile)
+      recordId = uploadResult.id
+      if (uploadResult.warningMessage) setWarningMessage(uploadResult.warningMessage)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al subir el PDF'
+      setAiError(msg)
+      setAiStep('error')
+      return
+    }
+
+    setAiStep('extracting')
+
+    try {
+      const extracted = await triggerKpiExtraction(recordId)
+
+      const numericFields = ['capRate', 'navPerCbfi', 'ltv', 'noiMargin', 'ffoMargin', 'quarterlyDistribution'] as const
+      const notes: Partial<Record<KpiKey, string>> = {}
+
+      for (const field of numericFields) {
+        if (extracted[field] != null) {
+          setValue(field, String(extracted[field]), { shouldDirty: true })
+        }
+        const note = extracted.fieldNotes?.[field]
+        if (note) notes[field] = note
+      }
+
+      if (extracted.summary) setValue('summary', extracted.summary, { shouldDirty: true })
+
+      setFieldNotes(notes)
+      setPendingRecordId(recordId)
+      setAiStep('done')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al extraer KPIs'
+      setAiError(msg)
+      setAiStep('error')
+      // Still allow user to confirm manually with the record created in Paso 1
+      setPendingRecordId(recordId)
+    }
+  })
+
+  const isWorking = aiStep === 'uploading' || aiStep === 'extracting' || manualMutation.isPending || confirmMutation.isPending
+
+  const buttonLabel = () => {
+    if (aiStep === 'uploading') return 'Subiendo PDF…'
+    if (aiStep === 'extracting') return 'Extrayendo con IA…'
+    if (manualMutation.isPending) return 'Importando…'
+    if (confirmMutation.isPending) return 'Confirmando…'
+    if (isConfirmMode) return 'Confirmar y guardar'
+    return pdfFile ? 'Importar con IA y previsualizar' : 'Importar y previsualizar'
+  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
@@ -215,7 +281,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
           </label>
           <select
             {...register('fibraId', { required: 'Selecciona una FIBRA' })}
-            disabled={catalogLoading}
+            disabled={catalogLoading || isConfirmMode}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-60"
           >
             <option value="">{catalogLoading ? 'Cargando catálogo…' : '— Selecciona una FIBRA —'}</option>
@@ -236,7 +302,8 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
           </label>
           <select
             {...register('period', { required: 'Selecciona un período' })}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            disabled={isConfirmMode}
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-60"
           >
             {PERIODS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -247,7 +314,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
         <div>
           <label className="flex items-center gap-1 text-sm font-medium text-slate-700 mb-1">
             PDF del reporte
-            <FieldInfo title="Al seleccionar el PDF se extrae el texto y la IA obtiene los KPIs automáticamente." />
+            <FieldInfo title="Sube el PDF para que la IA extraiga los KPIs automáticamente." />
           </label>
           <input
             ref={fileInputRef}
@@ -261,7 +328,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isExtracting}
+              disabled={isWorking || isConfirmMode}
               className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-60 transition"
             >
               {pdfFile ? (
@@ -270,17 +337,8 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
                 'Seleccionar PDF (opcional)…'
               )}
             </button>
-            {isExtracting && (
-              <span className="flex items-center gap-1.5 text-xs text-teal-600 font-medium shrink-0">
-                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-                Extrayendo con IA…
-              </span>
-            )}
           </div>
-          {pdfFile && !isExtracting && (
+          {pdfFile && !isConfirmMode && (
             <div className="mt-1 flex items-center gap-3">
               <button
                 type="button"
@@ -289,48 +347,56 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
                   handleFileChange(null)
                   if (fileInputRef.current) fileInputRef.current.value = ''
                 }}
-                className="text-xs text-red-500 hover:underline"
+                disabled={isWorking}
+                className="text-xs text-red-500 hover:underline disabled:opacity-50"
               >
                 Quitar PDF
               </button>
-              {extractionState === 'done' && (
-                <button
-                  type="button"
-                  onClick={() => void runExtraction(pdfFile)}
-                  className="text-xs text-teal-600 hover:underline"
-                >
-                  Re-extraer con IA
-                </button>
-              )}
-              {(extractionState === 'error' || extractionState === 'idle') && (
-                <button
-                  type="button"
-                  onClick={() => void runExtraction(pdfFile)}
-                  className="text-xs text-teal-600 hover:underline"
-                >
-                  Extraer con IA
-                </button>
-              )}
             </div>
+          )}
+          {isConfirmMode && (
+            <button
+              type="button"
+              onClick={() => {
+                resetAiState()
+                reset()
+                setPdfFile(null)
+                if (fileInputRef.current) fileInputRef.current.value = ''
+              }}
+              className="mt-1 text-xs text-slate-500 hover:underline"
+            >
+              Cancelar y volver a empezar
+            </button>
           )}
         </div>
 
-        {/* Feedback de extracción */}
-        {extractionState !== 'idle' && (
-          <div className="sm:col-span-2">
-            {extractionState === 'done' && extractedKpiCount > 0 && (
+        {/* Feedback de estado */}
+        {(aiStep !== 'idle' || warningMessage) && (
+          <div className="sm:col-span-2 space-y-2">
+            {warningMessage && (
+              <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-700">
+                {warningMessage}
+              </p>
+            )}
+            {aiStep === 'uploading' && (
+              <p className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-700 flex items-center gap-2">
+                <Spinner /> Guardando PDF y extrayendo texto…
+              </p>
+            )}
+            {aiStep === 'extracting' && (
+              <p className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-700 flex items-center gap-2">
+                <Spinner /> Analizando con IA…
+              </p>
+            )}
+            {aiStep === 'done' && (
               <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                IA extrajo {extractedKpiCount} de 6 KPIs. Revisa y ajusta si es necesario antes de importar.
+                IA extrajo los KPIs. Revisa y ajusta si es necesario antes de confirmar.
               </p>
             )}
-            {extractionState === 'done' && extractedKpiCount === 0 && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                La IA no encontró KPIs numéricos. Puedes ingresar los valores manualmente.
-              </p>
-            )}
-            {extractionState === 'error' && (
+            {aiStep === 'error' && aiError && (
               <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {extractionError ?? 'Error al extraer KPIs.'} — El error quedará registrado al importar.
+                {aiError}
+                {isConfirmMode && ' — Puedes confirmar con los valores que ingreses manualmente.'}
               </p>
             )}
           </div>
@@ -339,9 +405,11 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
         {/* Separador */}
         <div className="sm:col-span-2 -mb-2">
           <p className="text-xs text-slate-500">
-            {pdfFile
-              ? 'Valores extraídos por IA — puedes ajustarlos manualmente antes de importar.'
-              : 'Sin PDF: ingresa los valores manualmente.'}
+            {isConfirmMode
+              ? 'Valores extraídos por IA — puedes ajustarlos antes de confirmar.'
+              : pdfFile
+                ? 'Al importar, el PDF se guardará y la IA extraerá los KPIs.'
+                : 'Sin PDF: ingresa los valores manualmente.'}
           </p>
         </div>
 
@@ -359,7 +427,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
               {...register(name)}
               type="number"
               step="any"
-              disabled={isExtracting}
+              disabled={isWorking}
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
               placeholder="—"
             />
@@ -375,30 +443,37 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
           <textarea
             {...register('summary')}
             rows={4}
-            disabled={isExtracting}
+            disabled={isWorking}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
             placeholder="Resumen analítico del trimestre (opcional)…"
           />
         </div>
       </div>
 
-      {mutation.isError && (
+      {(manualMutation.isError || confirmMutation.isError) && (
         <p className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {mutation.error instanceof Error ? mutation.error.message : 'Error al importar'}
+          {(manualMutation.error ?? confirmMutation.error) instanceof Error
+            ? (manualMutation.error ?? confirmMutation.error as Error).message
+            : 'Error al importar'}
         </p>
       )}
 
       <button
         type="submit"
-        disabled={isPending || isExtracting || catalogLoading}
+        disabled={isWorking || catalogLoading}
         className="w-full rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition"
       >
-        {isPending
-          ? pdfFile ? 'Importando y procesando PDF…' : 'Importando…'
-          : isExtracting
-            ? 'Extrayendo con IA…'
-            : 'Importar y previsualizar'}
+        {buttonLabel()}
       </button>
     </form>
+  )
+}
+
+function Spinner() {
+  return (
+    <svg className="animate-spin h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
   )
 }

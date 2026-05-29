@@ -1,4 +1,6 @@
+using Application.Ai;
 using Application.News;
+using Domain.Ai;
 using Domain.News;
 using Infrastructure.Integrations.Ai;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +24,7 @@ public class RoutingAiSummaryServiceTests
         var gemini = BuildGemini(geminiHandler, fakeRepo);
         var deepSeek = BuildDeepSeek(new StubHandler(_ => throw new Exception("DeepSeek no debería ser llamado")), fakeRepo);
 
-        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo);
+        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo, new NullCallLogRepo());
 
         var result = await sut.GenerateSummaryAsync("Título", "Snippet", "Cuerpo largo suficiente para pasar el quality gate y tener al menos cinco oraciones. Más texto aquí para pasar. Y más texto. Y aún más. Final.");
 
@@ -44,7 +46,7 @@ public class RoutingAiSummaryServiceTests
         var gemini = BuildGemini(new StubHandler(_ => throw new Exception("Gemini no debería ser llamado")), fakeRepo);
         var deepSeek = BuildDeepSeek(deepSeekHandler, fakeRepo);
 
-        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo);
+        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo, new NullCallLogRepo());
 
         var result = await sut.GenerateSummaryAsync("Título", "Snippet");
 
@@ -59,7 +61,7 @@ public class RoutingAiSummaryServiceTests
         var gemini = BuildGemini(new StubHandler(_ => Task.FromResult(new System.Net.Http.HttpResponseMessage())), fakeRepo);
         var deepSeek = BuildDeepSeek(new StubHandler(_ => Task.FromResult(new System.Net.Http.HttpResponseMessage())), fakeRepo);
 
-        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo);
+        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo, new NullCallLogRepo());
 
         await Assert.ThrowsAsync<AiProviderConfigurationException>(() =>
             sut.GenerateSummaryAsync("Título", null));
@@ -139,6 +141,13 @@ public class RoutingAiSummaryServiceTests
 
         public Task SetPromptAsync(string contentType, string template, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
+    }
+
+    private sealed class NullCallLogRepo : IAiCallLogRepository
+    {
+        public Task AddAsync(AiCallLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<(IReadOnlyList<AiCallLog> Items, int Total)> GetPagedAsync(string? operation, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<AiCallLog>, int)>(([], 0));
     }
 
     private sealed class StubHandler(Func<System.Net.Http.HttpRequestMessage, Task<System.Net.Http.HttpResponseMessage>> factory)
