@@ -14,10 +14,13 @@ public class RoutingKpiExtractorService(
     IAiProviderConfigRepository providerRepo,
     IAiCallLogRepository callLogRepo) : IKpiExtractorService
 {
+    private const int PreviewChars = 2000;
+
     public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
     {
         var config = await providerRepo.GetConfigAsync(ct);
         var sw = Stopwatch.StartNew();
+        var preview = markdownContent.Length > PreviewChars ? markdownContent[..PreviewChars] : markdownContent;
 
         KpiExtractionResult result;
         try
@@ -33,20 +36,20 @@ public class RoutingKpiExtractorService(
         {
             sw.Stop();
             await TryLogAsync("KpiExtraction", config.Provider.ToString(), config.ModelId,
-                markdownContent.Length, sw.ElapsedMilliseconds, false, null, ex.Message);
+                markdownContent.Length, sw.ElapsedMilliseconds, false, preview, null, ex.Message);
             throw;
         }
 
         sw.Stop();
         await TryLogAsync("KpiExtraction", config.Provider.ToString(), config.ModelId,
             markdownContent.Length, sw.ElapsedMilliseconds, result.Success,
-            JsonSerializer.Serialize(result), result.Success ? null : result.ExtractionNotes);
+            preview, JsonSerializer.Serialize(result), result.Success ? null : result.ExtractionNotes);
 
         return result;
     }
 
     private async Task TryLogAsync(string operation, string provider, string modelId,
-        int promptLength, long durationMs, bool success, string? responseRaw, string? errorMessage)
+        int promptLength, long durationMs, bool success, string? inputPreview, string? responseRaw, string? errorMessage)
     {
         try
         {
@@ -59,6 +62,7 @@ public class RoutingKpiExtractorService(
                 PromptLength = promptLength,
                 DurationMs = durationMs,
                 Success = success,
+                InputPreview = inputPreview,
                 ResponseRaw = responseRaw,
                 ErrorMessage = errorMessage,
             }, CancellationToken.None);

@@ -12,6 +12,8 @@ public class RoutingAiSummaryService(
     IAiProviderConfigRepository providerRepo,
     IAiCallLogRepository callLogRepo) : IAiSummaryService
 {
+    private const int PreviewChars = 2000;
+
     public async Task<string?> GenerateSummaryAsync(
         string title,
         string? snippet,
@@ -22,6 +24,8 @@ public class RoutingAiSummaryService(
         var config = await providerRepo.GetConfigAsync(ct);
         var sw = Stopwatch.StartNew();
         var promptLength = title.Length + (snippet?.Length ?? 0) + (bodyText?.Length ?? 0);
+        var combined = $"{title}\n{snippet}\n{bodyText}";
+        var inputPreview = combined.Length > PreviewChars ? combined[..PreviewChars] : combined;
 
         string? result;
         try
@@ -37,20 +41,20 @@ public class RoutingAiSummaryService(
         {
             sw.Stop();
             await TryLogAsync(contentType.ToString(), config.Provider.ToString(), config.ModelId,
-                promptLength, sw.ElapsedMilliseconds, false, null, ex.Message);
+                promptLength, sw.ElapsedMilliseconds, false, inputPreview, null, ex.Message);
             throw;
         }
 
         sw.Stop();
         var response = result is not null && result.Length > 2000 ? result[..2000] : result;
         await TryLogAsync(contentType.ToString(), config.Provider.ToString(), config.ModelId,
-            promptLength, sw.ElapsedMilliseconds, result is not null, response, null);
+            promptLength, sw.ElapsedMilliseconds, result is not null, inputPreview, response, null);
 
         return result;
     }
 
     private async Task TryLogAsync(string operation, string provider, string modelId,
-        int promptLength, long durationMs, bool success, string? responseRaw, string? errorMessage)
+        int promptLength, long durationMs, bool success, string? inputPreview, string? responseRaw, string? errorMessage)
     {
         try
         {
@@ -63,6 +67,7 @@ public class RoutingAiSummaryService(
                 PromptLength = promptLength,
                 DurationMs = durationMs,
                 Success = success,
+                InputPreview = inputPreview,
                 ResponseRaw = responseRaw,
                 ErrorMessage = errorMessage,
             }, CancellationToken.None);

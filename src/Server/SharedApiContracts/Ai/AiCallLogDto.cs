@@ -9,6 +9,7 @@ public sealed record AiCallLogDto(
     int PromptLength,
     long DurationMs,
     bool Success,
+    string? InputPreview,
     string? ResponseRaw,
     string? ErrorMessage,
     string? Context,

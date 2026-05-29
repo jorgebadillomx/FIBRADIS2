@@ -30,6 +30,7 @@ public class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
         builder.Property(x => x.PromptLength).HasColumnName("prompt_length");
         builder.Property(x => x.DurationMs).HasColumnName("duration_ms");
         builder.Property(x => x.Success).HasColumnName("success");
+        builder.Property(x => x.InputPreview).HasColumnName("input_preview");
         builder.Property(x => x.ResponseRaw).HasColumnName("response_raw");
         builder.Property(x => x.ErrorMessage).HasColumnName("error_message");
         builder.Property(x => x.Context).HasColumnName("context");

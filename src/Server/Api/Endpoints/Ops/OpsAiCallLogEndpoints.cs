@@ -36,6 +36,7 @@ public static class OpsAiCallLogEndpoints
                 item.PromptLength,
                 item.DurationMs,
                 item.Success,
+                item.InputPreview,
                 item.ResponseRaw,
                 item.ErrorMessage,
                 item.Context,

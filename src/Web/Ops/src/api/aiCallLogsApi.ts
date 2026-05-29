@@ -1,4 +1,4 @@
-import { assertOpsAccessToken, getOpsAuthHeaders } from '@/lib/auth'
+import { assertOpsAccessToken, getOpsAuthHeaders } from '@/api/opsAuth'
 
 export interface AiCallLogDto {
   id: string
@@ -9,6 +9,7 @@ export interface AiCallLogDto {
   promptLength: number
   durationMs: number
   success: boolean
+  inputPreview: string | null
   responseRaw: string | null
   errorMessage: string | null
   context: string | null

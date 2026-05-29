@@ -10,6 +10,7 @@ public class AiCallLog
     public int PromptLength { get; set; }
     public long DurationMs { get; set; }
     public bool Success { get; set; }
+    public string? InputPreview { get; set; }
     public string? ResponseRaw { get; set; }
     public string? ErrorMessage { get; set; }
     public string? Context { get; set; }
