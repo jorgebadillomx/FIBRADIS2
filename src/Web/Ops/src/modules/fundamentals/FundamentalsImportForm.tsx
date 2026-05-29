@@ -51,6 +51,8 @@ interface FormValues {
 interface Props {
   onPreview: (preview: FundamentalPreviewDto, fibraId: string, record: FundamentalRecordDto) => void
   onFibraChange?: (fibraId: string) => void
+  initialRecord?: FundamentalRecordDto
+  initialFibraId?: string
 }
 
 function FieldInfo({ title }: { title: string }) {
@@ -67,7 +69,7 @@ function FieldInfo({ title }: { title: string }) {
 
 type AiStep = 'idle' | 'uploading' | 'extracting' | 'done' | 'error'
 
-export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
+export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord, initialFibraId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [fieldNotes, setFieldNotes] = useState<Partial<Record<KpiKey, string>>>({})
@@ -96,6 +98,36 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
   useEffect(() => {
     if (watchedFibraId) onFibraChange?.(watchedFibraId)
   }, [watchedFibraId, onFibraChange])
+
+  useEffect(() => {
+    if (!initialRecord) return
+    const toStr = (v: number | null | undefined) => v != null ? String(v) : ''
+    reset({
+      fibraId: initialFibraId ?? '',
+      period: initialRecord.period,
+      capRate: toStr(initialRecord.capRate),
+      navPerCbfi: toStr(initialRecord.navPerCbfi),
+      ltv: toStr(initialRecord.ltv),
+      noiMargin: toStr(initialRecord.noiMargin),
+      ffoMargin: toStr(initialRecord.ffoMargin),
+      quarterlyDistribution: toStr(initialRecord.quarterlyDistribution),
+      summary: initialRecord.summary ?? '',
+    })
+    const notes: Partial<Record<KpiKey, string>> = {}
+    const kpiKeys: KpiKey[] = ['capRate', 'navPerCbfi', 'ltv', 'noiMargin', 'ffoMargin', 'quarterlyDistribution']
+    for (const key of kpiKeys) {
+      const note = initialRecord.fieldNotes?.[key]
+      if (note) notes[key] = note
+    }
+    setFieldNotes(notes)
+    setPendingRecordId(initialRecord.id)
+    setAiStep('done')
+    setAiError(null)
+    setWarningMessage(null)
+    setPdfFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialRecord?.id])
 
   const toNum = (s: string) => { const n = parseFloat(s); return isNaN(n) ? null : n }
 
@@ -156,6 +188,9 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
       return { preview, fibraId: values.fibraId, record: syntheticRecord }
     },
     onSuccess: ({ preview, fibraId, record }) => {
+      reset({ fibraId: '', period: PERIODS[0], capRate: '', navPerCbfi: '', ltv: '', noiMargin: '', ffoMargin: '', quarterlyDistribution: '', summary: '' })
+      resetAiState()
+      setPdfFile(null)
       onPreview(preview, fibraId, record)
     },
   })
@@ -195,6 +230,9 @@ export function FundamentalsImportForm({ onPreview, onFibraChange }: Props) {
       return { preview: syntheticPreview, fibraId: values.fibraId, record }
     },
     onSuccess: ({ preview, fibraId, record }) => {
+      reset({ fibraId: '', period: PERIODS[0], capRate: '', navPerCbfi: '', ltv: '', noiMargin: '', ffoMargin: '', quarterlyDistribution: '', summary: '' })
+      resetAiState()
+      setPdfFile(null)
       onPreview(preview, fibraId, record)
     },
   })

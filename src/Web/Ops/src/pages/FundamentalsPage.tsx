@@ -3,64 +3,28 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { FundamentalPreviewDto, FundamentalRecordDto } from '@/api/fundamentalsApi'
 import { FundamentalsImportForm } from '@/modules/fundamentals/FundamentalsImportForm'
 import { FundamentalsHistory } from '@/modules/fundamentals/FundamentalsHistory'
-import { FundamentalsPreview } from '@/modules/fundamentals/FundamentalsPreview'
-import { KPI_DEFINITIONS } from '@/lib/kpi-definitions'
-
-type Step = 'form' | 'preview'
 
 interface State {
-  step: Step
-  preview: FundamentalPreviewDto | null
-  previewRecord: FundamentalRecordDto | null
+  editRecord: FundamentalRecordDto | null
   selectedFibraId: string | null
 }
 
 export function FundamentalsPage() {
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>({
-    step: 'form',
-    preview: null,
-    previewRecord: null,
+    editRecord: null,
     selectedFibraId: null,
   })
 
-  const handlePreview = (preview: FundamentalPreviewDto, fibraId: string, record: FundamentalRecordDto) => {
-    setState({ step: 'preview', preview, previewRecord: record, selectedFibraId: fibraId })
+  const handleDone = (_preview: FundamentalPreviewDto, fibraId: string) => {
+    if (fibraId) queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] })
+    if (state.selectedFibraId) queryClient.invalidateQueries({ queryKey: ['fundamentals', state.selectedFibraId] })
+    setState((s) => ({ ...s, editRecord: null }))
   }
 
-  const handleCancel = () => {
-    setState((s) => ({ ...s, step: 'form', preview: null, previewRecord: null }))
-  }
-
-  const handleConfirmed = () => {
-    setState((s) => {
-      if (s.selectedFibraId) {
-        queryClient.invalidateQueries({ queryKey: ['fundamentals', s.selectedFibraId] })
-      }
-      return { ...s, step: 'form', preview: null, previewRecord: null }
-    })
-  }
-
-  const handleReprocess = (record: FundamentalRecordDto) => {
-    const kpiFields = ['capRate', 'navPerCbfi', 'ltv', 'noiMargin', 'ffoMargin', 'quarterlyDistribution'] as const
-    const presentFields = kpiFields.filter(f => record[f] != null).map(f => KPI_DEFINITIONS[f].label)
-    const missingFields = kpiFields.filter(f => record[f] == null).map(f => KPI_DEFINITIONS[f].label)
-
-    const preview: FundamentalPreviewDto = {
-      id: record.id,
-      fibraTicker: record.fibraTicker,
-      period: record.period,
-      status: record.status,
-      isPossibleUpdate: record.isPossibleUpdate,
-      warningMessage: null,
-      presentFields,
-      missingFields,
-      pdfReference: record.pdfReference ?? null,
-      capturedAt: record.capturedAt,
-      hasMarkdownContent: record.hasMarkdownContent,
-    }
-
-    setState((s) => ({ ...s, step: 'preview', preview, previewRecord: record }))
+  const handleEdit = (record: FundamentalRecordDto) => {
+    setState((s) => ({ ...s, editRecord: record }))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -74,42 +38,28 @@ export function FundamentalsPage() {
         </p>
       </div>
 
-      {state.step === 'form' && (
-        <div className="space-y-8">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Nuevo registro
-            </h2>
-            <FundamentalsImportForm
-              onPreview={handlePreview}
-              onFibraChange={(fibraId) => setState((s) => ({ ...s, selectedFibraId: fibraId }))}
-            />
-          </section>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          {state.editRecord
+            ? `Editando — ${state.editRecord.fibraTicker} ${state.editRecord.period}`
+            : 'Nuevo registro'}
+        </h2>
+        <FundamentalsImportForm
+          onPreview={handleDone}
+          onFibraChange={(fibraId) => setState((s) => ({ ...s, selectedFibraId: fibraId }))}
+          initialRecord={state.editRecord ?? undefined}
+          initialFibraId={state.selectedFibraId ?? undefined}
+        />
+      </section>
 
-          {state.selectedFibraId && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Historial — {state.selectedFibraId}
-              </h2>
-              <FundamentalsHistory
-                fibraId={state.selectedFibraId}
-                onReprocess={handleReprocess}
-              />
-            </section>
-          )}
-        </div>
-      )}
-
-      {state.step === 'preview' && state.preview && (
+      {state.selectedFibraId && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Preview del registro
+            Historial — {state.selectedFibraId}
           </h2>
-          <FundamentalsPreview
-            preview={state.preview}
-            record={state.previewRecord ?? undefined}
-            onCancel={handleCancel}
-            onConfirmed={handleConfirmed}
+          <FundamentalsHistory
+            fibraId={state.selectedFibraId}
+            onEdit={handleEdit}
           />
         </section>
       )}

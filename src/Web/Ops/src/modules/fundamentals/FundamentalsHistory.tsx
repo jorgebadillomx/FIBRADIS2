@@ -10,10 +10,10 @@ import { KPI_DEFINITIONS, type KpiKey } from '@/lib/kpi-definitions'
 
 interface Props {
   fibraId: string
-  onReprocess: (record: FundamentalRecordDto) => void
+  onEdit: (record: FundamentalRecordDto) => void
 }
 
-export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
+export function FundamentalsHistory({ fibraId, onEdit }: Props) {
   const queryClient = useQueryClient()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [pdfDownloadErrors, setPdfDownloadErrors] = useState<Record<string, string>>({})
@@ -82,7 +82,7 @@ export function FundamentalsHistory({ fibraId, onReprocess }: Props) {
               pdfDownloadError={pdfDownloadErrors[r.id]}
               onPdfUpload={handlePdfUpload}
               onPdfDownload={handlePdfDownload}
-              onReprocess={onReprocess}
+              onEdit={onEdit}
             />
           ))}
         </tbody>
@@ -98,7 +98,7 @@ interface RowProps {
   pdfDownloadError?: string
   onPdfUpload: (id: string, file: File) => Promise<void>
   onPdfDownload: (id: string, ticker: string) => Promise<void>
-  onReprocess: (record: FundamentalRecordDto) => void
+  onEdit: (record: FundamentalRecordDto) => void
 }
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024
@@ -109,7 +109,7 @@ function HistoryRow({
   pdfDownloadError,
   onPdfUpload,
   onPdfDownload,
-  onReprocess,
+  onEdit,
 }: RowProps) {
   const [pdfUploadError, setPdfUploadError] = useState<string | null>(null)
 
@@ -138,15 +138,13 @@ function HistoryRow({
       </td>
       <td className="py-2">
         <div className="flex flex-wrap gap-2">
-          {(r.status === 'processed' || r.status === 'partial') && (
-            <button
-              type="button"
-              onClick={() => onReprocess(r)}
-              className="rounded-lg bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700 hover:bg-orange-200 transition"
-            >
-              Reprocess
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onEdit(r)}
+            className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
+          >
+            Editar
+          </button>
 
           {r.pdfReference ? (
             <button
