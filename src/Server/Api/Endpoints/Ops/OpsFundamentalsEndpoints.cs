@@ -306,6 +306,14 @@ public static partial class OpsFundamentalsEndpoints
                 ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? "unknown";
 
+            // Soft-delete any existing processed record for the same fibra/period before confirming.
+            if (record.IsPossibleUpdate)
+            {
+                var existing = await repo.GetProcessedByFibraAndPeriodAsync(record.FibraId, record.Period, ct);
+                if (existing is not null && existing.Id != id)
+                    await repo.SoftDeleteAsync(existing.Id, actor, ct);
+            }
+
             var confirmedAt = DateTimeOffset.UtcNow;
             await repo.UpdateStatusAsync(id, "processed", actor, confirmedAt, ct);
 
@@ -525,7 +533,8 @@ public static partial class OpsFundamentalsEndpoints
                 CapturedAt: updated.CapturedAt,
                 ConfirmedAt: updated.ConfirmedAt,
                 HasMarkdownContent: !string.IsNullOrWhiteSpace(updated.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson)));
+                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson),
+                DeletedAt: updated.DeletedAt));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -575,7 +584,8 @@ public static partial class OpsFundamentalsEndpoints
                 CapturedAt: updated.CapturedAt,
                 ConfirmedAt: updated.ConfirmedAt,
                 HasMarkdownContent: !string.IsNullOrWhiteSpace(updated.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson)));
+                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson),
+                DeletedAt: updated.DeletedAt));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -618,7 +628,8 @@ public static partial class OpsFundamentalsEndpoints
                 CapturedAt: r.CapturedAt,
                 ConfirmedAt: r.ConfirmedAt,
                 HasMarkdownContent: !string.IsNullOrWhiteSpace(r.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(r.FieldNotesJson))).ToList();
+                FieldNotes: DeserializeFieldNotes(r.FieldNotesJson),
+                DeletedAt: r.DeletedAt)).ToList();
 
             return Results.Ok(dtos);
         })

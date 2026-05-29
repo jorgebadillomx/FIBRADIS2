@@ -20,4 +20,5 @@ public sealed record FundamentalRecordDto(
     DateTimeOffset CapturedAt,
     DateTimeOffset? ConfirmedAt,
     bool HasMarkdownContent = false,
-    IReadOnlyDictionary<string, string>? FieldNotes = null);
+    IReadOnlyDictionary<string, string>? FieldNotes = null,
+    DateTimeOffset? DeletedAt = null);

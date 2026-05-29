@@ -2493,6 +2493,7 @@
           "promptLength",
           "durationMs",
           "success",
+          "requestRaw",
           "responseRaw",
           "errorMessage",
           "context",
@@ -2535,6 +2536,12 @@
           },
           "success": {
             "type": "boolean"
+          },
+          "requestRaw": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "responseRaw": {
             "type": [
@@ -3333,6 +3340,13 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },

@@ -103,6 +103,13 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
             .HasColumnName("error_reason")
             .HasColumnType("nvarchar(500)");
 
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
+
+        builder.Property(x => x.DeletedBy)
+            .HasColumnName("deleted_by")
+            .HasColumnType("varchar(100)");
+
         builder.HasOne<Fibra>()
             .WithMany()
             .HasForeignKey(r => r.FibraId)

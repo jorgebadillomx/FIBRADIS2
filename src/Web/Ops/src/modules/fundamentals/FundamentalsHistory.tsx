@@ -112,12 +112,18 @@ function HistoryRow({
   onEdit,
 }: RowProps) {
   const [pdfUploadError, setPdfUploadError] = useState<string | null>(null)
+  const isDeleted = !!r.deletedAt
 
   return (
-    <tr className="hover:bg-slate-50 transition-colors">
-      <td className="py-2 pr-3 font-mono font-medium">{r.period}</td>
+    <tr className={`transition-colors ${isDeleted ? 'opacity-50 bg-slate-50' : 'hover:bg-slate-50'}`}>
+      <td className="py-2 pr-3 font-mono font-medium">
+        <span className={isDeleted ? 'line-through text-slate-400' : ''}>{r.period}</span>
+      </td>
       <td className="py-2 pr-3">
-        <RecordStatusBadge status={r.status} isPossibleUpdate={r.isPossibleUpdate} />
+        {isDeleted
+          ? <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-500">archivado</span>
+          : <RecordStatusBadge status={r.status} isPossibleUpdate={r.isPossibleUpdate} />
+        }
       </td>
       <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="capRate" value={r.capRate} note={r.fieldNotes?.capRate} /></td>
       <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="navPerCbfi" value={r.navPerCbfi} note={r.fieldNotes?.navPerCbfi} /></td>
@@ -138,13 +144,15 @@ function HistoryRow({
       </td>
       <td className="py-2">
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => onEdit(r)}
-            className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
-          >
-            Editar
-          </button>
+          {!isDeleted && (
+            <button
+              type="button"
+              onClick={() => onEdit(r)}
+              className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
+            >
+              Editar
+            </button>
+          )}
 
           {r.pdfReference ? (
             <button
@@ -154,7 +162,7 @@ function HistoryRow({
             >
               Ver PDF
             </button>
-          ) : (
+          ) : !isDeleted ? (
             <>
               <input
                 ref={(el) => { fileInputRefs.current[r.id] = el }}
@@ -183,7 +191,7 @@ function HistoryRow({
                 Subir PDF
               </button>
             </>
-          )}
+          ) : null}
         </div>
         {pdfUploadError && (
           <p className="mt-1 text-xs text-red-500">{pdfUploadError}</p>

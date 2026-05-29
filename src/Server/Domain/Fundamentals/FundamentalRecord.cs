@@ -26,6 +26,8 @@ public class FundamentalRecord
     public DateTimeOffset CapturedAt { get; init; }
     public DateTimeOffset? ConfirmedAt { get; set; }
     public string? ErrorReason { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
     public void SetFieldNotes(Dictionary<string, string?>? notes)
     {

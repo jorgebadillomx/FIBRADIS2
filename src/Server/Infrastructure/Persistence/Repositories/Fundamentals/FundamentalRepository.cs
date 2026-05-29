@@ -12,18 +12,21 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
 
     public async Task<FundamentalRecord?> GetProcessedByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct)
         => await db.FundamentalRecords
-            .FirstOrDefaultAsync(r => r.FibraId == fibraId && r.Period == period && r.Status == "processed", ct);
+            .Where(r => r.FibraId == fibraId && r.Period == period && r.Status == "processed" && r.DeletedAt == null)
+            .OrderByDescending(r => r.ConfirmedAt)
+            .FirstOrDefaultAsync(ct);
 
     public async Task<FundamentalRecord?> GetLatestProcessedByFibraAsync(Guid fibraId, CancellationToken ct)
         => await db.FundamentalRecords
-            .Where(r => r.FibraId == fibraId && r.Status == "processed")
+            .Where(r => r.FibraId == fibraId && r.Status == "processed" && r.DeletedAt == null)
             .OrderByDescending(r => r.Period.Substring(3, 4))
             .ThenByDescending(r => r.Period.Substring(1, 1))
+            .ThenByDescending(r => r.ConfirmedAt)
             .FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<string>> GetProcessedPeriodsAsync(Guid fibraId, CancellationToken ct)
         => await db.FundamentalRecords
-            .Where(r => r.FibraId == fibraId && r.Status == "processed" && r.Period.Length == 7)
+            .Where(r => r.FibraId == fibraId && r.Status == "processed" && r.DeletedAt == null && r.Period.Length == 7)
             .Select(r => r.Period)
             .Distinct()
             .OrderByDescending(p => p.Substring(3, 4))
@@ -122,5 +125,14 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
         record.Summary = summary;
 
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct)
+    {
+        await db.FundamentalRecords
+            .Where(r => r.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.DeletedAt, DateTimeOffset.UtcNow)
+                .SetProperty(r => r.DeletedBy, deletedBy), ct);
     }
 }

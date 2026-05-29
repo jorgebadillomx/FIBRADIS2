@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useCallback, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import type { FundamentalPreviewDto, FundamentalRecordDto } from '@/api/fundamentalsApi'
@@ -79,6 +79,8 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
   const [aiError, setAiError] = useState<string | null>(null)
   const [pendingRecordId, setPendingRecordId] = useState<string | null>(null)
   const [warningMessage, setWarningMessage] = useState<string | null>(null)
+  const [awaitingReplaceConfirm, setAwaitingReplaceConfirm] = useState(false)
+  const pendingExtractRecordId = useRef<string | null>(null)
 
   const { data: catalog = [], isLoading: catalogLoading } = useQuery({
     queryKey: ['catalog-ops'],
@@ -139,7 +141,32 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
     setPendingRecordId(null)
     setWarningMessage(null)
     setFieldNotes({})
+    setAwaitingReplaceConfirm(false)
+    pendingExtractRecordId.current = null
   }
+
+  const runKpiExtraction = useCallback(async (recordId: string) => {
+    setAiStep('extracting')
+    try {
+      const extracted = await triggerKpiExtraction(recordId)
+      const numericFields = ['capRate', 'navPerCbfi', 'ltv', 'noiMargin', 'ffoMargin', 'quarterlyDistribution'] as const
+      const notes: Partial<Record<KpiKey, string>> = {}
+      for (const field of numericFields) {
+        if (extracted[field] != null) setValue(field, String(extracted[field]), { shouldDirty: true })
+        const note = extracted.fieldNotes?.[field]
+        if (note) notes[field] = note
+      }
+      if (extracted.summary) setValue('summary', extracted.summary, { shouldDirty: true })
+      setFieldNotes(notes)
+      setPendingRecordId(recordId)
+      setAiStep('done')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al extraer KPIs'
+      setAiError(msg)
+      setAiStep('error')
+      setPendingRecordId(recordId)
+    }
+  }, [setValue])
 
   const handleFileChange = (file: File | null) => {
     setPdfFile(file)
@@ -250,14 +277,16 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
       return
     }
 
-    // AI flow: Paso 1 → Paso 2
+    // AI flow: Paso 1 → upload → (maybe confirm replace) → Paso 2
     setAiError(null)
     setAiStep('uploading')
 
     let recordId: string
+    let isPossibleUpdate = false
     try {
       const uploadResult = await uploadPdfWithRecord(values.fibraId, values.period, pdfFile)
       recordId = uploadResult.id
+      isPossibleUpdate = uploadResult.isPossibleUpdate
       if (uploadResult.warningMessage) setWarningMessage(uploadResult.warningMessage)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al subir el PDF'
@@ -266,37 +295,18 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
       return
     }
 
-    setAiStep('extracting')
-
-    try {
-      const extracted = await triggerKpiExtraction(recordId)
-
-      const numericFields = ['capRate', 'navPerCbfi', 'ltv', 'noiMargin', 'ffoMargin', 'quarterlyDistribution'] as const
-      const notes: Partial<Record<KpiKey, string>> = {}
-
-      for (const field of numericFields) {
-        if (extracted[field] != null) {
-          setValue(field, String(extracted[field]), { shouldDirty: true })
-        }
-        const note = extracted.fieldNotes?.[field]
-        if (note) notes[field] = note
-      }
-
-      if (extracted.summary) setValue('summary', extracted.summary, { shouldDirty: true })
-
-      setFieldNotes(notes)
-      setPendingRecordId(recordId)
-      setAiStep('done')
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al extraer KPIs'
-      setAiError(msg)
-      setAiStep('error')
-      // Still allow user to confirm manually with the record created in Paso 1
-      setPendingRecordId(recordId)
+    if (isPossibleUpdate) {
+      // Pause and ask the user before overwriting the existing processed record.
+      pendingExtractRecordId.current = recordId
+      setAiStep('idle')
+      setAwaitingReplaceConfirm(true)
+      return
     }
+
+    await runKpiExtraction(recordId)
   })
 
-  const isWorking = aiStep === 'uploading' || aiStep === 'extracting' || manualMutation.isPending || confirmMutation.isPending
+  const isWorking = aiStep === 'uploading' || aiStep === 'extracting' || manualMutation.isPending || confirmMutation.isPending || awaitingReplaceConfirm
 
   const buttonLabel = () => {
     if (aiStep === 'uploading') return 'Subiendo PDF…'
@@ -408,8 +418,47 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
           )}
         </div>
 
+        {/* Diálogo de confirmación de reemplazo */}
+        {awaitingReplaceConfirm && (
+          <div className="sm:col-span-2 rounded-xl border border-orange-300 bg-orange-50 p-4 space-y-3">
+            <p className="text-sm font-medium text-orange-800">
+              Ya existe un registro procesado para este período. Si continúas, el registro anterior quedará archivado y no se mostrará en las vistas públicas.
+            </p>
+            <p className="text-xs text-orange-700">
+              {warningMessage}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const recordId = pendingExtractRecordId.current
+                  if (!recordId) return
+                  setAwaitingReplaceConfirm(false)
+                  pendingExtractRecordId.current = null
+                  await runKpiExtraction(recordId)
+                }}
+                className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700 transition"
+              >
+                Continuar y archivar el anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetAiState()
+                  reset()
+                  setPdfFile(null)
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                }}
+                className="rounded-lg bg-white border border-orange-300 px-3 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-100 transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Feedback de estado */}
-        {(aiStep !== 'idle' || warningMessage) && (
+        {(aiStep !== 'idle' || (warningMessage && !awaitingReplaceConfirm)) && (
           <div className="sm:col-span-2 space-y-2">
             {warningMessage && (
               <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-700">

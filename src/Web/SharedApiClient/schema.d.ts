@@ -1148,6 +1148,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/ai-call-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    operation?: string;
+                    page?: number | string;
+                    pageSize?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfAiCallLogDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/news/blocklist-terms": {
         parameters: {
             query?: never;
@@ -1665,7 +1722,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/ops/fundamentals/extract-kpis": {
+    "/api/v1/ops/fundamentals/upload-pdf": {
         parameters: {
             query?: never;
             header?: never;
@@ -1676,7 +1733,10 @@ export interface paths {
         put?: never;
         post: {
             parameters: {
-                query?: never;
+                query: {
+                    fibraId: string;
+                    period: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1695,7 +1755,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["KpiExtractionDto"];
+                        "application/json": components["schemas"]["PdfUploadResultDto"];
                     };
                 };
                 /** @description Bad Request */
@@ -1725,8 +1785,8 @@ export interface paths {
                         "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Bad Gateway */
-                502: {
+                /** @description Internal Server Error */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2008,6 +2068,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/fundamentals/{id}/kpis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchKpisRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalRecordDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
     "/api/v1/ops/fundamentals": {
         parameters: {
             query?: never;
@@ -2066,6 +2192,70 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/fundamentals/diagnose-extraction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DiagnoseExtractionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2631,6 +2821,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AiCallLogDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            timestamp: string;
+            operation: string;
+            provider: string;
+            modelId: string;
+            /** Format: int32 */
+            promptLength: number | string;
+            /** Format: int64 */
+            durationMs: number | string;
+            success: boolean;
+            requestRaw: null | string;
+            responseRaw: null | string;
+            errorMessage: null | string;
+            context: null | string;
+            /** Format: date-time */
+            createdAt: string;
+        };
         AiModeDto: {
             mode: string;
             newsModel: string;
@@ -2695,6 +2905,9 @@ export interface components {
             date: string;
             /** Format: double */
             close: null | number | string;
+        };
+        DiagnoseExtractionRequest: {
+            markdown: string;
         };
         DistributionPointDto: {
             date: string;
@@ -2811,6 +3024,8 @@ export interface components {
             fieldNotes?: null | {
                 [key: string]: string;
             };
+            /** Format: date-time */
+            deletedAt?: null | string;
         };
         HttpValidationProblemDetails: {
             type?: null | string;
@@ -2846,30 +3061,6 @@ export interface components {
             fieldNotes?: null | {
                 [key: string]: string;
             };
-        };
-        KpiExtractionDto: {
-            /** Format: double */
-            capRate: null | number | string;
-            capRateNote: null | string;
-            /** Format: double */
-            navPerCbfi: null | number | string;
-            navPerCbfiNote: null | string;
-            /** Format: double */
-            ltv: null | number | string;
-            ltvNote: null | string;
-            /** Format: double */
-            noiMargin: null | number | string;
-            noiMarginNote: null | string;
-            /** Format: double */
-            ffoMargin: null | number | string;
-            ffoMarginNote: null | string;
-            /** Format: double */
-            quarterlyDistribution: null | number | string;
-            quarterlyDistributionNote: null | string;
-            summary: null | string;
-            extractionNotes: string;
-            /** Format: int32 */
-            markdownLength: number | string;
         };
         LoginRequest: {
             email: string;
@@ -2941,6 +3132,15 @@ export interface components {
             bodyText: null | string;
             aiSummary: null | string;
         };
+        PagedResultOfAiCallLogDto: {
+            items: components["schemas"]["AiCallLogDto"][];
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+            /** Format: int32 */
+            total: number | string;
+        };
         PagedResultOfFibraListItem: {
             items: components["schemas"]["FibraListItem"][];
             /** Format: int32 */
@@ -2967,6 +3167,30 @@ export interface components {
             pageSize: number | string;
             /** Format: int32 */
             total: number | string;
+        };
+        PatchKpisRequest: {
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+            /** Format: double */
+            quarterlyDistribution: null | number | string;
+            summary: null | string;
+        };
+        PdfUploadResultDto: {
+            /** Format: uuid */
+            id: string;
+            fibraTicker: string;
+            period: string;
+            markdownExtracted: boolean;
+            isPossibleUpdate: boolean;
+            warningMessage: null | string;
         };
         PipelineDashboardDto: {
             pipelines: components["schemas"]["PipelineStatusDto"][];
