@@ -301,14 +301,6 @@ public static partial class OpsFundamentalsEndpoints
             if (record is null)
                 return Results.NotFound();
 
-            if (record.Status is not ("pending" or "partial"))
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["status"] = [$"El registro tiene estado '{record.Status}'. Solo se puede confirmar un registro en estado 'pending' o 'partial'."],
-                });
-            }
-
             var actor = ctx.User.Identity?.Name
                 ?? ctx.User.FindFirstValue(ClaimTypes.Email)
                 ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)

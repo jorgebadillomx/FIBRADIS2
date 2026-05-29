@@ -47,7 +47,6 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
     {
         var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (record is null) throw new InvalidOperationException($"FundamentalRecord {id} not found during status update.");
-        if (record.Status == "processed") return;
         record.Status = status;
         record.ConfirmedBy = confirmedBy;
         record.ConfirmedAt = confirmedAt;
