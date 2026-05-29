@@ -16,7 +16,9 @@ public class DeepSeekKpiExtractorService(
 {
     private const string BaseUrl = "https://api.deepseek.com/chat/completions";
     private const int MaxMarkdownChars = 40_000;
-    private const int MaxOutputTokens = 2048;
+    // Reasoning models (e.g. DeepSeek-R1) consume reasoning_tokens against max_tokens.
+    // 2048 was exhausted entirely by reasoning, leaving no budget for the actual JSON response.
+    private const int MaxOutputTokens = 8000;
 
     public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
     {
@@ -62,7 +64,21 @@ public class DeepSeekKpiExtractorService(
             return new KpiExtractionResult(null, null, null, null, null, null, null, null, null, null, null, null, null, "DeepSeek no devolvió choices en la respuesta.", false);
         }
 
-        var raw = choices[0]
+        var firstChoice = choices[0];
+        if (firstChoice.TryGetProperty("finish_reason", out var finishReasonProp))
+        {
+            var finishReason = finishReasonProp.GetString();
+            if (finishReason == "length")
+            {
+                logger.LogError(
+                    "DeepSeek truncó la respuesta por límite de tokens (finish_reason=length). Modelo: {Model}. " +
+                    "Aumenta MaxOutputTokens o reduce el prompt. completion_tokens gastados: {Tokens}.",
+                    providerConfig.ModelId,
+                    root.TryGetProperty("usage", out var usage) && usage.TryGetProperty("completion_tokens", out var ct2) ? ct2.GetInt32() : -1);
+            }
+        }
+
+        var raw = firstChoice
             .TryGetProperty("message", out var message) && message.TryGetProperty("content", out var contentProp)
             ? contentProp.GetString()
             : null;
