@@ -1,5 +1,3 @@
-using Domain.News;
-
 namespace Infrastructure.Integrations.Ai;
 
 public static class AiPromptTemplateDefaults
@@ -128,6 +126,4 @@ public static class AiPromptTemplateDefaults
         - keyFigures solo debe incluir cifras explícitas y concretas del artículo (montos, porcentajes, fechas financieras).
         """;
 
-    public static string ResolveContentType(AiContentType contentType)
-        => contentType == AiContentType.Document ? KpiExtractionContentType : NewsContentType;
 }

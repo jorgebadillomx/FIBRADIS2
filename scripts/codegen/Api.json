@@ -643,8 +643,64 @@
           "204": {
             "description": "No Content"
           },
-          "400": {
-            "description": "Bad Request"
+          "404": {
+            "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "502": {
+            "description": "Bad Gateway"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/news/{articleId}/ai-analysis": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "parameters": [
+          {
+            "name": "articleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsAiAnalysisDto"
+                }
+              }
+            }
           },
           "404": {
             "description": "Not Found"
@@ -3977,6 +4033,100 @@
           }
         }
       },
+      "NewsAiAnalysisDto": {
+        "required": [
+          "isRelevant",
+          "relevanceReason",
+          "headline",
+          "impact",
+          "sectorTags",
+          "subsector",
+          "affectedFibers",
+          "keyFacts",
+          "keyFigures",
+          "summaryMarkdown",
+          "investorTakeaway",
+          "confidence",
+          "extractionNotes"
+        ],
+        "type": "object",
+        "properties": {
+          "isRelevant": {
+            "type": "boolean"
+          },
+          "relevanceReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "headline": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "impact": {
+            "type": "string"
+          },
+          "sectorTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subsector": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "affectedFibers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "keyFacts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "keyFigures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsKeyFigureDto"
+            }
+          },
+          "summaryMarkdown": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "investorTakeaway": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "confidence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "extractionNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "NewsArticleDto": {
         "required": [
           "id",
@@ -3986,7 +4136,8 @@
           "url",
           "snippet",
           "imageUrl",
-          "aiSummary"
+          "aiSummary",
+          "aiAnalysis"
         ],
         "type": "object",
         "properties": {
@@ -4024,6 +4175,35 @@
               "null",
               "string"
             ]
+          },
+          "aiAnalysis": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NewsAiAnalysisDto"
+              }
+            ]
+          }
+        }
+      },
+      "NewsKeyFigureDto": {
+        "required": [
+          "label",
+          "valueText",
+          "importance"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "valueText": {
+            "type": "string"
+          },
+          "importance": {
+            "type": "string"
           }
         }
       },
@@ -4084,7 +4264,9 @@
           "bodyTextLength",
           "bodyTextPreview",
           "hasAiSummary",
-          "aiSummaryPreview"
+          "aiSummaryPreview",
+          "hasAiAnalysis",
+          "impactPreview"
         ],
         "type": "object",
         "properties": {
@@ -4131,6 +4313,15 @@
               "null",
               "string"
             ]
+          },
+          "hasAiAnalysis": {
+            "type": "boolean"
+          },
+          "impactPreview": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -4138,7 +4329,8 @@
         "required": [
           "id",
           "bodyText",
-          "aiSummary"
+          "aiSummary",
+          "aiAnalysis"
         ],
         "type": "object",
         "properties": {
@@ -4156,6 +4348,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "aiAnalysis": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NewsAiAnalysisDto"
+              }
             ]
           }
         }

@@ -96,15 +96,6 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<DistributionPipelineJob>();
         builder.Services.AddScoped<IAiProviderConfigRepository, AiProviderConfigRepository>();
         builder.Services.AddTransient<AiCapturingHandler>();
-        builder.Services.AddHttpClient<GeminiAiSummaryService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        }).AddHttpMessageHandler<AiCapturingHandler>();
-        builder.Services.AddHttpClient<DeepSeekAiSummaryService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        }).AddHttpMessageHandler<AiCapturingHandler>();
-        builder.Services.AddScoped<IAiSummaryService, RoutingAiSummaryService>();
         builder.Services.AddHttpClient<GeminiKpiExtractorService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(120);
