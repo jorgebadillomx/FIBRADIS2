@@ -23,10 +23,14 @@ export interface PagedResult<T> {
   total: number
 }
 
-export type AiCallOperation = 'all' | 'KpiExtraction' | 'News' | 'Document'
+export type AiCallOperation = 'all' | 'KpiExtraction' | 'NewsSummary' | 'News' | 'Document'
+export type AiCallProvider = 'all' | 'Gemini' | 'DeepSeek'
+export type AiCallSuccess = 'all' | 'true' | 'false'
 
 export async function fetchAiCallLogs(
   operation: AiCallOperation,
+  provider: AiCallProvider,
+  success: AiCallSuccess,
   page: number,
   pageSize: number,
 ): Promise<PagedResult<AiCallLogDto>> {
@@ -34,6 +38,8 @@ export async function fetchAiCallLogs(
 
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
   if (operation !== 'all') params.set('operation', operation)
+  if (provider !== 'all') params.set('provider', provider)
+  if (success !== 'all') params.set('success', success)
 
   const response = await fetch(`/api/v1/ops/ai-call-logs?${params}`, {
     headers: getOpsAuthHeaders(),

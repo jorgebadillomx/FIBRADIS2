@@ -14,11 +14,15 @@ public class AiCallLogRepository(AppDbContext db) : IAiCallLogRepository
     }
 
     public async Task<(IReadOnlyList<AiCallLog> Items, int Total)> GetPagedAsync(
-        string? operation, int page, int pageSize, CancellationToken ct = default)
+        string? operation, string? provider, bool? success, int page, int pageSize, CancellationToken ct = default)
     {
         var query = db.AiCallLogs.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(operation))
             query = query.Where(x => x.Operation == operation);
+        if (!string.IsNullOrWhiteSpace(provider))
+            query = query.Where(x => x.Provider == provider);
+        if (success.HasValue)
+            query = query.Where(x => x.Success == success.Value);
 
         query = query.OrderByDescending(x => x.Timestamp);
         var total = await query.CountAsync(ct);

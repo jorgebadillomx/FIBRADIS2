@@ -50,6 +50,18 @@ public class NewsPipelineJob(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Failed to read AI mode configuration; falling back to Off for this pipeline run.");
+                try
+                {
+                    await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
+                    {
+                        Pipeline = "News",
+                        Timestamp = DateTimeOffset.UtcNow,
+                        ErrorType = ex.GetType().Name.Length > 100 ? ex.GetType().Name[..100] : ex.GetType().Name,
+                        Message = $"Fallo leyendo AiModeConfig, usando Off como fallback: {ex.Message}",
+                        AiContext = "El pipeline de noticias no pudo leer la configuración de modo IA. Se usó modo Off como fallback para esta ejecución.",
+                    }, CancellationToken.None);
+                }
+                catch (Exception logEx) { logger.LogWarning(logEx, "No se pudo guardar PipelineErrorLog para fallo de AiModeConfig."); }
             }
 
             var fibras = await fibraRepo.GetAllActiveAsync(ct);

@@ -1,6 +1,6 @@
 # Historia 5.8: Observabilidad completa de llamadas IA — log de cada llamada en Ops
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -63,7 +63,7 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
 
 ### T1 — Dominio: entidad `AiCallLog` y repositorio (AC1)
 
-- [ ] T1.1 — Crear `src/Server/Domain/Jobs/AiCallLog.cs`:
+- [x] T1.1 — Crear `src/Server/Domain/Jobs/AiCallLog.cs`:
   ```csharp
   namespace Domain.Jobs;
 
@@ -84,7 +84,7 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   }
   ```
 
-- [ ] T1.2 — Crear `src/Server/Application/Jobs/IAiCallLogRepository.cs`:
+- [x] T1.2 — Crear `src/Server/Application/Jobs/IAiCallLogRepository.cs`:
   ```csharp
   using Domain.Jobs;
 
@@ -101,7 +101,7 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
 
 ### T2 — Infraestructura: EF Core config, repositorio y migración (AC1)
 
-- [ ] T2.1 — Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Jobs/AiCallLogConfiguration.cs`:
+- [x] T2.1 — Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Jobs/AiCallLogConfiguration.cs`:
   ```csharp
   using Domain.Jobs;
   using Microsoft.EntityFrameworkCore;
@@ -129,9 +129,9 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   
   **Nota**: a diferencia de `PipelineErrorLogConfiguration`, usar `ValueGeneratedOnAdd()` alineado con `HasDefaultValueSql` para que EF no envíe el valor C# en el INSERT (ver deferred D3 de story 5-0).
 
-- [ ] T2.2 — Registrar `AiCallLog` en `AppDbContext` (archivo existente en el proyecto EF Core): añadir `public DbSet<AiCallLog> AiCallLogs { get; set; }` y registrar `AiCallLogConfiguration` en `OnModelCreating`.
+- [x] T2.2 — Registrar `AiCallLog` en `AppDbContext` (archivo existente en el proyecto EF Core): añadir `public DbSet<AiCallLog> AiCallLogs { get; set; }` y registrar `AiCallLogConfiguration` en `OnModelCreating`.
 
-- [ ] T2.3 — Crear `src/Server/Infrastructure/Persistence/Repositories/Jobs/AiCallLogRepository.cs`:
+- [x] T2.3 — Crear `src/Server/Infrastructure/Persistence/Repositories/Jobs/AiCallLogRepository.cs`:
   ```csharp
   using Application.Jobs;
   using Domain.Jobs;
@@ -172,18 +172,18 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   }
   ```
 
-- [ ] T2.4 — Registrar `IAiCallLogRepository → AiCallLogRepository` en `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs` (junto a `IPipelineErrorLogRepository`).
+- [x] T2.4 — Registrar `IAiCallLogRepository → AiCallLogRepository` en `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs` (junto a `IPipelineErrorLogRepository`).
 
-- [ ] T2.5 — Generar migración EF Core:
+- [x] T2.5 — Generar migración EF Core:
   ```
   dotnet ef migrations add AddAiCallLog --project src/Server/Infrastructure --startup-project src/Server/Api
   ```
 
 ### T3 — Instrumentar servicios Gemini (resumen de noticias) (AC1, AC5)
 
-- [ ] T3.1 — En `GeminiAiSummaryService.cs`: añadir `IAiCallLogRepository _aiCallLog` al constructor.
+- [x] T3.1 — En `GeminiAiSummaryService.cs`: añadir `IAiCallLogRepository _aiCallLog` al constructor.
 
-- [ ] T3.2 — Añadir método de ayuda `TryLogAsync` en la clase:
+- [x] T3.2 — Añadir método de ayuda `TryLogAsync` en la clase:
   ```csharp
   private async Task TryLogAsync(
       bool success, string model, int durationMs,
@@ -213,7 +213,7 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   }
   ```
 
-- [ ] T3.3 — En `GenerateSummaryCoreAsync`: medir duración con `Stopwatch` y llamar `TryLogAsync`:
+- [x] T3.3 — En `GenerateSummaryCoreAsync`: medir duración con `Stopwatch` y llamar `TryLogAsync`:
   - Antes del cuerpo del método: `var sw = Stopwatch.StartNew();`
   - En el `return text.Trim()`: llamar `await TryLogAsync(true, model, (int)sw.ElapsedMilliseconds, prompt.Length, text.Trim().Length, null, null, ct)` antes del return.
   - En el `catch` existente (o envolviendo el bloque): llamar `await TryLogAsync(false, model, (int)sw.ElapsedMilliseconds, prompt.Length, 0, ex.GetType().Name, ex.Message, ct)` antes de `throw`.
@@ -222,16 +222,16 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
 
 ### T4 — Instrumentar servicios DeepSeek (resumen de noticias) (AC1, AC5)
 
-- [ ] T4.1 — Aplicar el mismo patrón de T3.1–T3.3 en `DeepSeekAiSummaryService.cs`:
+- [x] T4.1 — Aplicar el mismo patrón de T3.1–T3.3 en `DeepSeekAiSummaryService.cs`:
   - Añadir `IAiCallLogRepository _aiCallLog` al constructor.
   - `TryLogAsync` con `Provider = "DeepSeek"` y `Operation = "NewsSummary"`.
   - Instrumentar `GenerateSummaryCoreAsync`.
 
 ### T5 — Instrumentar servicios KPI (AC1, AC5)
 
-- [ ] T5.1 — En `GeminiKpiExtractorService.cs`: añadir `IAiCallLogRepository _aiCallLog` al constructor.
+- [x] T5.1 — En `GeminiKpiExtractorService.cs`: añadir `IAiCallLogRepository _aiCallLog` al constructor.
 
-- [ ] T5.2 — En `ExtractAsync`: medir desde antes de `SendRequestAsync` hasta después de `KpiExtractionJsonParser.Parse`:
+- [x] T5.2 — En `ExtractAsync`: medir desde antes de `SendRequestAsync` hasta después de `KpiExtractionJsonParser.Parse`:
   ```csharp
   // antes del SendRequestAsync:
   var sw = Stopwatch.StartNew();
@@ -256,11 +256,11 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   - `TryLogAsync` con `Provider = "Gemini"`, `Operation = "KpiExtraction"`.
   - El prompt está disponible como variable local `prompt` ya en el método.
 
-- [ ] T5.3 — Aplicar el mismo patrón en `DeepSeekKpiExtractorService.cs` con `Provider = "DeepSeek"`.
+- [x] T5.3 — Aplicar el mismo patrón en `DeepSeekKpiExtractorService.cs` con `Provider = "DeepSeek"`.
 
 ### T6 — Corregir los tres escenarios sin log (AC2)
 
-- [ ] T6.1 — En `OpsFundamentalsEndpoints.cs`: inyectar `IPipelineErrorLogRepository pipelineErrorLog` en los endpoints que necesita. En el bloque de PDF vacío (actualmente solo `LogWarning`), agregar:
+- [x] T6.1 — En `OpsFundamentalsEndpoints.cs`: inyectar `IPipelineErrorLogRepository pipelineErrorLog` en los endpoints que necesita. En el bloque de PDF vacío (actualmente solo `LogWarning`), agregar:
   ```csharp
   await pipelineErrorLog.LogErrorAsync(new PipelineErrorLog
   {
@@ -272,19 +272,19 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   }, ct);
   ```
 
-- [ ] T6.2 — En `OpsFundamentalsEndpoints.cs`: en el bloque `catch` del fallo de lectura/conversión del PDF (`PdfPig`/`MarkdownPdfConverter` o equivalente), que actualmente solo usa `LogError`, agregar `await pipelineErrorLog.LogErrorAsync(...)` con `Pipeline="KpiExtraction"`, `ErrorType=ex.GetType().Name`, `Message=ex.Message`.
+- [x] T6.2 — En `OpsFundamentalsEndpoints.cs`: en el bloque `catch` del fallo de lectura/conversión del PDF (`PdfPig`/`MarkdownPdfConverter` o equivalente), que actualmente solo usa `LogError`, agregar `await pipelineErrorLog.LogErrorAsync(...)` con `Pipeline="KpiExtraction"`, `ErrorType=ex.GetType().Name`, `Message=ex.Message`.
 
-- [ ] T6.3 — En `NewsPipelineJob.cs`: en el `catch` del fallo de lectura de `AiModeConfig` (actualmente silencioso con fallback a `Off`), agregar `await _pipelineErrorLog.LogErrorAsync(new PipelineErrorLog { Pipeline="News", ErrorType=ex.GetType().Name, Message="Fallo leyendo AiModeConfig, usando Off como fallback: " + ex.Message, ... })`.
+- [x] T6.3 — En `NewsPipelineJob.cs`: en el `catch` del fallo de lectura de `AiModeConfig` (actualmente silencioso con fallback a `Off`), agregar `await _pipelineErrorLog.LogErrorAsync(new PipelineErrorLog { Pipeline="News", ErrorType=ex.GetType().Name, Message="Fallo leyendo AiModeConfig, usando Off como fallback: " + ex.Message, ... })`.
 
 ### T7 — Actualizar filtro PipelineLogsPage (AC3)
 
-- [ ] T7.1 — En `OpsPipelineLogEndpoints.cs`: añadir `"ManualAiSummary"` y `"KpiExtraction"` al array `AllowedPipelines`.
+- [x] T7.1 — En `OpsPipelineLogEndpoints.cs`: añadir `"ManualAiSummary"` y `"KpiExtraction"` al array `AllowedPipelines`.
 
-- [ ] T7.2 — En `PipelineLogsPage.tsx`: añadir `'ManualAiSummary'` y `'KpiExtraction'` al array `pipelines` y sus colores en `getPipelineBadgeClass` (ej. ManualAiSummary → rose, KpiExtraction → indigo).
+- [x] T7.2 — En `PipelineLogsPage.tsx`: añadir `'ManualAiSummary'` y `'KpiExtraction'` al array `pipelines` y sus colores en `getPipelineBadgeClass` (ej. ManualAiSummary → rose, KpiExtraction → indigo).
 
 ### T8 — Backend: DTO + endpoint `/ai-call-logs` (AC4)
 
-- [ ] T8.1 — Crear `src/Server/SharedApiContracts/Jobs/AiCallLogDto.cs`:
+- [x] T8.1 — Crear `src/Server/SharedApiContracts/Jobs/AiCallLogDto.cs`:
   ```csharp
   namespace SharedApiContracts.Jobs;
 
@@ -304,7 +304,7 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   );
   ```
 
-- [ ] T8.2 — Crear `src/Server/Api/Endpoints/Ops/OpsAiCallLogEndpoints.cs`:
+- [x] T8.2 — Crear `src/Server/Api/Endpoints/Ops/OpsAiCallLogEndpoints.cs`:
   - Ruta: `GET /api/v1/ops/ai-call-logs`
   - Parámetros query: `provider?` (all|Gemini|DeepSeek), `operation?` (all|NewsSummary|KpiExtraction), `success?` (bool?), `page=1`, `pageSize=50`
   - Validar `provider` y `operation` contra sus allowed lists; retornar 400 si valor no reconocido
@@ -312,17 +312,17 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   - Retornar `PagedResult<AiCallLogDto>`
   - RequireAuthorization("AdminOps")
 
-- [ ] T8.3 — Registrar `app.MapOpsAiCallLogs()` en `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs` o el archivo `Program.cs` / endpoint registration junto a los demás endpoints Ops.
+- [x] T8.3 — Registrar `app.MapOpsAiCallLogs()` en `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs` o el archivo `Program.cs` / endpoint registration junto a los demás endpoints Ops.
 
-- [ ] T8.4 — Regenerar cliente OpenAPI: `npm run codegen:api`
+- [x] T8.4 — Regenerar cliente OpenAPI: `npm run codegen:api`
 
 ### T9 — Frontend Ops: página `AiCallsPage` (AC4)
 
-- [ ] T9.1 — Crear `src/Web/Ops/src/api/aiCallLogsApi.ts`:
+- [x] T9.1 — Crear `src/Web/Ops/src/api/aiCallLogsApi.ts`:
   - `fetchAiCallLogs(provider, operation, success, page, pageSize)` → llama `GET /api/v1/ops/ai-call-logs`
   - Usa las funciones de auth de `opsAuth.ts` (mismo patrón que `pipelineLogsApi.ts`)
 
-- [ ] T9.2 — Crear `src/Web/Ops/src/pages/AiCallsPage.tsx`:
+- [x] T9.2 — Crear `src/Web/Ops/src/pages/AiCallsPage.tsx`:
   - Sección con eyebrow "Diagnóstico · IA", título "Llamadas al proveedor de IA"
   - Filtros: `Proveedor` (all | Gemini | DeepSeek), `Operación` (all | NewsSummary | KpiExtraction), `Estado` (all | Éxito | Fallo)
   - Tabla con columnas: Timestamp, Operación (badge), Proveedor (badge), Modelo, Duración, Entrada, Salida, Estado (badge éxito/fallo), ErrorType
@@ -330,9 +330,9 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
   - Paginación (mismo patrón que `PipelineLogsPage`)
   - Badges de color: Gemini → teal, DeepSeek → violet, NewsSummary → sky, KpiExtraction → amber, Éxito → emerald, Fallo → rose
 
-- [ ] T9.3 — Registrar en `src/Web/Ops/src/main.tsx`: importar `AiCallsPage` y añadir ruta `{ path: 'ai-calls', element: <AiCallsPage /> }`.
+- [x] T9.3 — Registrar en `src/Web/Ops/src/main.tsx`: importar `AiCallsPage` y añadir ruta `{ path: 'ai-calls', element: <AiCallsPage /> }`.
 
-- [ ] T9.4 — En `src/Web/Ops/src/components/OpsShell.tsx`: añadir entrada en `navigationItems`:
+- [x] T9.4 — En `src/Web/Ops/src/components/OpsShell.tsx`: añadir entrada en `navigationItems`:
   ```ts
   { label: 'Llamadas IA', to: '/ai-calls', description: 'Historial de llamadas a Gemini y DeepSeek con duración y estado.' }
   ```
@@ -340,17 +340,17 @@ para diagnosticar fallos, auditar el volumen de uso y detectar patrones de degra
 
 ### T10 — Tests (AC1, AC5)
 
-- [ ] T10.1 — Unit test `GeminiAiSummaryServiceTests` (o nuevo archivo en `tests/Unit/Infrastructure.Tests/`):
+- [x] T10.1 — Unit test `GeminiAiSummaryServiceTests` (o nuevo archivo en `tests/Unit/Infrastructure.Tests/`):
   - Dado respuesta exitosa de Gemini → `IAiCallLogRepository.LogAsync` se llama con `Success=true`, `Provider="Gemini"`, `Operation="NewsSummary"`, `OutputChars > 0`
   - Dado respuesta HTTP 500 de Gemini → `IAiCallLogRepository.LogAsync` se llama con `Success=false`, `ErrorType` no null; la excepción sigue propagándose
 
-- [ ] T10.2 — Unit test `GeminiKpiExtractorServiceTests`:
+- [x] T10.2 — Unit test `GeminiKpiExtractorServiceTests`:
   - Dado respuesta Gemini con candidatos y JSON válido → log con `Success=true`, `Operation="KpiExtraction"`
   - Dado respuesta Gemini sin candidatos (safety block) → log con `Success=false`
 
-- [ ] T10.3 — Integration test: `GET /api/v1/ops/ai-call-logs` sin filtros → 200, retorna `PagedResult<AiCallLogDto>` con `total >= 0`
+- [x] T10.3 — Integration test: `GET /api/v1/ops/ai-call-logs` sin filtros → 200, retorna `PagedResult<AiCallLogDto>` con `total >= 0`
 
-- [ ] T10.4 — Integration test: filtro `provider=InvalidValue` → 400
+- [x] T10.4 — Integration test: filtro `provider=InvalidValue` → 400
 
 ---
 
@@ -445,6 +445,13 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- AC1: Implementado vía `RoutingKpiExtractorService` y `RoutingAiSummaryService` (logging centralizado en capa routing, no por servicio). Schema difiere del spec: usa `ModelId`, `PromptLength`, `RequestRaw`, `ResponseRaw` en lugar de `Model`, `InputChars`, `OutputChars` — implementación es superconjunto del spec. `OperationName` para news mapeado a `"NewsSummary"` (no `"News"`).
+- AC2: T6.1 y T6.2 ya estaban cubiertos en `OpsFundamentalsEndpoints`. T6.3 implementado: `NewsPipelineJob` ahora persiste `PipelineErrorLog` cuando falla la lectura de `AiModeConfig`.
+- AC3: `AllowedPipelines` backend actualizado con `"ManualAiSummary"` y `"KpiExtraction"`. Frontend `PipelineLogsPage` y `pipelineLogsApi.ts` actualizados con `'KpiExtraction'` e indigo badge.
+- AC4: Filtros `provider` y `success` añadidos a repositorio, endpoint y frontend (3 dropdowns en `AiCallLogsPage`). Página, router y OpsShell ya existían de commits previos.
+- AC5: Cubierto en ambos routing services (`catch { /* never let logging break */ }`).
+- Tests: 8 unit tests (2 nuevos en `RoutingAiSummaryServiceTests`, 3 en nuevo `RoutingKpiExtractorServiceTests`) + 6 integration tests en `AiCallLogEndpointTests`. Regresiones pre-existentes: `UpdateStatusAsync_IsIdempotent` (unit) y 5 `FundamentalsExtractKpisTests` (integration) — verificadas como pre-existentes con git stash.
+
 ### File List
 
 ---
@@ -454,3 +461,4 @@ claude-sonnet-4-6
 | Fecha | Cambio |
 |-------|--------|
 | 2026-05-26 | Story creada — observabilidad llamadas IA: AiCallLog entity, log en 4 servicios AI, fix 3 gaps PipelineErrorLog, nueva página Ops "Llamadas IA" |
+| 2026-05-30 | Story completada — AC2 T6.3, AC3 AllowedPipelines + KpiExtraction frontend, AC4 filtros provider/success, OperationName "NewsSummary", 8 unit + 6 integration tests |

@@ -6,6 +6,9 @@ namespace Api.Endpoints.Ops;
 
 public static class OpsAiCallLogEndpoints
 {
+    private static readonly string[] AllowedProviders = ["Gemini", "DeepSeek"];
+    private static readonly string[] AllowedOperations = ["NewsSummary", "KpiExtraction", "News", "Document"];
+
     public static IEndpointRouteBuilder MapOpsAiCallLogs(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/ops/ai-call-logs")
@@ -15,6 +18,8 @@ public static class OpsAiCallLogEndpoints
         group.MapGet("/", async (
             IAiCallLogRepository repo,
             string? operation,
+            string? provider,
+            bool? success,
             CancellationToken ct,
             int page = 1,
             int pageSize = 50) =>
@@ -26,7 +31,23 @@ public static class OpsAiCallLogEndpoints
                 ? null
                 : operation;
 
-            var (items, total) = await repo.GetPagedAsync(normalizedOp, page, pageSize, ct);
+            if (normalizedOp is not null && !AllowedOperations.Contains(normalizedOp, StringComparer.OrdinalIgnoreCase))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["operation"] = [$"Operación no reconocida. Valores permitidos: {string.Join(", ", AllowedOperations)}."],
+                });
+
+            var normalizedProvider = string.IsNullOrWhiteSpace(provider) || string.Equals(provider, "all", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : provider;
+
+            if (normalizedProvider is not null && !AllowedProviders.Contains(normalizedProvider, StringComparer.OrdinalIgnoreCase))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["provider"] = [$"Proveedor no reconocido. Valores permitidos: {string.Join(", ", AllowedProviders)}."],
+                });
+
+            var (items, total) = await repo.GetPagedAsync(normalizedOp, normalizedProvider, success, page, pageSize, ct);
             var dtos = items.Select(item => new AiCallLogDto(
                 item.Id,
                 item.Timestamp,
@@ -45,6 +66,7 @@ public static class OpsAiCallLogEndpoints
             return Results.Ok(new PagedResult<AiCallLogDto>(dtos, page, pageSize, total));
         })
         .Produces<PagedResult<AiCallLogDto>>(StatusCodes.Status200OK)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 

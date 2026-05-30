@@ -23,6 +23,7 @@ public class RoutingAiSummaryService(
         var sw = Stopwatch.StartNew();
         var promptLength = title.Length + (snippet?.Length ?? 0) + (bodyText?.Length ?? 0);
         var rawData = AiCallRawData.Begin();
+        var operationName = contentType == AiContentType.News ? "NewsSummary" : contentType.ToString();
 
         string? result;
         try
@@ -37,14 +38,14 @@ public class RoutingAiSummaryService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             sw.Stop();
-            await TryLogAsync(contentType.ToString(), config.Provider.ToString(), config.ModelId,
+            await TryLogAsync(operationName, config.Provider.ToString(), config.ModelId,
                 promptLength, sw.ElapsedMilliseconds, false,
                 rawData.RequestBody, rawData.ResponseBody, ex.Message);
             throw;
         }
 
         sw.Stop();
-        await TryLogAsync(contentType.ToString(), config.Provider.ToString(), config.ModelId,
+        await TryLogAsync(operationName, config.Provider.ToString(), config.ModelId,
             promptLength, sw.ElapsedMilliseconds, result is not null,
             rawData.RequestBody, rawData.ResponseBody, null);
 

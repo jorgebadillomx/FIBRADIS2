@@ -1,10 +1,16 @@
 import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchAiCallLogs, type AiCallOperation } from '@/api/aiCallLogsApi'
+import { fetchAiCallLogs, type AiCallOperation, type AiCallProvider, type AiCallSuccess } from '@/api/aiCallLogsApi'
 import { cn } from '@/shared/lib/utils'
 
 const PAGE_SIZE = 50
-const operations: AiCallOperation[] = ['all', 'KpiExtraction', 'News', 'Document']
+const operations: AiCallOperation[] = ['all', 'KpiExtraction', 'NewsSummary', 'News', 'Document']
+const providers: AiCallProvider[] = ['all', 'Gemini', 'DeepSeek']
+const successOptions: { value: AiCallSuccess; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'true', label: 'Éxito' },
+  { value: 'false', label: 'Error' },
+]
 
 function SuccessBadge({ success }: { success: boolean }) {
   return (
@@ -26,12 +32,16 @@ function OperationBadge({ operation }: { operation: string }) {
 
 export function AiCallLogsPage() {
   const [operation, setOperation] = useState<AiCallOperation>('all')
+  const [provider, setProvider] = useState<AiCallProvider>('all')
+  const [success, setSuccess] = useState<AiCallSuccess>('all')
   const [page, setPage] = useState(1)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  const resetPage = () => { setPage(1); setExpandedId(null) }
+
   const query = useQuery({
-    queryKey: ['ai-call-logs', operation, page],
-    queryFn: () => fetchAiCallLogs(operation, page, PAGE_SIZE),
+    queryKey: ['ai-call-logs', operation, provider, success, page],
+    queryFn: () => fetchAiCallLogs(operation, provider, success, page, PAGE_SIZE),
     retry: false,
   })
 
@@ -49,19 +59,46 @@ export function AiCallLogsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Operación
-          </label>
-          <select
-            className="h-11 rounded-xl border border-border bg-white px-4 text-sm outline-none transition focus:border-teal-600"
-            value={operation}
-            onChange={(e) => { setOperation(e.target.value as AiCallOperation); setPage(1); setExpandedId(null) }}
-          >
-            {operations.map((op) => (
-              <option key={op} value={op}>{op === 'all' ? 'Todas' : op}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Operación</label>
+            <select
+              aria-label="Filtrar por operación"
+              className="h-9 rounded-xl border border-border bg-white px-3 text-sm outline-none transition focus:border-teal-600"
+              value={operation}
+              onChange={(e) => { setOperation(e.target.value as AiCallOperation); resetPage() }}
+            >
+              {operations.map((op) => (
+                <option key={op} value={op}>{op === 'all' ? 'Todas' : op}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Proveedor</label>
+            <select
+              aria-label="Filtrar por proveedor"
+              className="h-9 rounded-xl border border-border bg-white px-3 text-sm outline-none transition focus:border-teal-600"
+              value={provider}
+              onChange={(e) => { setProvider(e.target.value as AiCallProvider); resetPage() }}
+            >
+              {providers.map((p) => (
+                <option key={p} value={p}>{p === 'all' ? 'Todos' : p}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Estado</label>
+            <select
+              aria-label="Filtrar por estado"
+              className="h-9 rounded-xl border border-border bg-white px-3 text-sm outline-none transition focus:border-teal-600"
+              value={success}
+              onChange={(e) => { setSuccess(e.target.value as AiCallSuccess); resetPage() }}
+            >
+              {successOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

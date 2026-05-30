@@ -207,7 +207,7 @@ development_status:
 
   # ── 5-8: Observabilidad llamadas IA — log de cada llamada en Ops ──────────
   # story 5-8 creada — AiCallLog entity + repo, instrumentación 4 servicios AI, fix 3 gaps PipelineErrorLog, página "Llamadas IA" en Ops
-  5-8-observabilidad-llamadas-ia-log-en-ops: ready-for-dev
+  5-8-observabilidad-llamadas-ia-log-en-ops: review
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog

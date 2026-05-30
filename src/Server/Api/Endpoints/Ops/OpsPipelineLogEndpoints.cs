@@ -6,7 +6,7 @@ namespace Api.Endpoints.Ops;
 
 public static class OpsPipelineLogEndpoints
 {
-    private static readonly string[] AllowedPipelines = ["Market", "News", "Distribution", "BodyTextRetry"];
+    private static readonly string[] AllowedPipelines = ["Market", "News", "Distribution", "BodyTextRetry", "ManualAiSummary", "KpiExtraction"];
 
     public static IEndpointRouteBuilder MapOpsPipelineLogs(this IEndpointRouteBuilder app)
     {

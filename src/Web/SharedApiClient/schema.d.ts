@@ -1159,6 +1159,8 @@ export interface paths {
             parameters: {
                 query?: {
                     operation?: string;
+                    provider?: string;
+                    success?: boolean;
                     page?: number | string;
                     pageSize?: number | string;
                 };
@@ -1175,6 +1177,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["PagedResultOfAiCallLogDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */

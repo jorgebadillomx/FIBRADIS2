@@ -143,10 +143,62 @@ public class RoutingAiSummaryServiceTests
             => Task.CompletedTask;
     }
 
+    [Fact]
+    public async Task GenerateSummaryAsync_LogsSuccess_WhenGeminiReturnsText()
+    {
+        var spy = new SpyCallLogRepo();
+        var fakeRepo = new FakeProviderRepo(AiProvider.Gemini, "gemini-2.5-flash");
+        // 5+ sentences to pass the quality gate in GeminiAiSummaryService
+        var text = "La FIBRA reportó resultados positivos este trimestre. El CAP rate se ubicó en niveles competitivos. Las distribuciones se mantuvieron estables. El portafolio creció de manera orgánica. La ocupación promedio superó el 95 por ciento.";
+        var handler = new StubHandler(() => BuildGeminiResponse(text));
+        var gemini = BuildGemini(handler, fakeRepo);
+        var deepSeek = BuildDeepSeek(new StubHandler(_ => throw new Exception("no debe llamarse")), fakeRepo);
+
+        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo, spy);
+        await sut.GenerateSummaryAsync("Título", "Snippet");
+
+        Assert.Single(spy.Logged);
+        Assert.True(spy.Logged[0].Success);
+        Assert.Equal("Gemini", spy.Logged[0].Provider);
+        Assert.Equal("NewsSummary", spy.Logged[0].Operation);
+    }
+
+    [Fact]
+    public async Task GenerateSummaryAsync_LogsFailure_AndRethrows_WhenGeminiReturnsHttp500()
+    {
+        var spy = new SpyCallLogRepo();
+        var fakeRepo = new FakeProviderRepo(AiProvider.Gemini, "gemini-2.5-flash");
+        var handler = new StubHandler(_ => Task.FromResult(
+            new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+            {
+                Content = new System.Net.Http.StringContent("server error"),
+            }));
+        var gemini = BuildGemini(handler, fakeRepo);
+        var deepSeek = BuildDeepSeek(new StubHandler(_ => throw new Exception("no debe llamarse")), fakeRepo);
+
+        var sut = new RoutingAiSummaryService(gemini, deepSeek, fakeRepo, spy);
+
+        await Assert.ThrowsAnyAsync<Exception>(() => sut.GenerateSummaryAsync("Título", "Snippet"));
+
+        Assert.Single(spy.Logged);
+        Assert.False(spy.Logged[0].Success);
+        Assert.Equal("Gemini", spy.Logged[0].Provider);
+    }
+
     private sealed class NullCallLogRepo : IAiCallLogRepository
     {
         public Task AddAsync(AiCallLog entry, CancellationToken ct = default) => Task.CompletedTask;
-        public Task<(IReadOnlyList<AiCallLog> Items, int Total)> GetPagedAsync(string? operation, int page, int pageSize, CancellationToken ct = default)
+        public Task<(IReadOnlyList<AiCallLog> Items, int Total)> GetPagedAsync(
+            string? operation, string? provider, bool? success, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<AiCallLog>, int)>(([], 0));
+    }
+
+    private sealed class SpyCallLogRepo : IAiCallLogRepository
+    {
+        public List<AiCallLog> Logged { get; } = [];
+        public Task AddAsync(AiCallLog entry, CancellationToken ct = default) { Logged.Add(entry); return Task.CompletedTask; }
+        public Task<(IReadOnlyList<AiCallLog> Items, int Total)> GetPagedAsync(
+            string? operation, string? provider, bool? success, int page, int pageSize, CancellationToken ct = default)
             => Task.FromResult<(IReadOnlyList<AiCallLog>, int)>(([], 0));
     }
 
