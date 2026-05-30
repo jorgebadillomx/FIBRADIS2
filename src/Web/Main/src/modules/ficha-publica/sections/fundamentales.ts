@@ -12,6 +12,11 @@ export interface FundamentalesData {
   period?: string
   periodsAgo?: number
   summary?: string | null
+  summaryMarkdown?: string | null
+  investorTakeaway?: string | null
+  operationalSignals?: string[]
+  financialSignals?: string[]
+  riskFlags?: string[]
   items?: FundamentalItem[]
 }
 

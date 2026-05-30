@@ -1,5 +1,12 @@
 # Deferred Work
 
+## Deferred from: code review of 5-9-analisis-ia-enriquecido-fundamentales (2026-05-30)
+
+- **D1: `UpdateStatusAsync` guard silencia re-confirmación por actor diferente** [`FundamentalRepository.cs:53-54`] — El guard `if (record.Status == status && status == "processed") return` fue introducido para idempotencia pero impide que un segundo AdminOps registre su nombre como confirmador. Comportamiento deliberado; revisitar si el negocio requiere audit trail de re-confirmaciones.
+- **D2: `UpdateKpiExtractionAsync` sobreescribe notas editoriales de Ops al re-extraer** [`FundamentalRepository.cs:87-100`] — Re-extracción reemplaza `FieldNotesJson` completo sin merge con ediciones previas del operador. Agregar lógica de merge (solo actualizar notas de KPIs que cambiaron) en historia futura del módulo IA si el workflow de edición → re-extracción se vuelve común.
+- **D3: Race condition — dos records `processed` para el mismo período sin unique constraint** [`FundamentalRepository.cs`] — Pre-existente. No hay índice único `(FibraId, Period)` que evite dos confirmaciones concurrentes. Agregar índice único en próxima migración del módulo fundamentales.
+- **D4: Parser sigue leyendo campo legacy `summary` que el nuevo prompt ya no emite** [`KpiExtractionJsonParser.cs:84`] — Dead code inofensivo; el fallback `SummaryMarkdown ?? Summary` funciona. Limpiar al deprecar el campo `Summary` del contrato de extracción en una historia futura.
+
 ## Deferred from: code review of 5-8-observabilidad-llamadas-ia-log-en-ops (2026-05-30)
 
 - **D1: Índice `(Provider, CreatedAt)` ausente en `AiCallLogConfiguration`** [`src/Server/Infrastructure/Persistence/SqlServer/Configurations/Ai/AiCallLogConfiguration.cs:41`] — Dev Notes documenta que debería existir. Solo se creó `(Operation, CreatedAt)`. Añadir en próxima migración del módulo Ai.

@@ -616,7 +616,6 @@ export interface paths {
                     pageSize?: number | string;
                     search?: string;
                     hasAiSummary?: boolean;
-                    isManuallyEdited?: boolean;
                     fibraId?: string;
                 };
                 header?: never;
@@ -2147,6 +2146,72 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/ops/fundamentals/{id}/field-notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchFieldNotesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalRecordDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
     "/api/v1/ops/fundamentals": {
         parameters: {
             query?: never;
@@ -2981,6 +3046,11 @@ export interface components {
             /** Format: double */
             quarterlyDistribution: null | number | string;
             summary: null | string;
+            summaryMarkdown: null | string;
+            investorTakeaway: null | string;
+            operationalSignals: string[];
+            financialSignals: string[];
+            riskFlags: string[];
             fieldNotes: null | {
                 [key: string]: string;
             };
@@ -3023,6 +3093,11 @@ export interface components {
             /** Format: double */
             quarterlyDistribution: null | number | string;
             summary: null | string;
+            summaryMarkdown: null | string;
+            investorTakeaway: null | string;
+            operationalSignals: string[];
+            financialSignals: string[];
+            riskFlags: string[];
             pdfReference: null | string;
             /** Format: date-time */
             pdfUploadedAt: null | string;
@@ -3180,6 +3255,14 @@ export interface components {
             pageSize: number | string;
             /** Format: int32 */
             total: number | string;
+        };
+        PatchFieldNotesRequest: {
+            capRateNote: null | string;
+            navPerCbfiNote: null | string;
+            ltvNote: null | string;
+            noiMarginNote: null | string;
+            ffoMarginNote: null | string;
+            quarterlyDistributionNote: null | string;
         };
         PatchKpisRequest: {
             /** Format: double */

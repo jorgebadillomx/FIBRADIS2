@@ -103,7 +103,7 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
 
   useEffect(() => {
     if (!initialRecord) return
-    const toStr = (v: number | null | undefined) => v != null ? String(v) : ''
+    const toStr = (v: string | number | null | undefined) => v != null ? String(v) : ''
     reset({
       fibraId: initialFibraId ?? '',
       period: initialRecord.period,
@@ -202,6 +202,11 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
         ffoMargin: toNum(values.ffoMargin),
         quarterlyDistribution: toNum(values.quarterlyDistribution),
         summary: values.summary.trim() || null,
+        summaryMarkdown: values.summary.trim() || null,
+        investorTakeaway: null,
+        operationalSignals: [],
+        financialSignals: [],
+        riskFlags: [],
         pdfReference: preview.pdfReference,
         pdfUploadedAt: null,
         importedBy: null,

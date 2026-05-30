@@ -37,6 +37,50 @@ public static partial class OpsFundamentalsEndpoints
         catch { return null; }
     }
 
+    private static FundamentalAiAnalysis EmptyAiAnalysis { get; } = new(
+        SummaryMarkdown: null,
+        InvestorTakeaway: null,
+        OperationalSignals: [],
+        FinancialSignals: [],
+        RiskFlags: [],
+        ExtractionNotes: null);
+
+    private static FundamentalAiAnalysis GetAiAnalysis(FundamentalRecord record)
+        => record.GetAiAnalysis() ?? EmptyAiAnalysis;
+
+    private static FundamentalRecordDto ToDto(FundamentalRecord record, string fibraTicker)
+    {
+        var aiAnalysis = GetAiAnalysis(record);
+
+        return new FundamentalRecordDto(
+            Id: record.Id,
+            FibraTicker: fibraTicker,
+            Period: record.Period,
+            Status: record.Status,
+            IsPossibleUpdate: record.IsPossibleUpdate,
+            CapRate: record.CapRate,
+            NavPerCbfi: record.NavPerCbfi,
+            Ltv: record.Ltv,
+            NoiMargin: record.NoiMargin,
+            FfoMargin: record.FfoMargin,
+            QuarterlyDistribution: record.QuarterlyDistribution,
+            Summary: record.Summary,
+            SummaryMarkdown: aiAnalysis.SummaryMarkdown,
+            InvestorTakeaway: aiAnalysis.InvestorTakeaway,
+            OperationalSignals: aiAnalysis.OperationalSignals.ToArray(),
+            FinancialSignals: aiAnalysis.FinancialSignals.ToArray(),
+            RiskFlags: aiAnalysis.RiskFlags.ToArray(),
+            PdfReference: record.PdfReference,
+            PdfUploadedAt: record.PdfUploadedAt,
+            ImportedBy: record.ImportedBy,
+            ConfirmedBy: record.ConfirmedBy,
+            CapturedAt: record.CapturedAt,
+            ConfirmedAt: record.ConfirmedAt,
+            HasMarkdownContent: !string.IsNullOrWhiteSpace(record.MarkdownContent),
+            FieldNotes: DeserializeFieldNotes(record.FieldNotesJson),
+            DeletedAt: record.DeletedAt);
+    }
+
     public static IEndpointRouteBuilder MapOpsFundamentals(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/ops/fundamentals")
@@ -290,6 +334,67 @@ public static partial class OpsFundamentalsEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
+        group.MapPost("/extract-kpis", async (
+            IFormFile file,
+            IKpiExtractorService kpiExtractor,
+            CancellationToken ct) =>
+        {
+            if (!string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["file"] = ["Solo se aceptan archivos PDF."],
+                });
+            }
+
+            await using var stream = file.OpenReadStream();
+            var markdown = MarkdownCompactor.Compact(PdfMarkdownExtractor.Extract(stream));
+
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return Results.Ok(new KpiExtractionDto(
+                    CapRate: null,
+                    CapRateNote: null,
+                    NavPerCbfi: null,
+                    NavPerCbfiNote: null,
+                    Ltv: null,
+                    LtvNote: null,
+                    NoiMargin: null,
+                    NoiMarginNote: null,
+                    FfoMargin: null,
+                    FfoMarginNote: null,
+                    QuarterlyDistribution: null,
+                    QuarterlyDistributionNote: null,
+                    Summary: null,
+                    ExtractionNotes: "El PDF parece ser una imagen o quedó sin texto extraíble. Se requiere OCR previo.",
+                    MarkdownLength: 0));
+            }
+
+            var result = await kpiExtractor.ExtractAsync(markdown, ct);
+
+            return Results.Ok(new KpiExtractionDto(
+                CapRate: result.CapRate,
+                CapRateNote: result.CapRateNote,
+                NavPerCbfi: result.NavPerCbfi,
+                NavPerCbfiNote: result.NavPerCbfiNote,
+                Ltv: result.Ltv,
+                LtvNote: result.LtvNote,
+                NoiMargin: result.NoiMargin,
+                NoiMarginNote: result.NoiMarginNote,
+                FfoMargin: result.FfoMargin,
+                FfoMarginNote: result.FfoMarginNote,
+                QuarterlyDistribution: result.QuarterlyDistribution,
+                QuarterlyDistributionNote: result.QuarterlyDistributionNote,
+                Summary: result.SummaryMarkdown ?? result.Summary,
+                ExtractionNotes: result.ExtractionNotes,
+                MarkdownLength: markdown.Length));
+        })
+        .DisableAntiforgery()
+        .Produces<KpiExtractionDto>(StatusCodes.Status200OK)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
         group.MapPost("/{id:guid}/confirm", async (
             Guid id,
             IFundamentalRepository repo,
@@ -316,30 +421,11 @@ public static partial class OpsFundamentalsEndpoints
 
             var confirmedAt = DateTimeOffset.UtcNow;
             await repo.UpdateStatusAsync(id, "processed", actor, confirmedAt, ct);
+            var updated = await repo.GetByIdAsync(id, ct);
 
             var fibra = await fibraRepo.GetByIdAsync(record.FibraId, ct);
 
-            return Results.Ok(new FundamentalRecordDto(
-                Id: record.Id,
-                FibraTicker: fibra?.Ticker ?? record.FibraId.ToString(),
-                Period: record.Period,
-                Status: "processed",
-                IsPossibleUpdate: record.IsPossibleUpdate,
-                CapRate: record.CapRate,
-                NavPerCbfi: record.NavPerCbfi,
-                Ltv: record.Ltv,
-                NoiMargin: record.NoiMargin,
-                FfoMargin: record.FfoMargin,
-                QuarterlyDistribution: record.QuarterlyDistribution,
-                Summary: record.Summary,
-                PdfReference: record.PdfReference,
-                PdfUploadedAt: record.PdfUploadedAt,
-                ImportedBy: record.ImportedBy,
-                ConfirmedBy: actor,
-                CapturedAt: record.CapturedAt,
-                ConfirmedAt: confirmedAt,
-                HasMarkdownContent: !string.IsNullOrWhiteSpace(record.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(record.FieldNotesJson)));
+            return Results.Ok(ToDto(updated!, fibra?.Ticker ?? record.FibraId.ToString()));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -513,28 +599,7 @@ public static partial class OpsFundamentalsEndpoints
             var updated = await repo.GetByIdAsync(id, ct);
             var fibra = await fibraRepo.GetByIdAsync(record.FibraId, ct);
 
-            return Results.Ok(new FundamentalRecordDto(
-                Id: updated!.Id,
-                FibraTicker: fibra?.Ticker ?? record.FibraId.ToString(),
-                Period: updated.Period,
-                Status: updated.Status,
-                IsPossibleUpdate: updated.IsPossibleUpdate,
-                CapRate: updated.CapRate,
-                NavPerCbfi: updated.NavPerCbfi,
-                Ltv: updated.Ltv,
-                NoiMargin: updated.NoiMargin,
-                FfoMargin: updated.FfoMargin,
-                QuarterlyDistribution: updated.QuarterlyDistribution,
-                Summary: updated.Summary,
-                PdfReference: updated.PdfReference,
-                PdfUploadedAt: updated.PdfUploadedAt,
-                ImportedBy: updated.ImportedBy,
-                ConfirmedBy: updated.ConfirmedBy,
-                CapturedAt: updated.CapturedAt,
-                ConfirmedAt: updated.ConfirmedAt,
-                HasMarkdownContent: !string.IsNullOrWhiteSpace(updated.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson),
-                DeletedAt: updated.DeletedAt));
+            return Results.Ok(ToDto(updated!, fibra?.Ticker ?? record.FibraId.ToString()));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -564,28 +629,38 @@ public static partial class OpsFundamentalsEndpoints
             var updated = await repo.GetByIdAsync(id, ct);
             var fibra = await fibraRepo.GetByIdAsync(record.FibraId, ct);
 
-            return Results.Ok(new FundamentalRecordDto(
-                Id: updated!.Id,
-                FibraTicker: fibra?.Ticker ?? record.FibraId.ToString(),
-                Period: updated.Period,
-                Status: updated.Status,
-                IsPossibleUpdate: updated.IsPossibleUpdate,
-                CapRate: updated.CapRate,
-                NavPerCbfi: updated.NavPerCbfi,
-                Ltv: updated.Ltv,
-                NoiMargin: updated.NoiMargin,
-                FfoMargin: updated.FfoMargin,
-                QuarterlyDistribution: updated.QuarterlyDistribution,
-                Summary: updated.Summary,
-                PdfReference: updated.PdfReference,
-                PdfUploadedAt: updated.PdfUploadedAt,
-                ImportedBy: updated.ImportedBy,
-                ConfirmedBy: updated.ConfirmedBy,
-                CapturedAt: updated.CapturedAt,
-                ConfirmedAt: updated.ConfirmedAt,
-                HasMarkdownContent: !string.IsNullOrWhiteSpace(updated.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(updated.FieldNotesJson),
-                DeletedAt: updated.DeletedAt));
+            return Results.Ok(ToDto(updated!, fibra?.Ticker ?? record.FibraId.ToString()));
+        })
+        .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPatch("/{id:guid}/field-notes", async (
+            Guid id,
+            PatchFieldNotesRequest request,
+            IFundamentalRepository repo,
+            IFibraRepository fibraRepo,
+            CancellationToken ct) =>
+        {
+            var record = await repo.GetByIdAsync(id, ct);
+            if (record is null || record.DeletedAt is not null)
+                return Results.NotFound();
+
+            var notes = new Dictionary<string, string?>
+            {
+                ["capRate"] = request.CapRateNote,
+                ["navPerCbfi"] = request.NavPerCbfiNote,
+                ["ltv"] = request.LtvNote,
+                ["noiMargin"] = request.NoiMarginNote,
+                ["ffoMargin"] = request.FfoMarginNote,
+                ["quarterlyDistribution"] = request.QuarterlyDistributionNote,
+            };
+
+            await repo.UpdateFieldNotesAsync(id, notes, ct);
+            var fibra = await fibraRepo.GetByIdAsync(record.FibraId, ct);
+
+            return Results.Ok(ToDto(record, fibra?.Ticker ?? record.FibraId.ToString()));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -608,28 +683,7 @@ public static partial class OpsFundamentalsEndpoints
             }
 
             var records = await repo.GetByFibraAsync(fibraId, ct);
-            var dtos = records.Select(r => new FundamentalRecordDto(
-                Id: r.Id,
-                FibraTicker: fibra.Ticker,
-                Period: r.Period,
-                Status: r.Status,
-                IsPossibleUpdate: r.IsPossibleUpdate,
-                CapRate: r.CapRate,
-                NavPerCbfi: r.NavPerCbfi,
-                Ltv: r.Ltv,
-                NoiMargin: r.NoiMargin,
-                FfoMargin: r.FfoMargin,
-                QuarterlyDistribution: r.QuarterlyDistribution,
-                Summary: r.Summary,
-                PdfReference: r.PdfReference,
-                PdfUploadedAt: r.PdfUploadedAt,
-                ImportedBy: r.ImportedBy,
-                ConfirmedBy: r.ConfirmedBy,
-                CapturedAt: r.CapturedAt,
-                ConfirmedAt: r.ConfirmedAt,
-                HasMarkdownContent: !string.IsNullOrWhiteSpace(r.MarkdownContent),
-                FieldNotes: DeserializeFieldNotes(r.FieldNotesJson),
-                DeletedAt: r.DeletedAt)).ToList();
+            var dtos = records.Select(r => ToDto(r, fibra.Ticker)).ToList();
 
             return Results.Ok(dtos);
         })

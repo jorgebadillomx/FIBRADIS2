@@ -34,6 +34,7 @@ public static class FundamentalsEndpoints
             if (record is null)
                 return Results.NotFound();
 
+            var aiAnalysis = record.GetAiAnalysis();
             return Results.Ok(new FundamentalesPublicDto(
                 Period: record.Period,
                 PeriodsAgo: null,
@@ -44,6 +45,11 @@ public static class FundamentalsEndpoints
                 FfoMargin: record.FfoMargin,
                 QuarterlyDistribution: record.QuarterlyDistribution,
                 Summary: record.Summary,
+                SummaryMarkdown: aiAnalysis?.SummaryMarkdown,
+                InvestorTakeaway: aiAnalysis?.InvestorTakeaway,
+                OperationalSignals: aiAnalysis?.OperationalSignals.ToArray() ?? [],
+                FinancialSignals: aiAnalysis?.FinancialSignals.ToArray() ?? [],
+                RiskFlags: aiAnalysis?.RiskFlags.ToArray() ?? [],
                 FieldNotes: record.GetFieldNotes(),
                 CapturedAt: record.CapturedAt));
         })

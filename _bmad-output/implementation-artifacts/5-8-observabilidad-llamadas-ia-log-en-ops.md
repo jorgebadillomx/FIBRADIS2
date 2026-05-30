@@ -1,6 +1,6 @@
 # Historia 5.8: Observabilidad completa de llamadas IA — log de cada llamada en Ops
 
-Status: review
+Status: done
 
 ## Story
 
@@ -485,3 +485,4 @@ claude-sonnet-4-6
 |-------|--------|
 | 2026-05-26 | Story creada — observabilidad llamadas IA: AiCallLog entity, log en 4 servicios AI, fix 3 gaps PipelineErrorLog, nueva página Ops "Llamadas IA" |
 | 2026-05-30 | Story completada — AC2 T6.3, AC3 AllowedPipelines + KpiExtraction frontend, AC4 filtros provider/success, OperationName "NewsSummary", 8 unit + 6 integration tests |
+| 2026-05-30 | Cierre administrativo solicitado por usuario: story movida a `done` sin nueva pasada de corrección sobre los hallazgos abiertos del review. |

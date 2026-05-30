@@ -1,6 +1,6 @@
 # Story 5.9: Análisis IA Enriquecido para Fundamentales
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -57,44 +57,44 @@ de modo que la ficha pública sea más interpretativa y el equipo Ops pueda corr
 
 ## Tasks / Subtasks
 
-- [ ] T1: Schema de extracción IA (AC1, AC2)
-  - [ ] T1.1: Extender `KpiExtractionResult` con `SummaryMarkdown`, `InvestorTakeaway`, `OperationalSignals`, `FinancialSignals`, `RiskFlags` (ver Dev Notes para firma completa)
-  - [ ] T1.2: Actualizar `KpiExtractionJsonParser.TryParse()` para leer nuevos campos; agregar helper `ReadStringArray()`
-  - [ ] T1.3: Actualizar `AiPromptTemplateDefaults.KpiExtractionBody` con el nuevo prompt (el texto completo está en Dev Notes)
-  - [ ] T1.4: Crear migración EF Core que haga seed UPDATE del registro `kpi_extraction` en `ai.AiPrompt`
+- [x] T1: Schema de extracción IA (AC1, AC2)
+  - [x] T1.1: Extender `KpiExtractionResult` con `SummaryMarkdown`, `InvestorTakeaway`, `OperationalSignals`, `FinancialSignals`, `RiskFlags` (ver Dev Notes para firma completa)
+  - [x] T1.2: Actualizar `KpiExtractionJsonParser.TryParse()` para leer nuevos campos; agregar helper `ReadStringArray()`
+  - [x] T1.3: Actualizar `AiPromptTemplateDefaults.KpiExtractionBody` con el nuevo prompt (el texto completo está en Dev Notes)
+  - [x] T1.4: Crear migración EF Core que haga seed UPDATE del registro `kpi_extraction` en `ai.AiPrompt`
 
-- [ ] T2: Persistencia — `AiAnalysisJson` (AC3)
-  - [ ] T2.1: Crear `FundamentalAiAnalysis` record en `src/Server/Domain/Fundamentals/`
-  - [ ] T2.2: Agregar `AiAnalysisJson string?` a `FundamentalRecord` + `SetAiAnalysis()` / `GetAiAnalysis()` siguiendo el patrón de `FieldNotesJson`
-  - [ ] T2.3: Agregar mapeo EF Core en `FundamentalRecordConfiguration`: `HasColumnName("ai_analysis_json")`, tipo `nvarchar(max)`, nullable
-  - [ ] T2.4: `dotnet ef migrations add AddFundamentalAiAnalysisJson --project src/Server/Infrastructure --startup-project src/Server/Api`
-  - [ ] T2.5: Actualizar `FundamentalRepository.UpdateKpiExtractionAsync()`: serializar `FundamentalAiAnalysis`, asignar `Summary = result.SummaryMarkdown ?? result.Summary`, `ErrorReason = null` en success
+- [x] T2: Persistencia — `AiAnalysisJson` (AC3)
+  - [x] T2.1: Crear `FundamentalAiAnalysis` record en `src/Server/Domain/Fundamentals/`
+  - [x] T2.2: Agregar `AiAnalysisJson string?` a `FundamentalRecord` + `SetAiAnalysis()` / `GetAiAnalysis()` siguiendo el patrón de `FieldNotesJson`
+  - [x] T2.3: Agregar mapeo EF Core en `FundamentalRecordConfiguration`: `HasColumnName("ai_analysis_json")`, tipo `nvarchar(max)`, nullable
+  - [x] T2.4: `dotnet ef migrations add AddFundamentalAiAnalysisJson --project src/Server/Infrastructure --startup-project src/Server/Api`
+  - [x] T2.5: Actualizar `FundamentalRepository.UpdateKpiExtractionAsync()`: serializar `FundamentalAiAnalysis`, asignar `Summary = result.SummaryMarkdown ?? result.Summary`, `ErrorReason = null` en success
 
-- [ ] T3: DTOs, API y nuevo endpoint (AC4, AC7)
-  - [ ] T3.1: Extender `FundamentalesPublicDto` con `OperationalSignals`, `FinancialSignals`, `RiskFlags`, `SummaryMarkdown`, `InvestorTakeaway`
-  - [ ] T3.2: Extender `FundamentalRecordDto` con los mismos campos
-  - [ ] T3.3: Crear `PatchFieldNotesRequest` en `src/Server/SharedApiContracts/Fundamentals/`
-  - [ ] T3.4: Agregar `UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes)` en `IFundamentalRepository` e implementación
-  - [ ] T3.5: Agregar endpoint `PATCH /{id:guid}/field-notes` en `OpsFundamentalsEndpoints`
-  - [ ] T3.6: Actualizar mapping en `FundamentalsEndpoints.cs` para incluir nuevos campos en `FundamentalesPublicDto`
-  - [ ] T3.7: Regenerar cliente API tipado: `npm run codegen:api`
+- [x] T3: DTOs, API y nuevo endpoint (AC4, AC7)
+  - [x] T3.1: Extender `FundamentalesPublicDto` con `OperationalSignals`, `FinancialSignals`, `RiskFlags`, `SummaryMarkdown`, `InvestorTakeaway`
+  - [x] T3.2: Extender `FundamentalRecordDto` con los mismos campos
+  - [x] T3.3: Crear `PatchFieldNotesRequest` en `src/Server/SharedApiContracts/Fundamentals/`
+  - [x] T3.4: Agregar `UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes)` en `IFundamentalRepository` e implementación
+  - [x] T3.5: Agregar endpoint `PATCH /{id:guid}/field-notes` en `OpsFundamentalsEndpoints`
+  - [x] T3.6: Actualizar mapping en `FundamentalsEndpoints.cs` para incluir nuevos campos en `FundamentalesPublicDto`
+  - [x] T3.7: Regenerar cliente API tipado: `npm run codegen:api`
 
-- [ ] T4: Frontend Main — display enriquecido (AC5)
-  - [ ] T4.1: Verificar si `react-markdown` está en `src/Web/Main/package.json`; instalar si no está
-  - [ ] T4.2: Actualizar `FundamentalesSection.tsx`: renderizar `summaryMarkdown` como markdown
-  - [ ] T4.3: Agregar secciones condicionales: Señales operativas, Señales financieras, Alertas de riesgo
-  - [ ] T4.4: Agregar callout de `investorTakeaway` al final
-  - [ ] T4.5: Verificar en dev server que vacíos no generan secciones en blanco
+- [x] T4: Frontend Main — display enriquecido (AC5)
+  - [x] T4.1: Verificar si `react-markdown` está en `src/Web/Main/package.json`; instalar si no está
+  - [x] T4.2: Actualizar `FundamentalesSection.tsx`: renderizar `summaryMarkdown` como markdown
+  - [x] T4.3: Agregar secciones condicionales: Señales operativas, Señales financieras, Alertas de riesgo
+  - [x] T4.4: Agregar callout de `investorTakeaway` al final
+  - [x] T4.5: Verificar en dev server que vacíos no generan secciones en blanco
 
-- [ ] T5: Frontend Ops — modal de edición de notas (AC6)
-  - [ ] T5.1: Crear `EditFieldNotesDialog.tsx` en `src/Web/Ops/src/modules/fundamentals/`
-  - [ ] T5.2: Agregar `patchFieldNotes(id, notes)` en `src/Web/Ops/src/api/fundamentalsApi.ts`
-  - [ ] T5.3: Integrar el modal en `FundamentalsHistory.tsx` con botón "Notas" por fila (solo en records no archivados)
-  - [ ] T5.4: Conectar con `useMutation` de TanStack Query + invalidación de cache
+- [x] T5: Frontend Ops — modal de edición de notas (AC6)
+  - [x] T5.1: Crear `EditFieldNotesDialog.tsx` en `src/Web/Ops/src/modules/fundamentals/`
+  - [x] T5.2: Agregar `patchFieldNotes(id, notes)` en `src/Web/Ops/src/api/fundamentalsApi.ts`
+  - [x] T5.3: Integrar el modal en `FundamentalsHistory.tsx` con botón "Notas" por fila (solo en records no archivados)
+  - [x] T5.4: Conectar con `useMutation` de TanStack Query + invalidación de cache
 
-- [ ] T6: Tests (AC8)
-  - [ ] T6.1: Tests unitarios del parser: arreglos vacíos, null, strings en blanco, happy path con todos los campos
-  - [ ] T6.2: Tests de integración para `PATCH /{id}/field-notes`
+- [x] T6: Tests (AC8)
+  - [x] T6.1: Tests unitarios del parser: arreglos vacíos, null, strings en blanco, happy path con todos los campos
+  - [x] T6.2: Tests de integración para `PATCH /{id}/field-notes`
 
 ## Dev Notes
 
@@ -417,10 +417,108 @@ Antes de actualizar el texto del prompt, verificar cuál es el placeholder actua
 
 ### Agent Model Used
 
-claude-sonnet-4-6
+gpt-5-codex
 
 ### Debug Log References
 
+- `dotnet build FIBRADIS.slnx`
+- `dotnet ef migrations add AddFundamentalAiAnalysisJson --project src/Server/Infrastructure --startup-project src/Server/Api`
+- `npm run codegen:api`
+- `npm run build --workspace=src/Web/Main`
+- `npm run build --workspace=src/Web/Ops`
+- `dotnet test FIBRADIS.slnx --no-build`
+- `npm test --workspace=src/Web/Main`
+
 ### Completion Notes List
 
+- Se extendió la extracción IA de fundamentales con `summaryMarkdown`, `investorTakeaway`, `operationalSignals`, `financialSignals` y `riskFlags`; el parser ahora normaliza arreglos faltantes/null a listas vacías y filtra strings en blanco.
+- Se agregó persistencia `ai_analysis_json` en `fundamentals.FundamentalRecord`, con record de dominio `FundamentalAiAnalysis`, migración EF `AddFundamentalAiAnalysisJson` y limpieza del workaround que guardaba `ExtractionNotes` en `ErrorReason` para registros exitosos/parciales.
+- Se ampliaron `FundamentalesPublicDto` y `FundamentalRecordDto`, se agregó `PatchFieldNotesRequest`, `UpdateFieldNotesAsync()` y el endpoint `PATCH /api/v1/ops/fundamentals/{id}/field-notes`; además se restauró el endpoint stateless `POST /api/v1/ops/fundamentals/extract-kpis` para mantener compatibilidad con la suite existente.
+- En Main, `FundamentalesSection` ahora renderiza markdown analítico y secciones condicionales de señales/riesgos/takeaway sin headings vacíos; en Ops se agregó `EditFieldNotesDialog` con invalidación de cache y botón `Notas` por fila.
+- Validación ejecutada:
+  - `dotnet build FIBRADIS.slnx` ✅
+  - `npm run codegen:api` ✅
+  - `npm run build --workspace=src/Web/Main` ✅
+  - `npm run build --workspace=src/Web/Ops` ✅
+  - `dotnet test FIBRADIS.slnx --no-build` ✅ (`Api.Tests` 189, `Infrastructure.Tests` 160, `Application.Tests` 35, `Domain.Tests` 9, `Jobs.Tests` 2)
+  - `npm test --workspace=src/Web/Main` ✅ (62 passed)
+
 ### File List
+
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- scripts/codegen/Api.json
+- src/Server/Api/Endpoints/Ops/OpsFundamentalsEndpoints.cs
+- src/Server/Api/Endpoints/Public/FundamentalsEndpoints.cs
+- src/Server/Application/Fundamentals/IFundamentalRepository.cs
+- src/Server/Application/Fundamentals/KpiExtractionResult.cs
+- src/Server/Domain/Fundamentals/FundamentalAiAnalysis.cs
+- src/Server/Domain/Fundamentals/FundamentalRecord.cs
+- src/Server/Infrastructure/Integrations/Ai/AiPromptTemplateDefaults.cs
+- src/Server/Infrastructure/Integrations/Ai/KpiExtractionJsonParser.cs
+- src/Server/Infrastructure/Persistence/Migrations/20260530204046_AddFundamentalAiAnalysisJson.cs
+- src/Server/Infrastructure/Persistence/Migrations/20260530204046_AddFundamentalAiAnalysisJson.Designer.cs
+- src/Server/Infrastructure/Persistence/Migrations/AppDbContextModelSnapshot.cs
+- src/Server/Infrastructure/Persistence/Repositories/Fundamentals/FundamentalRepository.cs
+- src/Server/Infrastructure/Persistence/SqlServer/Configurations/Fundamentals/FundamentalRecordConfiguration.cs
+- src/Server/SharedApiContracts/Fundamentals/FundamentalRecordDto.cs
+- src/Server/SharedApiContracts/Fundamentals/FundamentalesPublicDto.cs
+- src/Server/SharedApiContracts/Fundamentals/PatchFieldNotesRequest.cs
+- src/Web/Main/src/modules/ficha-publica/FibraPage.tsx
+- src/Web/Main/src/modules/ficha-publica/sections/FundamentalesSection.tsx
+- src/Web/Main/src/modules/ficha-publica/sections/fundamentales.ts
+- src/Web/Ops/src/api/fundamentalsApi.ts
+- src/Web/Ops/src/modules/fundamentals/EditFieldNotesDialog.tsx
+- src/Web/Ops/src/modules/fundamentals/FundamentalsHistory.tsx
+- src/Web/Ops/src/modules/fundamentals/FundamentalsImportForm.tsx
+- src/Web/Ops/src/shared/ui/dialog.tsx
+- src/Web/SharedApiClient/schema.d.ts
+- tests/Integration/Api.Tests/Fundamentals/FundamentalsImportTests.cs
+- tests/Unit/Infrastructure.Tests/Integrations/Ai/KpiExtractionJsonParserTests.cs
+- tests/Unit/Infrastructure.Tests/Persistence/Repositories/FundamentalRepositoryTests.cs
+
+## Change Log
+
+- 2026-05-30 — Implementada historia 5.9: análisis IA enriquecido para fundamentales, persistencia `ai_analysis_json`, edición Ops de notas KPI, DTOs/API extendidos, compatibilidad `extract-kpis` restaurada y suites/builds validados.
+- 2026-05-30 — Code review pasada 2 — 10 patches aplicados: P1 empty strings→null en UpdateFieldNotesAsync, P2 eliminado updated! (usa record directo), P3 ErrorReason=null en UpdateStatusAsync al procesar, P4 arrays non-null en error path del parser, P5 useEffect Dialog solo resetea al abrir, P6 urlTransform en ReactMarkdown, P7 GetAiAnalysis variable local, P8 keys compuestas en SignalsBlock, P9 null-forgiving removido de tests, P10 round-trip BD eliminado en PATCH /field-notes. 397 backend tests + 0 errores TS.
+- 2026-05-30 — Fix hallazgo High de code review: `UpdateKpiExtractionAsync()` ahora usa `result.Success` (que ya evalúa todos los campos cualitativos via `HasAnyExtractedValue()`) en vez de `hasAnyKpi` (solo numéricos). Agregados 2 tests unitarios: cualitativo-only → `partial`/`ErrorReason=null`; nada extraído → `error`/`ErrorReason` relleno. 162 Infrastructure, 35 Application, 9 Domain — todos pasando.
+ 
+## Senior Developer Review (AI)
+
+### Hallazgos
+
+- [x] [High] `UpdateKpiExtractionAsync()` sigue decidiendo `Status` y `ErrorReason` solo con KPIs numéricos, aunque el parser nuevo ya considera válidos `summaryMarkdown`, `operationalSignals`, `financialSignals` y `riskFlags`. Si la IA devuelve solo análisis cualitativo útil sin KPIs numéricos, el record queda en `error` y `ErrorReason` vuelve a llenarse con `ExtractionNotes`, contradiciendo el cambio de esta historia y dejando fuera ese registro de los flujos que esperan un resultado exitoso/parcial. El criterio de persistencia debe alinearse con `HasAnyExtractedValue()` o equivalente. Evidencia: [src/Server/Infrastructure/Persistence/Repositories/Fundamentals/FundamentalRepository.cs](/C:/Users/jorge/source/repos/FIBRADIS/src/Server/Infrastructure/Persistence/Repositories/Fundamentals/FundamentalRepository.cs:110), [src/Server/Infrastructure/Integrations/Ai/KpiExtractionJsonParser.cs](/C:/Users/jorge/source/repos/FIBRADIS/src/Server/Infrastructure/Integrations/Ai/KpiExtractionJsonParser.cs:116).
+
+### Verificación
+
+- Review sobre el working tree actual de `5.9`.
+- No reejecuté tests en esta pasada; usé el diff local y el story file como fuente para validar AC vs implementación.
+
+### Review Findings (Pasada 2 — 2026-05-30)
+
+**Patch — High**
+- [x] [Review][Patch] **P1: Empty strings en PATCH /field-notes se persisten como no-null — tooltips vacíos en lugar de "sin nota"** [`OpsFundamentalsEndpoints.cs`] — `EditFieldNotesDialog` inicializa todos los campos a `""` y envía esas cadenas al guardar. El servidor no normaliza `""` a `null` antes de `SetFieldNotes()`. `GetFieldNotes()` filtra por `kv.Value is not null` pero no filtra `""`, por lo que `fieldNotes.capRate = ""` se persiste y el frontend lee esa cadena vacía como nota existente. Fix: en el endpoint PATCH o en `UpdateFieldNotesAsync`, convertir strings vacíos a null antes de pasar al diccionario.
+- [x] [Review][Patch] **P2: `updated!` NullReferenceException tras segundo `GetByIdAsync` en PATCH /field-notes** [`OpsFundamentalsEndpoints.cs:243`] — El primer `GetByIdAsync` valida existencia, pero entre `UpdateFieldNotesAsync` y el segundo `GetByIdAsync` un proceso concurrente puede ejecutar soft-delete, haciendo que `updated` retorne null. El `!` suprime el warning del compilador pero `ToDto(updated!, ...)` lanzaría NRE. Fix: agregar null check sobre `updated` y retornar 404 si es null.
+
+**Patch — Medium**
+- [x] [Review][Patch] **P3: ErrorReason no se limpia cuando /confirm transiciona el record a "processed" (AC3)** [`FundamentalRepository.cs:UpdateStatusAsync`] — Si un record pasó por estado `error` y quedó con `ErrorReason` no-null, y luego el operador lo confirma (→ `processed`), `UpdateStatusAsync` no toca `ErrorReason`. El AC3 requiere `ErrorReason = null` en records `partial` y `processed`. Fix: asignar `record.ErrorReason = null` cuando `status == "processed"` en `UpdateStatusAsync`.
+- [x] [Review][Patch] **P4: `KpiExtractionResult` arrays nullable en el constructor del path de error (AC2 violation)** [`KpiExtractionResult.cs`] — Los parámetros `OperationalSignals`, `FinancialSignals`, `RiskFlags` tienen default `= null`. En el path de error de `KpiExtractionJsonParser` (cuando el JSON no parsea), se crea un `KpiExtractionResult` con 14 argumentos posicionales, dejando los tres arrays como `null`. El AC2 exige "nunca null". Fix: en `KpiExtractionJsonParser`, el path de fallo debe pasar `Array.Empty<string>()` para los tres arrays. Los unit tests confirman la brecha: usan `result.OperationalSignals!` con null-forgiving `!`.
+- [x] [Review][Patch] **P5: `useEffect` en `EditFieldNotesDialog` borra edits en progreso cuando TanStack Query refetcha en segundo plano** [`EditFieldNotesDialog.tsx:46-50`] — `initialState` es un `useMemo` dependiente de `record`. Si la query de historial refetcha (p.ej. al recuperar el foco de ventana) mientras el modal está abierto, `record` cambia, `initialState` se recalcula, el efecto dispara y los cambios no guardados del usuario se pierden. Fix: eliminar `initialState` de las dependencias del efecto y solo resetear cuando `open` cambia de `false` a `true`.
+- [x] [Review][Patch] **P6: ReactMarkdown sin sanitización de URLs — vector XSS por `javascript:` href en página pública** [`FundamentalesSection.tsx:87-89`] — `react-markdown` elimina HTML raw por defecto pero renderiza enlaces markdown como `<a href="...">` sin filtrar `javascript:` URLs. Aunque el prompt prohíbe links, una salida IA inesperada podría inyectar uno. Fix: agregar un `urlTransform` (o `rehypePlugins: [rehypeSanitize]`) que rechace URLs no-http/https.
+
+**Patch — Low**
+- [x] [Review][Patch] **P7: `GetAiAnalysis()` deserializa el JSON 5 veces por request en el endpoint público** [`FundamentalsEndpoints.cs:47-51`] — Cinco llamadas consecutivas a `record.GetAiAnalysis()` sin variable local, cada una ejecuta `JsonSerializer.Deserialize`. El endpoint de Ops usa correctamente `GetAiAnalysis(record)` con variable local. Fix: extraer a variable local antes del constructor del DTO.
+- [x] [Review][Patch] **P8: `key={item}` en `SignalsBlock` — señales duplicadas de la IA causan warning de React y colapso de items** [`FundamentalesSection.tsx:157`] — Si la IA devuelve la misma cadena dos veces en un array, React ve keys duplicadas. Fix: usar `key={`${index}-${item}`}`.
+- [x] [Review][Patch] **P9: Unit tests usan `!` null-forgiving en propiedades que el spec garantiza non-null** [`KpiExtractionJsonParserTests.cs`] — `Assert.Empty(result.OperationalSignals!)` etc. no detectarían una regresión que retorne `null` en lugar de lista vacía. Fix: quitar los `!` para que el test falle correctamente si la propiedad es null.
+- [x] [Review][Patch] **P10: PATCH /field-notes ejecuta 3 round-trips a BD para una operación simple** [`OpsFundamentalsEndpoints.cs` + `FundamentalRepository.cs:UpdateFieldNotesAsync`] — El endpoint hace `GetByIdAsync` (1), `UpdateFieldNotesAsync` que internamente hace `FirstOrDefaultAsync` (2), y luego otro `GetByIdAsync` (3). Fix: pasar el record ya cargado a `UpdateFieldNotesAsync` o unificar en una sola operación de update + select.
+
+**Deferred**
+- [x] [Review][Defer] **D1: `UpdateStatusAsync` guard silencia re-confirmación por actor diferente** [`FundamentalRepository.cs:53-54`] — Introducido en esta historia para idempotencia. Si un segundo AdminOps confirma un registro ya procesado, su nombre no queda registrado. Comportamiento intencional; documentado como limitación. — deferred, decisión de diseño deliberada
+- [x] [Review][Defer] **D2: `UpdateKpiExtractionAsync` sobreescribe notas editoriales de Ops al re-extraer** [`FundamentalRepository.cs:87-100`] — Limitación pre-existente: re-extracción reemplaza `FieldNotesJson` completo sin merge con ediciones previas del operador. — deferred, limitación de diseño pre-existente
+- [x] [Review][Defer] **D3: Race condition DB — dos records `processed` para el mismo período (sin unique constraint)** [`FundamentalRepository.cs`] — Pre-existente. El índice único no fue añadido en ninguna historia. — deferred, pre-existing
+- [x] [Review][Defer] **D4: Parser sigue leyendo campo legacy `summary` que el nuevo prompt ya no emite** [`KpiExtractionJsonParser.cs:84`] — Dead code inofensivo; el fallback `SummaryMarkdown ?? Summary` funciona correctamente. — deferred, dead code inofensivo
+
+### Verificación (Pasada 2)
+
+- Review sobre working tree y archivos nuevos (untracked) de `5.9`.
+- Tres capas en paralelo: Blind Hunter, Edge Case Hunter, Acceptance Auditor.
+- Tests no re-ejecutados en esta pasada — la pasada anterior validó builds y suites.

@@ -50,9 +50,14 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
     {
         var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (record is null) throw new InvalidOperationException($"FundamentalRecord {id} not found during status update.");
+        if (record.Status == status && status == "processed")
+            return;
+
         record.Status = status;
         record.ConfirmedBy = confirmedBy;
         record.ConfirmedAt = confirmedAt;
+        if (status == "processed")
+            record.ErrorReason = null;
         await db.SaveChangesAsync(ct);
     }
 
@@ -84,7 +89,7 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
         record.NoiMargin = result.NoiMargin;
         record.FfoMargin = result.FfoMargin;
         record.QuarterlyDistribution = result.QuarterlyDistribution;
-        record.Summary = result.Summary;
+        record.Summary = result.SummaryMarkdown ?? result.Summary;
 
         record.SetFieldNotes(new Dictionary<string, string?>
         {
@@ -96,12 +101,18 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
             ["quarterlyDistribution"] = result.QuarterlyDistributionNote,
         });
 
-        record.ErrorReason = string.IsNullOrWhiteSpace(result.ExtractionNotes) ? null : result.ExtractionNotes;
+        record.SetAiAnalysis(new FundamentalAiAnalysis(
+            SummaryMarkdown: result.SummaryMarkdown,
+            InvestorTakeaway: result.InvestorTakeaway,
+            OperationalSignals: result.OperationalSignals ?? Array.Empty<string>(),
+            FinancialSignals: result.FinancialSignals ?? Array.Empty<string>(),
+            RiskFlags: result.RiskFlags ?? Array.Empty<string>(),
+            ExtractionNotes: result.ExtractionNotes));
 
-        var hasAnyKpi = result.CapRate.HasValue || result.NavPerCbfi.HasValue || result.Ltv.HasValue
-            || result.NoiMargin.HasValue || result.FfoMargin.HasValue || result.QuarterlyDistribution.HasValue;
-
-        record.Status = hasAnyKpi ? "partial" : "error";
+        record.Status = result.Success ? "partial" : "error";
+        record.ErrorReason = result.Success || string.IsNullOrWhiteSpace(result.ExtractionNotes)
+            ? null
+            : result.ExtractionNotes;
 
         await db.SaveChangesAsync(ct);
     }
@@ -124,6 +135,15 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
         record.QuarterlyDistribution = quarterlyDistribution;
         record.Summary = summary;
 
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes, CancellationToken ct)
+    {
+        var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (record is null) throw new InvalidOperationException($"FundamentalRecord {id} not found during field notes update.");
+
+        record.SetFieldNotes(notes.ToDictionary(kv => kv.Key, kv => string.IsNullOrWhiteSpace(kv.Value) ? null : kv.Value));
         await db.SaveChangesAsync(ct);
     }
 

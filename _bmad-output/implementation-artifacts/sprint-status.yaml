@@ -65,10 +65,14 @@
 
 generated: 2026-05-15
 last_updated: 2026-05-30
+# story 5-9 done — code review pasada 2: 10 patches (P1 empty strings→null, P2 NullRef updated!, P3 ErrorReason cleared on processed, P4 arrays empty en error path, P5 useEffect dialog, P6 ReactMarkdown urlTransform, P7 GetAiAnalysis local var, P8 React keys, P9 null-forgiving tests, P10 round-trips BD)
+# story 5-9 vuelve a review — fix hallazgo High: UpdateKpiExtractionAsync usa result.Success en vez de hasAnyKpi (solo numéricos), 2 tests nuevos, 162+35+9 unit tests verdes
 # decisión arquitectónica epic-6: cálculo NAV en backend (Opción A) — GET /api/v1/ops/config sigue AdminOps-only; endpoint portafolio lee OperationalConfig directamente en servidor
 # retrospectivas épica 4 y épica 5 completadas — epic-4-retro-2026-05-25 (supersede 2026-05-21, añade 4-5-4/4-7-editor/4-8/4-9), epic-5-retro-2026-05-25 (5 historias, ~54 patches, 22 deferred, action items Epic 6)
 # epic-3-retro-2026-05-21 confirmada al día — cubre 3-4 y 3-5, no requiere actualización
 # story 5-4 done — code review 3 patches (P1: tests 403 PUT+GET audit-log, P2: startup cron guard, P3: orden descendente audit log). 16/16 integration tests + 7/7 unit tests verdes
+# story 5-8 moved to done por instrucción del usuario — cierre administrativo sin nueva pasada de fixes sobre findings abiertos
+# story 5-9 vuelve a in-progress — code review: status/errorReason siguen dependiendo solo de KPIs numéricos y no del análisis IA enriquecido
 # story 5-3 done — code review 13 patches (P1–P13): DateTimeOffset migration, TOCTOU 409, currency validation, seed YahooTicker, ticker normalize, React key, pendingTicker stale, URL scheme, AddAsync normalize, DisposeAsync cleanup, FibraForm tautology, audit log no-op, test 400 body + catalog-seed.ts Main SPA fix. 115 unit + 155 integration tests verdes
 # story 5-3 creada — gestión CRUD + soft delete catálogo FIBRAs desde Ops
 # story 5-1 creada — dashboard operativo, PipelineRunLog, Run Now auditado, DashboardPage
@@ -207,11 +211,11 @@ development_status:
 
   # ── 5-8: Observabilidad llamadas IA — log de cada llamada en Ops ──────────
   # story 5-8 creada — AiCallLog entity + repo, instrumentación 4 servicios AI, fix 3 gaps PipelineErrorLog, página "Llamadas IA" en Ops
-  5-8-observabilidad-llamadas-ia-log-en-ops: review
+  5-8-observabilidad-llamadas-ia-log-en-ops: done
 
   # ── 5-9: Análisis IA enriquecido para fundamentales ──────────────────────
   # story 5-9 creada — prompt enriquecido, AiAnalysisJson, señales/riesgos/takeaway en Main, edición notas KPI en Ops
-  5-9-analisis-ia-enriquecido-fundamentales: ready-for-dev
+  5-9-analisis-ia-enriquecido-fundamentales: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog
@@ -228,3 +232,4 @@ development_status:
   7-3-monitoreo-de-cobertura-del-universo-y-ranking-degradado: backlog
   7-4-favoritos-marcar-y-destacar-fibras-en-todas-las-superficies: backlog
   epic-7-retrospective: optional
+

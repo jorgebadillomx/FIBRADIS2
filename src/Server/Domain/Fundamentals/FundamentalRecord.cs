@@ -18,6 +18,7 @@ public class FundamentalRecord
     public string? Summary { get; set; }
     public string? MarkdownContent { get; set; }
     public string? FieldNotesJson { get; private set; }
+    public string? AiAnalysisJson { get; private set; }
     public string? PdfReference { get; set; }
     public DateTimeOffset? PdfUploadedAt { get; set; }
     public bool IsPossibleUpdate { get; init; }
@@ -47,6 +48,23 @@ public class FundamentalRecord
                 .Where(kv => kv.Value is not null)
                 .ToDictionary(kv => kv.Key, kv => kv.Value!);
             return filtered.Count > 0 ? filtered : null;
+        }
+        catch (JsonException) { return null; }
+    }
+
+    public void SetAiAnalysis(FundamentalAiAnalysis? analysis)
+    {
+        AiAnalysisJson = analysis is not null
+            ? JsonSerializer.Serialize(analysis)
+            : null;
+    }
+
+    public FundamentalAiAnalysis? GetAiAnalysis()
+    {
+        if (string.IsNullOrWhiteSpace(AiAnalysisJson)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<FundamentalAiAnalysis>(AiAnalysisJson);
         }
         catch (JsonException) { return null; }
     }
