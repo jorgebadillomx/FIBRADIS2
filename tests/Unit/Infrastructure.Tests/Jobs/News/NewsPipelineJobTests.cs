@@ -35,7 +35,7 @@ public class NewsPipelineJobTests
             new FakeAiProviderConfigRepository(),
             new FakeOgImageScraper(null),
             new FakeArticleContentScraper(null),
-            new FakeAiSummaryService("resumen"),
+            new FakeAiNewsAnalysisService("resumen"),
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
@@ -65,8 +65,8 @@ public class NewsPipelineJobTests
     public async Task ExecuteAsync_WithAiModeOn_GeneratesSummaryAndSetsStatusToProcessed()
     {
         var newsRepo = new FakeNewsRepository();
-        var summaryService = new FakeAiSummaryService("Resumen profesional FIBRA.");
-        var job = CreateJob(newsRepo, AiMode.On, summaryService: summaryService);
+        var summaryService = new FakeAiNewsAnalysisService("Resumen profesional FIBRA.");
+        var job = CreateJob(newsRepo, AiMode.On, analysisService: summaryService);
 
         await job.ExecuteAsync();
 
@@ -111,8 +111,8 @@ public class NewsPipelineJobTests
     public async Task ExecuteAsync_WithAiModeOn_WhenSummaryServiceThrows_SetsStatusToPartial()
     {
         var newsRepo = new FakeNewsRepository();
-        var summaryService = new FakeAiSummaryService(shouldThrow: true);
-        var job = CreateJob(newsRepo, AiMode.On, summaryService: summaryService);
+        var summaryService = new FakeAiNewsAnalysisService(shouldThrow: true);
+        var job = CreateJob(newsRepo, AiMode.On, analysisService: summaryService);
 
         await job.ExecuteAsync();
 
@@ -191,7 +191,7 @@ public class NewsPipelineJobTests
             new FakeAiProviderConfigRepository(),
             scraper,
             new FakeArticleContentScraper(null),
-            new FakeAiSummaryService("resumen"),
+            new FakeAiNewsAnalysisService("resumen"),
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
@@ -207,7 +207,7 @@ public class NewsPipelineJobTests
     public async Task ExecuteAsync_WithAiModeOn_CallsAiSummaryServiceAndSavesResult()
     {
         var newsRepo = new FakeNewsRepository();
-        var summaryService = new FakeAiSummaryService("Resumen flash.");
+        var summaryService = new FakeAiNewsAnalysisService("Resumen flash.");
         var fibra = new Fibra
         {
             Id = Guid.NewGuid(),
@@ -250,7 +250,7 @@ public class NewsPipelineJobTests
         bool shouldThrowOnModeLookup = false,
         IOgImageScraper? ogImageScraper = null,
         IArticleContentScraper? articleContentScraper = null,
-        FakeAiSummaryService? summaryService = null)
+        FakeAiNewsAnalysisService? analysisService = null)
     {
         var fibra = new Fibra
         {
@@ -273,7 +273,7 @@ public class NewsPipelineJobTests
             new FakeAiProviderConfigRepository(),
             ogImageScraper ?? new FakeOgImageScraper(null),
             articleContentScraper ?? new FakeArticleContentScraper(null),
-            summaryService ?? new FakeAiSummaryService("resumen"),
+            analysisService ?? new FakeAiNewsAnalysisService("resumen"),
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
             NullLogger<NewsPipelineJob>.Instance);
@@ -345,6 +345,19 @@ internal sealed class FakeNewsRepository : INewsRepository
         var article = SavedArticles.FirstOrDefault(saved => saved.Id == id);
         if (article is not null)
         {
+            article.AiSummary = summary;
+            article.Status = status;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAiAnalysisAsync(Guid id, string? analysisJson, string? summary, NewsArticleStatus status, CancellationToken ct = default)
+    {
+        var article = SavedArticles.FirstOrDefault(saved => saved.Id == id);
+        if (article is not null)
+        {
+            article.AiAnalysisJson = analysisJson;
             article.AiSummary = summary;
             article.Status = status;
         }
@@ -512,18 +525,32 @@ internal sealed class FakeArticleContentScraper(string? bodyText) : IArticleCont
     }
 }
 
-internal sealed class FakeAiSummaryService(string? summary = null, bool shouldThrow = false) : IAiSummaryService
+internal sealed class FakeAiNewsAnalysisService(string? summaryMarkdown = null, bool shouldThrow = false) : IAiNewsAnalysisService
 {
-    public Task<string?> GenerateSummaryAsync(
+    public Task<Domain.News.NewsAiAnalysis?> GenerateAnalysisAsync(
         string title,
         string? snippet,
-        string? bodyText = null,
-        AiContentType contentType = AiContentType.News,
+        string? bodyText,
         CancellationToken ct = default)
     {
         if (shouldThrow)
-            throw new InvalidOperationException("AI summary service failed.");
+            throw new InvalidOperationException("AI analysis service failed.");
 
-        return Task.FromResult(summary);
+        if (summaryMarkdown is null) return Task.FromResult<Domain.News.NewsAiAnalysis?>(null);
+
+        return Task.FromResult<Domain.News.NewsAiAnalysis?>(new Domain.News.NewsAiAnalysis(
+            IsRelevant: true,
+            RelevanceReason: "Relevante para FIBRAs.",
+            Headline: null,
+            Impact: "medio",
+            SectorTags: [],
+            Subsector: null,
+            AffectedFibers: [],
+            KeyFacts: [],
+            KeyFigures: [],
+            SummaryMarkdown: summaryMarkdown,
+            InvestorTakeaway: null,
+            Confidence: 0.85,
+            ExtractionNotes: null));
     }
 }

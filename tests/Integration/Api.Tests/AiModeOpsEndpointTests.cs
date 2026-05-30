@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SharedApiContracts.Auth;
 using SharedApiContracts.News;
+using System.Text.Json;
 
 namespace Api.Tests;
 
@@ -18,7 +19,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
-            new StubAiSummaryService("Resumen generado"),
+            new StubAiNewsAnalysisService("Resumen generado"),
             new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.Off));
@@ -37,7 +38,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
-            new StubAiSummaryService(null),
+            new StubAiNewsAnalysisService(null),
             new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
@@ -56,7 +57,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
-            new ThrowingAiSummaryService(new TaskCanceledException("Gemini timeout")),
+            new ThrowingAiNewsAnalysisService(new TaskCanceledException("Gemini timeout")),
             new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
@@ -77,7 +78,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository();
         await using var factory = new AiModeApiWebFactory(
-            new ThrowingAiSummaryService(new AiProviderConfigurationException("API key rechazada")),
+            new ThrowingAiNewsAnalysisService(new AiProviderConfigurationException("API key rechazada")),
             new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
@@ -98,7 +99,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository(throwOnUpdate: true);
         await using var factory = new AiModeApiWebFactory(
-            new ThrowingAiSummaryService(new InvalidOperationException("Gemini unavailable")),
+            new ThrowingAiNewsAnalysisService(new InvalidOperationException("Gemini unavailable")),
             new StubArticleContentScraper(null),
             repository,
             new StubAiModeRepository(AiMode.On));
@@ -119,7 +120,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository(initialStatus: NewsArticleStatus.Processed);
         await using var factory = new AiModeApiWebFactory(
-            new StubAiSummaryService("Resumen regenerado"),
+            new StubAiNewsAnalysisService("Resumen regenerado"),
             new StubArticleContentScraper("Cuerpo completo recuperado"),
             repository,
             new StubAiModeRepository(AiMode.On));
@@ -140,7 +141,7 @@ public class AiModeOpsEndpointTests
     {
         var repository = new InMemoryNewsRepository(initialStatus: NewsArticleStatus.Pending);
         await using var factory = new AiModeApiWebFactory(
-            new StubAiSummaryService("Resumen regenerado"),
+            new StubAiNewsAnalysisService("Resumen regenerado"),
             new StubArticleContentScraper("""
                 Compartir
 
@@ -159,6 +160,88 @@ public class AiModeOpsEndpointTests
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal(1, repository.UpdateBodyTextAttempts);
         Assert.Equal("Cuerpo completo recuperado", repository.Article.BodyText);
+    }
+
+    // ─── POST /ai-analysis endpoint ───────────────────────────────────────────
+
+    [Fact]
+    public async Task PostAiAnalysis_Returns200WithAnalysisDto()
+    {
+        var repository = new InMemoryNewsRepository();
+        await using var factory = new AiModeApiWebFactory(
+            new StubAiNewsAnalysisService("Resumen analítico."),
+            new StubArticleContentScraper(null),
+            repository,
+            new StubAiModeRepository(AiMode.On));
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-analysis", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var dto = await response.Content.ReadFromJsonAsync<NewsAiAnalysisDto>(
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(dto);
+        Assert.True(dto.IsRelevant);
+        Assert.Equal("medio", dto.Impact);
+        Assert.Equal("Resumen analítico.", dto.SummaryMarkdown);
+        Assert.Equal(1, repository.UpdateAttempts);
+        Assert.Equal(NewsArticleStatus.Processed, repository.Article.Status);
+        Assert.NotNull(repository.Article.AiAnalysisJson);
+    }
+
+    [Fact]
+    public async Task PostAiAnalysis_WhenAnalysisServiceReturnsNull_Returns503()
+    {
+        var repository = new InMemoryNewsRepository();
+        await using var factory = new AiModeApiWebFactory(
+            new StubAiNewsAnalysisService(null),
+            new StubArticleContentScraper(null),
+            repository,
+            new StubAiModeRepository(AiMode.On));
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-analysis", content: null);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(0, repository.UpdateAttempts);
+    }
+
+    [Fact]
+    public async Task PostAiAnalysis_WhenArticleNotFound_Returns404()
+    {
+        var repository = new InMemoryNewsRepository();
+        await using var factory = new AiModeApiWebFactory(
+            new StubAiNewsAnalysisService("resumen"),
+            new StubArticleContentScraper(null),
+            repository,
+            new StubAiModeRepository(AiMode.On));
+        await factory.SeedUsersAsync();
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PostAsync($"/api/v1/ops/news/{Guid.NewGuid()}/ai-analysis", content: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostAiAnalysis_WithoutAuth_Returns401Or403()
+    {
+        var repository = new InMemoryNewsRepository();
+        await using var factory = new AiModeApiWebFactory(
+            new StubAiNewsAnalysisService("resumen"),
+            new StubArticleContentScraper(null),
+            repository,
+            new StubAiModeRepository(AiMode.On));
+        await factory.SeedUsersAsync();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-analysis", content: null);
+
+        Assert.True(
+            response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden,
+            $"Expected 401 or 403, got {response.StatusCode}");
     }
 
     // ─── AiProvider endpoints ──────────────────────────────────────────────────
@@ -237,7 +320,7 @@ public class AiModeOpsEndpointTests
     }
 
     private sealed class AiModeApiWebFactory(
-        IAiSummaryService aiSummaryService,
+        IAiNewsAnalysisService aiAnalysisService,
         IArticleContentScraper articleContentScraper,
         INewsRepository? newsRepositoryOverride = null,
         IAiModeRepository? aiModeRepositoryOverride = null) : ApiWebFactory
@@ -247,8 +330,8 @@ public class AiModeOpsEndpointTests
             base.ConfigureWebHost(builder);
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IAiSummaryService>();
-                services.AddSingleton(aiSummaryService);
+                services.RemoveAll<IAiNewsAnalysisService>();
+                services.AddSingleton(aiAnalysisService);
                 services.RemoveAll<IArticleContentScraper>();
                 services.AddSingleton(articleContentScraper);
 
@@ -267,16 +350,32 @@ public class AiModeOpsEndpointTests
         }
     }
 
-    private sealed class StubAiSummaryService(string? summary) : IAiSummaryService
+    private sealed class StubAiNewsAnalysisService(string? summaryMarkdown) : IAiNewsAnalysisService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
-            => Task.FromResult(summary);
+        public Task<NewsAiAnalysis?> GenerateAnalysisAsync(string title, string? snippet, string? bodyText, CancellationToken ct = default)
+        {
+            if (summaryMarkdown is null) return Task.FromResult<NewsAiAnalysis?>(null);
+            return Task.FromResult<NewsAiAnalysis?>(new NewsAiAnalysis(
+                IsRelevant: true,
+                RelevanceReason: "Relevante",
+                Headline: null,
+                Impact: "medio",
+                SectorTags: [],
+                Subsector: null,
+                AffectedFibers: [],
+                KeyFacts: [],
+                KeyFigures: [],
+                SummaryMarkdown: summaryMarkdown,
+                InvestorTakeaway: null,
+                Confidence: 0.9,
+                ExtractionNotes: null));
+        }
     }
 
-    private sealed class ThrowingAiSummaryService(Exception exception) : IAiSummaryService
+    private sealed class ThrowingAiNewsAnalysisService(Exception exception) : IAiNewsAnalysisService
     {
-        public Task<string?> GenerateSummaryAsync(string title, string? snippet, string? bodyText = null, AiContentType contentType = AiContentType.News, CancellationToken ct = default)
-            => Task.FromException<string?>(exception);
+        public Task<NewsAiAnalysis?> GenerateAnalysisAsync(string title, string? snippet, string? bodyText, CancellationToken ct = default)
+            => Task.FromException<NewsAiAnalysis?>(exception);
     }
 
     private sealed class StubArticleContentScraper(string? bodyText) : IArticleContentScraper
@@ -365,6 +464,21 @@ public class AiModeOpsEndpointTests
             return Task.CompletedTask;
         }
 
+        public Task UpdateAiAnalysisAsync(Guid id, string? analysisJson, string? summary, NewsArticleStatus status, CancellationToken ct = default)
+        {
+            UpdateAttempts++;
+
+            if (throwOnUpdate)
+            {
+                throw new InvalidOperationException("Database unavailable");
+            }
+
+            Article.AiAnalysisJson = analysisJson;
+            Article.AiSummary = summary;
+            Article.Status = status;
+            return Task.CompletedTask;
+        }
+
         public Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
             => throw new NotSupportedException();
 
@@ -387,8 +501,8 @@ public class AiModeOpsEndpointTests
             {
                 services.RemoveAll<IAiProviderConfigRepository>();
                 services.AddSingleton(providerRepo);
-                services.RemoveAll<IAiSummaryService>();
-                services.AddSingleton<IAiSummaryService>(new StubAiSummaryService("resumen"));
+                services.RemoveAll<IAiNewsAnalysisService>();
+                services.AddSingleton<IAiNewsAnalysisService>(new StubAiNewsAnalysisService("resumen"));
             });
         }
     }

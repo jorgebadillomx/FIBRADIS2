@@ -11,6 +11,7 @@ public interface INewsRepository
     Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task UpdateBodyTextAsync(Guid id, string? bodyText, CancellationToken ct = default);
     Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default);
+    Task UpdateAiAnalysisAsync(Guid id, string? analysisJson, string? summary, NewsArticleStatus status, CancellationToken ct = default);
     Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default);
     Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default);
     Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default);

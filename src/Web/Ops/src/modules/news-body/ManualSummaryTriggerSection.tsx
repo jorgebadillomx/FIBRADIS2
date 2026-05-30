@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { triggerAiSummary } from '@/api/aiModeApi'
-import type { OpsNewsPage } from '@/api/newsApi'
+import { triggerAiAnalysis, type OpsNewsPage } from '@/api/newsApi'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -10,8 +9,8 @@ export function ManualSummaryTriggerSection() {
   const queryClient = useQueryClient()
 
   const triggerMutation = useMutation({
-    mutationFn: triggerAiSummary,
-    onSuccess: (_, generatedId) => {
+    mutationFn: triggerAiAnalysis,
+    onSuccess: (analysis, generatedId) => {
       setArticleId('')
       queryClient.setQueriesData(
         { queryKey: ['ops-news-list'], exact: false },
@@ -20,7 +19,9 @@ export function ManualSummaryTriggerSection() {
             ? {
                 ...old,
                 items: old.items.map((item) =>
-                  item.id === generatedId ? { ...item, hasAiSummary: true } : item,
+                  item.id === generatedId
+                    ? { ...item, hasAiSummary: true, hasAiAnalysis: true, impactPreview: analysis.impact }
+                    : item,
                 ),
               }
             : old,
@@ -34,9 +35,9 @@ export function ManualSummaryTriggerSection() {
   return (
     <div className="rounded-2xl border border-border/80 bg-slate-50/80 p-4">
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold tracking-tight">Generación manual de resumen</h3>
+        <h3 className="text-sm font-semibold tracking-tight">Generación manual de análisis IA</h3>
         <p className="text-sm text-muted-foreground">
-          Usa el id del artículo para regenerar el resumen de una noticia específica, sin importar el modo actual.
+          Usa el id del artículo para regenerar el análisis estructurado de una noticia específica, sin importar el modo actual.
         </p>
       </div>
 
@@ -57,7 +58,7 @@ export function ManualSummaryTriggerSection() {
           onClick={() => triggerMutation.mutate(trimmedArticleId)}
           type="button"
         >
-          {triggerMutation.isPending ? 'Generando...' : 'Generar resumen'}
+          {triggerMutation.isPending ? 'Generando...' : 'Generar análisis'}
         </button>
       </div>
 
@@ -70,7 +71,7 @@ export function ManualSummaryTriggerSection() {
       ) : null}
 
       {triggerMutation.isSuccess ? (
-        <p className="mt-3 text-sm text-teal-700">Resumen solicitado correctamente.</p>
+        <p className="mt-3 text-sm text-teal-700">Análisis generado correctamente.</p>
       ) : null}
     </div>
   )

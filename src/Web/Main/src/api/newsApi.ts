@@ -2,6 +2,8 @@ import createClient from 'openapi-fetch'
 import type { components, paths } from '@fibradis/shared-api-client'
 
 export type NewsArticle = components['schemas']['NewsArticleDto']
+export type NewsAiAnalysis = components['schemas']['NewsAiAnalysisDto']
+export type NewsKeyFigure = components['schemas']['NewsKeyFigureDto']
 
 function getApiClient() {
   return createClient<paths>({

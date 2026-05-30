@@ -19,7 +19,7 @@ public class NewsPipelineJob(
     IAiProviderConfigRepository aiProviderConfigRepo,
     IOgImageScraper ogImageScraper,
     IArticleContentScraper articleContentScraper,
-    IAiSummaryService summaryService,
+    IAiNewsAnalysisService analysisService,
     IPipelineErrorLogRepository pipelineErrorLogRepo,
     IPipelineRunLogRepository pipelineRunLogRepo,
     ILogger<NewsPipelineJob> logger)
@@ -118,36 +118,39 @@ public class NewsPipelineJob(
                     bodyText = NormalizeBodyText(bodyText);
 
                     string? aiSummary = null;
+                    string? aiAnalysisJson = null;
                     var finalStatus = NewsArticleStatus.Processed;
 
                     if (currentMode == AiMode.On)
                     {
                         try
                         {
-                            aiSummary = await summaryService.GenerateSummaryAsync(
-                                item.Title, item.Snippet, bodyText, AiContentType.News, ct);
-                            if (aiSummary is not null)
+                            var analysis = await analysisService.GenerateAnalysisAsync(
+                                item.Title, item.Snippet, bodyText, ct);
+                            if (analysis is not null)
                             {
+                                aiAnalysisJson = JsonSerializer.Serialize(analysis);
+                                aiSummary = analysis.SummaryMarkdown;
                                 finalStatus = NewsArticleStatus.Processed;
                             }
                             else
                             {
-                                logger.LogWarning("AI summary returned null for '{Url}'; article saved with Partial status", item.Url);
+                                logger.LogWarning("AI analysis returned null for '{Url}'; article saved with Partial status", item.Url);
                                 finalStatus = NewsArticleStatus.Partial;
                             }
                         }
                         catch (Exception ex)
                         {
-                            logger.LogError(ex, "AI summary failed for '{Url}'; article saved without summary", item.Url);
-                            var aiSummaryErrorType = ex.GetType().Name;
-                            var aiSummaryAiContext = $"El pipeline de noticias falló al generar el resumen de IA para el artículo '{item.Title}' desde '{item.Url}' con fuente {item.Source}. El proveedor activo era {providerConfig.Provider}/{providerConfig.ModelId} y el artículo {(string.IsNullOrWhiteSpace(bodyText) ? "no tenía" : "sí tenía")} body_text disponible al momento del error. El artículo se guardará como Partial para permitir revisión operativa posterior.";
+                            logger.LogError(ex, "AI analysis failed for '{Url}'; article saved without analysis", item.Url);
+                            var aiErrorType = ex.GetType().Name;
+                            var aiContext = $"El pipeline de noticias falló al generar el análisis de IA para el artículo '{item.Title}' desde '{item.Url}' con fuente {item.Source}. El proveedor activo era {providerConfig.Provider}/{providerConfig.ModelId} y el artículo {(string.IsNullOrWhiteSpace(bodyText) ? "no tenía" : "sí tenía")} body_text disponible al momento del error. El artículo se guardará como Partial para permitir revisión operativa posterior.";
                             try
                             {
                                 await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
                                 {
                                     Pipeline = "News",
                                     Timestamp = DateTimeOffset.UtcNow,
-                                    ErrorType = aiSummaryErrorType.Length > 100 ? aiSummaryErrorType[..100] : aiSummaryErrorType,
+                                    ErrorType = aiErrorType.Length > 100 ? aiErrorType[..100] : aiErrorType,
                                     Message = ex.Message,
                                     Context = JsonSerializer.Serialize(new
                                     {
@@ -159,12 +162,12 @@ public class NewsPipelineJob(
                                         model = providerConfig.ModelId,
                                         hasBodyText = !string.IsNullOrWhiteSpace(bodyText),
                                     }),
-                                    AiContext = aiSummaryAiContext.Length > 800 ? aiSummaryAiContext[..800] : aiSummaryAiContext,
+                                    AiContext = aiContext.Length > 800 ? aiContext[..800] : aiContext,
                                 }, ct);
                             }
                             catch (Exception logEx)
                             {
-                                logger.LogWarning(logEx, "Failed to write pipeline error log entry for AI summary failure on '{Url}'", item.Url);
+                                logger.LogWarning(logEx, "Failed to write pipeline error log entry for AI analysis failure on '{Url}'", item.Url);
                             }
                             finalStatus = NewsArticleStatus.Partial;
                         }
@@ -183,6 +186,7 @@ public class NewsPipelineJob(
                         BodyText = bodyText,
                         ImageUrl = imageUrl,
                         AiSummary = aiSummary,
+                        AiAnalysisJson = aiAnalysisJson,
                         Status = finalStatus,
                         CapturedAt = DateTimeOffset.UtcNow,
                     };

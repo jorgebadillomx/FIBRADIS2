@@ -6,11 +6,16 @@ public static class AiPromptTemplateDefaults
 {
     public const string NewsContentType = "news";
     public const string KpiExtractionContentType = "kpi_extraction";
+    public const string NewsAnalysisContentType = "news_analysis";
 
     public static string GetTemplate(string contentType)
-        => string.Equals(contentType, KpiExtractionContentType, StringComparison.OrdinalIgnoreCase)
-            ? KpiExtraction
-            : News;
+    {
+        if (string.Equals(contentType, KpiExtractionContentType, StringComparison.OrdinalIgnoreCase))
+            return KpiExtraction;
+        if (string.Equals(contentType, NewsAnalysisContentType, StringComparison.OrdinalIgnoreCase))
+            return NewsAnalysis;
+        return News;
+    }
 
     public const string News = """
         Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
@@ -55,6 +60,43 @@ public static class AiPromptTemplateDefaults
 
         Reporte:
         {markdown_content}
+        """;
+
+    public const string NewsAnalysis = """
+        Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
+
+        Tu tarea es analizar la siguiente noticia y devolver ÚNICAMENTE un objeto JSON con la estructura indicada. No uses bloques de código markdown. No incluyas texto antes o después del JSON.
+
+        Título: {title}
+        {snippet_section}
+        {body_section}
+
+        Devuelve exactamente este JSON (sin texto adicional):
+        {
+          "isRelevant": true,
+          "relevanceReason": "string | null",
+          "headline": "string | null",
+          "impact": "alto",
+          "sectorTags": ["string"],
+          "subsector": "industrial",
+          "affectedFibers": ["FUNO"],
+          "keyFacts": ["string"],
+          "keyFigures": [{"label": "string", "valueText": "string", "importance": "alta"}],
+          "summaryMarkdown": "string | null",
+          "investorTakeaway": "string | null",
+          "confidence": 0.85,
+          "extractionNotes": "string | null"
+        }
+
+        Reglas obligatorias:
+        - Responde ÚNICAMENTE con el JSON. No uses bloques de código markdown (no uses ```json).
+        - impact debe ser exactamente uno de: alto, medio, bajo, nulo.
+        - subsector debe ser exactamente uno de: industrial, oficinas, comercial, hotelero, residencial, logistico, educativo, salud, mixto, otro, o null.
+        - affectedFibers debe contener solo tickers de FIBRAs mexicanas reales (FUNO, FIBRAMQ, FIBRAPL, TERRA, FMTY, DANHOS, FNOVA, FIHO, HGLSI, etc.) que se mencionen explícitamente en el artículo.
+        - Si un campo no aplica, usa null para strings/objetos o [] para arrays.
+        - confidence es un número decimal entre 0 y 1 que refleja tu certeza de extracción, no la calidad de la noticia.
+        - Si isRelevant es false, impact debe ser "nulo".
+        - keyFigures solo debe incluir cifras explícitas y concretas del artículo (montos, porcentajes, fechas financieras).
         """;
 
     public static string ResolveContentType(AiContentType contentType)

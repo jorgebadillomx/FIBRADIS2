@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Application.News;
 using Domain.News;
 using Infrastructure.Integrations.Articles;
@@ -15,6 +16,29 @@ public static class AiModeEndpoints
         "gemini-2.5-flash",
         "gemini-2.5-pro",
     };
+
+    private static readonly JsonSerializerOptions AnalysisDeserializeOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
+    private static NewsAiAnalysisDto? MapAnalysis(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonSerializer.Deserialize<NewsAiAnalysisDto>(json, AnalysisDeserializeOptions); }
+        catch { return null; }
+    }
+
+    private static string? ExtractImpact(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("impact", out var v) ? v.GetString() : null;
+        }
+        catch { return null; }
+    }
 
     public static IEndpointRouteBuilder MapAiMode(this IEndpointRouteBuilder app)
     {
@@ -122,7 +146,9 @@ public static class AiModeEndpoints
                 a.BodyText?.Length,
                 a.BodyText is not null ? a.BodyText[..Math.Min(200, a.BodyText.Length)] : null,
                 a.AiSummary is not null,
-                a.AiSummary is not null ? a.AiSummary[..Math.Min(300, a.AiSummary.Length)] : null)).ToList();
+                a.AiSummary is not null ? a.AiSummary[..Math.Min(300, a.AiSummary.Length)] : null,
+                a.AiAnalysisJson is not null,
+                ExtractImpact(a.AiAnalysisJson))).ToList();
             return Results.Ok(new PagedResult<OpsNewsArticleDto>(dtos, page, pageSize, total));
         })
         .Produces<PagedResult<OpsNewsArticleDto>>(StatusCodes.Status200OK)
@@ -137,7 +163,7 @@ public static class AiModeEndpoints
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();
-            return Results.Ok(new OpsNewsBodyDto(article.Id, article.BodyText, article.AiSummary));
+            return Results.Ok(new OpsNewsBodyDto(article.Id, article.BodyText, article.AiSummary, MapAnalysis(article.AiAnalysisJson)));
         })
         .Produces<OpsNewsBodyDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -168,7 +194,7 @@ public static class AiModeEndpoints
             Guid articleId,
             INewsRepository newsRepo,
             IArticleContentScraper articleContentScraper,
-            IAiSummaryService summaryService,
+            IAiNewsAnalysisService analysisService,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
@@ -188,26 +214,23 @@ public static class AiModeEndpoints
                         await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
                 }
 
-                var summary = await summaryService.GenerateSummaryAsync(article.Title, article.Snippet, bodyText, AiContentType.News, ct);
+                var analysis = await analysisService.GenerateAnalysisAsync(article.Title, article.Snippet, bodyText, ct);
 
-                // P4: null indica proveedor no configurado → 503
-                if (summary is null)
+                if (analysis is null)
                 {
                     return Results.Problem(
                         statusCode: StatusCodes.Status503ServiceUnavailable,
                         detail: "El servicio de IA no está configurado. Verifique la configuración del proveedor activo (Gemini:ApiKey o DeepSeek:ApiKey).");
                 }
 
-                await newsRepo.UpdateSummaryAsync(articleId, summary, NewsArticleStatus.Processed, ct);
+                var analysisJson = JsonSerializer.Serialize(analysis);
+                await newsRepo.UpdateAiAnalysisAsync(articleId, analysisJson, analysis.SummaryMarkdown, NewsArticleStatus.Processed, ct);
                 return Results.NoContent();
             }
             catch (AiProviderConfigurationException ex)
             {
-                logger.LogError(ex, "AI provider configuration error while generating AI summary for news article {ArticleId}", articleId);
-
-                return Results.Problem(
-                    statusCode: StatusCodes.Status503ServiceUnavailable,
-                    detail: ex.Message);
+                logger.LogError(ex, "AI provider configuration error while generating AI analysis for news article {ArticleId}", articleId);
+                return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: ex.Message);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -215,28 +238,89 @@ public static class AiModeEndpoints
             }
             catch (Exception ex)
             {
-                // P5: excepción en proveedor AI → marcar Partial y devolver 502
-                logger.LogError(ex, "Failed to generate AI summary for news article {ArticleId}", articleId);
-
+                logger.LogError(ex, "Failed to generate AI analysis for news article {ArticleId} (via ai-summary endpoint)", articleId);
                 try
                 {
-                    await newsRepo.UpdateSummaryAsync(articleId, null, NewsArticleStatus.Partial, CancellationToken.None);
+                    await newsRepo.UpdateAiAnalysisAsync(articleId, null, null, NewsArticleStatus.Partial, CancellationToken.None);
                 }
                 catch (Exception updateEx)
                 {
-                    logger.LogError(
-                        updateEx,
-                        "Failed to mark news article {ArticleId} as partial after AI summary failure",
-                        articleId);
+                    logger.LogError(updateEx, "Failed to mark news article {ArticleId} as partial after AI failure", articleId);
                 }
-
-                return Results.Problem(
-                    statusCode: StatusCodes.Status502BadGateway,
+                return Results.Problem(statusCode: StatusCodes.Status502BadGateway,
                     detail: "El proveedor de IA no está disponible. El artículo fue marcado como Partial.");
             }
         })
         .Produces(StatusCodes.Status204NoContent)
-        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status503ServiceUnavailable)
+        .Produces(StatusCodes.Status502BadGateway)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        newsGroup.MapPost("/{articleId:guid}/ai-analysis", async (
+            Guid articleId,
+            INewsRepository newsRepo,
+            IArticleContentScraper articleContentScraper,
+            IAiNewsAnalysisService analysisService,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
+        {
+            var logger = loggerFactory.CreateLogger("AiModeEndpoints");
+            var article = await newsRepo.GetByIdAsync(articleId, ct);
+            if (article is null)
+                return Results.NotFound();
+
+            try
+            {
+                var bodyText = article.BodyText;
+                if (NeedsBodyRefresh(bodyText) && !string.IsNullOrWhiteSpace(article.Url))
+                {
+                    bodyText = await articleContentScraper.TryGetArticleTextAsync(article.Url, ct);
+                    bodyText = NormalizeBodyText(bodyText);
+                    if (!string.IsNullOrWhiteSpace(bodyText))
+                        await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
+                }
+
+                var analysis = await analysisService.GenerateAnalysisAsync(article.Title, article.Snippet, bodyText, ct);
+
+                if (analysis is null)
+                {
+                    return Results.Problem(
+                        statusCode: StatusCodes.Status503ServiceUnavailable,
+                        detail: "El servicio de IA no está configurado. Verifique la configuración del proveedor activo (Gemini:ApiKey o DeepSeek:ApiKey).");
+                }
+
+                var analysisJson = JsonSerializer.Serialize(analysis);
+                await newsRepo.UpdateAiAnalysisAsync(articleId, analysisJson, analysis.SummaryMarkdown, NewsArticleStatus.Processed, ct);
+
+                return Results.Ok(MapAnalysis(analysisJson));
+            }
+            catch (AiProviderConfigurationException ex)
+            {
+                logger.LogError(ex, "AI provider configuration error while generating AI analysis for news article {ArticleId}", articleId);
+                return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: ex.Message);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to generate AI analysis for news article {ArticleId}", articleId);
+                try
+                {
+                    await newsRepo.UpdateAiAnalysisAsync(articleId, null, null, NewsArticleStatus.Partial, CancellationToken.None);
+                }
+                catch (Exception updateEx)
+                {
+                    logger.LogError(updateEx, "Failed to mark news article {ArticleId} as partial after AI failure", articleId);
+                }
+                return Results.Problem(statusCode: StatusCodes.Status502BadGateway,
+                    detail: "El proveedor de IA no está disponible. El artículo fue marcado como Partial.");
+            }
+        })
+        .Produces<NewsAiAnalysisDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status503ServiceUnavailable)
         .Produces(StatusCodes.Status502BadGateway)

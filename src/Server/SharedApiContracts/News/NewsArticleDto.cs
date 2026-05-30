@@ -8,5 +8,6 @@ public sealed record NewsArticleDto(
     string Url,
     string? Snippet,
     string? ImageUrl,
-    string? AiSummary
+    string? AiSummary,
+    NewsAiAnalysisDto? AiAnalysis
 );

@@ -70,6 +70,8 @@ export async function fetchOpsNewsList(
 }
 
 export type OpsNewsBody = components['schemas']['OpsNewsBodyDto']
+export type NewsAiAnalysis = components['schemas']['NewsAiAnalysisDto']
+export type NewsKeyFigure = components['schemas']['NewsKeyFigureDto']
 
 export async function fetchOpsNewsBody(id: string): Promise<OpsNewsBody> {
   assertOpsAccessToken()
@@ -81,6 +83,19 @@ export async function fetchOpsNewsBody(id: string): Promise<OpsNewsBody> {
 
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al obtener body text: ${JSON.stringify(error)}`))
   if (!data) throw new Error('La API no devolvió datos.')
+  return data
+}
+
+export async function triggerAiAnalysis(id: string): Promise<NewsAiAnalysis> {
+  assertOpsAccessToken()
+
+  const { data, error } = await apiClient['/api/v1/ops/news/{articleId}/ai-analysis'].POST({
+    headers: getOpsAuthHeaders(),
+    params: { path: { articleId: id } },
+  })
+
+  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al generar análisis IA: ${JSON.stringify(error)}`))
+  if (!data) throw new Error('La API no devolvió el análisis.')
   return data
 }
 
