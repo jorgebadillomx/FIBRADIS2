@@ -209,6 +209,10 @@ development_status:
   # story 5-8 creada — AiCallLog entity + repo, instrumentación 4 servicios AI, fix 3 gaps PipelineErrorLog, página "Llamadas IA" en Ops
   5-8-observabilidad-llamadas-ia-log-en-ops: review
 
+  # ── 4-10: Análisis IA enriquecido para noticias ───────────────────────────
+  # story 4-10 creada — schema JSON estructurado de IA, columna ai_analysis_json, display enriquecido en NoticiaPage y Ops
+  4-10-analisis-ia-enriquecido-noticias: review
+
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog
   6-1-carga-y-validacion-del-portafolio: backlog

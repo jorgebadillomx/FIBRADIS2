@@ -46,6 +46,14 @@ public class AiPromptConfiguration : IEntityTypeConfiguration<AiPrompt>
                 PromptTemplate = AiPromptTemplateDefaults.KpiExtraction,
                 UpdatedAt = new DateTimeOffset(2026, 5, 26, 0, 0, 0, TimeSpan.Zero),
                 UpdatedBy = "system",
+            },
+            new AiPrompt
+            {
+                Id = 3,
+                ContentType = AiPromptTemplateDefaults.NewsAnalysisContentType,
+                PromptTemplate = AiPromptTemplateDefaults.NewsAnalysis,
+                UpdatedAt = new DateTimeOffset(2026, 5, 30, 0, 0, 0, TimeSpan.Zero),
+                UpdatedBy = "system",
             });
     }
 }

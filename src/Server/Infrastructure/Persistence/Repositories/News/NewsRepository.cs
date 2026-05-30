@@ -70,6 +70,16 @@ public class NewsRepository(AppDbContext db) : INewsRepository
                 .SetProperty(article => article.Status, status), ct);
     }
 
+    public async Task UpdateAiAnalysisAsync(Guid id, string? analysisJson, string? summary, NewsArticleStatus status, CancellationToken ct = default)
+    {
+        await db.NewsArticles
+            .Where(article => article.Id == id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(article => article.AiAnalysisJson, analysisJson)
+                .SetProperty(article => article.AiSummary, summary)
+                .SetProperty(article => article.Status, status), ct);
+    }
+
     public async Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
         => await db.NewsArticles
             .Where(n => n.Status == NewsArticleStatus.Pending

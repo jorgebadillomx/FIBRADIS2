@@ -6,9 +6,30 @@ import {
   fetchOpsNewsBody,
   updateNewsBodyText,
   type OpsNewsArticle,
+  type NewsKeyFigure,
 } from '@/api/newsApi'
 import { fetchOpsCatalog } from '@/api/catalogApi'
 import { ManualSummaryTriggerSection } from '@/modules/news-body/ManualSummaryTriggerSection'
+
+const IMPACT_BADGE: Record<string, string> = {
+  alto: 'bg-rose-100 text-rose-700',
+  medio: 'bg-amber-100 text-amber-700',
+  bajo: 'bg-slate-100 text-slate-600',
+}
+
+function ImpactBadge({ impact }: { impact: string | null | undefined }) {
+  if (!impact || impact === 'nulo') return null
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${IMPACT_BADGE[impact] ?? 'bg-muted text-muted-foreground'}`}>
+      {impact}
+    </span>
+  )
+}
+
+function sortedFigures(figures: NewsKeyFigure[]) {
+  const order = { alta: 0, media: 1, baja: 2 }
+  return [...figures].sort((a, b) => (order[a.importance as keyof typeof order] ?? 3) - (order[b.importance as keyof typeof order] ?? 3))
+}
 
 function IdCell({ id }: { id: string }) {
   const [copied, setCopied] = useState(false)
@@ -298,10 +319,12 @@ export function NewsBodyTextSection() {
                     ) : null}
                   </td>
                   <td className="px-4 py-4">
-                    {article.hasAiSummary ? (
-                      <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-700">Con resumen</span>
+                    {article.hasAiAnalysis ? (
+                      <ImpactBadge impact={article.impactPreview} />
+                    ) : article.hasAiSummary ? (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">Legacy</span>
                     ) : (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">Sin resumen</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">Sin análisis</span>
                     )}
                   </td>
                   <td className="px-4 py-4 text-right">
@@ -334,9 +357,73 @@ export function NewsBodyTextSection() {
                         <p className="text-sm text-destructive">{bodyQuery.error.message}</p>
                       ) : (
                         <div className="flex flex-col gap-3">
-                          {bodyQuery.data?.aiSummary ? (
-                            <div className="rounded-2xl border border-teal-200 bg-white px-4 py-3">
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Resumen de IA</p>
+                          {bodyQuery.data?.aiAnalysis ? (
+                            <div className="rounded-2xl border border-teal-200 bg-white px-4 py-3 space-y-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Análisis IA</p>
+                                <ImpactBadge impact={bodyQuery.data.aiAnalysis.impact} />
+                                {bodyQuery.data.aiAnalysis.isRelevant ? (
+                                  <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-700">Relevante</span>
+                                ) : (
+                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">No relevante</span>
+                                )}
+                              </div>
+                              {bodyQuery.data.aiAnalysis.headline ? (
+                                <p className="text-sm font-semibold text-slate-800">{bodyQuery.data.aiAnalysis.headline}</p>
+                              ) : null}
+                              {bodyQuery.data.aiAnalysis.sectorTags && bodyQuery.data.aiAnalysis.sectorTags.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {bodyQuery.data.aiAnalysis.sectorTags.map((tag) => (
+                                    <span key={tag} className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground capitalize">{tag}</span>
+                                  ))}
+                                  {bodyQuery.data.aiAnalysis.affectedFibers && bodyQuery.data.aiAnalysis.affectedFibers.length > 0
+                                    ? bodyQuery.data.aiAnalysis.affectedFibers.map((f) => (
+                                        <span key={f} className="rounded-full bg-teal-50 border border-teal-200 px-2 py-0.5 text-xs text-teal-700">{f}</span>
+                                      ))
+                                    : null}
+                                </div>
+                              ) : null}
+                              {bodyQuery.data.aiAnalysis.summaryMarkdown ? (
+                                <div className="text-sm leading-7 text-slate-700 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-3 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1 [&>strong]:font-semibold">
+                                  <ReactMarkdown>{bodyQuery.data.aiAnalysis.summaryMarkdown}</ReactMarkdown>
+                                </div>
+                              ) : null}
+                              {bodyQuery.data.aiAnalysis.investorTakeaway ? (
+                                <div className="border-l-4 border-teal-400 pl-3">
+                                  <p className="text-xs font-semibold text-teal-700 mb-1">¿Qué significa esto?</p>
+                                  <p className="text-sm text-slate-700">{bodyQuery.data.aiAnalysis.investorTakeaway}</p>
+                                </div>
+                              ) : null}
+                              {bodyQuery.data.aiAnalysis.keyFacts && bodyQuery.data.aiAnalysis.keyFacts.length > 0 ? (
+                                <div>
+                                  <p className="text-xs font-semibold text-slate-600 mb-1">Hechos clave</p>
+                                  <ul className="list-disc pl-5 space-y-0.5">
+                                    {bodyQuery.data.aiAnalysis.keyFacts.map((f, i) => (
+                                      <li key={i} className="text-sm text-slate-700">{f}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                              {bodyQuery.data.aiAnalysis.keyFigures && bodyQuery.data.aiAnalysis.keyFigures.length > 0 ? (
+                                <div className="grid grid-cols-3 gap-2">
+                                  {sortedFigures(bodyQuery.data.aiAnalysis.keyFigures).map((fig, i) => (
+                                    <div key={i} className="rounded border border-border bg-slate-50 p-2">
+                                      <p className="text-xs text-muted-foreground">{fig.label}</p>
+                                      <p className="text-sm font-semibold text-slate-800">{fig.valueText}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                              {Number(bodyQuery.data.aiAnalysis.confidence) < 0.6 ? (
+                                <p className="text-xs text-amber-600">⚠ Baja confianza ({Math.round(Number(bodyQuery.data.aiAnalysis.confidence) * 100)}%)</p>
+                              ) : null}
+                              {bodyQuery.data.aiAnalysis.extractionNotes ? (
+                                <p className="text-xs text-muted-foreground">{bodyQuery.data.aiAnalysis.extractionNotes}</p>
+                              ) : null}
+                            </div>
+                          ) : bodyQuery.data?.aiSummary ? (
+                            <div className="rounded-2xl border border-amber-200 bg-white px-4 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Resumen legacy</p>
                               <div className="mt-2 text-sm leading-7 text-slate-700 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-3 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1 [&>strong]:font-semibold [&>h1]:font-bold [&>h2]:font-semibold [&>h3]:font-semibold">
                                 <ReactMarkdown>{bodyQuery.data.aiSummary}</ReactMarkdown>
                               </div>

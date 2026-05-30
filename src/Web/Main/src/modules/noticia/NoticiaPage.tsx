@@ -1,13 +1,19 @@
 import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
-import { fetchArticleById } from '@/api/newsApi'
+import { fetchArticleById, type NewsKeyFigure } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
 
 const DEFAULT_TITLE = 'FIBRADIS'
 const DEFAULT_DESCRIPTION = 'Preview de noticia de FIBRADIS.'
+
+const IMPACT_BADGE: Record<string, string> = {
+  alto: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+  medio: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  bajo: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+}
 
 export function NoticiaPage() {
   const { id } = useParams<{ id: string }>()
@@ -18,9 +24,11 @@ export function NoticiaPage() {
     staleTime: 10 * 60_000,
   })
 
-  const summary = article?.aiSummary ?? article?.snippet ?? null
-  const pageTitle = article ? `${article.title} — FIBRADIS` : DEFAULT_TITLE
-  const pageDescription = summary ? summary.slice(0, 160) : DEFAULT_DESCRIPTION
+  const aiAnalysis = article?.aiAnalysis ?? null
+  const summaryContent = aiAnalysis?.summaryMarkdown ?? article?.aiSummary ?? article?.snippet ?? null
+  const displayTitle = aiAnalysis?.headline ?? article?.title
+  const pageTitle = displayTitle ? `${displayTitle} — FIBRADIS` : DEFAULT_TITLE
+  const pageDescription = summaryContent ? summaryContent.slice(0, 160) : DEFAULT_DESCRIPTION
 
   if (isLoading) {
     return (
@@ -91,23 +99,101 @@ export function NoticiaPage() {
           {article.title}
         </h1>
 
-        <p className="mb-8 text-sm text-muted-foreground">
-          {article.source} · {formatRelativeTime(article.publishedAt)}
-        </p>
+        {/* Metadata: fuente, fecha + badge de impacto */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            {article.source} · {formatRelativeTime(article.publishedAt)}
+          </p>
+          {aiAnalysis && aiAnalysis.impact && aiAnalysis.impact !== 'nulo' ? (
+            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${IMPACT_BADGE[aiAnalysis.impact] ?? 'bg-muted text-muted-foreground'}`}>
+              Impacto {aiAnalysis.impact}
+            </span>
+          ) : null}
+        </div>
 
-        {summary ? (
+        {/* Chips de sector */}
+        {aiAnalysis && aiAnalysis.sectorTags && aiAnalysis.sectorTags.length > 0 ? (
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {aiAnalysis.sectorTags.map((tag) => (
+              <span key={tag} className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground capitalize">
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Análisis estructurado */}
+        {aiAnalysis ? (
+          <div className="mb-6 space-y-4">
+            {/* Hechos clave */}
+            {aiAnalysis.keyFacts && aiAnalysis.keyFacts.length > 0 ? (
+              <div className="rounded-lg border border-border bg-card p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Hechos clave</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {aiAnalysis.keyFacts.map((fact, i) => (
+                    <li key={i} className="text-sm leading-relaxed text-foreground">{fact}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {/* Cifras clave */}
+            {aiAnalysis.keyFigures && aiAnalysis.keyFigures.length > 0 ? (
+              <div className="rounded-lg border border-border bg-card p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Cifras clave</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {sortedFigures(aiAnalysis.keyFigures).map((fig, i) => (
+                    <div key={i} className="rounded-md border border-border bg-background p-2">
+                      <p className="text-xs text-muted-foreground leading-tight">{fig.label}</p>
+                      <p className="mt-0.5 text-sm font-semibold text-foreground">{fig.valueText}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Resumen analítico */}
+            {summaryContent ? (
+              <div className="rounded-lg border border-border bg-card p-5">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Análisis IA</p>
+                <div className="text-base leading-relaxed text-foreground [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-3 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1 [&>strong]:font-semibold">
+                  <ReactMarkdown>{summaryContent}</ReactMarkdown>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Takeaway del inversionista */}
+            {aiAnalysis.investorTakeaway ? (
+              <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">¿Qué significa esto?</p>
+                <p className="text-sm leading-relaxed text-foreground">{aiAnalysis.investorTakeaway}</p>
+              </div>
+            ) : null}
+
+            {/* Baja confianza */}
+            {Number(aiAnalysis.confidence) < 0.6 ? (
+              <p className="text-xs text-muted-foreground">
+                ⚠ Extracción con baja confianza ({Math.round(Number(aiAnalysis.confidence) * 100)}%)
+              </p>
+            ) : null}
+
+            {/* Notas de extracción */}
+            {aiAnalysis.extractionNotes ? (
+              <p className="text-xs text-muted-foreground">{aiAnalysis.extractionNotes}</p>
+            ) : null}
+          </div>
+        ) : summaryContent ? (
+          /* Fallback: sin análisis estructurado, mostrar summary/snippet */
           <div className="mb-8 rounded-lg border border-border bg-card p-5">
             {article.aiSummary ? (
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">
-                Resumen IA
-              </p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Resumen IA</p>
             ) : null}
             {article.aiSummary ? (
               <div className="text-base leading-relaxed text-foreground [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-3 [&>ol]:list-decimal [&>ol]:pl-5 [&>li]:mb-1 [&>strong]:font-semibold">
-                <ReactMarkdown>{summary}</ReactMarkdown>
+                <ReactMarkdown>{summaryContent}</ReactMarkdown>
               </div>
             ) : (
-              <p className="text-base leading-relaxed text-foreground">{summary}</p>
+              <p className="text-base leading-relaxed text-foreground">{summaryContent}</p>
             )}
           </div>
         ) : null}
@@ -125,6 +211,11 @@ export function NoticiaPage() {
       </div>
     </>
   )
+}
+
+function sortedFigures(figures: NewsKeyFigure[]) {
+  const order = { alta: 0, media: 1, baja: 2 }
+  return [...figures].sort((a, b) => (order[a.importance as keyof typeof order] ?? 3) - (order[b.importance as keyof typeof order] ?? 3))
 }
 
 function NoticiaPageSkeleton() {

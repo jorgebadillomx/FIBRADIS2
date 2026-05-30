@@ -1,10 +1,17 @@
+using System.Text.Json;
 using Application.News;
+using Domain.News;
 using SharedApiContracts.News;
 
 namespace Api.Endpoints.Public;
 
 public static class NewsEndpoints
 {
+    private static readonly JsonSerializerOptions AnalysisDeserializeOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
     public static IEndpointRouteBuilder MapNews(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/news").WithTags("News");
@@ -45,6 +52,20 @@ public static class NewsEndpoints
         return app;
     }
 
-    private static NewsArticleDto ToDto(Domain.News.NewsArticle article)
-        => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url, article.Snippet, article.ImageUrl, article.AiSummary);
+    private static NewsArticleDto ToDto(NewsArticle article)
+        => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url,
+            article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson));
+
+    private static NewsAiAnalysisDto? MapAnalysis(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<NewsAiAnalysisDto>(json, AnalysisDeserializeOptions);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

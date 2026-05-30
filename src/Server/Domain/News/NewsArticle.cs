@@ -12,6 +12,7 @@ public class NewsArticle
     public string? BodyText { get; set; }
     public string? ImageUrl { get; set; }
     public string? AiSummary { get; set; }
+    public string? AiAnalysisJson { get; set; }
     public NewsArticleStatus Status { get; set; } = NewsArticleStatus.Pending;
     public DateTimeOffset CapturedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? ErrorReason { get; set; }

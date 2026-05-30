@@ -616,7 +616,6 @@ export interface paths {
                     pageSize?: number | string;
                     search?: string;
                     hasAiSummary?: boolean;
-                    isManuallyEdited?: boolean;
                     fibraId?: string;
                 };
                 header?: never;
@@ -815,12 +814,81 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description Bad Request */
-                400: {
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/news/{articleId}/ai-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    articleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NewsAiAnalysisDto"];
+                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -3101,6 +3169,22 @@ export interface components {
             capturedAt: null | string;
             freshnessStatus: null | string;
         };
+        NewsAiAnalysisDto: {
+            isRelevant: boolean;
+            relevanceReason: null | string;
+            headline: null | string;
+            impact: string;
+            sectorTags: string[];
+            subsector: null | string;
+            affectedFibers: string[];
+            keyFacts: string[];
+            keyFigures: components["schemas"]["NewsKeyFigureDto"][];
+            summaryMarkdown: null | string;
+            investorTakeaway: null | string;
+            /** Format: double */
+            confidence: number | string;
+            extractionNotes: null | string;
+        };
         NewsArticleDto: {
             /** Format: uuid */
             id: string;
@@ -3112,6 +3196,12 @@ export interface components {
             snippet: null | string;
             imageUrl: null | string;
             aiSummary: null | string;
+            aiAnalysis: null | components["schemas"]["NewsAiAnalysisDto"];
+        };
+        NewsKeyFigureDto: {
+            label: string;
+            valueText: string;
+            importance: string;
         };
         OperationalConfigDto: {
             /** Format: double */
@@ -3138,12 +3228,15 @@ export interface components {
             bodyTextPreview: null | string;
             hasAiSummary: boolean;
             aiSummaryPreview: null | string;
+            hasAiAnalysis: boolean;
+            impactPreview: null | string;
         };
         OpsNewsBodyDto: {
             /** Format: uuid */
             id: string;
             bodyText: null | string;
             aiSummary: null | string;
+            aiAnalysis: null | components["schemas"]["NewsAiAnalysisDto"];
         };
         PagedResultOfAiCallLogDto: {
             items: components["schemas"]["AiCallLogDto"][];
