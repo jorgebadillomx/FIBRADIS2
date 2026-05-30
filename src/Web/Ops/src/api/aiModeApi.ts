@@ -42,17 +42,6 @@ export async function setAiConfig(payload: {
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al actualizar AI_MODE: ${JSON.stringify(error)}`))
 }
 
-export async function triggerAiSummary(articleId: string): Promise<void> {
-  assertOpsAccessToken()
-
-  const { error } = await apiClient['/api/v1/ops/news/{articleId}/ai-summary'].POST({
-    params: { path: { articleId } },
-    headers: getOpsAuthHeaders(),
-  })
-
-  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al generar resumen: ${JSON.stringify(error)}`))
-}
-
 export async function fetchAiProvider(): Promise<AiProviderConfigDto> {
   assertOpsAccessToken()
 
