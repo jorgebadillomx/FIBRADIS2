@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { FundamentalPreviewDto, FundamentalRecordDto } from '@/api/fundamentalsApi'
 import { FundamentalsImportForm } from '@/modules/fundamentals/FundamentalsImportForm'
@@ -16,16 +16,22 @@ export function FundamentalsPage() {
     selectedFibraId: null,
   })
 
-  const handleDone = (_preview: FundamentalPreviewDto, fibraId: string) => {
+  const handleDone = useCallback((_preview: FundamentalPreviewDto, fibraId: string) => {
     if (fibraId) queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] })
-    if (state.selectedFibraId) queryClient.invalidateQueries({ queryKey: ['fundamentals', state.selectedFibraId] })
-    setState((s) => ({ ...s, editRecord: null }))
-  }
+    setState((s) => {
+      if (s.selectedFibraId) queryClient.invalidateQueries({ queryKey: ['fundamentals', s.selectedFibraId] })
+      return { ...s, editRecord: null }
+    })
+  }, [queryClient])
 
-  const handleEdit = (record: FundamentalRecordDto) => {
+  const handleEdit = useCallback((record: FundamentalRecordDto) => {
     setState((s) => ({ ...s, editRecord: record }))
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  }, [])
+
+  const handleFibraChange = useCallback((fibraId: string) => {
+    setState((s) => s.selectedFibraId === fibraId ? s : { ...s, selectedFibraId: fibraId })
+  }, [])
 
   return (
     <div className="space-y-8">
@@ -46,7 +52,7 @@ export function FundamentalsPage() {
         </h2>
         <FundamentalsImportForm
           onPreview={handleDone}
-          onFibraChange={(fibraId) => setState((s) => ({ ...s, selectedFibraId: fibraId }))}
+          onFibraChange={handleFibraChange}
           initialRecord={state.editRecord ?? undefined}
           initialFibraId={state.selectedFibraId ?? undefined}
         />
