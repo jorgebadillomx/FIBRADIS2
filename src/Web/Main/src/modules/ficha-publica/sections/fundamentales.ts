@@ -9,7 +9,9 @@ export interface FundamentalItem {
 }
 
 export interface FundamentalesData {
+  period?: string
   periodsAgo?: number
+  summary?: string | null
   items?: FundamentalItem[]
 }
 

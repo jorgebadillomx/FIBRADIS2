@@ -101,7 +101,9 @@ export function FibraPage() {
 
   const fundamentalesData: FundamentalesData | undefined = fundamentalesDto
     ? {
+        period: fundamentalesDto.period,
         periodsAgo: typeof fundamentalesDto.periodsAgo === 'number' ? fundamentalesDto.periodsAgo : undefined,
+        summary: fundamentalesDto.summary ?? null,
         items: ([
           'capRate',
           'navPerCbfi',
