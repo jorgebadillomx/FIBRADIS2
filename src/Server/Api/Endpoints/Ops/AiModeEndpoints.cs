@@ -96,7 +96,8 @@ public static class AiModeEndpoints
             int page = 1,
             int pageSize = 20,
             string? search = null,
-            bool? hasAiSummary = null) =>
+            bool? hasAiSummary = null,
+            Guid? fibraId = null) =>
         {
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 100);
@@ -110,7 +111,7 @@ public static class AiModeEndpoints
                 });
             }
 
-            var (items, total) = await newsRepo.GetPagedForOpsAsync(page, pageSize, trimmedSearch, hasAiSummary, ct);
+            var (items, total) = await newsRepo.GetPagedForOpsAsync(page, pageSize, trimmedSearch, hasAiSummary, fibraId, ct);
             var dtos = items.Select(a => new OpsNewsArticleDto(
                 a.Id,
                 a.Title,

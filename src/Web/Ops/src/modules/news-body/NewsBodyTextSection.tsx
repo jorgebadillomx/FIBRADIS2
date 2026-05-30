@@ -7,7 +7,29 @@ import {
   updateNewsBodyText,
   type OpsNewsArticle,
 } from '@/api/newsApi'
+import { fetchOpsCatalog } from '@/api/catalogApi'
 import { ManualSummaryTriggerSection } from '@/modules/news-body/ManualSummaryTriggerSection'
+
+function IdCell({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="flex items-center gap-1.5 font-mono text-xs text-slate-600">
+      <span title={id}>{id.slice(0, 8)}</span>
+      <button
+        className="rounded p-0.5 text-slate-400 transition hover:text-teal-600"
+        onClick={() => {
+          navigator.clipboard.writeText(id)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }}
+        title="Copiar GUID completo"
+        type="button"
+      >
+        {copied ? '✓' : '⎘'}
+      </button>
+    </div>
+  )
+}
 
 export function NewsBodyTextSection() {
   const queryClient = useQueryClient()
@@ -17,6 +39,7 @@ export function NewsBodyTextSection() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [hasAiSummaryFilter, setHasAiSummaryFilter] = useState<'all' | 'with' | 'without'>('all')
   const [editedFilter, setEditedFilter] = useState<'all' | 'edited' | 'not-edited'>('all')
+  const [fibraId, setFibraId] = useState<string>('')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState<string>('')
@@ -33,10 +56,16 @@ export function NewsBodyTextSection() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, hasAiSummaryFilter, editedFilter])
+  }, [debouncedSearch, hasAiSummaryFilter, editedFilter, fibraId])
+
+  const fibrasQuery = useQuery({
+    queryKey: ['ops-catalog'],
+    queryFn: fetchOpsCatalog,
+    staleTime: 5 * 60 * 1000,
+  })
 
   const listQuery = useQuery({
-    queryKey: ['ops-news-list', page, pageSize, debouncedSearch, hasAiSummaryFilter, editedFilter],
+    queryKey: ['ops-news-list', page, pageSize, debouncedSearch, hasAiSummaryFilter, editedFilter, fibraId],
     queryFn: () =>
       fetchOpsNewsList(
         page,
@@ -44,6 +73,7 @@ export function NewsBodyTextSection() {
         debouncedSearch || undefined,
         hasAiSummaryFilter === 'all' ? undefined : hasAiSummaryFilter === 'with',
         editedFilter === 'all' ? undefined : editedFilter === 'edited',
+        fibraId || undefined,
       ),
     retry: false,
   })
@@ -126,6 +156,25 @@ export function NewsBodyTextSection() {
             </div>
 
             <div className="lg:w-48">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground" htmlFor="ops-news-fibra-filter">
+                Fibra
+              </label>
+              <select
+                className="mt-2 h-11 w-full rounded-xl border border-border bg-white px-4 text-sm outline-none transition focus:border-teal-600"
+                id="ops-news-fibra-filter"
+                onChange={(event) => setFibraId(event.target.value)}
+                value={fibraId}
+              >
+                <option value="">Todas</option>
+                {fibrasQuery.data?.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.ticker}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="lg:w-48">
               <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground" htmlFor="ops-news-ai-filter">
                 Resumen IA
               </label>
@@ -162,6 +211,7 @@ export function NewsBodyTextSection() {
         <table className="min-w-full border-collapse">
           <thead className="bg-teal-950/95 text-left text-xs uppercase tracking-[0.18em] text-teal-50">
             <tr>
+              <th className="px-4 py-3 font-medium">ID</th>
               <th className="px-4 py-3 font-medium">Título</th>
               <th className="px-4 py-3 font-medium">Fuente</th>
               <th className="px-4 py-3 font-medium">Publicado</th>
@@ -173,7 +223,7 @@ export function NewsBodyTextSection() {
           <tbody className="bg-white">
             {listQuery.isLoading ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={6}>
+                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={7}>
                   Cargando artículos...
                 </td>
               </tr>
@@ -181,7 +231,7 @@ export function NewsBodyTextSection() {
 
             {listQuery.isError ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-destructive" colSpan={6}>
+                <td className="px-4 py-6 text-sm text-destructive" colSpan={7}>
                   {listQuery.error.message}
                 </td>
               </tr>
@@ -189,7 +239,7 @@ export function NewsBodyTextSection() {
 
             {listQuery.isSuccess && listQuery.data.items.length === 0 ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={6}>
+                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={7}>
                   No hay artículos registrados.
                 </td>
               </tr>
@@ -206,6 +256,9 @@ export function NewsBodyTextSection() {
                 <tr
                   className="border-t border-border/70 text-sm"
                 >
+                  <td className="px-4 py-4">
+                    <IdCell id={article.id} />
+                  </td>
                   <td className="max-w-xs px-4 py-4 font-medium text-slate-900">
                     <a
                       className="line-clamp-2 hover:underline"
@@ -244,11 +297,11 @@ export function NewsBodyTextSection() {
                       <span className="ml-2 text-xs text-teal-600">✓ Guardado</span>
                     ) : null}
                   </td>
-                  <td className="max-w-xs px-4 py-4 text-sm text-slate-700">
-                    {article.aiSummaryPreview ? (
-                      `${article.aiSummaryPreview.slice(0, 120)}${article.aiSummaryPreview.length > 120 ? '…' : ''}`
+                  <td className="px-4 py-4">
+                    {article.hasAiSummary ? (
+                      <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-700">Con resumen</span>
                     ) : (
-                      <span className="text-muted-foreground">Sin resumen</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">Sin resumen</span>
                     )}
                   </td>
                   <td className="px-4 py-4 text-right">
@@ -274,7 +327,7 @@ export function NewsBodyTextSection() {
 
                 {editingId === article.id ? (
                   <tr className="border-t border-teal-100 bg-teal-50/40">
-                    <td colSpan={6} className="px-4 py-4">
+                    <td colSpan={7} className="px-4 py-4">
                       {bodyQuery.isLoading ? (
                         <p className="text-sm text-muted-foreground">Cargando body text...</p>
                       ) : bodyQuery.isError ? (

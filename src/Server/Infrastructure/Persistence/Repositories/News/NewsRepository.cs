@@ -90,7 +90,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .Take(count)
             .ToListAsync(ct);
 
-    public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default)
     {
         var query = db.NewsArticles.AsQueryable();
         if (!string.IsNullOrWhiteSpace(search))
@@ -109,6 +109,11 @@ public class NewsRepository(AppDbContext db) : INewsRepository
         else if (hasAiSummary is false)
         {
             query = query.Where(a => a.AiSummary == null);
+        }
+
+        if (fibraId is not null)
+        {
+            query = query.Where(a => db.NewsArticleFibras.Any(f => f.NewsArticleId == a.Id && f.FibraId == fibraId));
         }
 
         query = query.OrderByDescending(n => n.PublishedAt);

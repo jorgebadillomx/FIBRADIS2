@@ -55,12 +55,13 @@ export async function fetchOpsNewsList(
   search?: string,
   hasAiSummary?: boolean,
   isManuallyEdited?: boolean,
+  fibraId?: string,
 ): Promise<OpsNewsPage> {
   assertOpsAccessToken()
 
   const { data, error } = await apiClient['/api/v1/ops/news'].GET({
     headers: getOpsAuthHeaders(),
-    params: { query: { page, pageSize, search, hasAiSummary, isManuallyEdited } },
+    params: { query: { page, pageSize, search, hasAiSummary, isManuallyEdited, fibraId } },
   })
 
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al obtener noticias: ${JSON.stringify(error)}`))
