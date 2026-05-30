@@ -211,7 +211,7 @@ development_status:
 
   # ── 4-10: Análisis IA enriquecido para noticias ───────────────────────────
   # story 4-10 creada — schema JSON estructurado de IA, columna ai_analysis_json, display enriquecido en NoticiaPage y Ops
-  4-10-analisis-ia-enriquecido-noticias: review
+  4-10-analisis-ia-enriquecido-noticias: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog
