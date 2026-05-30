@@ -372,7 +372,7 @@ public class GeminiAiSummaryServiceTests
                 }
                 """);
         });
-        var service = CreateService(handler, promptTemplate: "Plantilla custom\nTítulo: {title}\n{snippet_section}\n{body_section}\n{strictness_instruction}");
+        var service = CreateService(handler, promptTemplate: "Plantilla custom\nTítulo: {title}\n{snippet_section}\n{body_section}");
 
         await service.GenerateSummaryAsync("Titulo", "Snippet");
 

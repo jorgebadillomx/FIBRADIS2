@@ -54,7 +54,6 @@ namespace Infrastructure.Persistence.Migrations
 
         private const string DocumentTemplate =
             "Eres un analista experto en FIBRAs mexicanas y documentos financieros corporativos del sector inmobiliario en México.\n" +
-            "{strictness_instruction}\n" +
             "Título: {title}\n" +
             "{snippet_section}\n" +
             "{body_section}\n" +

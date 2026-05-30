@@ -14,7 +14,6 @@ public static class AiPromptTemplateDefaults
 
     public const string News = """
         Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
-        {strictness_instruction}
         Título: {title}
         {snippet_section}
         {body_section}

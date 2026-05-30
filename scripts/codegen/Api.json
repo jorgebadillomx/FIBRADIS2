@@ -470,6 +470,14 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "fibraId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {

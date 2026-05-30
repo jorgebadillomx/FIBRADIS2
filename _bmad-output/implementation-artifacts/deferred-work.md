@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review of 5-8-observabilidad-llamadas-ia-log-en-ops (2026-05-30)
+
+- **D1: Índice `(Provider, CreatedAt)` ausente en `AiCallLogConfiguration`** [`src/Server/Infrastructure/Persistence/SqlServer/Configurations/Ai/AiCallLogConfiguration.cs:41`] — Dev Notes documenta que debería existir. Solo se creó `(Operation, CreatedAt)`. Añadir en próxima migración del módulo Ai.
+- **D2: Esquema de entidad diverge del spec AC1** [`src/Server/Domain/Ai/AiCallLog.cs`] — Spec define `Model`, `InputChars`, `OutputChars`, `ErrorType`; implementado sin `OutputChars` ni `ErrorType`. Documentado en Completion Notes. Alinear si se necesita para reportes externos o requiere migración.
+- **D3: `OrderByDescending` antes de `CountAsync`** [`src/Server/Infrastructure/Persistence/Repositories/Ai/AiCallLogRepository.cs:27-28`] — Genera ORDER BY innecesario en query de conteo. SQL Server lo ignora, sin impacto funcional. Mover en próxima refactor del repositorio.
+- **D4: `AsyncLocal` sin cleanup en `AiCallRawData`** [`src/Server/Infrastructure/Integrations/Ai/AiCallRawData.cs`] — No existe método `End()` para limpiar el contexto. Riesgo teórico de context bleed bajo Hangfire. Bajo impacto con `WorkerCount=1`.
+- **D5: Paginación sin snapshot isolation** [`src/Server/Infrastructure/Persistence/Repositories/Ai/AiCallLogRepository.cs:28-32`] — `CountAsync` y `ToListAsync` en dos queries separadas; `total` puede diferir de `items` bajo inserción concurrente. Aceptable para MVP de observabilidad.
+- **D6: `newsequentialid()` como SQL default nunca se usa en `Id`** [`src/Server/Domain/Ai/AiCallLog.cs:5`] — `AiCallLogConfiguration` define `HasDefaultValueSql("newsequentialid()")` pero sin `ValueGeneratedOnAdd()`, por lo que EF siempre envía `Guid.NewGuid()` del constructor. El índice PK queda con GUIDs no secuenciales → fragmentación. Añadir `ValueGeneratedOnAdd()` al Id en próxima migración.
+- **D7: Test 403 ausente** [`tests/Integration/Api.Tests/Ops/AiCallLogEndpointTests.cs`] — Solo existe test de 401; falta test con usuario autenticado sin rol AdminOps.
+
 ## Deferred from: code review of 5-4-configuracion-operativa-desde-ops-sin-redespliegue (2026-05-25)
 
 - **D1: Sin transacción entre `SaveChangesAsync` y `Hangfire.AddOrUpdate`** [`src/Server/Api/Endpoints/Ops/OpsConfigEndpoints.cs`] — Si Hangfire falla post-commit, la BD tiene la nueva cadencia pero el job mantiene el schedule anterior. Mitiga: el arranque lee BD y corrige. Implementar compensación si se detecta el fallo en producción.
