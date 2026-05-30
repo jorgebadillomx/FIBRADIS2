@@ -616,6 +616,8 @@ export interface paths {
                     pageSize?: number | string;
                     search?: string;
                     hasAiSummary?: boolean;
+                    isManuallyEdited?: boolean;
+                    fibraId?: string;
                 };
                 header?: never;
                 path?: never;

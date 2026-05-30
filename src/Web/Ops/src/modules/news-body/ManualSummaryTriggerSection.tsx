@@ -1,16 +1,30 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { triggerAiSummary } from '@/api/aiModeApi'
+import type { OpsNewsPage } from '@/api/newsApi'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function ManualSummaryTriggerSection() {
   const [articleId, setArticleId] = useState('')
+  const queryClient = useQueryClient()
 
   const triggerMutation = useMutation({
     mutationFn: triggerAiSummary,
-    onSuccess: () => {
+    onSuccess: (_, generatedId) => {
       setArticleId('')
+      queryClient.setQueriesData(
+        { queryKey: ['ops-news-list'], exact: false },
+        (old: OpsNewsPage | undefined) =>
+          old
+            ? {
+                ...old,
+                items: old.items.map((item) =>
+                  item.id === generatedId ? { ...item, hasAiSummary: true } : item,
+                ),
+              }
+            : old,
+      )
     },
   })
 
