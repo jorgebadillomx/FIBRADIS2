@@ -104,6 +104,11 @@ export function FibraPage() {
         period: fundamentalesDto.period,
         periodsAgo: typeof fundamentalesDto.periodsAgo === 'number' ? fundamentalesDto.periodsAgo : undefined,
         summary: fundamentalesDto.summary ?? null,
+        summaryMarkdown: fundamentalesDto.summaryMarkdown ?? null,
+        investorTakeaway: fundamentalesDto.investorTakeaway ?? null,
+        operationalSignals: fundamentalesDto.operationalSignals ?? [],
+        financialSignals: fundamentalesDto.financialSignals ?? [],
+        riskFlags: fundamentalesDto.riskFlags ?? [],
         items: ([
           'capRate',
           'navPerCbfi',

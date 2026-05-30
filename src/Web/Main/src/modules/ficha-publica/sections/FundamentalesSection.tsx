@@ -4,6 +4,7 @@ import {
   shouldShowFundamentalesWarning,
   type FundamentalesData,
 } from './fundamentales'
+import ReactMarkdown from 'react-markdown'
 import { KpiLabel } from '@/shared/ui/KpiLabel'
 
 interface Props {
@@ -13,6 +14,14 @@ interface Props {
 export function FundamentalesSection({ data }: Props) {
   const showWarning = shouldShowFundamentalesWarning(data)
   const items = data?.items ?? []
+  const operationalSignals = data?.operationalSignals ?? []
+  const financialSignals = data?.financialSignals ?? []
+  const riskFlags = data?.riskFlags ?? []
+  const summaryContent = data?.summaryMarkdown ?? data?.summary
+  const hasOperationalSignals = operationalSignals.length > 0
+  const hasFinancialSignals = financialSignals.length > 0
+  const hasRiskFlags = riskFlags.length > 0
+  const hasInvestorTakeaway = !!data?.investorTakeaway?.trim()
 
   return (
     <div className="space-y-4">
@@ -67,15 +76,61 @@ export function FundamentalesSection({ data }: Props) {
             </tbody>
           </table>
 
-          {/* Summary */}
-          {data?.summary && (
-            <div className="border-t border-border px-4 py-4 space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
-                Resumen del período
-              </p>
-              <p className="text-sm text-foreground/90 leading-relaxed">
-                {data.summary}
-              </p>
+          {(summaryContent || hasOperationalSignals || hasFinancialSignals || hasRiskFlags || hasInvestorTakeaway) && (
+            <div className="border-t border-border px-4 py-4 space-y-4">
+              {summaryContent && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+                    Resumen analítico
+                  </p>
+                  <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground/90">
+                    <ReactMarkdown
+                      urlTransform={(url) =>
+                        url.startsWith('https://') || url.startsWith('http://') || url.startsWith('#')
+                          ? url
+                          : ''
+                      }
+                    >
+                      {summaryContent}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              )}
+
+              {hasOperationalSignals && (
+                <SignalsBlock
+                  title="Señales operativas"
+                  items={operationalSignals}
+                />
+              )}
+
+              {hasFinancialSignals && (
+                <SignalsBlock
+                  title="Señales financieras"
+                  items={financialSignals}
+                />
+              )}
+
+              {hasRiskFlags && (
+                <SignalsBlock
+                  title="Alertas de riesgo"
+                  items={riskFlags}
+                  className="rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-3"
+                  listClassName="text-amber-900"
+                  bulletClassName="text-amber-600"
+                />
+              )}
+
+              {hasInvestorTakeaway && (
+                <div className="rounded-lg border-l-4 border-brand bg-muted/50 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+                    Perspectiva del analista
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-foreground/90">
+                    {data!.investorTakeaway}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -85,6 +140,32 @@ export function FundamentalesSection({ data }: Props) {
           <p className="text-xs text-muted-foreground/60">No hay datos de fundamentales disponibles para esta FIBRA.</p>
         </div>
       )}
+    </div>
+  )
+}
+
+interface SignalsBlockProps {
+  title: string
+  items: string[]
+  className?: string
+  listClassName?: string
+  bulletClassName?: string
+}
+
+function SignalsBlock({ title, items, className, listClassName, bulletClassName }: SignalsBlockProps) {
+  return (
+    <div className={className}>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+        {title}
+      </p>
+      <ul className={`space-y-1.5 text-sm leading-relaxed text-muted-foreground ${listClassName ?? ''}`}>
+        {items.map((item, index) => (
+          <li key={`${index}-${item}`} className="flex gap-2">
+            <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current ${bulletClassName ?? ''}`} />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

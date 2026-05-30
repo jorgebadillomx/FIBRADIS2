@@ -1,5 +1,6 @@
 using Domain.Catalog;
 using Domain.Fundamentals;
+using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Fundamentals;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
@@ -226,5 +227,165 @@ public class FundamentalRepositoryTests
 
         var record = await db.FundamentalRecords.FindAsync(id);
         Assert.Null(record!.ConfirmedBy);
+    }
+
+    [Fact]
+    public async Task UpdateKpiExtractionAsync_PersistsAiAnalysis_AndClearsErrorReason_OnPartial()
+    {
+        await using var db = CreateDbContext();
+        var fibraId = Guid.NewGuid();
+        db.Fibras.Add(CreateFibra(fibraId));
+        var id = Guid.NewGuid();
+        db.FundamentalRecords.Add(new FundamentalRecord
+        {
+            Id = id,
+            FibraId = fibraId,
+            Period = "Q3-2024",
+            Status = "pending",
+            ProcessingMode = "ai",
+            ErrorReason = "error previo",
+            CapturedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+
+        var repo = new FundamentalRepository(db);
+        await repo.UpdateKpiExtractionAsync(id, new KpiExtractionResult(
+            0.081m,
+            "Cap rate explícito.",
+            18.2m,
+            "NAV explícito.",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Resumen legacy",
+            "Notas de extracción",
+            true,
+            SummaryMarkdown: "**Resumen** en markdown",
+            InvestorTakeaway: "Takeaway",
+            OperationalSignals: ["Ocupación alta"],
+            FinancialSignals: ["LTV bajo"],
+            RiskFlags: ["Riesgo puntual"]), CancellationToken.None);
+
+        var updated = await db.FundamentalRecords.FindAsync(id);
+        Assert.NotNull(updated);
+        Assert.Equal("partial", updated!.Status);
+        Assert.Null(updated.ErrorReason);
+        Assert.Equal("**Resumen** en markdown", updated.Summary);
+
+        var analysis = updated.GetAiAnalysis();
+        Assert.NotNull(analysis);
+        Assert.Equal("Takeaway", analysis!.InvestorTakeaway);
+        Assert.Equal(["Ocupación alta"], analysis.OperationalSignals);
+        Assert.Equal(["LTV bajo"], analysis.FinancialSignals);
+        Assert.Equal(["Riesgo puntual"], analysis.RiskFlags);
+        Assert.Equal("Notas de extracción", analysis.ExtractionNotes);
+    }
+
+    [Fact]
+    public async Task UpdateKpiExtractionAsync_SetsPartial_WhenOnlyQualitativeDataExtracted()
+    {
+        await using var db = CreateDbContext();
+        var fibraId = Guid.NewGuid();
+        db.Fibras.Add(CreateFibra(fibraId));
+        var id = Guid.NewGuid();
+        db.FundamentalRecords.Add(new FundamentalRecord
+        {
+            Id = id,
+            FibraId = fibraId,
+            Period = "Q3-2024",
+            Status = "pending",
+            ProcessingMode = "ai",
+            ErrorReason = "error previo",
+            CapturedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+
+        var repo = new FundamentalRepository(db);
+        // Success=true pero sin KPIs numéricos — solo análisis cualitativo
+        await repo.UpdateKpiExtractionAsync(id, new KpiExtractionResult(
+            null, null, null, null, null, null, null, null, null, null, null, null,
+            null,
+            "Notas de extracción cualitativa",
+            true,
+            SummaryMarkdown: "**Resumen** sin KPIs numéricos",
+            InvestorTakeaway: "Takeaway cualitativo",
+            OperationalSignals: ["Ocupación estable"],
+            FinancialSignals: [],
+            RiskFlags: []), CancellationToken.None);
+
+        var updated = await db.FundamentalRecords.FindAsync(id);
+        Assert.NotNull(updated);
+        Assert.Equal("partial", updated!.Status);
+        Assert.Null(updated.ErrorReason);
+        Assert.Equal("**Resumen** sin KPIs numéricos", updated.Summary);
+    }
+
+    [Fact]
+    public async Task UpdateKpiExtractionAsync_SetsError_AndFillsErrorReason_WhenNothingExtracted()
+    {
+        await using var db = CreateDbContext();
+        var fibraId = Guid.NewGuid();
+        db.Fibras.Add(CreateFibra(fibraId));
+        var id = Guid.NewGuid();
+        db.FundamentalRecords.Add(new FundamentalRecord
+        {
+            Id = id,
+            FibraId = fibraId,
+            Period = "Q3-2024",
+            Status = "pending",
+            ProcessingMode = "ai",
+            CapturedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+
+        var repo = new FundamentalRepository(db);
+        await repo.UpdateKpiExtractionAsync(id, new KpiExtractionResult(
+            null, null, null, null, null, null, null, null, null, null, null, null,
+            null,
+            "No se pudo extraer ningún dato del reporte.",
+            false), CancellationToken.None);
+
+        var updated = await db.FundamentalRecords.FindAsync(id);
+        Assert.NotNull(updated);
+        Assert.Equal("error", updated!.Status);
+        Assert.Equal("No se pudo extraer ningún dato del reporte.", updated.ErrorReason);
+    }
+
+    [Fact]
+    public async Task UpdateFieldNotesAsync_ReplacesWholeDictionary()
+    {
+        await using var db = CreateDbContext();
+        var fibraId = Guid.NewGuid();
+        db.Fibras.Add(CreateFibra(fibraId));
+        var id = Guid.NewGuid();
+        var record = new FundamentalRecord
+        {
+            Id = id,
+            FibraId = fibraId,
+            Period = "Q3-2024",
+            Status = "partial",
+            ProcessingMode = "manual",
+            CapturedAt = DateTimeOffset.UtcNow,
+        };
+        record.SetFieldNotes(new Dictionary<string, string?> { ["capRate"] = "nota anterior" });
+        db.FundamentalRecords.Add(record);
+        await db.SaveChangesAsync();
+
+        var repo = new FundamentalRepository(db);
+        await repo.UpdateFieldNotesAsync(id, new Dictionary<string, string?>
+        {
+            ["capRate"] = "nota nueva",
+            ["ltv"] = null,
+        }, CancellationToken.None);
+
+        var updated = await db.FundamentalRecords.FindAsync(id);
+        Assert.NotNull(updated);
+        Assert.Equal("nota nueva", updated!.GetFieldNotes()!["capRate"]);
+        Assert.False(updated.GetFieldNotes()!.ContainsKey("ltv"));
     }
 }

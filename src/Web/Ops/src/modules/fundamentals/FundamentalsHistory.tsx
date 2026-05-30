@@ -7,6 +7,7 @@ import {
   uploadFundamentalPdf,
 } from '@/api/fundamentalsApi'
 import { KPI_DEFINITIONS, type KpiKey } from '@/lib/kpi-definitions'
+import { EditFieldNotesDialog } from '@/modules/fundamentals/EditFieldNotesDialog'
 
 interface Props {
   fibraId: string
@@ -17,6 +18,7 @@ export function FundamentalsHistory({ fibraId, onEdit }: Props) {
   const queryClient = useQueryClient()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [pdfDownloadErrors, setPdfDownloadErrors] = useState<Record<string, string>>({})
+  const [notesRecord, setNotesRecord] = useState<FundamentalRecordDto | null>(null)
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['fundamentals', fibraId],
@@ -83,10 +85,17 @@ export function FundamentalsHistory({ fibraId, onEdit }: Props) {
               onPdfUpload={handlePdfUpload}
               onPdfDownload={handlePdfDownload}
               onEdit={onEdit}
+              onEditNotes={setNotesRecord}
             />
           ))}
         </tbody>
       </table>
+      <EditFieldNotesDialog
+        fibraId={fibraId}
+        record={notesRecord}
+        open={notesRecord !== null}
+        onClose={() => setNotesRecord(null)}
+      />
     </div>
   )
 }
@@ -99,6 +108,7 @@ interface RowProps {
   onPdfUpload: (id: string, file: File) => Promise<void>
   onPdfDownload: (id: string, ticker: string) => Promise<void>
   onEdit: (record: FundamentalRecordDto) => void
+  onEditNotes: (record: FundamentalRecordDto) => void
 }
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024
@@ -110,9 +120,11 @@ function HistoryRow({
   onPdfUpload,
   onPdfDownload,
   onEdit,
+  onEditNotes,
 }: RowProps) {
   const [pdfUploadError, setPdfUploadError] = useState<string | null>(null)
   const isDeleted = !!r.deletedAt
+  const canEditNotes = !isDeleted && (r.status === 'processed' || r.status === 'partial')
 
   return (
     <tr className={`transition-colors ${isDeleted ? 'opacity-50 bg-slate-50' : 'hover:bg-slate-50'}`}>
@@ -151,6 +163,16 @@ function HistoryRow({
               className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
             >
               Editar
+            </button>
+          )}
+
+          {canEditNotes && (
+            <button
+              type="button"
+              onClick={() => onEditNotes(r)}
+              className="rounded-lg bg-violet-100 px-2 py-1 text-xs font-medium text-violet-700 hover:bg-violet-200 transition"
+            >
+              Notas
             </button>
           )}
 

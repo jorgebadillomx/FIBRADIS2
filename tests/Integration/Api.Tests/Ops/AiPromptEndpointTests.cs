@@ -38,7 +38,7 @@ public class AiPromptEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWeb
     [Fact]
     public async Task PutAiPrompt_WithValidTemplate_Returns204()
     {
-        var template = "Custom\nTítulo: {title}\n{snippet_section}\n{body_section}\n{strictness_instruction}";
+        var template = "Custom\nTítulo: {title}\n{snippet_section}\n{body_section}";
 
         var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-prompts/news", new UpdateAiPromptRequest(template));
 
@@ -48,7 +48,7 @@ public class AiPromptEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWeb
     [Fact]
     public async Task PutAiPrompt_WithoutTitlePlaceholder_Returns400()
     {
-        var template = "Custom\n{snippet_section}\n{body_section}\n{strictness_instruction}";
+        var template = "Custom\n{snippet_section}\n{body_section}";
 
         var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-prompts/news", new UpdateAiPromptRequest(template));
 
@@ -58,7 +58,7 @@ public class AiPromptEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWeb
     [Fact]
     public async Task PutAiPrompt_WithoutSnippetSectionPlaceholder_Returns400()
     {
-        var template = "Custom\nTítulo: {title}\n{body_section}\n{strictness_instruction}";
+        var template = "Custom\nTítulo: {title}\n{body_section}";
 
         var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-prompts/news", new UpdateAiPromptRequest(template));
 
@@ -68,7 +68,7 @@ public class AiPromptEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWeb
     [Fact]
     public async Task PutAiPrompt_WithoutBodySectionPlaceholder_Returns400()
     {
-        var template = "Custom\nTítulo: {title}\n{snippet_section}\n{strictness_instruction}";
+        var template = "Custom\nTítulo: {title}\n{snippet_section}";
 
         var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-prompts/news", new UpdateAiPromptRequest(template));
 

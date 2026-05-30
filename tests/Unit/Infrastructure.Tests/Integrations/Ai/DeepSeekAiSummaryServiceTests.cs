@@ -106,7 +106,7 @@ public class DeepSeekAiSummaryServiceTests
             using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
             capturedPrompt = doc.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
             return BuildResponse("Resumen analítico completo con suficientes oraciones. Segunda oración aquí. Tercera oración.");
-        }), promptTemplate: "Plantilla DeepSeek\nTítulo: {title}\n{snippet_section}\n{body_section}\n{strictness_instruction}");
+        }), promptTemplate: "Plantilla DeepSeek\nTítulo: {title}\n{snippet_section}\n{body_section}");
 
         await sut.GenerateSummaryAsync("Título", "Snippet");
 

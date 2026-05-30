@@ -134,9 +134,9 @@ Todos los tests existentes siguen pasando tras los cambios en `GeminiAiSummarySe
   - [x] T3.6 Registrar repositorios en `ApiServiceExtensions.cs`
 
 - [x] **T4: Services — prompt desde BD**
-  - [x] T4.1 Actualizar `GeminiAiSummaryService`: inyectar `IAiPromptRepository`; en `BuildPrompt()` cargar template de BD con `GetPromptAsync("news")` o `GetPromptAsync("document")` según `contentType`; interpolar `{title}`, `{snippet_section}`, `{body_section}`, `{strictness_instruction}` en el template; si BD no retorna template, usar el string hardcoded actual como fallback. Cambiar de `static` a método de instancia.
+  - [x] T4.1 Actualizar `GeminiAiSummaryService`: inyectar `IAiPromptRepository`; en `BuildPrompt()` cargar template de BD con `GetPromptAsync("news")` o `GetPromptAsync("document")` según `contentType`; interpolar `{title}`, `{snippet_section}`, `{body_section}` en el template; si BD no retorna template, usar el string hardcoded actual como fallback. Cambiar de `static` a método de instancia.
   - [x] T4.2 Aplicar el mismo cambio en `DeepSeekAiSummaryService`
-  - [x] T4.3 El seed de `ai.AiPrompt` para `news` debe ser el prompt actual completo con los placeholders `{strictness_instruction}`, `{title}`, `{snippet_section}`, `{body_section}` en las posiciones correctas
+  - [x] T4.3 El seed de `ai.AiPrompt` para `news` debe ser el prompt actual completo con los placeholders `{title}`, `{snippet_section}`, `{body_section}` en las posiciones correctas
 
 - [x] **T5: Jobs — escribir a PipelineErrorLog**
   - [x] T5.1 Inyectar `IPipelineErrorLogRepository` en `MarketPipelineJob`: en cada catch que ya llama `LogError`, también insertar en `PipelineErrorLog` con `AiContext` descriptivo del ticker y operación
@@ -248,12 +248,10 @@ El template almacenado en BD debe contener exactamente estos cuatro placeholders
 - `{title}` — título del artículo
 - `{snippet_section}` — "Fragmento RSS: ..." o "Fragmento RSS no disponible."
 - `{body_section}` — "Cuerpo del artículo: ..." o "Cuerpo completo no disponible."
-- `{strictness_instruction}` — instrucción de longitud/profundidad (Standard vs. Elaborate)
 
 **Seed del prompt de noticias** (template inicial, extraído del hardcoded actual):
 ```
 Eres un analista experto en FIBRAs mexicanas (Fideicomisos de Inversión en Bienes Raíces) con amplio conocimiento del mercado inmobiliario y bursátil de México.
-{strictness_instruction}
 Título: {title}
 {snippet_section}
 {body_section}

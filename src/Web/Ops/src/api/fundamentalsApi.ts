@@ -7,7 +7,6 @@ const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 export type ImportFundamentalsRequest = components['schemas']['ImportFundamentalsRequest']
 export type FundamentalPreviewDto = components['schemas']['FundamentalPreviewDto']
 export type FundamentalRecordDto = components['schemas']['FundamentalRecordDto']
-export type KpiExtractionDto = components['schemas']['KpiExtractionDto']
 
 export async function importFundamentals(payload: ImportFundamentalsRequest): Promise<FundamentalPreviewDto> {
   assertOpsAccessToken()
@@ -100,6 +99,15 @@ export interface PatchKpisRequest {
   summary?: string | null
 }
 
+export interface PatchFieldNotesRequest {
+  capRateNote?: string | null
+  navPerCbfiNote?: string | null
+  ltvNote?: string | null
+  noiMarginNote?: string | null
+  ffoMarginNote?: string | null
+  quarterlyDistributionNote?: string | null
+}
+
 export async function uploadPdfWithRecord(
   fibraId: string,
   period: string,
@@ -170,3 +178,19 @@ export async function patchKpis(id: string, values: PatchKpisRequest): Promise<F
   return response.json() as Promise<FundamentalRecordDto>
 }
 
+export async function patchFieldNotes(id: string, values: PatchFieldNotesRequest): Promise<FundamentalRecordDto> {
+  assertOpsAccessToken()
+
+  const response = await fetch(`/api/v1/ops/fundamentals/${id}/field-notes`, {
+    method: 'PATCH',
+    headers: { ...getOpsAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(values),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Error al guardar notas: ${response.status} ${text}`)
+  }
+
+  return response.json() as Promise<FundamentalRecordDto>
+}

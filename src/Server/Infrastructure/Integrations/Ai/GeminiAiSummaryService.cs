@@ -193,11 +193,25 @@ public class GeminiAiSummaryService(
             ? "Fragmento RSS no disponible."
             : $"Fragmento RSS: {snippet}";
 
-        return template
-            .Replace("{strictness_instruction}", strictness, StringComparison.Ordinal)
+        var prompt = template
             .Replace("{title}", title, StringComparison.Ordinal)
             .Replace("{snippet_section}", snippetSection, StringComparison.Ordinal)
             .Replace("{body_section}", bodySection, StringComparison.Ordinal);
+
+        return InjectStrictnessInstruction(prompt, strictness);
+    }
+
+    private static string InjectStrictnessInstruction(string template, string strictness)
+    {
+        var firstNewLine = template.IndexOf('\n');
+        if (firstNewLine < 0)
+            return string.Concat(template, "\n", strictness);
+
+        return string.Concat(
+            template.AsSpan(0, firstNewLine + 1),
+            strictness,
+            "\n",
+            template.AsSpan(firstNewLine + 1));
     }
 
     private static bool IsAcceptableSummary(string summary, string? bodyText)

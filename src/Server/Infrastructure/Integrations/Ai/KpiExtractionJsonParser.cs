@@ -46,7 +46,10 @@ internal static class KpiExtractionJsonParser
             null,
             null,
             "La IA devolvió una respuesta inválida y no se pudo interpretar.",
-            false);
+            false,
+            OperationalSignals: Array.Empty<string>(),
+            FinancialSignals: Array.Empty<string>(),
+            RiskFlags: Array.Empty<string>());
     }
 
     public static int CountExtractedNumericFields(KpiExtractionResult result)
@@ -83,13 +86,19 @@ internal static class KpiExtractionJsonParser
                 ReadNullableString(root, "quarterlyDistributionNote"),
                 ReadNullableString(root, "summary"),
                 ReadNullableString(root, "extractionNotes") ?? "La IA no devolvió notas de extracción.",
-                false);
+                false,
+                SummaryMarkdown: ReadNullableString(root, "summaryMarkdown"),
+                InvestorTakeaway: ReadNullableString(root, "investorTakeaway"),
+                OperationalSignals: ReadStringArray(root, "operationalSignals"),
+                FinancialSignals: ReadStringArray(root, "financialSignals"),
+                RiskFlags: ReadStringArray(root, "riskFlags"));
 
             return true;
         }
         catch (JsonException)
         {
-            result = new KpiExtractionResult(null, null, null, null, null, null, null, null, null, null, null, null, null, string.Empty, false);
+            result = new KpiExtractionResult(null, null, null, null, null, null, null, null, null, null, null, null, null, string.Empty, false,
+                OperationalSignals: Array.Empty<string>(), FinancialSignals: Array.Empty<string>(), RiskFlags: Array.Empty<string>());
             return false;
         }
     }
@@ -109,7 +118,12 @@ internal static class KpiExtractionJsonParser
     }
 
     private static bool HasAnyExtractedValue(KpiExtractionResult result)
-        => CountExtractedNumericFields(result) > 0 || !string.IsNullOrWhiteSpace(result.Summary);
+        => CountExtractedNumericFields(result) > 0
+            || !string.IsNullOrWhiteSpace(result.Summary)
+            || !string.IsNullOrWhiteSpace(result.SummaryMarkdown)
+            || (result.OperationalSignals?.Count > 0)
+            || (result.FinancialSignals?.Count > 0)
+            || (result.RiskFlags?.Count > 0);
 
     private static decimal? ReadNullableDecimal(JsonElement root, string propertyName)
     {
@@ -134,5 +148,21 @@ internal static class KpiExtractionJsonParser
 
         var value = property.GetString()?.Trim();
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static IReadOnlyList<string> ReadStringArray(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property))
+            return Array.Empty<string>();
+
+        if (property.ValueKind != JsonValueKind.Array)
+            return Array.Empty<string>();
+
+        return property.EnumerateArray()
+            .Where(e => e.ValueKind == JsonValueKind.String)
+            .Select(e => e.GetString())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!.Trim())
+            .ToList();
     }
 }

@@ -15,4 +15,9 @@ public sealed record KpiExtractionResult(
     string? QuarterlyDistributionNote,
     string? Summary,
     string ExtractionNotes,
-    bool Success);
+    bool Success,
+    string? SummaryMarkdown = null,
+    string? InvestorTakeaway = null,
+    IReadOnlyList<string>? OperationalSignals = null,
+    IReadOnlyList<string>? FinancialSignals = null,
+    IReadOnlyList<string>? RiskFlags = null);

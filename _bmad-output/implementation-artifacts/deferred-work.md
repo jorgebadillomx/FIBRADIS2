@@ -1,5 +1,22 @@
 # Deferred Work
 
+## Deferred from: code review of 5-9-analisis-ia-enriquecido-fundamentales (2026-05-30)
+
+- **D1: `UpdateStatusAsync` guard silencia re-confirmación por actor diferente** [`FundamentalRepository.cs:53-54`] — El guard `if (record.Status == status && status == "processed") return` fue introducido para idempotencia pero impide que un segundo AdminOps registre su nombre como confirmador. Comportamiento deliberado; revisitar si el negocio requiere audit trail de re-confirmaciones.
+- **D2: `UpdateKpiExtractionAsync` sobreescribe notas editoriales de Ops al re-extraer** [`FundamentalRepository.cs:87-100`] — Re-extracción reemplaza `FieldNotesJson` completo sin merge con ediciones previas del operador. Agregar lógica de merge (solo actualizar notas de KPIs que cambiaron) en historia futura del módulo IA si el workflow de edición → re-extracción se vuelve común.
+- **D3: Race condition — dos records `processed` para el mismo período sin unique constraint** [`FundamentalRepository.cs`] — Pre-existente. No hay índice único `(FibraId, Period)` que evite dos confirmaciones concurrentes. Agregar índice único en próxima migración del módulo fundamentales.
+- **D4: Parser sigue leyendo campo legacy `summary` que el nuevo prompt ya no emite** [`KpiExtractionJsonParser.cs:84`] — Dead code inofensivo; el fallback `SummaryMarkdown ?? Summary` funciona. Limpiar al deprecar el campo `Summary` del contrato de extracción en una historia futura.
+
+## Deferred from: code review of 5-8-observabilidad-llamadas-ia-log-en-ops (2026-05-30)
+
+- **D1: Índice `(Provider, CreatedAt)` ausente en `AiCallLogConfiguration`** [`src/Server/Infrastructure/Persistence/SqlServer/Configurations/Ai/AiCallLogConfiguration.cs:41`] — Dev Notes documenta que debería existir. Solo se creó `(Operation, CreatedAt)`. Añadir en próxima migración del módulo Ai.
+- **D2: Esquema de entidad diverge del spec AC1** [`src/Server/Domain/Ai/AiCallLog.cs`] — Spec define `Model`, `InputChars`, `OutputChars`, `ErrorType`; implementado sin `OutputChars` ni `ErrorType`. Documentado en Completion Notes. Alinear si se necesita para reportes externos o requiere migración.
+- **D3: `OrderByDescending` antes de `CountAsync`** [`src/Server/Infrastructure/Persistence/Repositories/Ai/AiCallLogRepository.cs:27-28`] — Genera ORDER BY innecesario en query de conteo. SQL Server lo ignora, sin impacto funcional. Mover en próxima refactor del repositorio.
+- **D4: `AsyncLocal` sin cleanup en `AiCallRawData`** [`src/Server/Infrastructure/Integrations/Ai/AiCallRawData.cs`] — No existe método `End()` para limpiar el contexto. Riesgo teórico de context bleed bajo Hangfire. Bajo impacto con `WorkerCount=1`.
+- **D5: Paginación sin snapshot isolation** [`src/Server/Infrastructure/Persistence/Repositories/Ai/AiCallLogRepository.cs:28-32`] — `CountAsync` y `ToListAsync` en dos queries separadas; `total` puede diferir de `items` bajo inserción concurrente. Aceptable para MVP de observabilidad.
+- **D6: `newsequentialid()` como SQL default nunca se usa en `Id`** [`src/Server/Domain/Ai/AiCallLog.cs:5`] — `AiCallLogConfiguration` define `HasDefaultValueSql("newsequentialid()")` pero sin `ValueGeneratedOnAdd()`, por lo que EF siempre envía `Guid.NewGuid()` del constructor. El índice PK queda con GUIDs no secuenciales → fragmentación. Añadir `ValueGeneratedOnAdd()` al Id en próxima migración.
+- **D7: Test 403 ausente** [`tests/Integration/Api.Tests/Ops/AiCallLogEndpointTests.cs`] — Solo existe test de 401; falta test con usuario autenticado sin rol AdminOps.
+
 ## Deferred from: code review of 5-4-configuracion-operativa-desde-ops-sin-redespliegue (2026-05-25)
 
 - **D1: Sin transacción entre `SaveChangesAsync` y `Hangfire.AddOrUpdate`** [`src/Server/Api/Endpoints/Ops/OpsConfigEndpoints.cs`] — Si Hangfire falla post-commit, la BD tiene la nueva cadencia pero el job mantiene el schedule anterior. Mitiga: el arranque lee BD y corrige. Implementar compensación si se detecta el fallo en producción.

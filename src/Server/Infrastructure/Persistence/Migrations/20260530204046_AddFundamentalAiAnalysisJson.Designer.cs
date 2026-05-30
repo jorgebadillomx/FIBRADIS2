@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260523204741_AddFundamentalRecord")]
-    partial class AddFundamentalRecord
+    [Migration("20260530204046_AddFundamentalAiAnalysisJson")]
+    partial class AddFundamentalAiAnalysisJson
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,78 @@ namespace Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Domain.Ai.AiCallLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<string>("Context")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("context");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint")
+                        .HasColumnName("duration_ms");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("ModelId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("model_id");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("operation");
+
+                    b.Property<int>("PromptLength")
+                        .HasColumnType("int")
+                        .HasColumnName("prompt_length");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("RequestRaw")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("request_raw");
+
+                    b.Property<string>("ResponseRaw")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("response_raw");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit")
+                        .HasColumnName("success");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Operation", "CreatedAt")
+                        .HasDatabaseName("IX_AiCallLog_Operation_CreatedAt");
+
+                    b.ToTable("AiCallLog", "jobs");
+                });
 
             modelBuilder.Entity("Domain.Auth.RefreshToken", b =>
                 {
@@ -99,8 +171,8 @@ namespace Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Currency")
@@ -183,7 +255,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("7347fc56-b1d8-1853-7712-ac4dc204564c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Uno",
                             InvestorUrl = "https://fibra.uno/inversionistas",
@@ -199,7 +271,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("5d911406-8042-d1db-90b0-6c5aebb882bf"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Danhos",
                             InvestorUrl = "https://fibradanhos.com.mx/ri",
@@ -215,7 +287,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("894a2120-2ad3-d3f4-44fd-0d0c423b849f"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Terra",
                             Market = "BMV",
@@ -230,7 +302,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("2799e174-1233-93ba-87ce-ade15c0c4010"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Macquarie",
                             InvestorUrl = "https://fibramacquarie.com.mx/ri",
@@ -246,7 +318,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("7882f6d3-304f-5de6-2211-60508c2021c6"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Monterrey",
                             InvestorUrl = "https://fibramty.com/inversionistas",
@@ -262,7 +334,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("38a237f5-9065-f4ec-7b19-c116a9642c6f"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Inn",
                             Market = "BMV",
@@ -277,7 +349,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("6cbe26c2-2ed0-6df0-6242-1c78d011e9fc"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Hotel",
                             Market = "BMV",
@@ -292,7 +364,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("ae26cf6f-b4dc-be5a-3355-f4f4a9165499"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Vesta",
                             InvestorUrl = "https://fibravesta.com/ri",
@@ -308,7 +380,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("d96dd899-9a7e-3c95-a9ba-bbf62577a241"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Hotel City Express",
                             Market = "BMV",
@@ -323,7 +395,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("3129ee4f-d156-04c8-a03f-42bdc468ff27"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Educa",
                             InvestorUrl = "https://www.fibraeduca.com/invertir",
@@ -340,7 +412,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("32377b6d-9244-a715-0279-2660cc6b62a5"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Prologis",
                             InvestorUrl = "https://www.fibraprologis.com/en-US/investors",
@@ -357,7 +429,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("132f2dbd-1a77-3ca5-01eb-c65b7a03b14b"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Upsite",
                             Market = "BMV",
@@ -372,7 +444,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("8d7ad206-8591-fd28-f33f-d0b887817b5c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Nova",
                             InvestorUrl = "https://www.fibra-nova.com/inversionistas/como-invertir",
@@ -389,7 +461,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("32418186-9e2c-942b-8f4a-1e61388760a4"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Plus",
                             Market = "BMV",
@@ -405,7 +477,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("933f9202-f943-0342-0e05-5cfd283a5bbc"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Shop",
                             InvestorUrl = "https://fibrashop.mx/contacto/",
@@ -422,7 +494,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("2f25d292-5a8d-a262-1cdc-093621c7471c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Next",
                             InvestorUrl = "https://fibranext.mx/investors",
@@ -439,7 +511,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("9797ad53-1324-9a81-6102-992b9f07e92c"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra SOMA",
                             Market = "BIVA",
@@ -454,7 +526,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("17e765b2-df1e-6842-3dcf-ec7506563c89"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "Fibra Storage",
                             Market = "BMV",
@@ -470,7 +542,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("055c422a-c2df-ec0f-ab61-2b5c3ede52c2"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "FHipo",
                             InvestorUrl = "https://fhipo.com/es/kit-para-inversionistas/",
@@ -487,7 +559,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("15d3465f-5ff4-a84c-c883-1dd381fd22f0"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "MXN",
                             FullName = "CFE Fibra E",
                             InvestorUrl = "https://cfecapital.com.mx/inversionistas",
@@ -511,6 +583,10 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("newsequentialid()");
 
+                    b.Property<string>("AiAnalysisJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ai_analysis_json");
+
                     b.Property<decimal?>("CapRate")
                         .HasColumnType("decimal(18,6)")
                         .HasColumnName("cap_rate");
@@ -529,6 +605,14 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("confirmed_by");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("deleted_by");
+
                     b.Property<string>("ErrorReason")
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("error_reason");
@@ -540,6 +624,10 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<Guid>("FibraId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("fibra_id");
+
+                    b.Property<string>("FieldNotesJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FieldNotesJson");
 
                     b.Property<string>("ImportedBy")
                         .HasColumnType("varchar(100)")
@@ -553,6 +641,10 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("decimal(18,6)")
                         .HasColumnName("ltv");
 
+                    b.Property<string>("MarkdownContent")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("markdown_content");
+
                     b.Property<decimal?>("NavPerCbfi")
                         .HasColumnType("decimal(18,6)")
                         .HasColumnName("nav_per_cbfi");
@@ -564,6 +656,10 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<string>("PdfReference")
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("pdf_reference");
+
+                    b.Property<DateTimeOffset?>("PdfUploadedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("pdf_uploaded_at");
 
                     b.Property<string>("Period")
                         .IsRequired()
@@ -1716,9 +1812,9 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = 2,
-                            ContentType = "document",
-                            PromptTemplate = "Eres un analista experto en FIBRAs mexicanas y documentos financieros corporativos del sector inmobiliario en México.\nTítulo: {title}\n{snippet_section}\n{body_section}\nResume el hecho central del documento, su relevancia para fundamentales, los datos cuantitativos más materiales y una lectura analítica breve para un inversionista.\nSi el documento contiene cifras, guidance, rentas, NOI, AFFO, FFO, ocupación, adquisiciones, deuda o cap rates, intégralos en el resumen.\nNo escribas menos de 5 oraciones si el cuerpo del documento está disponible. Responde solo con el resumen, sin preámbulos.",
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 23, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            ContentType = "kpi_extraction",
+                            PromptTemplate = "Eres un analista senior especializado en FIBRAs mexicanas, estados financieros, reportes trimestrales y anuales, métricas operativas inmobiliarias y análisis bursátil en México.\n\nTu tarea es leer un reporte financiero en formato markdown, extraer KPIs clave y devolver ÚNICAMENTE un objeto JSON válido, sin texto adicional y sin bloques de código.\n\nFormato de salida obligatorio:\n{\n  \"capRate\": <número decimal o null>,\n  \"capRateNote\": \"<de dónde proviene, cómo se calculó o por qué es null>\",\n  \"navPerCbfi\": <número decimal o null>,\n  \"navPerCbfiNote\": \"<nota breve>\",\n  \"ltv\": <número decimal o null>,\n  \"ltvNote\": \"<nota breve>\",\n  \"noiMargin\": <número decimal o null>,\n  \"noiMarginNote\": \"<nota breve>\",\n  \"ffoMargin\": <número decimal o null>,\n  \"ffoMarginNote\": \"<nota breve>\",\n  \"quarterlyDistribution\": <número decimal o null>,\n  \"quarterlyDistributionNote\": \"<nota breve>\",\n  \"operationalSignals\": [\"<señal operativa 1>\", \"<señal operativa 2>\"],\n  \"financialSignals\": [\"<señal financiera 1>\", \"<señal financiera 2>\"],\n  \"riskFlags\": [\"<riesgo 1>\", \"<riesgo 2>\"],\n  \"summaryMarkdown\": \"<resumen analítico en markdown>\",\n  \"investorTakeaway\": \"<conclusión breve y directa para inversionistas>\",\n  \"extractionNotes\": \"<observaciones generales sobre calidad, consistencia o limitaciones de la extracción>\"\n}\n\nReglas de extracción:\n- Devuelve solo JSON válido.\n- Todos los valores numéricos deben ser números puros, sin comas de miles, sin símbolo de moneda y sin signo de porcentaje.\n- capRate, ltv, noiMargin y ffoMargin deben expresarse como decimal. Ejemplo: 8.5% = 0.085.\n- quarterlyDistribution debe ser la distribución por CBFI en pesos.\n- navPerCbfi debe ser el NAV por CBFI en pesos.\n- Si un KPI está explícitamente reportado, úsalo.\n- Si no está explícito pero puede calcularse con certeza a partir de cifras del reporte, calcúlalo e indícalo brevemente en la nota.\n- Si no puede determinarse con suficiente certeza, devuelve null.\n- No inventes datos, no asumas cifras faltantes y no uses conocimiento externo al reporte.\n- Si hay cifras ambiguas o contradictorias, prioriza el dato consolidado o más explícito y explícalo en extractionNotes.\n- Las notas de KPI deben ser concisas, máximo 2 oraciones.\n- operationalSignals, financialSignals y riskFlags deben contener frases breves y útiles; si no aplica, devuelve arreglos vacíos [].\n\nInstrucciones para summaryMarkdown:\n- Debe estar en español.\n- Debe tener entre 3 y 5 párrafos cortos.\n- Puede usar markdown simple: párrafos, **negritas** y listas cortas con guion.\n- No uses tablas, HTML, encabezados tipo #, ni bloques de código.\n- No te limites a repetir números: interpreta el desempeño.\n- Debe cubrir, cuando exista evidencia suficiente: evolución operativa, rentabilidad y generación de flujo, balance y apalancamiento, sostenibilidad de la distribución, fortalezas y riesgos.\n- Si hay comparativos trimestrales o anuales, incorpóralos.\n- Si faltan datos para sostener una conclusión fuerte, dilo explícitamente.\n- Señala con **negritas** el principal factor positivo y el principal foco de riesgo si se pueden identificar.\n\nCriterios analíticos:\n- Evalúa crecimiento o contracción de ingresos, NOI, FFO, AFFO o EBITDA si están disponibles.\n- Evalúa márgenes y eficiencia operativa.\n- Evalúa señales sobre ocupación, rentas, spreads, renovaciones, diversificación, cobranza o desempeño por segmento si el reporte lo permite.\n- Evalúa deuda, LTV, perfil de vencimientos, costo financiero, tasa fija/variable, liquidez y refinanciamiento si existen.\n- Evalúa la calidad y sostenibilidad de la distribución, no solo su monto.\n- Mantén tono profesional, sobrio y orientado a inversionistas.\n\nReporte:\n{markdown_content}",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 26, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             UpdatedBy = "system"
                         });
                 });
@@ -1949,6 +2045,90 @@ namespace Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_NewsArticleFibra_FibraId");
 
                     b.ToTable("NewsArticleFibra", "news");
+                });
+
+            modelBuilder.Entity("Domain.Ops.ConfigAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("actor");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("changed_at");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("field_name");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)")
+                        .HasColumnName("new_value");
+
+                    b.Property<string>("PreviousValue")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)")
+                        .HasColumnName("previous_value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedAt");
+
+                    b.ToTable("ConfigAuditLog", "ops");
+                });
+
+            modelBuilder.Entity("Domain.Ops.OperationalConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AvgPeriods")
+                        .HasColumnType("int")
+                        .HasColumnName("avg_periods");
+
+                    b.Property<decimal>("CommissionFactor")
+                        .HasPrecision(10, 6)
+                        .HasColumnType("decimal(10,6)")
+                        .HasColumnName("commission_factor");
+
+                    b.Property<int>("NewsCadenceMinutes")
+                        .HasColumnType("int")
+                        .HasColumnName("news_cadence_minutes");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OperationalConfig", "ops");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AvgPeriods = 4,
+                            CommissionFactor = 0.006m,
+                            NewsCadenceMinutes = 60,
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            UpdatedBy = "system"
+                        });
                 });
 
             modelBuilder.Entity("Domain.Auth.RefreshToken", b =>

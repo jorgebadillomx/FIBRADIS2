@@ -470,6 +470,14 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "fibraId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -1589,6 +1597,73 @@
         }
       }
     },
+    "/api/v1/ops/fundamentals/extract-kpis": {
+      "post": {
+        "tags": [
+          "Fundamentals"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiExtractionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/fundamentals/{id}/confirm": {
       "post": {
         "tags": [
@@ -1857,6 +1932,69 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatchKpisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundamentalRecordDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/fundamentals/{id}/field-notes": {
+      "patch": {
+        "tags": [
+          "Fundamentals"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchFieldNotesRequest"
               }
             }
           },
@@ -3060,6 +3198,11 @@
           "ffoMargin",
           "quarterlyDistribution",
           "summary",
+          "summaryMarkdown",
+          "investorTakeaway",
+          "operationalSignals",
+          "financialSignals",
+          "riskFlags",
           "fieldNotes",
           "capturedAt"
         ],
@@ -3136,6 +3279,36 @@
               "null",
               "string"
             ]
+          },
+          "summaryMarkdown": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "investorTakeaway": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationalSignals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "financialSignals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "riskFlags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "fieldNotes": {
             "type": [
@@ -3231,6 +3404,11 @@
           "ffoMargin",
           "quarterlyDistribution",
           "summary",
+          "summaryMarkdown",
+          "investorTakeaway",
+          "operationalSignals",
+          "financialSignals",
+          "riskFlags",
           "pdfReference",
           "pdfUploadedAt",
           "importedBy",
@@ -3315,6 +3493,36 @@
               "null",
               "string"
             ]
+          },
+          "summaryMarkdown": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "investorTakeaway": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationalSignals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "financialSignals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "riskFlags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "pdfReference": {
             "type": [
@@ -3521,6 +3729,135 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "KpiExtractionDto": {
+        "required": [
+          "capRate",
+          "capRateNote",
+          "navPerCbfi",
+          "navPerCbfiNote",
+          "ltv",
+          "ltvNote",
+          "noiMargin",
+          "noiMarginNote",
+          "ffoMargin",
+          "ffoMarginNote",
+          "quarterlyDistribution",
+          "quarterlyDistributionNote",
+          "summary",
+          "extractionNotes",
+          "markdownLength"
+        ],
+        "type": "object",
+        "properties": {
+          "capRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "capRateNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "navPerCbfi": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "navPerCbfiNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ltv": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ltvNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "noiMargin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "noiMarginNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ffoMargin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ffoMarginNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quarterlyDistribution": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "quarterlyDistributionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extractionNotes": {
+            "type": "string"
+          },
+          "markdownLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3984,6 +4321,55 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "PatchFieldNotesRequest": {
+        "required": [
+          "capRateNote",
+          "navPerCbfiNote",
+          "ltvNote",
+          "noiMarginNote",
+          "ffoMarginNote",
+          "quarterlyDistributionNote"
+        ],
+        "type": "object",
+        "properties": {
+          "capRateNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "navPerCbfiNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ltvNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "noiMarginNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ffoMarginNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quarterlyDistributionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

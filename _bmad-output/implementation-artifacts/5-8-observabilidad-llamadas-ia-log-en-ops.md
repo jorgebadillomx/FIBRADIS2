@@ -1,6 +1,6 @@
 # Historia 5.8: Observabilidad completa de llamadas IA — log de cada llamada en Ops
 
-Status: review
+Status: done
 
 ## Story
 
@@ -435,6 +435,29 @@ private static readonly string[] AllowedPipelines = ["Market", "News", "Distribu
 
 ---
 
+### Senior Developer Review (AI)
+
+#### Review Findings
+
+- [ ] [Review][Decision] `AiCapturingHandler` captura solo el último request/response cuando Gemini/DeepSeek hace retry interno — si el servicio de IA falla el quality gate y reintenta, `RequestBody`/`ResponseBody` del primer intento se sobreescribe y el log queda con datos del retry. ¿Es "última llamada gana" aceptable, o se requiere loguear cada intento HTTP por separado? [AiCapturingHandler.cs:14,24]
+- [ ] [Review][Patch] `AiCallLogConfiguration` falta `.ValueGeneratedOnAdd()` en `CreatedAt` — sin esa línea EF envía el valor C# (`DateTimeOffset.UtcNow` del objeto) en el INSERT, ignorando el `DEFAULT getutcdate()` de SQL Server. El spec/Dev Notes exigen ambas anotaciones explícitamente [AiCallLogConfiguration.cs:39]
+- [ ] [Review][Patch] `TryLogAsync` silencia fallos sin `logger.LogWarning` — AC5 requiere "captura silenciosa con `logger.LogWarning`"; ambos routing services tienen `catch { /* ... */ }` vacío sin log. Ninguno inyecta `ILogger` [RoutingAiSummaryService.cs:75 / RoutingKpiExtractorService.cs:70]
+- [ ] [Review][Patch] Filtro case-sensitive en repositorio vs. validación case-insensitive en endpoint — endpoint valida con `OrdinalIgnoreCase` pero pasa el string original al repo, que filtra con `x.Operation == operation`. En SQL Server CI es OK, pero el valor canónico debería venir de `AllowedOperations.FirstOrDefault(...)` como hace `OpsPipelineLogEndpoints` [OpsAiCallLogEndpoints.cs:32 / AiCallLogRepository.cs:21-23]
+- [ ] [Review][Patch] `ErrorMessage` persiste sin truncar a ≤500 chars — AC1 y `AiCallLogConfiguration` no definen `MaxLength` en `error_message`. Agregar `errorMessage?[..Math.Min(errorMessage.Length, 500)]` en `TryLogAsync` [RoutingAiSummaryService.cs / RoutingKpiExtractorService.cs]
+- [ ] [Review][Patch] `OperationBadge` colores invertidos — spec AC4: `KpiExtraction→amber`, `NewsSummary→sky`; implementado: `KpiExtraction→teal`, `NewsSummary→violet` [AiCallLogsPage.tsx:25-31]
+- [ ] [Review][Patch] `ProviderBadge` faltante en tabla — AC4 especifica badge `Gemini→teal`, `DeepSeek→violet`; la tabla muestra proveedor como texto plano en una columna compartida con modelo [AiCallLogsPage.tsx:139-141]
+- [ ] [Review][Patch] Integration tests filtros solo verifican HTTP 200 — convenciones del proyecto exigen assertions semánticas: sembrar un `AiCallLog`, filtrar por proveedor/operación y verificar que solo ese registro aparece [AiCallLogEndpointTests.cs:42-46]
+- [ ] [Review][Patch] Falta test de AC5 (aislamiento de fallo de logging) — no existe test que haga fallar `callLogRepo.AddAsync` y verifique que la operación de IA continúa y retorna resultado sin propagar la excepción [RoutingAiSummaryServiceTests / RoutingKpiExtractorServiceTests]
+- [x] [Review][Defer] `OrderByDescending` aplicado antes de `CountAsync` — EF genera ORDER BY en la query de conteo aunque SQL Server lo ignore; mover después de CountAsync [AiCallLogRepository.cs:27-28] — deferred, optimización cosmética, sin impacto funcional
+- [x] [Review][Defer] Índice `(Provider, CreatedAt)` ausente — Dev Notes documentan que se necesitan dos índices; solo se creó `(Operation, CreatedAt)` [AiCallLogConfiguration.cs:41] — deferred, omisión del dev agent, añadir en próxima historia que toque el módulo Ai
+- [x] [Review][Defer] Esquema diverge de AC1 — spec define `Model`, `InputChars`, `OutputChars`, `ErrorType`; implementación usa `ModelId`, `PromptLength`, `RequestRaw`/`ResponseRaw`, sin `OutputChars` ni `ErrorType` — deferred, decisión documentada en Completion Notes, requiere migración para `OutputChars`/`ErrorType`
+- [x] [Review][Defer] `AsyncLocal` sin cleanup — `AiCallRawData.Begin()` no tiene método `End()` correspondiente; riesgo teórico de context bleed en worker pool [AiCallRawData.cs] — deferred, bajo impacto en Hangfire con WorkerCount=1
+- [x] [Review][Defer] Paginación sin snapshot isolation — `CountAsync` y `ToListAsync` son dos queries separadas; total puede diferir de items bajo inserción concurrente [AiCallLogRepository.cs:28-32] — deferred, limitación aceptable en MVP de observabilidad
+- [x] [Review][Defer] `newsequentialid()` como SQL default en `Id` nunca se usa — EF envía `Guid.NewGuid()` del constructor C#, ignorando el default secuencial; índice PK queda fragmentado [AiCallLog.cs:5 / AiCallLogConfiguration.cs:14-16] — deferred, performance concern, no bug funcional
+- [x] [Review][Defer] Test 403 ausente — solo existe test de 401 (sin auth), no de 403 (usuario autenticado con rol incorrecto) [AiCallLogEndpointTests.cs] — deferred, coverage gap menor
+
+---
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -462,3 +485,4 @@ claude-sonnet-4-6
 |-------|--------|
 | 2026-05-26 | Story creada — observabilidad llamadas IA: AiCallLog entity, log en 4 servicios AI, fix 3 gaps PipelineErrorLog, nueva página Ops "Llamadas IA" |
 | 2026-05-30 | Story completada — AC2 T6.3, AC3 AllowedPipelines + KpiExtraction frontend, AC4 filtros provider/success, OperationName "NewsSummary", 8 unit + 6 integration tests |
+| 2026-05-30 | Cierre administrativo solicitado por usuario: story movida a `done` sin nueva pasada de corrección sobre los hallazgos abiertos del review. |

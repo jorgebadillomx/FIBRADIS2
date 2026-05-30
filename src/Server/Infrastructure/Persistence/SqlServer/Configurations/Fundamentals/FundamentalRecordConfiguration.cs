@@ -99,6 +99,10 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
             .HasColumnName("FieldNotesJson")
             .HasColumnType("nvarchar(max)");
 
+        builder.Property(x => x.AiAnalysisJson)
+            .HasColumnName("ai_analysis_json")
+            .HasColumnType("nvarchar(max)");
+
         builder.Property(x => x.ErrorReason)
             .HasColumnName("error_reason")
             .HasColumnType("nvarchar(500)");
