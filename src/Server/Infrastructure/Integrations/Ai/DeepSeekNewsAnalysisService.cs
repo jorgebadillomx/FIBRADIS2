@@ -16,7 +16,7 @@ public class DeepSeekNewsAnalysisService(
     ILogger<DeepSeekNewsAnalysisService> logger) : IAiNewsAnalysisService
 {
     private const string BaseUrl = "https://api.deepseek.com/chat/completions";
-    private const int MaxOutputTokens = 2000;
+    private const int MaxOutputTokens = 2500;
     private const int MaxPromptBodyChars = 12000;
 
     private static readonly JsonSerializerOptions DeserializeOptions = new()
@@ -168,7 +168,7 @@ public class DeepSeekNewsAnalysisService(
         KeyFigures: (dto.KeyFigures ?? []).Select(f => new NewsKeyFigure(f.Label ?? "", f.ValueText ?? "", f.Importance ?? "baja")).ToList(),
         SummaryMarkdown: dto.SummaryMarkdown,
         InvestorTakeaway: dto.InvestorTakeaway,
-        Confidence: dto.Confidence,
+        Confidence: dto.Confidence ?? 0.0,
         ExtractionNotes: dto.ExtractionNotes
     );
 
@@ -185,7 +185,7 @@ public class DeepSeekNewsAnalysisService(
         public List<NewsKeyFigureJson>? KeyFigures { get; set; }
         public string? SummaryMarkdown { get; set; }
         public string? InvestorTakeaway { get; set; }
-        public double Confidence { get; set; }
+        public double? Confidence { get; set; }
         public string? ExtractionNotes { get; set; }
     }
 

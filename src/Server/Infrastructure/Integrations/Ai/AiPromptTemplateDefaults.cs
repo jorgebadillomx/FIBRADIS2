@@ -73,19 +73,19 @@ public static class AiPromptTemplateDefaults
 
         Devuelve exactamente este JSON (sin texto adicional):
         {
-          "isRelevant": true o false,
-          "relevanceReason": "Razón breve de por qué la noticia es o no es relevante para FIBRAs mexicanas o el mercado inmobiliario de México",
-          "headline": "Titular analítico breve y distinto al título original, o null si no aplica",
-          "impact": "alto, medio, bajo o nulo",
-          "sectorTags": ["retail", "industrial"],
-          "subsector": "industrial, oficinas, comercial, hotelero, residencial, logistico, educativo, salud, mixto, otro, o null",
-          "affectedFibers": ["FUNO", "FIBRAMQ"],
-          "keyFacts": ["Hecho material 1", "Hecho material 2"],
-          "keyFigures": [{"label": "Distribución por CBFI", "valueText": "$0.47", "importance": "alta, media o baja"}],
-          "summaryMarkdown": "Resumen analítico en markdown (5-7 oraciones). Null si la noticia no es relevante.",
-          "investorTakeaway": "Conclusión breve y directa para inversionistas, o null si no aplica",
+          "isRelevant": true,
+          "relevanceReason": "string | null",
+          "headline": "string | null",
+          "impact": "alto",
+          "sectorTags": ["string"],
+          "subsector": "industrial",
+          "affectedFibers": ["FUNO"],
+          "keyFacts": ["string"],
+          "keyFigures": [{"label": "string", "valueText": "string", "importance": "alta"}],
+          "summaryMarkdown": "string | null",
+          "investorTakeaway": "string | null",
           "confidence": 0.85,
-          "extractionNotes": "Limitaciones o ambigüedades, o null si no las hay"
+          "extractionNotes": "string | null"
         }
 
         Reglas obligatorias:
