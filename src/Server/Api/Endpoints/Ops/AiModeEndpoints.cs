@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Application.News;
 using Domain.News;
+using Infrastructure.Integrations.Articles;
 using Microsoft.Extensions.Logging;
 using SharedApiContracts.Common;
 using SharedApiContracts.News;
@@ -181,6 +182,7 @@ public static class AiModeEndpoints
                 if (NeedsBodyRefresh(bodyText) && !string.IsNullOrWhiteSpace(article.Url))
                 {
                     bodyText = await articleContentScraper.TryGetArticleTextAsync(article.Url, ct);
+                    bodyText = NormalizeBodyText(bodyText);
                     if (!string.IsNullOrWhiteSpace(bodyText))
                         await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
                 }
@@ -247,6 +249,12 @@ public static class AiModeEndpoints
         => string.IsNullOrWhiteSpace(bodyText)
             || bodyText.Length < 200
             || string.Equals(bodyText.Trim(), "Google News", StringComparison.OrdinalIgnoreCase);
+
+    private static string? NormalizeBodyText(string? bodyText)
+    {
+        var normalized = NewsTextNormalizer.Normalize(bodyText);
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+    }
 }
 
 public static class AiProviderEndpoints

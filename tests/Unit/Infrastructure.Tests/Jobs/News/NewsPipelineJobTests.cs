@@ -79,7 +79,13 @@ public class NewsPipelineJobTests
     public async Task ExecuteAsync_WhenArticleBodyIsAvailable_SavesBodyText()
     {
         var newsRepo = new FakeNewsRepository();
-        var articleScraper = new FakeArticleContentScraper("Cuerpo completo del articulo con contexto relevante para el resumen IA.");
+        var articleScraper = new FakeArticleContentScraper("""
+            Compartir
+
+            Cuerpo completo del articulo con contexto relevante para el resumen IA.
+
+            Cuerpo completo del articulo con contexto relevante para el resumen IA.
+            """);
         var job = CreateJob(newsRepo, ogImageScraper: new FakeOgImageScraper(null), articleContentScraper: articleScraper);
 
         await job.ExecuteAsync();
@@ -87,6 +93,18 @@ public class NewsPipelineJobTests
         var article = Assert.Single(newsRepo.SavedArticles);
         Assert.Equal("Cuerpo completo del articulo con contexto relevante para el resumen IA.", article.BodyText);
         Assert.Equal(["https://example.com/1"], articleScraper.RequestedUrls);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenNormalizedBodyTextBecomesEmpty_SavesNullBodyText()
+    {
+        var newsRepo = new FakeNewsRepository();
+        var job = CreateJob(newsRepo, articleContentScraper: new FakeArticleContentScraper("Compartir\n\nSuscríbete"));
+
+        await job.ExecuteAsync();
+
+        var article = Assert.Single(newsRepo.SavedArticles);
+        Assert.Null(article.BodyText);
     }
 
     [Fact]

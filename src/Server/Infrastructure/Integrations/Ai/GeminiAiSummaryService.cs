@@ -17,8 +17,10 @@ public class GeminiAiSummaryService(
 {
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
     private const string DefaultDocumentModel = "gemini-2.5-pro";
-    private const int DefaultMaxOutputTokens = 768;
-    private const int RetryMaxOutputTokens = 1024;
+    private const int NewsMaxOutputTokens = 2500;
+    private const int RetryNewsMaxOutputTokens = 2500;
+    private const int DocumentMaxOutputTokens = 768;
+    private const int RetryDocumentMaxOutputTokens = 1024;
     private const int MinimumShortSummaryLength = 180;
     private const int MinimumLongSummaryLength = 320;
     private const int LongBodyThreshold = 2000;
@@ -44,11 +46,13 @@ public class GeminiAiSummaryService(
         var model = contentType == AiContentType.Document
             ? DefaultDocumentModel
             : providerConfig.ModelId;
+        var maxOutputTokens = contentType == AiContentType.Document ? DocumentMaxOutputTokens : NewsMaxOutputTokens;
+        var retryMaxOutputTokens = contentType == AiContentType.Document ? RetryDocumentMaxOutputTokens : RetryNewsMaxOutputTokens;
         var summary = await GenerateSummaryCoreAsync(
             model,
             apiKey,
             await BuildPromptAsync(title, snippet, bodyText, contentType, requiresElaboration: false, ct),
-            DefaultMaxOutputTokens,
+            maxOutputTokens,
             ct);
 
         if (IsAcceptableSummary(summary, bodyText))
@@ -63,7 +67,7 @@ public class GeminiAiSummaryService(
             model,
             apiKey,
             await BuildPromptAsync(title, snippet, bodyText, contentType, requiresElaboration: true, ct),
-            RetryMaxOutputTokens,
+            retryMaxOutputTokens,
             ct);
 
         if (IsAcceptableSummary(retriedSummary, bodyText))

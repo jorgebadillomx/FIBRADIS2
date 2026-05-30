@@ -2,6 +2,7 @@ using System.Text.Json;
 using Application.Jobs;
 using Application.News;
 using Domain.Jobs;
+using Infrastructure.Integrations.Articles;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Jobs.News;
@@ -27,9 +28,10 @@ public class NewsBodyTextRetryJob(
             try
             {
                 var bodyText = await articleContentScraper.TryGetArticleTextAsync(url, ct);
-                if (!string.IsNullOrWhiteSpace(bodyText))
+                var normalizedBodyText = NormalizeBodyText(bodyText);
+                if (!string.IsNullOrWhiteSpace(normalizedBodyText))
                 {
-                    await newsRepo.UpdateBodyTextAsync(id, bodyText, ct);
+                    await newsRepo.UpdateBodyTextAsync(id, normalizedBodyText, ct);
                     updated++;
                 }
                 else
@@ -69,5 +71,11 @@ public class NewsBodyTextRetryJob(
         logger.LogInformation(
             "Body-text retry complete — updated: {Updated}, still-null: {Skipped}",
             updated, skipped);
+    }
+
+    private static string? NormalizeBodyText(string? bodyText)
+    {
+        var normalized = NewsTextNormalizer.Normalize(bodyText);
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

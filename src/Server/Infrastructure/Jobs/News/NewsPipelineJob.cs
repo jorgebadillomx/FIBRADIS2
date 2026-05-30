@@ -5,6 +5,7 @@ using Application.News;
 using Domain.Catalog;
 using Domain.Jobs;
 using Domain.News;
+using Infrastructure.Integrations.Articles;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Jobs.News;
@@ -114,6 +115,7 @@ public class NewsPipelineJob(
                     var bodyText = !string.IsNullOrWhiteSpace(item.Url)
                         ? await articleContentScraper.TryGetArticleTextAsync(item.Url, ct)
                         : null;
+                    bodyText = NormalizeBodyText(bodyText);
 
                     string? aiSummary = null;
                     var finalStatus = NewsArticleStatus.Processed;
@@ -282,6 +284,12 @@ public class NewsPipelineJob(
 
         foreach (var variant in fibra.NameVariants.Where(v => !string.Equals(v, fibra.Ticker, StringComparison.OrdinalIgnoreCase)))
             yield return $"{variant} FIBRA México";
+    }
+
+    private static string? NormalizeBodyText(string? bodyText)
+    {
+        var normalized = NewsTextNormalizer.Normalize(bodyText);
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
 }

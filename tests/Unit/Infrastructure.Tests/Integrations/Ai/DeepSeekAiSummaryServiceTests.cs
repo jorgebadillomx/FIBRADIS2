@@ -63,32 +63,38 @@ public class DeepSeekAiSummaryServiceTests
     public async Task GenerateSummaryAsync_UsesDbModelForNews()
     {
         string? capturedModel = null;
+        int? capturedTokens = null;
         var sut = CreateService(new StubHandler(async request =>
         {
             using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
             capturedModel = doc.RootElement.GetProperty("model").GetString();
+            capturedTokens = doc.RootElement.GetProperty("max_tokens").GetInt32();
             return BuildResponse("Resumen analítico completo con suficientes oraciones. Segunda oración aquí. Tercera oración.");
         }), modelId: "deepseek-v4-flash");
 
         await sut.GenerateSummaryAsync("Título", "Snippet", contentType: AiContentType.News);
 
         Assert.Equal("deepseek-v4-flash", capturedModel);
+        Assert.Equal(2500, capturedTokens);
     }
 
     [Fact]
     public async Task GenerateSummaryAsync_UsesDefaultDocumentModelForDocuments()
     {
         string? capturedModel = null;
+        int? capturedTokens = null;
         var sut = CreateService(new StubHandler(async request =>
         {
             using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
             capturedModel = doc.RootElement.GetProperty("model").GetString();
-            return BuildResponse("El documento presenta una actualización material sobre activos, flujos y perspectivas. Segunda oración. Tercera oración.");
+            capturedTokens = doc.RootElement.GetProperty("max_tokens").GetInt32();
+            return BuildResponse("El documento presenta una actualización material sobre activos, flujos y perspectivas operativas del portafolio. Para el análisis financiero, aporta contexto suficiente para evaluar riesgos, continuidad en distribución y calidad de ingresos recurrentes. Además, resume de forma útil los cambios más relevantes del periodo para una lectura ejecutiva completa.");
         }), modelId: "deepseek-v4-flash");
 
         await sut.GenerateSummaryAsync("Título documento", null, contentType: AiContentType.Document);
 
         Assert.Equal("deepseek-v4-pro", capturedModel);
+        Assert.Equal(768, capturedTokens);
     }
 
     [Fact]

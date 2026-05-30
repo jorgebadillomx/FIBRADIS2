@@ -135,6 +135,32 @@ public class AiModeOpsEndpointTests
         Assert.Equal("Resumen regenerado", repository.Article.AiSummary);
     }
 
+    [Fact]
+    public async Task PostAiSummary_WhenBodyIsRefreshed_NormalizesAndPersistsCleanBodyText()
+    {
+        var repository = new InMemoryNewsRepository(initialStatus: NewsArticleStatus.Pending);
+        await using var factory = new AiModeApiWebFactory(
+            new StubAiSummaryService("Resumen regenerado"),
+            new StubArticleContentScraper("""
+                Compartir
+
+                Cuerpo completo recuperado
+
+                Cuerpo completo recuperado
+                """),
+            repository,
+            new StubAiModeRepository(AiMode.On));
+        await factory.SeedUsersAsync();
+
+        using var client = await CreateAuthorizedClientAsync(factory);
+
+        var response = await client.PostAsync($"/api/v1/ops/news/{repository.Article.Id}/ai-summary", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(1, repository.UpdateBodyTextAttempts);
+        Assert.Equal("Cuerpo completo recuperado", repository.Article.BodyText);
+    }
+
     // ─── AiProvider endpoints ──────────────────────────────────────────────────
 
     [Fact]

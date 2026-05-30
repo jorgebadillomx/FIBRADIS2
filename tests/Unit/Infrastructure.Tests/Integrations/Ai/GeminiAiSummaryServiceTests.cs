@@ -265,10 +265,14 @@ public class GeminiAiSummaryServiceTests
     public async Task GenerateSummaryAsync_UsesModelFromRepository_ForNewsContent()
     {
         string? capturedUrl = null;
+        int? capturedTokens = null;
         var handler = new StubHttpMessageHandler(request =>
         {
             capturedUrl = request.RequestUri?.ToString();
-            return Task.FromResult(CreateJsonResponse("""
+            return CaptureGeminiResponse(request, value =>
+            {
+                capturedTokens = value;
+            }, """
                 {
                   "candidates": [
                     {
@@ -278,7 +282,7 @@ public class GeminiAiSummaryServiceTests
                     }
                   ]
                 }
-                """));
+                """);
         });
         var service = CreateService(handler, modelId: "gemini-2.5-pro");
 
@@ -286,16 +290,21 @@ public class GeminiAiSummaryServiceTests
 
         Assert.NotNull(capturedUrl);
         Assert.Contains("gemini-2.5-pro", capturedUrl);
+        Assert.Equal(2500, capturedTokens);
     }
 
     [Fact]
     public async Task GenerateSummaryAsync_UsesModelFromRepository_ForDocumentContent()
     {
         string? capturedUrl = null;
+        int? capturedTokens = null;
         var handler = new StubHttpMessageHandler(request =>
         {
             capturedUrl = request.RequestUri?.ToString();
-            return Task.FromResult(CreateJsonResponse("""
+            return CaptureGeminiResponse(request, value =>
+            {
+                capturedTokens = value;
+            }, """
                 {
                   "candidates": [
                     {
@@ -305,7 +314,7 @@ public class GeminiAiSummaryServiceTests
                     }
                   ]
                 }
-                """));
+                """);
         });
         var service = CreateService(handler, modelId: "gemini-2.5-pro");
 
@@ -313,6 +322,7 @@ public class GeminiAiSummaryServiceTests
 
         Assert.NotNull(capturedUrl);
         Assert.Contains("gemini-2.5-pro", capturedUrl);
+        Assert.Equal(768, capturedTokens);
     }
 
     [Fact]
@@ -425,6 +435,16 @@ public class GeminiAiSummaryServiceTests
         {
             Content = new StringContent(json),
         };
+
+    private static async Task<HttpResponseMessage> CaptureGeminiResponse(
+        HttpRequestMessage request,
+        Action<int?> captureTokens,
+        string responseJson)
+    {
+        using var doc = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync());
+        captureTokens(doc.RootElement.GetProperty("generationConfig").GetProperty("maxOutputTokens").GetInt32());
+        return CreateJsonResponse(responseJson);
+    }
 
     private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> responseFactory)
         : HttpMessageHandler

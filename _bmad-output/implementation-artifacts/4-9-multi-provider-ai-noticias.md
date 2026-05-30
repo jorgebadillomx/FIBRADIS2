@@ -143,7 +143,7 @@ Content-Type: application/json
 {
   "model": "deepseek-chat",
   "messages": [{ "role": "user", "content": "{prompt}" }],
-  "max_tokens": 768
+  "max_tokens": 2500
 }
 ```
 
