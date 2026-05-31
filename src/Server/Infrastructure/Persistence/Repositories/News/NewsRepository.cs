@@ -83,6 +83,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
     public async Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
         => await db.NewsArticles
             .Where(n => n.DeletedAt == null
+                && n.AiAnalysisJson != null
                 && (n.Status == NewsArticleStatus.Pending
                     || n.Status == NewsArticleStatus.Processed
                     || n.Status == NewsArticleStatus.Partial))
@@ -95,6 +96,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .Where(link => link.FibraId == fibraId)
             .Select(link => link.NewsArticle)
             .Where(article => article.DeletedAt == null
+                && article.AiAnalysisJson != null
                 && (article.Status == NewsArticleStatus.Pending
                     || article.Status == NewsArticleStatus.Processed
                     || article.Status == NewsArticleStatus.Partial))

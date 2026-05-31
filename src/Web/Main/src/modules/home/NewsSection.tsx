@@ -55,7 +55,7 @@ export function NewsSection() {
       ) : (
         <div className="divide-y divide-border">
           {articles.map(article => {
-            const summary = article.aiSummary ?? article.snippet
+            const headline = article.aiAnalysis?.headline ?? null
 
             return (
               <article key={article.id} className="px-4 py-3">
@@ -82,9 +82,9 @@ export function NewsSection() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {article.source} · {formatRelativeTime(article.publishedAt)}
                 </p>
-                {summary ? (
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                    {summary}
+                {headline ? (
+                  <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    {headline}
                   </p>
                 ) : null}
               </article>

@@ -78,7 +78,7 @@ export function NoticiaPage() {
       <title>{pageTitle}</title>
       <meta name="description" content={pageDescription} />
 
-      <div className="container mx-auto max-w-2xl px-4 py-8">
+      <div className="container mx-auto max-w-3xl px-4 py-8">
         {false && imageUrl ? (
           <div className="mb-6 aspect-video overflow-hidden rounded-xl bg-muted">
             <img

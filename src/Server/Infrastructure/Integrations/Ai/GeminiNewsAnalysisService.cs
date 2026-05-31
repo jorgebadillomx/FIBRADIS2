@@ -146,13 +146,9 @@ public class GeminiNewsAnalysisService(
             ? "Cuerpo completo no disponible."
             : $"Cuerpo del artículo: {preparedBody}";
 
-        var snippetSection = string.IsNullOrWhiteSpace(snippet)
-            ? "Fragmento RSS no disponible."
-            : $"Fragmento RSS: {snippet}";
-
         return template
             .Replace("{title}", title, StringComparison.Ordinal)
-            .Replace("{snippet_section}", snippetSection, StringComparison.Ordinal)
+            .Replace("{snippet_section}", string.Empty, StringComparison.Ordinal)
             .Replace("{body_section}", bodySection, StringComparison.Ordinal);
     }
 
