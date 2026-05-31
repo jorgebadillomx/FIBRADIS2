@@ -51,6 +51,7 @@ interface FormValues {
 interface Props {
   onPreview: (preview: FundamentalPreviewDto, fibraId: string, record: FundamentalRecordDto) => void
   onFibraChange?: (fibraId: string) => void
+  onCancel?: () => void
   initialRecord?: FundamentalRecordDto
   initialFibraId?: string
 }
@@ -69,7 +70,7 @@ function FieldInfo({ title }: { title: string }) {
 
 type AiStep = 'idle' | 'uploading' | 'extracting' | 'done' | 'error'
 
-export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord, initialFibraId }: Props) {
+export function FundamentalsImportForm({ onPreview, onFibraChange, onCancel, initialRecord, initialFibraId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [fieldNotes, setFieldNotes] = useState<Partial<Record<KpiKey, string>>>({})
@@ -271,8 +272,13 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
 
   const onSubmit = handleSubmit(async (values) => {
     if (!pdfFile) {
-      // Manual flow
-      manualMutation.mutate(values)
+      if (isConfirmMode) {
+        // Edit mode with no PDF: patch existing record's KPIs and confirm
+        confirmMutation.mutate(values)
+      } else {
+        // New record, no PDF: manual import
+        manualMutation.mutate(values)
+      }
       return
     }
 
@@ -550,13 +556,25 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, initialRecord
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isWorking || catalogLoading}
-        className="w-full rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition"
-      >
-        {buttonLabel()}
-      </button>
+      <div className="flex gap-3">
+        <button
+          type="submit"
+          disabled={isWorking || catalogLoading}
+          className="flex-1 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition"
+        >
+          {buttonLabel()}
+        </button>
+        {onCancel ? (
+          <button
+            type="button"
+            disabled={isWorking}
+            onClick={() => { resetAiState(); reset(); setPdfFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; onCancel() }}
+            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition"
+          >
+            Cancelar
+          </button>
+        ) : null}
+      </div>
     </form>
   )
 }

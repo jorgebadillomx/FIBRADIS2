@@ -29,6 +29,10 @@ export function FundamentalsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
+  const handleCancelEdit = useCallback(() => {
+    setState((s) => ({ ...s, editRecord: null }))
+  }, [])
+
   const handleFibraChange = useCallback((fibraId: string) => {
     setState((s) => s.selectedFibraId === fibraId ? s : { ...s, selectedFibraId: fibraId })
   }, [])
@@ -53,6 +57,7 @@ export function FundamentalsPage() {
         <FundamentalsImportForm
           onPreview={handleDone}
           onFibraChange={handleFibraChange}
+          onCancel={state.editRecord ? handleCancelEdit : undefined}
           initialRecord={state.editRecord ?? undefined}
           initialFibraId={state.selectedFibraId ?? undefined}
         />

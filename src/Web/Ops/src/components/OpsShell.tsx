@@ -17,8 +17,8 @@ const navigationItems = [
 export function OpsShell() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(13,148,136,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(15,23,42,0.10),_transparent_24%),linear-gradient(180deg,_#f8fafc_0%,_#ecfdf5_100%)] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-4 md:px-6 lg:flex-row lg:gap-8 lg:px-8">
-        <aside className="lg:sticky lg:top-4 lg:w-80 lg:flex-none lg:self-start">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 md:px-6 lg:flex-row lg:gap-8 lg:px-8 xl:px-10">
+        <aside className="lg:sticky lg:top-4 lg:w-72 xl:w-80 lg:flex-none lg:self-start">
           <div className="flex flex-col rounded-[2rem] border border-white/70 bg-slate-950/94 p-5 text-slate-50 shadow-[0_24px_60px_rgba(15,23,42,0.22)] backdrop-blur">
             <div className="border-b border-white/10 pb-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-teal-300">AdminOps</p>

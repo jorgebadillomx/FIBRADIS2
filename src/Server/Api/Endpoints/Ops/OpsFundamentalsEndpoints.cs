@@ -519,12 +519,12 @@ public static partial class OpsFundamentalsEndpoints
                 return Results.NotFound();
 
             var basePath = config["Uploads:BasePath"] ?? "wwwroot/uploads/fundamentals";
-            var fullPath = Path.Combine(basePath, $"{id}.pdf");
+            var absolutePath = Path.GetFullPath(Path.Combine(basePath, $"{id}.pdf"));
 
-            if (!File.Exists(fullPath))
+            if (!File.Exists(absolutePath))
                 return Results.NotFound();
 
-            return Results.File(fullPath, "application/pdf", $"{id}.pdf");
+            return Results.File(absolutePath, "application/pdf", $"{id}.pdf");
         })
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -663,6 +663,29 @@ public static partial class OpsFundamentalsEndpoints
             return Results.Ok(ToDto(record, fibra?.Ticker ?? record.FibraId.ToString()));
         })
         .Produces<FundamentalRecordDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapDelete("/{id:guid}", async (
+            Guid id,
+            IFundamentalRepository repo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var record = await repo.GetByIdAsync(id, ct);
+            if (record is null || record.DeletedAt is not null)
+                return Results.NotFound();
+
+            var actor = ctx.User.Identity?.Name
+                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? "unknown";
+
+            await repo.SoftDeleteAsync(id, actor, ct);
+            return Results.NoContent();
+        })
+        .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);

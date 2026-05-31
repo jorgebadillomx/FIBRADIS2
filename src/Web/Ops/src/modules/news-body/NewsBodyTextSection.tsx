@@ -18,6 +18,18 @@ const IMPACT_BADGE: Record<string, string> = {
   bajo: 'bg-slate-100 text-slate-600',
 }
 
+const dateFormatter = new Intl.DateTimeFormat('es-MX', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
+const timeFormatter = new Intl.DateTimeFormat('es-MX', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
 function ImpactBadge({ impact }: { impact: string | null | undefined }) {
   if (!impact || impact === 'nulo') return null
   return (
@@ -32,11 +44,24 @@ function sortedFigures(figures: NewsKeyFigure[]) {
   return [...figures].sort((a, b) => (order[a.importance as keyof typeof order] ?? 3) - (order[b.importance as keyof typeof order] ?? 3))
 }
 
+function formatPublishedAt(value: string) {
+  const date = new Date(value)
+
+  return {
+    date: dateFormatter.format(date),
+    time: timeFormatter.format(date),
+    full: date.toLocaleString('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }),
+  }
+}
+
 function IdCell({ id }: { id: string }) {
   const [copied, setCopied] = useState(false)
   return (
     <div className="flex items-center gap-1.5 font-mono text-xs text-slate-600">
-      <span title={id}>{id.slice(0, 8)}</span>
+      <span title={id}>{id.slice(0, 5)}</span>
       <button
         className="rounded p-0.5 text-slate-400 transition hover:text-teal-600"
         onClick={() => {
@@ -279,6 +304,7 @@ export function NewsBodyTextSection() {
                 'manuallyEditedAt' in article && typeof article.manuallyEditedAt === 'string'
                   ? article.manuallyEditedAt
                   : null
+              const publishedAt = formatPublishedAt(article.publishedAt)
 
               return (
                 <Fragment key={article.id}>
@@ -300,10 +326,10 @@ export function NewsBodyTextSection() {
                   </td>
                   <td className="px-4 py-4 text-muted-foreground">{article.source}</td>
                   <td className="px-4 py-4 text-muted-foreground">
-                    {new Date(article.publishedAt).toLocaleString('es-MX', {
-                      dateStyle: 'short',
-                      timeStyle: 'short',
-                    })}
+                    <div className="min-w-28 leading-tight" title={publishedAt.full}>
+                      <div>{publishedAt.date}</div>
+                      <div className="mt-1 text-xs text-slate-500">{publishedAt.time}</div>
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-muted-foreground">
                     {article.bodyTextLength != null
@@ -338,7 +364,8 @@ export function NewsBodyTextSection() {
                   <td className="px-4 py-4 text-right">
                     {editingId === article.id ? (
                       <button
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                        aria-label="Cancelar edición"
+                        className="rounded px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
                         onClick={handleCancelEdit}
                         type="button"
                       >
@@ -346,11 +373,16 @@ export function NewsBodyTextSection() {
                       </button>
                     ) : (
                       <button
-                        className="rounded-lg border border-teal-200 px-3 py-2 text-sm font-medium text-teal-700 transition hover:bg-teal-50"
+                        aria-label={`Editar cuerpo de ${article.title}`}
+                        className="rounded p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 transition"
                         onClick={() => handleEdit(article)}
+                        title="Editar cuerpo"
                         type="button"
                       >
-                        Editar cuerpo
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                          <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 2.474l-7.19 7.19a2.25 2.25 0 0 1-.95.55l-2.08.595a.75.75 0 0 1-.927-.927l.595-2.08a2.25 2.25 0 0 1 .55-.95l7.19-7.19Zm1.413 1.06a.25.25 0 0 0-.353 0l-.69.69 1.414 1.414.69-.69a.25.25 0 0 0 0-.353l-1.06-1.06ZM11.09 5.65 9.676 4.237 4.546 9.367a.75.75 0 0 0-.183.316l-.279.976.976-.279a.75.75 0 0 0 .316-.183l5.715-4.547Z" />
+                          <path d="M2.5 13.25A1.75 1.75 0 0 0 4.25 15h7.5a.75.75 0 0 0 0-1.5h-7.5a.25.25 0 0 1-.25-.25v-7.5a.75.75 0 0 0-1.5 0v7.5Z" />
+                        </svg>
                       </button>
                     )}
                   </td>
@@ -491,7 +523,7 @@ export function NewsBodyTextSection() {
                               {saveMutation.isPending ? 'Guardando...' : 'Guardar'}
                             </button>
                             <button
-                              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="rounded px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={saveMutation.isPending}
                               onClick={handleCancelEdit}
                               type="button"

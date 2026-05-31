@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FundamentalRecordDto } from '@/api/fundamentalsApi'
 import {
+  disableFundamental,
   downloadFundamentalPdf,
   fetchFundamentalsByFibra,
   uploadFundamentalPdf,
@@ -24,6 +25,11 @@ export function FundamentalsHistory({ fibraId, onEdit }: Props) {
     queryKey: ['fundamentals', fibraId],
     queryFn: () => fetchFundamentalsByFibra(fibraId),
     enabled: !!fibraId,
+  })
+
+  const disableMutation = useMutation({
+    mutationFn: disableFundamental,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] }),
   })
 
   const handlePdfUpload = async (id: string, file: File) => {
@@ -86,6 +92,8 @@ export function FundamentalsHistory({ fibraId, onEdit }: Props) {
               onPdfDownload={handlePdfDownload}
               onEdit={onEdit}
               onEditNotes={setNotesRecord}
+              onDisable={(id) => disableMutation.mutate(id)}
+              isDisabling={disableMutation.isPending && disableMutation.variables === r.id}
             />
           ))}
         </tbody>
@@ -109,6 +117,8 @@ interface RowProps {
   onPdfDownload: (id: string, ticker: string) => Promise<void>
   onEdit: (record: FundamentalRecordDto) => void
   onEditNotes: (record: FundamentalRecordDto) => void
+  onDisable: (id: string) => void
+  isDisabling: boolean
 }
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024
@@ -121,21 +131,18 @@ function HistoryRow({
   onPdfDownload,
   onEdit,
   onEditNotes,
+  onDisable,
+  isDisabling,
 }: RowProps) {
   const [pdfUploadError, setPdfUploadError] = useState<string | null>(null)
-  const isDeleted = !!r.deletedAt
-  const canEditNotes = !isDeleted && (r.status === 'processed' || r.status === 'partial')
+  const [pendingDisable, setPendingDisable] = useState(false)
+  const canEditNotes = r.status === 'processed' || r.status === 'partial'
 
   return (
-    <tr className={`transition-colors ${isDeleted ? 'opacity-50 bg-slate-50' : 'hover:bg-slate-50'}`}>
-      <td className="py-2 pr-3 font-mono font-medium">
-        <span className={isDeleted ? 'line-through text-slate-400' : ''}>{r.period}</span>
-      </td>
+    <tr className="transition-colors hover:bg-slate-50">
+      <td className="py-2 pr-3 font-mono font-medium">{r.period}</td>
       <td className="py-2 pr-3">
-        {isDeleted
-          ? <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-500">archivado</span>
-          : <RecordStatusBadge status={r.status} isPossibleUpdate={r.isPossibleUpdate} />
-        }
+        <RecordStatusBadge status={r.status} isPossibleUpdate={r.isPossibleUpdate} />
       </td>
       <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="capRate" value={r.capRate} note={r.fieldNotes?.capRate} /></td>
       <td className="py-2 pr-3 tabular-nums"><KpiCell kpiKey="navPerCbfi" value={r.navPerCbfi} note={r.fieldNotes?.navPerCbfi} /></td>
@@ -155,16 +162,14 @@ function HistoryRow({
         {new Date(r.capturedAt).toLocaleDateString('es-MX')}
       </td>
       <td className="py-2">
-        <div className="flex flex-wrap gap-2">
-          {!isDeleted && (
-            <button
-              type="button"
-              onClick={() => onEdit(r)}
-              className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
-            >
-              Editar
-            </button>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(r)}
+            className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
+          >
+            Editar
+          </button>
 
           {canEditNotes && (
             <button
@@ -184,7 +189,7 @@ function HistoryRow({
             >
               Ver PDF
             </button>
-          ) : !isDeleted ? (
+          ) : (
             <>
               <input
                 ref={(el) => { fileInputRefs.current[r.id] = el }}
@@ -213,7 +218,39 @@ function HistoryRow({
                 Subir PDF
               </button>
             </>
-          ) : null}
+          )}
+
+          {pendingDisable ? (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={isDisabling}
+                onClick={() => { onDisable(r.id); setPendingDisable(false) }}
+                className="rounded px-2 py-1 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60 transition"
+              >
+                Sí
+              </button>
+              <button
+                type="button"
+                disabled={isDisabling}
+                onClick={() => setPendingDisable(false)}
+                className="rounded px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPendingDisable(true)}
+              className="rounded p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+              title="Deshabilitar registro"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+                <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.712Z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
         </div>
         {pdfUploadError && (
           <p className="mt-1 text-xs text-red-500">{pdfUploadError}</p>

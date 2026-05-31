@@ -60,7 +60,7 @@ export function NewsSection() {
             return (
               <article key={article.id} className="px-4 py-3">
                 <Link to={`/noticias/${article.id}`} className="block">
-                  {getArticleImageUrl(article) ? (
+                  {false && getArticleImageUrl(article) ? (
                     <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
                       <img
                         src={getArticleImageUrl(article)!}
