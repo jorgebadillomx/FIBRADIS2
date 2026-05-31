@@ -1,6 +1,7 @@
 import type { components } from '@fibradis/shared-api-client'
 
 export type FundamentalesPublicDto = components['schemas']['FundamentalesPublicDto']
+export type FundamentalesSummaryItemDto = components['schemas']['FundamentalesSummaryItemDto']
 
 export async function fetchFundamentalesPublic(ticker: string, period?: string): Promise<FundamentalesPublicDto | null> {
   const url = period
@@ -15,6 +16,21 @@ export async function fetchFundamentalesPublic(ticker: string, period?: string):
 
 export async function fetchFundamentalesAvailablePeriods(ticker: string): Promise<string[]> {
   const response = await fetch(`/api/v1/fundamentals/${encodeURIComponent(ticker)}/periods`)
+  if (!response.ok) return []
+  return response.json() as Promise<string[]>
+}
+
+export async function fetchFundamentalesSummary(period?: string): Promise<FundamentalesSummaryItemDto[]> {
+  const url = period
+    ? `/api/v1/fundamentals/summary?period=${encodeURIComponent(period)}`
+    : '/api/v1/fundamentals/summary'
+  const response = await fetch(url)
+  if (!response.ok) return []
+  return response.json() as Promise<FundamentalesSummaryItemDto[]>
+}
+
+export async function fetchAllFundamentalesPeriods(): Promise<string[]> {
+  const response = await fetch('/api/v1/fundamentals/periods')
   if (!response.ok) return []
   return response.json() as Promise<string[]>
 }

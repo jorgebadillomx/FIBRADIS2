@@ -3123,6 +3123,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fundamentals/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    period?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundamentalesSummaryItemDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fundamentals/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": string[];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fundamentals/{ticker}/latest": {
         parameters: {
             query?: never;
@@ -3372,6 +3444,25 @@ export interface components {
             fieldNotes: null | {
                 [key: string]: string;
             };
+            /** Format: date-time */
+            capturedAt: string;
+        };
+        FundamentalesSummaryItemDto: {
+            ticker: string;
+            name: string;
+            period: string;
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+            /** Format: double */
+            quarterlyDistribution: null | number | string;
             /** Format: date-time */
             capturedAt: string;
         };

@@ -4,6 +4,7 @@ import { HomePage } from '@/modules/home/HomePage'
 import { FibraPage } from '@/modules/ficha-publica/FibraPage'
 import { NoticiaPage } from '@/modules/noticia/NoticiaPage'
 import { NoticiasListPage } from '@/modules/noticias/NoticiasListPage'
+import { FundamentalesPage } from '@/modules/fundamentales/FundamentalesPage'
 import { NotFound } from '@/shared/layouts/NotFound'
 
 export const routes: RouteObject[] = [
@@ -14,6 +15,7 @@ export const routes: RouteObject[] = [
       { path: '/fibras/:ticker', element: <FibraPage /> },
       { path: '/noticias', element: <NoticiasListPage /> },
       { path: '/noticias/:id', element: <NoticiaPage /> },
+      { path: '/fundamentales', element: <FundamentalesPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

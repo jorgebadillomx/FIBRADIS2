@@ -1,4 +1,5 @@
 using Application.Fundamentals;
+using Domain.Catalog;
 using Domain.Fundamentals;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
@@ -155,4 +156,51 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
                 .SetProperty(r => r.DeletedAt, DateTimeOffset.UtcNow)
                 .SetProperty(r => r.DeletedBy, deletedBy), ct);
     }
+
+    public async Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default)
+    {
+        var all = await db.FundamentalRecords
+            .Where(r => r.Status == "processed" && r.DeletedAt == null)
+            .Join(
+                db.Fibras.Where(f => f.State == FibraState.Active),
+                r => r.FibraId,
+                f => f.Id,
+                (r, f) => new { Record = r, f.Ticker, f.ShortName })
+            .ToListAsync(ct);
+
+        return all
+            .GroupBy(x => x.Record.FibraId)
+            .Select(g => g
+                .OrderByDescending(x => x.Record.Period.Length >= 7 ? x.Record.Period.Substring(3, 4) : "0000")
+                .ThenByDescending(x => x.Record.Period.Length >= 2 ? x.Record.Period.Substring(1, 1) : "0")
+                .ThenByDescending(x => x.Record.ConfirmedAt)
+                .First())
+            .OrderBy(x => x.Ticker)
+            .Select(x => (x.Record, x.Ticker, x.ShortName))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default)
+    {
+        var results = await db.FundamentalRecords
+            .Where(r => r.Status == "processed" && r.DeletedAt == null && r.Period == period)
+            .Join(
+                db.Fibras.Where(f => f.State == FibraState.Active),
+                r => r.FibraId,
+                f => f.Id,
+                (r, f) => new { Record = r, f.Ticker, f.ShortName })
+            .OrderBy(x => x.Ticker)
+            .ToListAsync(ct);
+
+        return results.Select(x => (x.Record, x.Ticker, x.ShortName)).ToList();
+    }
+
+    public async Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default)
+        => await db.FundamentalRecords
+            .Where(r => r.Status == "processed" && r.DeletedAt == null && r.Period.Length == 7)
+            .Select(r => r.Period)
+            .Distinct()
+            .OrderByDescending(p => p.Substring(3, 4))
+            .ThenByDescending(p => p.Substring(1, 1))
+            .ToListAsync(ct);
 }
