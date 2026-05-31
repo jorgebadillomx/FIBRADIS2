@@ -166,7 +166,7 @@ export function NewsBodyTextSection() {
         <ManualSummaryTriggerSection />
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-border/80">
+      <div className="mt-6 rounded-2xl border border-border/80 overflow-hidden">
         <div className="border-b border-border/80 bg-slate-50/70 px-4 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex-1">
@@ -235,6 +235,7 @@ export function NewsBodyTextSection() {
           </div>
         </div>
 
+        <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead className="bg-teal-950/95 text-left text-xs uppercase tracking-[0.18em] text-teal-50">
             <tr>
@@ -245,7 +246,7 @@ export function NewsBodyTextSection() {
               <th className="px-4 py-3 font-medium">Cuerpo</th>
               <th className="px-4 py-3 font-medium">Resumen IA</th>
               <th className="px-4 py-3 font-medium text-right">Editar</th>
-              <th className="px-4 py-3 font-medium text-right">Eliminar</th>
+              <th className="px-3 py-3 w-12"><span className="sr-only">Eliminar</span></th>
             </tr>
           </thead>
           <tbody className="bg-white">
@@ -353,13 +354,12 @@ export function NewsBodyTextSection() {
                       </button>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-3 py-4 text-center">
                     {pendingDeleteId === article.id ? (
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-600">¿Confirmar?</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="flex items-center gap-1">
                           <button
-                            className="rounded-lg bg-rose-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-800 disabled:opacity-60"
+                            className="rounded px-2 py-1 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60 transition"
                             disabled={deleteMutation.isPending}
                             onClick={() => deleteMutation.mutate(article.id)}
                             type="button"
@@ -367,7 +367,7 @@ export function NewsBodyTextSection() {
                             Sí
                           </button>
                           <button
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
                             disabled={deleteMutation.isPending}
                             onClick={() => { setPendingDeleteId(null); deleteMutation.reset() }}
                             type="button"
@@ -376,16 +376,19 @@ export function NewsBodyTextSection() {
                           </button>
                         </div>
                         {deleteMutation.isError && deleteMutation.variables === article.id ? (
-                          <p className="text-xs text-destructive">{deleteMutation.error.message}</p>
+                          <p className="text-xs text-destructive">Error</p>
                         ) : null}
                       </div>
                     ) : (
                       <button
-                        className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                        className="rounded p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
                         onClick={() => { setPendingDeleteId(article.id); deleteMutation.reset() }}
+                        title="Eliminar noticia"
                         type="button"
                       >
-                        Eliminar
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                          <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.712Z" clipRule="evenodd" />
+                        </svg>
                       </button>
                     )}
                   </td>
@@ -509,6 +512,7 @@ export function NewsBodyTextSection() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {totalPages > 1 ? (

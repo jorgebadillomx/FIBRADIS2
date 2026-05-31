@@ -26,6 +26,13 @@
 
 Items diferidos durante code reviews. Cada sección tiene la historia origen y la fecha.
 
+## Deferred from: code review of news-soft-delete-cancel-dedup (2026-05-31)
+
+- **D1: `deleteNewsArticle` usa `fetch()` raw en lugar del typed client** [`src/Web/Ops/src/api/newsApi.ts`] — El endpoint DELETE no está en el schema generado aún (requiere restart del API server). Migrar al client tipado `apiClient['/api/v1/ops/news/{articleId}'].DELETE(...)` en la próxima sesión de codegen.
+- **D2: DELETE endpoint no registra audit trail** [`src/Server/Api/Endpoints/Ops/AiModeEndpoints.cs`] — El actor (email del AdminOps) no se persiste al soft-deletear. Si se requiere trazabilidad de eliminaciones, agregar campo `DeletedBy` a `NewsArticle` y capturarlo del JWT claim.
+- **D3: `GetExistingUrlsAsync` incluye URLs de artículos soft-deleted** [`src/Server/Infrastructure/Persistence/Repositories/News/NewsRepository.cs`] — Una URL soft-deleted nunca puede ser re-ingestada. Decisión deliberada (si un admin eliminó el artículo, la URL sigue ocupada); revisar si el caso de uso de "restaurar artículo eliminado" surge.
+- **D4: Métricas del pipeline no cuentan title-duplicates guardados como deleted** [`src/Server/Infrastructure/Jobs/News/NewsPipelineJob.cs`] — Los `saved` count solo incluye artículos fresh. Title-dups salvados con `DeletedAt` no se contabilizan. Agregar contador si las métricas de ingesta necesitan reflejar el total de filas escritas.
+
 ## Deferred from: spec-ops-pdf-feedback-main-period-selector (2026-05-27)
 
 - **D5: Selector de período no indica truncamiento** [`src/Web/Main/src/modules/ficha-publica/FibraPage.tsx`] — El endpoint retorna máximo 12 períodos sin notificar al frontend que hay más. Si una FIBRA acumula >12 períodos procesados, los más antiguos no son accesibles. Considerar agregar un header `X-Total-Count` o un campo `truncated: bool` en la respuesta.
