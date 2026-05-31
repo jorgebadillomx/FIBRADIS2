@@ -78,7 +78,9 @@ export function NoticiaPage() {
       <title>{pageTitle}</title>
       <meta name="description" content={pageDescription} />
 
-      <div className="container mx-auto max-w-3xl px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+        <div className="min-w-0">
         {false && imageUrl ? (
           <div className="mb-6 aspect-video overflow-hidden rounded-xl bg-muted">
             <img
@@ -208,8 +210,12 @@ export function NoticiaPage() {
             Leer nota completa en {article.source} →
           </a>
         ) : null}
+        </div>
 
-        <RelatedNews articleId={article.id} />
+        <aside className="xl:sticky xl:top-28">
+          <RelatedNews articleId={article.id} />
+        </aside>
+        </div>
       </div>
     </>
   )
@@ -225,19 +231,21 @@ function RelatedNews({ articleId }: { articleId: string }) {
   if (articles.length === 0) return null
 
   return (
-    <div className="mt-12 border-t border-border pt-8">
-      <div className="mb-4 flex items-center gap-3">
+    <div aria-label="Noticias relacionadas" className="rounded-xl border border-border bg-surface-elevated overflow-hidden">
+      <div className="px-4 pt-4 pb-2 flex items-center gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Noticias relacionadas</h2>
         <div className="flex-1 h-px bg-border" />
       </div>
-      <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+      <div className="divide-y divide-border">
         {articles.map(related => (
           <article key={related.id} className="px-4 py-3">
-            <Link to={`/noticias/${related.id}`} className="block hover:text-brand transition-colors">
-              <h3 className="text-sm font-medium leading-5">{related.title}</h3>
+            <Link to={`/noticias/${related.id}`} className="block">
+              <div className="hover:text-brand transition-colors">
+                <h3 className="text-sm font-medium leading-5">{related.title}</h3>
+              </div>
             </Link>
             <p className="mt-1 text-xs text-muted-foreground">
-              {related.source} · <RelativeTime value={related.publishedAt} />
+              {related.source} · {formatRelativeTime(related.publishedAt)}
             </p>
             {related.aiAnalysis?.headline ? (
               <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
@@ -249,10 +257,6 @@ function RelatedNews({ articleId }: { articleId: string }) {
       </div>
     </div>
   )
-}
-
-function RelativeTime({ value }: { value: string }) {
-  return <>{formatRelativeTime(value)}</>
 }
 
 function sortedFigures(figures: NewsKeyFigure[]) {
