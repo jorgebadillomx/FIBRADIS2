@@ -99,10 +99,40 @@ public class NewsPipelineJob(
                 await newsRepo.GetExistingUrlsAsync(candidateUrls, ct),
                 StringComparer.OrdinalIgnoreCase);
             var recentTitles = await newsRepo.GetRecentNormalizedTitlesAsync(since24h, ct);
-            var filteredItems = NewsDeduplicator.Filter(allItems, existingUrls, recentTitles, blocklistTerms);
+            var (filteredItems, titleDuplicates) = NewsDeduplicator.FilterSeparatingDuplicates(allItems, existingUrls, recentTitles, blocklistTerms);
 
             fetched = allItems.Count;
             filteredIn = filteredItems.Count;
+
+            foreach (var dup in titleDuplicates)
+            {
+                try
+                {
+                    var dupArticle = new NewsArticle
+                    {
+                        Title = dup.Title,
+                        TitleNormalized = NewsDeduplicator.NormalizeTitle(dup.Title),
+                        Source = dup.Source,
+                        PublishedAt = dup.PublishedAt,
+                        Url = dup.Url,
+                        Snippet = dup.Snippet,
+                        Status = NewsArticleStatus.Processed,
+                        CapturedAt = DateTimeOffset.UtcNow,
+                        DeletedAt = DateTimeOffset.UtcNow,
+                    };
+                    var dupFibraIds = NewsAssociator.Associate(dup, fibraMatchInfos);
+                    await newsRepo.AddWithLinksAsync(dupArticle, dupFibraIds, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to save title-duplicate news article '{Url}'", dup.Url);
+                }
+            }
+
             var providerConfig = await aiProviderConfigRepo.GetConfigAsync(ct);
 
             foreach (var item in filteredItems)

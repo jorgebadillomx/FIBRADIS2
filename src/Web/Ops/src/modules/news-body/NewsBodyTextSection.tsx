@@ -5,6 +5,7 @@ import {
   fetchOpsNewsList,
   fetchOpsNewsBody,
   updateNewsBodyText,
+  deleteNewsArticle,
   type OpsNewsArticle,
   type NewsKeyFigure,
 } from '@/api/newsApi'
@@ -65,6 +66,7 @@ export function NewsBodyTextSection() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState<string>('')
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     const next = search.trim()
@@ -118,6 +120,14 @@ export function NewsBodyTextSection() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteNewsArticle,
+    onSuccess: async () => {
+      setPendingDeleteId(null)
+      await queryClient.invalidateQueries({ queryKey: ['ops-news-list'] })
+    },
+  })
+
   useEffect(() => {
     if (bodyQuery.data && editingId) {
       setEditText(bodyQuery.data.bodyText ?? '')
@@ -138,10 +148,6 @@ export function NewsBodyTextSection() {
   function handleSave(id: string) {
     const text = editText.trim()
     saveMutation.mutate({ id, text: text.length > 0 ? text : null })
-  }
-
-  function handleClear(id: string) {
-    saveMutation.mutate({ id, text: null })
   }
 
   const total = Number(listQuery.data?.total ?? 0)
@@ -238,13 +244,14 @@ export function NewsBodyTextSection() {
               <th className="px-4 py-3 font-medium">Publicado</th>
               <th className="px-4 py-3 font-medium">Cuerpo</th>
               <th className="px-4 py-3 font-medium">Resumen IA</th>
-              <th className="px-4 py-3 font-medium text-right">Acción</th>
+              <th className="px-4 py-3 font-medium text-right">Editar</th>
+              <th className="px-4 py-3 font-medium text-right">Eliminar</th>
             </tr>
           </thead>
           <tbody className="bg-white">
             {listQuery.isLoading ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={7}>
+                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={8}>
                   Cargando artículos...
                 </td>
               </tr>
@@ -252,7 +259,7 @@ export function NewsBodyTextSection() {
 
             {listQuery.isError ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-destructive" colSpan={7}>
+                <td className="px-4 py-6 text-sm text-destructive" colSpan={8}>
                   {listQuery.error.message}
                 </td>
               </tr>
@@ -260,7 +267,7 @@ export function NewsBodyTextSection() {
 
             {listQuery.isSuccess && listQuery.data.items.length === 0 ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={7}>
+                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={8}>
                   No hay artículos registrados.
                 </td>
               </tr>
@@ -346,11 +353,47 @@ export function NewsBodyTextSection() {
                       </button>
                     )}
                   </td>
+                  <td className="px-4 py-4 text-right">
+                    {pendingDeleteId === article.id ? (
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-600">¿Confirmar?</span>
+                          <button
+                            className="rounded-lg bg-rose-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-800 disabled:opacity-60"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(article.id)}
+                            type="button"
+                          >
+                            Sí
+                          </button>
+                          <button
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => { setPendingDeleteId(null); deleteMutation.reset() }}
+                            type="button"
+                          >
+                            No
+                          </button>
+                        </div>
+                        {deleteMutation.isError && deleteMutation.variables === article.id ? (
+                          <p className="text-xs text-destructive">{deleteMutation.error.message}</p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <button
+                        className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                        onClick={() => { setPendingDeleteId(article.id); deleteMutation.reset() }}
+                        type="button"
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </td>
                 </tr>
 
                 {editingId === article.id ? (
                   <tr className="border-t border-teal-100 bg-teal-50/40">
-                    <td colSpan={7} className="px-4 py-4">
+                    <td colSpan={8} className="px-4 py-4">
                       {bodyQuery.isLoading ? (
                         <p className="text-sm text-muted-foreground">Cargando body text...</p>
                       ) : bodyQuery.isError ? (
@@ -445,12 +488,12 @@ export function NewsBodyTextSection() {
                               {saveMutation.isPending ? 'Guardando...' : 'Guardar'}
                             </button>
                             <button
-                              className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={saveMutation.isPending}
-                              onClick={() => handleClear(article.id)}
+                              onClick={handleCancelEdit}
                               type="button"
                             >
-                              Limpiar (null)
+                              Cancelar
                             </button>
                             {saveMutation.isError ? (
                               <p className="text-sm text-destructive">{saveMutation.error.message}</p>
