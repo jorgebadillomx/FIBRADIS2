@@ -5,6 +5,7 @@ import { FibraPage } from '@/modules/ficha-publica/FibraPage'
 import { NoticiaPage } from '@/modules/noticia/NoticiaPage'
 import { NoticiasListPage } from '@/modules/noticias/NoticiasListPage'
 import { FundamentalesPage } from '@/modules/fundamentales/FundamentalesPage'
+import { ConoceLasFibrasPage } from '@/modules/conoce-las-fibras/ConoceLasFibrasPage'
 import { NotFound } from '@/shared/layouts/NotFound'
 
 export const routes: RouteObject[] = [
@@ -14,6 +15,7 @@ export const routes: RouteObject[] = [
       { path: '/', element: <HomePage /> },
       { path: '/fibras/:ticker', element: <FibraPage /> },
       { path: '/noticias', element: <NoticiasListPage /> },
+      { path: '/conoce-las-fibras', element: <ConoceLasFibrasPage /> },
       { path: '/noticias/:id', element: <NoticiaPage /> },
       { path: '/fundamentales', element: <FundamentalesPage /> },
       { path: '*', element: <NotFound /> },

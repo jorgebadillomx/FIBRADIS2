@@ -5,10 +5,10 @@ import { assertOpsAccessToken, getOpsApiErrorMessage, getOpsAuthHeaders } from '
 const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
 export type OperationalConfigDto = components['schemas']['OperationalConfigDto'] & {
-  fibraNewsMonths?: number | null
+  fibraNewsMonths?: number | string | null
 }
 export type UpdateOperationalConfigRequest = components['schemas']['UpdateOperationalConfigRequest'] & {
-  fibraNewsMonths?: number | null
+  fibraNewsMonths?: number | string | null
 }
 export type ConfigAuditLogDto = components['schemas']['ConfigAuditLogDto']
 

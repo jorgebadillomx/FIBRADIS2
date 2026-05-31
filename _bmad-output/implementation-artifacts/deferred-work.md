@@ -1,5 +1,10 @@
 # Deferred Work
 
+## Deferred from: code review of 8-1-seccion-educativa-conoce-las-fibras (2026-05-31)
+
+- **D1: `GetBySlugAsync` definido pero nunca llamado** [`src/Server/Infrastructure/Persistence/Repositories/Ops/EditorialPageRepository.cs:15`] — Interfaz y repositorio exponen el método, pero ningún endpoint lo invoca. Dead code benigno. Remover o usar en un endpoint futuro si surge la necesidad.
+- **D3: `UpdateContentAsync` sin cobertura de tests unitarios** [`tests/Unit/Infrastructure.Tests/Persistence/Repositories/EditorialPageRepositoryTests.cs`] — El spec (AC 12) solo requería 3 tests de `GetAllAsync`. El path de actualización no está testeado. Agregar en próxima historia del módulo editorial si se añaden variantes de comportamiento.
+
 ## Deferred from: code review of 5-10-pagina-publica-fundamentales (2026-05-31)
 
 - **D1: `GetSummaryLatestAsync` carga todo en memoria antes de agrupar** [`FundamentalRepository.cs`] — Dev Notes del story aprueba explícitamente este patrón para dataset ~180 filas máx. Revisar si el catálogo crece significativamente.
