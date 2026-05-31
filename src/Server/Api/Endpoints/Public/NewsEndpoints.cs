@@ -47,7 +47,8 @@ public static class NewsEndpoints
         {
             var article = await newsRepo.GetByIdAsync(id, ct);
             if (article is null || article.DeletedAt is not null) return Results.NotFound();
-            return Results.Ok(ToDto(article));
+            var fibras = await newsRepo.GetLinkedFibrasAsync(id, ct);
+            return Results.Ok(ToDtoWithFibras(article, fibras));
         })
         .AllowAnonymous()
         .Produces<NewsArticleDto>(StatusCodes.Status200OK)
@@ -70,6 +71,15 @@ public static class NewsEndpoints
     private static NewsArticleDto ToDto(NewsArticle article)
         => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url,
             article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson));
+
+    private static NewsArticleDto ToDtoWithFibras(NewsArticle article, IReadOnlyList<(Guid Id, string Ticker)> fibras)
+    {
+        var linked = fibras.Count > 0
+            ? fibras.Select(f => new LinkedFibraDto(f.Id, f.Ticker)).ToList()
+            : null;
+        return new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url,
+            article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson), linked);
+    }
 
     private static NewsAiAnalysisDto? MapAnalysis(string? json)
     {

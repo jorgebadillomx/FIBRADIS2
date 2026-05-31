@@ -124,6 +124,21 @@ export function NoticiaPage() {
           </div>
         ) : null}
 
+        {/* Links a FIBRAs relacionadas */}
+        {article.linkedFibras && article.linkedFibras.length > 0 ? (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {article.linkedFibras.map(fibra => (
+              <Link
+                key={fibra.id}
+                to={`/fibras/${fibra.ticker}#noticias`}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+              >
+                {fibra.ticker} — ver noticias →
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
         {/* Análisis estructurado */}
         {aiAnalysis ? (
           <div className="mb-6 space-y-4">

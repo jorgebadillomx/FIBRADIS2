@@ -380,6 +380,9 @@ internal sealed class FakeNewsRepository : INewsRepository
     public Task<IReadOnlyList<NewsArticle>> GetRelatedAsync(Guid excludeId, int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
 
+    public Task<IReadOnlyList<(Guid Id, string Ticker)>> GetLinkedFibrasAsync(Guid articleId, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<(Guid, string)>>([]);
+
     public Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
         => Task.CompletedTask;
 }

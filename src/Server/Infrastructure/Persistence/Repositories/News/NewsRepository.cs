@@ -196,6 +196,15 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<(Guid Id, string Ticker)>> GetLinkedFibrasAsync(Guid articleId, CancellationToken ct = default)
+    {
+        var rows = await db.NewsArticleFibras
+            .Where(x => x.NewsArticleId == articleId)
+            .Join(db.Fibras, x => x.FibraId, f => f.Id, (_, f) => new { f.Id, f.Ticker })
+            .ToListAsync(ct);
+        return rows.Select(r => (r.Id, r.Ticker)).ToList();
+    }
+
     public async Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
     {
         var now = DateTimeOffset.UtcNow;
