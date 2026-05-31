@@ -110,3 +110,17 @@ export async function updateNewsBodyText(id: string, bodyText: string | null): P
 
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al guardar body text: ${JSON.stringify(error)}`))
 }
+
+export async function deleteNewsArticle(id: string): Promise<void> {
+  assertOpsAccessToken()
+
+  const response = await fetch(`/api/v1/ops/news/${id}`, {
+    method: 'DELETE',
+    headers: getOpsAuthHeaders(),
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `Error al eliminar noticia (${response.status})`)
+  }
+}

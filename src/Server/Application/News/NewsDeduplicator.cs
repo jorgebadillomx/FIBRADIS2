@@ -45,8 +45,16 @@ public static partial class NewsDeduplicator
         IReadOnlySet<string> existingUrls,
         IReadOnlyList<string> recentTitles,
         IReadOnlyList<string> blocklistTerms)
+        => FilterSeparatingDuplicates(items, existingUrls, recentTitles, blocklistTerms).Fresh;
+
+    public static (IReadOnlyList<RssItem> Fresh, IReadOnlyList<RssItem> TitleDuplicates) FilterSeparatingDuplicates(
+        IReadOnlyList<RssItem> items,
+        IReadOnlySet<string> existingUrls,
+        IReadOnlyList<string> recentTitles,
+        IReadOnlyList<string> blocklistTerms)
     {
-        var result = new List<RssItem>();
+        var fresh = new List<RssItem>();
+        var titleDuplicates = new List<RssItem>();
         var seenUrlsInBatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var recentTitleSet = new HashSet<string>(recentTitles, StringComparer.Ordinal);
         var seenTitlesInBatch = new HashSet<string>(StringComparer.Ordinal);
@@ -56,6 +64,7 @@ public static partial class NewsDeduplicator
             if (MatchesBlocklist(item.Title, item.Snippet, blocklistTerms))
                 continue;
 
+            // URL-duplicate: skip entirely (no storage value)
             if (existingUrls.Contains(item.Url) || !seenUrlsInBatch.Add(item.Url))
                 continue;
 
@@ -63,13 +72,15 @@ public static partial class NewsDeduplicator
             if (!string.IsNullOrEmpty(normalizedTitle)
                 && (recentTitleSet.Contains(normalizedTitle) || !seenTitlesInBatch.Add(normalizedTitle)))
             {
+                // Title-duplicate with a new URL: save as deleted to preserve the record
+                titleDuplicates.Add(item);
                 continue;
             }
 
-            result.Add(item);
+            fresh.Add(item);
         }
 
-        return result;
+        return (fresh, titleDuplicates);
     }
 
     private static string RemoveDiacritics(string value)

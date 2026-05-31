@@ -43,7 +43,8 @@ public static class NewsEndpoints
             CancellationToken ct) =>
         {
             var article = await newsRepo.GetByIdAsync(id, ct);
-            return article is null ? Results.NotFound() : Results.Ok(ToDto(article));
+            if (article is null || article.DeletedAt is not null) return Results.NotFound();
+            return Results.Ok(ToDto(article));
         })
         .AllowAnonymous()
         .Produces<NewsArticleDto>(StatusCodes.Status200OK)

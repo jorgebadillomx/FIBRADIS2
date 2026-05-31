@@ -25,6 +25,7 @@ public class NewsArticleConfiguration : IEntityTypeConfiguration<NewsArticle>
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(x => x.CapturedAt).HasColumnName("captured_at").IsRequired();
         builder.Property(x => x.ErrorReason).HasColumnName("error_reason").HasMaxLength(512);
+        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
 
         builder.HasIndex(x => x.Url)
             .IsUnique()

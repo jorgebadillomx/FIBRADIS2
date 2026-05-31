@@ -161,11 +161,27 @@ public static class AiModeEndpoints
             CancellationToken ct) =>
         {
             var article = await newsRepo.GetByIdAsync(articleId, ct);
-            if (article is null)
+            if (article is null || article.DeletedAt is not null)
                 return Results.NotFound();
             return Results.Ok(new OpsNewsBodyDto(article.Id, article.BodyText, article.AiSummary, MapAnalysis(article.AiAnalysisJson)));
         })
         .Produces<OpsNewsBodyDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        newsGroup.MapDelete("/{articleId:guid}", async (
+            Guid articleId,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var article = await newsRepo.GetByIdAsync(articleId, ct);
+            if (article is null)
+                return Results.NotFound();
+            await newsRepo.SoftDeleteAsync(articleId, ct);
+            return Results.NoContent();
+        })
+        .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
@@ -177,9 +193,8 @@ public static class AiModeEndpoints
             CancellationToken ct) =>
         {
             var article = await newsRepo.GetByIdAsync(articleId, ct);
-            if (article is null)
+            if (article is null || article.DeletedAt is not null)
                 return Results.NotFound();
-
 
             var bodyText = string.IsNullOrWhiteSpace(request.BodyText) ? null : request.BodyText.Trim();
             await newsRepo.UpdateBodyTextAsync(articleId, bodyText, ct);
@@ -202,6 +217,8 @@ public static class AiModeEndpoints
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();
+            if (article.DeletedAt is not null)
+                return Results.Conflict("Artículo eliminado.");
 
             try
             {
@@ -270,6 +287,8 @@ public static class AiModeEndpoints
             var article = await newsRepo.GetByIdAsync(articleId, ct);
             if (article is null)
                 return Results.NotFound();
+            if (article.DeletedAt is not null)
+                return Results.Conflict("Artículo eliminado.");
 
             try
             {

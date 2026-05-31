@@ -5,6 +5,7 @@ import {
   fetchOpsNewsList,
   fetchOpsNewsBody,
   updateNewsBodyText,
+  deleteNewsArticle,
   type OpsNewsArticle,
   type NewsKeyFigure,
 } from '@/api/newsApi'
@@ -65,6 +66,7 @@ export function NewsBodyTextSection() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState<string>('')
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     const next = search.trim()
@@ -118,6 +120,14 @@ export function NewsBodyTextSection() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteNewsArticle,
+    onSuccess: async () => {
+      setPendingDeleteId(null)
+      await queryClient.invalidateQueries({ queryKey: ['ops-news-list'] })
+    },
+  })
+
   useEffect(() => {
     if (bodyQuery.data && editingId) {
       setEditText(bodyQuery.data.bodyText ?? '')
@@ -140,10 +150,6 @@ export function NewsBodyTextSection() {
     saveMutation.mutate({ id, text: text.length > 0 ? text : null })
   }
 
-  function handleClear(id: string) {
-    saveMutation.mutate({ id, text: null })
-  }
-
   const total = Number(listQuery.data?.total ?? 0)
   const totalPages = Math.ceil(total / pageSize)
 
@@ -160,7 +166,7 @@ export function NewsBodyTextSection() {
         <ManualSummaryTriggerSection />
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-border/80">
+      <div className="mt-6 rounded-2xl border border-border/80 overflow-hidden">
         <div className="border-b border-border/80 bg-slate-50/70 px-4 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex-1">
@@ -229,6 +235,7 @@ export function NewsBodyTextSection() {
           </div>
         </div>
 
+        <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead className="bg-teal-950/95 text-left text-xs uppercase tracking-[0.18em] text-teal-50">
             <tr>
@@ -238,13 +245,14 @@ export function NewsBodyTextSection() {
               <th className="px-4 py-3 font-medium">Publicado</th>
               <th className="px-4 py-3 font-medium">Cuerpo</th>
               <th className="px-4 py-3 font-medium">Resumen IA</th>
-              <th className="px-4 py-3 font-medium text-right">Acción</th>
+              <th className="px-4 py-3 font-medium text-right">Editar</th>
+              <th className="px-3 py-3 w-12"><span className="sr-only">Eliminar</span></th>
             </tr>
           </thead>
           <tbody className="bg-white">
             {listQuery.isLoading ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={7}>
+                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={8}>
                   Cargando artículos...
                 </td>
               </tr>
@@ -252,7 +260,7 @@ export function NewsBodyTextSection() {
 
             {listQuery.isError ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-destructive" colSpan={7}>
+                <td className="px-4 py-6 text-sm text-destructive" colSpan={8}>
                   {listQuery.error.message}
                 </td>
               </tr>
@@ -260,7 +268,7 @@ export function NewsBodyTextSection() {
 
             {listQuery.isSuccess && listQuery.data.items.length === 0 ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={7}>
+                <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={8}>
                   No hay artículos registrados.
                 </td>
               </tr>
@@ -346,11 +354,49 @@ export function NewsBodyTextSection() {
                       </button>
                     )}
                   </td>
+                  <td className="px-3 py-4 text-center">
+                    {pendingDeleteId === article.id ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="flex items-center gap-1">
+                          <button
+                            className="rounded px-2 py-1 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60 transition"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(article.id)}
+                            type="button"
+                          >
+                            Sí
+                          </button>
+                          <button
+                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => { setPendingDeleteId(null); deleteMutation.reset() }}
+                            type="button"
+                          >
+                            No
+                          </button>
+                        </div>
+                        {deleteMutation.isError && deleteMutation.variables === article.id ? (
+                          <p className="text-xs text-destructive">Error</p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <button
+                        className="rounded p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                        onClick={() => { setPendingDeleteId(article.id); deleteMutation.reset() }}
+                        title="Eliminar noticia"
+                        type="button"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                          <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.712Z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    )}
+                  </td>
                 </tr>
 
                 {editingId === article.id ? (
                   <tr className="border-t border-teal-100 bg-teal-50/40">
-                    <td colSpan={7} className="px-4 py-4">
+                    <td colSpan={8} className="px-4 py-4">
                       {bodyQuery.isLoading ? (
                         <p className="text-sm text-muted-foreground">Cargando body text...</p>
                       ) : bodyQuery.isError ? (
@@ -445,12 +491,12 @@ export function NewsBodyTextSection() {
                               {saveMutation.isPending ? 'Guardando...' : 'Guardar'}
                             </button>
                             <button
-                              className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={saveMutation.isPending}
-                              onClick={() => handleClear(article.id)}
+                              onClick={handleCancelEdit}
                               type="button"
                             >
-                              Limpiar (null)
+                              Cancelar
                             </button>
                             {saveMutation.isError ? (
                               <p className="text-sm text-destructive">{saveMutation.error.message}</p>
@@ -466,6 +512,7 @@ export function NewsBodyTextSection() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {totalPages > 1 ? (
