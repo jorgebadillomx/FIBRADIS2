@@ -9,6 +9,7 @@ public interface IOperationalConfigRepository
         decimal? commissionFactor,
         int? avgPeriods,
         int? newsCadenceMinutes,
+        int? fibraNewsMonths,
         string actor,
         CancellationToken ct = default);
 }

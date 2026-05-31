@@ -4,5 +4,6 @@ public sealed record OperationalConfigDto(
     decimal CommissionFactor,
     int AvgPeriods,
     int NewsCadenceMinutes,
+    int FibraNewsMonths,
     DateTimeOffset UpdatedAt,
     string? UpdatedBy);

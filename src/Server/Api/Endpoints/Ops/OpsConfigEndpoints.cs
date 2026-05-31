@@ -50,6 +50,7 @@ public static class OpsConfigEndpoints
                 request.CommissionFactor,
                 request.AvgPeriods,
                 request.NewsCadenceMinutes,
+                request.FibraNewsMonths,
                 actor,
                 ct);
 
@@ -93,7 +94,7 @@ public static class OpsConfigEndpoints
     {
         var errors = new Dictionary<string, string[]>();
 
-        if (request.CommissionFactor is null && request.AvgPeriods is null && request.NewsCadenceMinutes is null)
+        if (request.CommissionFactor is null && request.AvgPeriods is null && request.NewsCadenceMinutes is null && request.FibraNewsMonths is null)
         {
             errors["body"] = ["Se debe proporcionar al menos un campo para actualizar."];
             return errors;
@@ -115,6 +116,11 @@ public static class OpsConfigEndpoints
             errors["newsCadenceMinutes"] = ["newsCadenceMinutes debe ser un divisor de 60 entre 15 y 60 (15, 20, 30, 60)."];
         }
 
+        if (request.FibraNewsMonths is not null && (request.FibraNewsMonths < 1 || request.FibraNewsMonths > 36))
+        {
+            errors["fibraNewsMonths"] = ["fibraNewsMonths debe estar entre 1 y 36 meses."];
+        }
+
         return errors;
     }
 
@@ -126,6 +132,7 @@ public static class OpsConfigEndpoints
             config.CommissionFactor,
             config.AvgPeriods,
             config.NewsCadenceMinutes,
+            config.FibraNewsMonths,
             config.UpdatedAt,
             config.UpdatedBy);
 

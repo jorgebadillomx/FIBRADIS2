@@ -15,6 +15,7 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         decimal? commissionFactor,
         int? avgPeriods,
         int? newsCadenceMinutes,
+        int? fibraNewsMonths,
         string actor,
         CancellationToken ct = default)
     {
@@ -65,6 +66,19 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
                 NewValue = newsCadenceMinutes.Value.ToString(CultureInfo.InvariantCulture),
             });
             config.NewsCadenceMinutes = newsCadenceMinutes.Value;
+        }
+
+        if (fibraNewsMonths.HasValue && config.FibraNewsMonths != fibraNewsMonths.Value)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor,
+                ChangedAt = now,
+                FieldName = "fibra_news_months",
+                PreviousValue = config.FibraNewsMonths.ToString(CultureInfo.InvariantCulture),
+                NewValue = fibraNewsMonths.Value.ToString(CultureInfo.InvariantCulture),
+            });
+            config.FibraNewsMonths = fibraNewsMonths.Value;
         }
 
         if (auditEntries.Count == 0)

@@ -12,6 +12,7 @@ interface FormValues {
   commissionFactor: number
   avgPeriods: number
   newsCadenceMinutes: number
+  fibraNewsMonths: number
 }
 
 const inputClassName =
@@ -43,6 +44,7 @@ export function ConfigPage() {
       commissionFactor: 0.006,
       avgPeriods: 4,
       newsCadenceMinutes: 60,
+      fibraNewsMonths: 15,
     },
   })
 
@@ -53,6 +55,7 @@ export function ConfigPage() {
       commissionFactor: Number(configQuery.data.commissionFactor),
       avgPeriods: Number(configQuery.data.avgPeriods),
       newsCadenceMinutes: Number(configQuery.data.newsCadenceMinutes),
+      fibraNewsMonths: Number(configQuery.data.fibraNewsMonths ?? 15),
     })
   }, [configQuery.data, reset])
 
@@ -74,6 +77,7 @@ export function ConfigPage() {
     if (dirtyFields.commissionFactor) payload.commissionFactor = values.commissionFactor
     if (dirtyFields.avgPeriods) payload.avgPeriods = values.avgPeriods
     if (dirtyFields.newsCadenceMinutes) payload.newsCadenceMinutes = values.newsCadenceMinutes
+    if (dirtyFields.fibraNewsMonths) payload.fibraNewsMonths = values.fibraNewsMonths
 
     if (Object.keys(payload).length === 0) return
     saveMutation.mutate(payload)
@@ -146,6 +150,21 @@ export function ConfigPage() {
                     </option>
                   ))}
                 </select>
+              </Field>
+
+              <Field label="fibra_news_months" error={errors.fibraNewsMonths?.message} required>
+                <input
+                  {...register('fibraNewsMonths', {
+                    required: 'fibra_news_months es requerido.',
+                    min: { value: 1, message: 'Mínimo 1.' },
+                    max: { value: 36, message: 'Máximo 36.' },
+                    valueAsNumber: true,
+                  })}
+                  className={inputClassName}
+                  type="number"
+                  min={1}
+                  max={36}
+                />
               </Field>
             </div>
 

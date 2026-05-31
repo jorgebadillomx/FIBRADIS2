@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Application.News;
+using Application.Ops;
 using Domain.News;
 using SharedApiContracts.News;
 
@@ -29,9 +30,11 @@ public static class NewsEndpoints
         group.MapGet("/fibras/{fibraId:guid}", async (
             Guid fibraId,
             INewsRepository newsRepo,
+            IOperationalConfigRepository configRepo,
             CancellationToken ct) =>
         {
-            var articles = await newsRepo.GetLatestForFibraAsync(fibraId, 5, ct);
+            var config = await configRepo.GetAsync(ct);
+            var articles = await newsRepo.GetLatestForFibraAsync(fibraId, 5, config.FibraNewsMonths, ct);
             return Results.Ok(articles.Select(ToDto).ToList());
         })
         .AllowAnonymous()
