@@ -5,6 +5,7 @@ const navigationItems = [
   { label: 'Dashboard', to: '/dashboard', description: 'Estado de pipelines, errores y disparos manuales.' },
   { label: 'Catálogo', to: '/catalog', description: 'Agregar, editar y desactivar FIBRAs del universo.' },
   { label: 'AI Config', to: '/ai-config', description: 'Modo, proveedor y disparos manuales.' },
+  { label: 'Contenido Editorial', to: '/editorial', description: 'Editar textos educativos de la sección Conoce las FIBRAs.' },
   { label: 'Noticias', to: '/noticias', description: 'Curación de body text y resúmenes IA.' },
   { label: 'Blocklist', to: '/blocklist', description: 'Términos excluidos del pipeline RSS.' },
   { label: 'Logs del Pipeline', to: '/pipeline-logs', description: 'Errores estructurados listos para diagnóstico.' },

@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PipelineRunLog> PipelineRunLogs => Set<PipelineRunLog>();
     public DbSet<FundamentalRecord> FundamentalRecords => Set<FundamentalRecord>();
     public DbSet<OperationalConfig> OperationalConfigs => Set<OperationalConfig>();
+    public DbSet<EditorialPage> EditorialPages => Set<EditorialPage>();
     public DbSet<ConfigAuditLog> ConfigAuditLogs => Set<ConfigAuditLog>();
     public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
 

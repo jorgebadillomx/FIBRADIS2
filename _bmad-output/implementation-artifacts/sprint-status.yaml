@@ -1,5 +1,6 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-31
+# story 8-1 review — sección "Conoce las FIBRAs" 5 tabs + editor Ops, migración AddEditorialPages, 3 unit tests, 193/193 pasan
 # story 5-10 done — code review pass (5 patches: P1 GetSummaryByPeriodAsync deduplicación FibraId, P2 empty state message período, P3 React key ticker+period, P5 test ordering assertion, P6 using redundante)
 # story 5-10 review — /fundamentales página comparativa cross-FIBRA, 2 endpoints nuevos (summary + periods), 6 unit tests, nav renombrado
 # story 4-11 done — code review pass (6 patches: P1 LinkedFibraDto.id Guid.Empty, P2 imagen og en cards, P3 og: meta tags, P4 skeleton isFetching flash, P5 snippet empty string, P6 toCount NaN guard)
@@ -238,7 +239,7 @@ development_status:
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
   epic-8: in-progress
   # story 8-1 creada — sección pública "Conoce las FIBRAs" con 5 tabs educativos y editor en Ops
-  8-1-seccion-educativa-conoce-las-fibras: ready-for-dev
+  8-1-seccion-educativa-conoce-las-fibras: review
   # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
   8-2-catalogo-fibras-descripcion-pagina-publica: ready-for-dev
 

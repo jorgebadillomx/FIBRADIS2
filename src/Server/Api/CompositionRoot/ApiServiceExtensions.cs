@@ -77,6 +77,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
         builder.Services.AddScoped<IAiModeRepository, AiModeRepository>();
         builder.Services.AddScoped<IOperationalConfigRepository, OperationalConfigRepository>();
+        builder.Services.AddScoped<IEditorialPageRepository, EditorialPageRepository>();
         builder.Services.AddScoped<IConfigAuditLogRepository, ConfigAuditLogRepository>();
         builder.Services.AddScoped<IAiPromptRepository, AiPromptRepository>();
         builder.Services.AddScoped<IPipelineErrorLogRepository, PipelineErrorLogRepository>();

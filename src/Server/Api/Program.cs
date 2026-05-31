@@ -35,11 +35,13 @@ app.MapOpsPipelineLogs();
 app.MapOpsAiCallLogs();
 app.MapNewsBlocklist();
 app.MapNews();
+app.MapEditorial();
 app.MapCatalog();
 app.MapMarket();
 app.MapOpsFundamentals();
 app.MapOpsCatalog();
 app.MapOpsConfig();
+app.MapOpsEditorial();
 app.MapFundamentalsPublic();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());

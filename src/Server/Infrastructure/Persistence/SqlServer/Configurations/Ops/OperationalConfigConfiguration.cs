@@ -17,6 +17,7 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             .HasPrecision(10, 6);
         builder.Property(x => x.AvgPeriods).HasColumnName("avg_periods");
         builder.Property(x => x.NewsCadenceMinutes).HasColumnName("news_cadence_minutes");
+        builder.Property(x => x.FibraNewsMonths).HasColumnName("fibra_news_months");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasMaxLength(256);
 

@@ -44,6 +44,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
         Assert.Equal(0.006m, body!.CommissionFactor);
         Assert.Equal(4, body.AvgPeriods);
         Assert.Equal(60, body.NewsCadenceMinutes);
+        Assert.Equal(15, body.FibraNewsMonths);
     }
 
     [Fact]
@@ -235,6 +236,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
                 CommissionFactor = 0.006m,
                 AvgPeriods = 4,
                 NewsCadenceMinutes = 60,
+                FibraNewsMonths = 15,
                 UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
                 UpdatedBy = "system",
             });
@@ -244,6 +246,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
             config.CommissionFactor = 0.006m;
             config.AvgPeriods = 4;
             config.NewsCadenceMinutes = 60;
+            config.FibraNewsMonths = 15;
             config.UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero);
             config.UpdatedBy = "system";
         }
