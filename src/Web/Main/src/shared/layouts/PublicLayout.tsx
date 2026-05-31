@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router'
+import { Link, Outlet } from 'react-router'
 import { GlobalSearch } from '@/modules/home/GlobalSearch'
 
 export function PublicLayout() {
@@ -16,16 +16,16 @@ export function PublicLayout() {
         className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       >
         <div className="container mx-auto flex h-14 items-center gap-6 px-4">
-          <a href="/" className="font-playfair text-xl font-bold text-primary tracking-tight shrink-0">
+          <Link to="/" className="font-playfair text-xl font-bold text-primary tracking-tight shrink-0">
             FIBRADIS
-          </a>
+          </Link>
           <nav
             aria-label="Navegación principal"
             className="hidden md:flex items-center gap-5 text-sm text-muted-foreground"
           >
             <a href="/mercado" className="hover:text-foreground transition-colors duration-150">Mercado</a>
             <a href="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</a>
-            <a href="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</a>
+            <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
           </nav>
           <div className="flex-1 min-w-0 flex justify-center">
             <GlobalSearch />

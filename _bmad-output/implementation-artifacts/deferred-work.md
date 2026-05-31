@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review of 4-11-pagina-listado-noticias (2026-05-31)
+
+- **D1: Page reset timing con debounce** [`NoticiasListPage.tsx`] — Ventana de 300ms genera un fetch extra con query antigua al limpiar filtros. Comportamiento inherente al patrón debounce; no afecta el estado final correcto.
+- **D2: `LIKE '%q%'` sin índice ni garantía de collation** [`NewsRepository.cs:GetPagedPublicAsync`] — Pre-existente en `GetPagedForOpsAsync` también. Puede fallar en SQL Server con collation case-sensitive o tener tabla-scan en datasets grandes. Añadir full-text index si se detecta degradación de performance.
+- **D3: `CountAsync` + `ToListAsync` sin snapshot isolation** [`NewsRepository.cs:GetPagedPublicAsync`] — Patrón EF Core pre-existente en todo el proyecto. El `total` puede ser inconsistente con los items en caso de inserciones concurrentes. Cosméticamente menor en lectura pública.
+- **D4: `fetchAllFibras` trunca silenciosamente a 100 FIBRAs** [`fibrasApi.ts`] — El endpoint del catálogo limita a 100 resultados; actualmente el sistema tiene 6 FIBRAs. Agregar paginación del dropdown si el catálogo crece más allá de 100.
+- **D5: `fetchAllFibras` singleton a nivel de módulo vs factory pattern** [`fibrasApi.ts`] — Inconsistencia pre-existente con el patrón `getApiClient()` de `newsApi.ts`. Riesgo de SSR context initialization. Unificar patrón al refactorizar `fibrasApi.ts`.
+- **D6: Batch de tickers excluye FIBRAs inactivas pero filtro `fibraId` no** [`NewsRepository.cs:GetPagedPublicAsync`] — Si se filtra por `fibraId` de una FIBRA inactiva (solo vía URL directo), los artículos aparecen pero sin chips de ticker. No alcanzable desde la UI (dropdown solo muestra FIBRAs activas per AC4).
+- **D7: Test para fibraId inactiva en `GetPagedPublicAsync` ausente** [`NewsRepositoryPublicPagedTests.cs`] — Cubre el edge case D6. AC12 ya cumplido con 5 tests (mínimo era 4). Añadir en próxima historia del módulo news.
+
 ## Deferred from: code review of 5-9-analisis-ia-enriquecido-fundamentales (2026-05-30)
 
 - **D1: `UpdateStatusAsync` guard silencia re-confirmación por actor diferente** [`FundamentalRepository.cs:53-54`] — El guard `if (record.Status == status && status == "processed") return` fue introducido para idempotencia pero impide que un segundo AdminOps registre su nombre como confirmador. Comportamiento deliberado; revisitar si el negocio requiere audit trail de re-confirmaciones.

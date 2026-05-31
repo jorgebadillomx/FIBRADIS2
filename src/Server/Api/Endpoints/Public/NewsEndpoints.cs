@@ -2,6 +2,7 @@ using System.Text.Json;
 using Application.News;
 using Application.Ops;
 using Domain.News;
+using Microsoft.AspNetCore.Mvc;
 using SharedApiContracts.News;
 
 namespace Api.Endpoints.Public;
@@ -40,6 +41,24 @@ public static class NewsEndpoints
         .AllowAnonymous()
         .Produces<IReadOnlyList<NewsArticleDto>>(StatusCodes.Status200OK);
 
+        group.MapGet("/paged", async (
+            [AsParameters] NewsPagedRequest req,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var page = Math.Max(1, req.PageNumber ?? 1);
+            var pageSize = Math.Clamp(req.PageSize ?? 20, 1, 50);
+            var (items, total, tickersByArticleId) = await newsRepo.GetPagedPublicAsync(page, pageSize, req.Q, req.FibraId, ct);
+
+            var dtos = items
+                .Select(article => ToDtoWithTickerNames(article, tickersByArticleId))
+                .ToList();
+
+            return Results.Ok(new NewsPagedResultDto(dtos, total, page, pageSize));
+        })
+        .AllowAnonymous()
+        .Produces<NewsPagedResultDto>(StatusCodes.Status200OK);
+
         group.MapGet("/{id:guid}", async (
             Guid id,
             INewsRepository newsRepo,
@@ -72,6 +91,27 @@ public static class NewsEndpoints
         => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url,
             article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson));
 
+    private static NewsArticleDto ToDtoWithTickerNames(
+        NewsArticle article,
+        IReadOnlyDictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>> tickersByArticleId)
+    {
+        var linkedFibras = tickersByArticleId.TryGetValue(article.Id, out var tickers)
+            ? tickers.Select(t => new LinkedFibraDto(t.FibraId, t.Ticker)).ToList()
+            : null;
+
+        return new NewsArticleDto(
+            article.Id,
+            article.Title,
+            article.Source,
+            article.PublishedAt,
+            article.Url,
+            article.Snippet,
+            article.ImageUrl,
+            article.AiSummary,
+            MapAnalysis(article.AiAnalysisJson),
+            linkedFibras);
+    }
+
     private static NewsArticleDto ToDtoWithFibras(NewsArticle article, IReadOnlyList<(Guid Id, string Ticker)> fibras)
     {
         var linked = fibras.Count > 0
@@ -94,3 +134,10 @@ public static class NewsEndpoints
         }
     }
 }
+
+public sealed record NewsPagedRequest(
+    [FromQuery(Name = "pageNumber")] int? PageNumber,
+    [FromQuery(Name = "pageSize")] int? PageSize,
+    [FromQuery(Name = "q")] string? Q,
+    [FromQuery(Name = "fibraId")] Guid? FibraId
+);

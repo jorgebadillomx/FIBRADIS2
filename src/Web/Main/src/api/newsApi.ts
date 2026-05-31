@@ -7,6 +7,7 @@ export type NewsArticle = components['schemas']['NewsArticleDto'] & {
 }
 export type NewsAiAnalysis = components['schemas']['NewsAiAnalysisDto']
 export type NewsKeyFigure = components['schemas']['NewsKeyFigureDto']
+export type NewsPagedResult = components['schemas']['NewsPagedResultDto']
 
 function getApiClient() {
   return createClient<paths>({
@@ -19,6 +20,28 @@ export async function fetchLatestNews() {
   const { data, error } = await apiClient.GET('/api/v1/news')
   if (error) throw new Error(`Error al obtener noticias: ${JSON.stringify(error)}`)
   return data ?? []
+}
+
+export async function fetchNewsPaged(
+  page: number,
+  pageSize: number,
+  q?: string,
+  fibraId?: string
+): Promise<NewsPagedResult> {
+  const apiClient = getApiClient()
+  const { data, error } = await apiClient.GET('/api/v1/news/paged', {
+    params: {
+      query: {
+        pageNumber: page,
+        pageSize,
+        q: q || undefined,
+        fibraId: fibraId || undefined,
+      },
+    },
+  })
+
+  if (error) throw new Error(`Error al obtener noticias paginadas: ${JSON.stringify(error)}`)
+  return data
 }
 
 export async function fetchRelatedNews(articleId: string): Promise<NewsArticle[]> {

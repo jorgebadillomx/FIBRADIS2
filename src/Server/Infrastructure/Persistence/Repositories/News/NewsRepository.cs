@@ -107,6 +107,60 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .ToListAsync(ct);
     }
 
+    public async Task<(IReadOnlyList<NewsArticle> Items, int Total, IReadOnlyDictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>> TickersByArticleId)>
+        GetPagedPublicAsync(int page, int pageSize, string? q, Guid? fibraId, CancellationToken ct = default)
+    {
+        var query = db.NewsArticles
+            .Where(article => article.DeletedAt == null && article.Status == NewsArticleStatus.Processed);
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var trimmedQuery = q.Trim();
+            query = query.Where(article => article.Title.Contains(trimmedQuery));
+        }
+
+        if (fibraId.HasValue)
+        {
+            query = query.Where(article =>
+                db.NewsArticleFibras.Any(link => link.NewsArticleId == article.Id && link.FibraId == fibraId.Value));
+        }
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(article => article.PublishedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        var articleIds = items.Select(article => article.Id).ToList();
+        if (articleIds.Count == 0)
+        {
+            return (items, total, new Dictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>>());
+        }
+
+        var links = await db.NewsArticleFibras
+            .Where(link => articleIds.Contains(link.NewsArticleId))
+            .Join(
+                db.Fibras.Where(fibra => fibra.State == Domain.Catalog.FibraState.Active),
+                link => link.FibraId,
+                fibra => fibra.Id,
+                (link, fibra) => new { link.NewsArticleId, FibraId = fibra.Id, fibra.Ticker })
+            .ToListAsync(ct);
+
+        var tickerMap = links
+            .GroupBy(link => link.NewsArticleId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<(Guid FibraId, string Ticker)>)group
+                    .DistinctBy(link => link.Ticker, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(link => link.Ticker)
+                    .Select(link => (link.FibraId, link.Ticker))
+                    .ToList());
+
+        return (items, total, tickerMap);
+    }
+
     public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default)
     {
         var query = db.NewsArticles.Where(a => a.DeletedAt == null);
