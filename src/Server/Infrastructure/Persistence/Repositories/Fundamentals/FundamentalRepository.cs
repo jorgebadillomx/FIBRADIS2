@@ -36,7 +36,7 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
 
     public async Task<IReadOnlyList<FundamentalRecord>> GetByFibraAsync(Guid fibraId, CancellationToken ct)
         => await db.FundamentalRecords
-            .Where(r => r.FibraId == fibraId)
+            .Where(r => r.FibraId == fibraId && r.DeletedAt == null)
             .OrderByDescending(r => r.CapturedAt)
             .ToListAsync(ct);
 

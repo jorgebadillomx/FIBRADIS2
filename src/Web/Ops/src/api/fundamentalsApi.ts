@@ -178,6 +178,20 @@ export async function patchKpis(id: string, values: PatchKpisRequest): Promise<F
   return response.json() as Promise<FundamentalRecordDto>
 }
 
+export async function disableFundamental(id: string): Promise<void> {
+  assertOpsAccessToken()
+
+  const response = await fetch(`/api/v1/ops/fundamentals/${id}`, {
+    method: 'DELETE',
+    headers: getOpsAuthHeaders(),
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `Error al deshabilitar registro (${response.status})`)
+  }
+}
+
 export async function patchFieldNotes(id: string, values: PatchFieldNotesRequest): Promise<FundamentalRecordDto> {
   assertOpsAccessToken()
 
