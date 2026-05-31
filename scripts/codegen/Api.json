@@ -1371,6 +1371,66 @@
         }
       }
     },
+    "/api/v1/news/paged": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fibraId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsPagedResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/news/{id}": {
       "get": {
         "tags": [
@@ -4040,6 +4100,22 @@
           }
         }
       },
+      "LinkedFibraDto": {
+        "required": [
+          "id",
+          "ticker"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticker": {
+            "type": "string"
+          }
+        }
+      },
       "LoginRequest": {
         "required": [
           "email",
@@ -4308,6 +4384,15 @@
                 "$ref": "#/components/schemas/NewsAiAnalysisDto"
               }
             ]
+          },
+          "linkedFibras": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LinkedFibraDto"
+            }
           }
         }
       },
@@ -4330,11 +4415,53 @@
           }
         }
       },
+      "NewsPagedResultDto": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsArticleDto"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "OperationalConfigDto": {
         "required": [
           "commissionFactor",
           "avgPeriods",
           "newsCadenceMinutes",
+          "fibraNewsMonths",
           "updatedAt",
           "updatedBy"
         ],
@@ -4357,6 +4484,14 @@
             "format": "int32"
           },
           "newsCadenceMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fibraNewsMonths": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -5176,7 +5311,8 @@
         "required": [
           "commissionFactor",
           "avgPeriods",
-          "newsCadenceMinutes"
+          "newsCadenceMinutes",
+          "fibraNewsMonths"
         ],
         "type": "object",
         "properties": {
@@ -5199,6 +5335,15 @@
             "format": "int32"
           },
           "newsCadenceMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fibraNewsMonths": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",

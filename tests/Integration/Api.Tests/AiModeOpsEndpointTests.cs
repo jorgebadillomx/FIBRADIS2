@@ -485,6 +485,10 @@ public class AiModeOpsEndpointTests
         public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, int months, CancellationToken ct = default)
             => throw new NotSupportedException();
 
+        public Task<(IReadOnlyList<NewsArticle> Items, int Total, IReadOnlyDictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>> TickersByArticleId)> GetPagedPublicAsync(int page, int pageSize, string? q, Guid? fibraId, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<NewsArticle>, int, IReadOnlyDictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>>)>(
+                ([Article], 1, new Dictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>>()));
+
         public Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default)
             => Task.FromResult<(IReadOnlyList<NewsArticle>, int)>(([Article], 1));
 

@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import { fetchArticleById, fetchRelatedNews, type NewsKeyFigure } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
-import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
 
 const DEFAULT_TITLE = 'FIBRADIS'
@@ -70,7 +69,6 @@ export function NoticiaPage() {
     )
   }
 
-  const imageUrl = getArticleImageUrl(article)
   const safeExternalUrl = getSafeExternalUrl(article.url)
 
   return (
@@ -81,22 +79,6 @@ export function NoticiaPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
         <div className="min-w-0">
-        {false && imageUrl ? (
-          <div className="mb-6 aspect-video overflow-hidden rounded-xl bg-muted">
-            <img
-              src={imageUrl}
-              alt={article.title}
-              className="h-full w-full object-cover"
-              loading="eager"
-              onError={(event) => {
-                event.currentTarget.onerror = null
-                event.currentTarget.style.display = 'none'
-                event.currentTarget.parentElement!.style.display = 'none'
-              }}
-            />
-          </div>
-        ) : null}
-
         <h1 className="mb-2 font-playfair text-3xl md:text-4xl font-bold leading-tight text-foreground">
           {article.title}
         </h1>

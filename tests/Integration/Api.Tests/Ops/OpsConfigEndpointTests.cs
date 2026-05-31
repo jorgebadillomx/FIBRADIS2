@@ -67,7 +67,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(0.008m, null, null));
+            new UpdateOperationalConfigRequest(0.008m, null, null, null));
         var getResponse = await _adminClient.GetAsync("/api/v1/ops/config");
         var body = await getResponse.Content.ReadFromJsonAsync<OperationalConfigDto>();
 
@@ -82,7 +82,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(null, null, null));
+            new UpdateOperationalConfigRequest(null, null, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -92,7 +92,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(-0.001m, null, null));
+            new UpdateOperationalConfigRequest(-0.001m, null, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -102,7 +102,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(0.15m, null, null));
+            new UpdateOperationalConfigRequest(0.15m, null, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -112,7 +112,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(null, 0, null));
+            new UpdateOperationalConfigRequest(null, 0, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -122,7 +122,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(null, 25, null));
+            new UpdateOperationalConfigRequest(null, 25, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -132,7 +132,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(null, null, 45));
+            new UpdateOperationalConfigRequest(null, null, 45, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -142,7 +142,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(null, null, 30));
+            new UpdateOperationalConfigRequest(null, null, 30, null));
         var getResponse = await _adminClient.GetAsync("/api/v1/ops/config");
         var body = await getResponse.Content.ReadFromJsonAsync<OperationalConfigDto>();
 
@@ -156,7 +156,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _anonClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(0.008m, null, null));
+            new UpdateOperationalConfigRequest(0.008m, null, null, null));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -166,13 +166,13 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(null, 6, null));
+            new UpdateOperationalConfigRequest(null, 6, null, null));
 
         await Task.Delay(10);
 
         await _adminClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(0.008m, null, null));
+            new UpdateOperationalConfigRequest(0.008m, null, null, null));
 
         var response = await _adminClient.GetAsync("/api/v1/ops/audit-log");
         var body = await response.Content.ReadFromJsonAsync<List<ConfigAuditLogDto>>();
@@ -198,7 +198,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     {
         var response = await _userClient.PutAsJsonAsync(
             "/api/v1/ops/config",
-            new UpdateOperationalConfigRequest(0.008m, null, null));
+            new UpdateOperationalConfigRequest(0.008m, null, null, null));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
