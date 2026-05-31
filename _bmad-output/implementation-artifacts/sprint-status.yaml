@@ -1,3 +1,5 @@
+# 5-8 patches aplicados (8 patches + índice Provider,CreatedAt) + 4-10 code review completo (2 patches P1/P2) — AC-1, AC-2, AC-4 retro cerrados
+# sprint-retro-ext-2026-05-31 creada — cubre 5-9, 4-11, 5-10, 8-1, 8-2; documenta deuda crítica de 5-8 (9 patches sin aplicar) y 4-10 (sin code review); 4 action items antes de Épica 6
 # story 5-5 done — code review 6 patches aplicados (P1: doble copia MemoryStream, P2: log PDF sin texto, P3: error silencioso upload + validación tamaño frontend, P4: badge Error IA con mensaje y dismiss, P5: ProblemDetails parsing, P6: test positivo PdfMarkdownExtractor). 3/3 unit tests verdes
 # generated: 2026-05-15
 # last_updated: 2026-05-31
@@ -250,6 +252,8 @@ development_status:
   8-1-seccion-educativa-conoce-las-fibras: done
   # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
   8-2-catalogo-fibras-descripcion-pagina-publica: done
+  # sprint-retro-ext-2026-05-31 — cubre 8-1, 8-2 + cross-epic (5-9, 4-11, 5-10); 5-8 y 4-10 con deuda crítica pendiente
+  epic-8-retrospective: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog
