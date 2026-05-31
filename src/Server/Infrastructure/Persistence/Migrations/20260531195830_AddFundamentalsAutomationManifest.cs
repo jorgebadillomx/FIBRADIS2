@@ -11,12 +11,6 @@ namespace Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "FibraNewsMonths",
-                schema: "ops",
-                table: "OperationalConfig",
-                newName: "fibra_news_months");
-
             migrationBuilder.AddColumn<int>(
                 name: "fundamentals_cadence_minutes",
                 schema: "ops",
@@ -97,12 +91,6 @@ namespace Infrastructure.Persistence.Migrations
                 name: "fundamentals_cadence_minutes",
                 schema: "ops",
                 table: "OperationalConfig");
-
-            migrationBuilder.RenameColumn(
-                name: "fibra_news_months",
-                schema: "ops",
-                table: "OperationalConfig",
-                newName: "FibraNewsMonths");
         }
     }
 }
