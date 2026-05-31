@@ -402,7 +402,7 @@ public class AiModeOpsEndpointTests
         public Task SetModeAsync(AiMode newMode, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
 
-        public Task UpdateConfigAsync(AiMode? newMode, string? newsModel, string actor, CancellationToken ct = default)
+        public Task UpdateConfigAsync(AiMode? newMode, string? newsModel, int? minBodyTextLengthForAi, string actor, CancellationToken ct = default)
             => Task.CompletedTask;
     }
 

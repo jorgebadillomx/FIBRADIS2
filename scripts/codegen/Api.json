@@ -2914,7 +2914,8 @@
           "newsModel",
           "updatedAt",
           "updatedBy",
-          "previousMode"
+          "previousMode",
+          "minBodyTextLengthForAi"
         ],
         "type": "object",
         "properties": {
@@ -2939,6 +2940,10 @@
               "null",
               "string"
             ]
+          },
+          "minBodyTextLengthForAi": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -5134,6 +5139,13 @@
               "null",
               "string"
             ]
+          },
+          "minBodyTextLengthForAi": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

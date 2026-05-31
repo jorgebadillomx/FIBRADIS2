@@ -7,6 +7,7 @@ export function AiModeSection() {
   const [selected, setSelected] = useState<'Off' | 'On' | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [pendingMinBodyLength, setPendingMinBodyLength] = useState<number | null>(null)
 
   const modeQuery = useQuery({
     queryKey: ['ai-mode'],
@@ -18,6 +19,14 @@ export function AiModeSection() {
     mutationFn: setAiMode,
     onSuccess: async () => {
       setSelected(null)
+      await queryClient.invalidateQueries({ queryKey: ['ai-mode'] })
+    },
+  })
+
+  const saveThresholdMutation = useMutation({
+    mutationFn: (value: number) => setAiConfig({ minBodyTextLengthForAi: value }),
+    onSuccess: async () => {
+      setPendingMinBodyLength(null)
       await queryClient.invalidateQueries({ queryKey: ['ai-mode'] })
     },
   })
@@ -110,6 +119,60 @@ export function AiModeSection() {
           {saveMutation.isError ? (
             <p className="mt-3 text-sm text-destructive">{saveMutation.error.message}</p>
           ) : null}
+
+          <div className="mt-6 rounded-xl border border-border/80 bg-slate-50/80 p-4">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold tracking-tight">Umbral mínimo de cuerpo del artículo</h3>
+              <p className="text-sm text-muted-foreground">
+                Mínimo de caracteres que debe tener el body_text para enviar el artículo a la IA. Artículos por debajo del umbral se guardan como Partial sin llamar al proveedor.
+              </p>
+            </div>
+            {modeQuery.data ? (
+              <div className="mt-4 flex items-center gap-3">
+                <input
+                  type="number"
+                  min={0}
+                  max={10000}
+                  step={50}
+                  aria-label="Umbral mínimo de caracteres para análisis IA"
+                  className="w-28 rounded-xl border border-border px-3 py-2 text-sm"
+                  value={pendingMinBodyLength ?? modeQuery.data.minBodyTextLengthForAi}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10)
+                    if (!isNaN(v)) setPendingMinBodyLength(v)
+                  }}
+                  disabled={saveThresholdMutation.isPending}
+                />
+                {pendingMinBodyLength !== null &&
+                  pendingMinBodyLength !== modeQuery.data.minBodyTextLengthForAi ? (
+                  <>
+                    <button
+                      className="h-10 rounded-xl bg-teal-700 px-5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-400"
+                      disabled={saveThresholdMutation.isPending}
+                      onClick={() => saveThresholdMutation.mutate(pendingMinBodyLength)}
+                      type="button"
+                    >
+                      {saveThresholdMutation.isPending ? 'Guardando...' : 'Guardar umbral'}
+                    </button>
+                    <button
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                      disabled={saveThresholdMutation.isPending}
+                      onClick={() => setPendingMinBodyLength(null)}
+                      type="button"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+            {saveThresholdMutation.isError ? (
+              <p className="mt-3 text-sm text-destructive">{saveThresholdMutation.error.message}</p>
+            ) : null}
+            {saveThresholdMutation.isSuccess ? (
+              <p className="mt-3 text-sm text-teal-700">Umbral actualizado correctamente.</p>
+            ) : null}
+          </div>
 
           <div className="mt-6 rounded-xl border border-border/80 bg-slate-50/80 p-4">
             <div className="flex flex-col gap-2">

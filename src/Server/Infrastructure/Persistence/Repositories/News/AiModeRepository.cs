@@ -21,9 +21,9 @@ public class AiModeRepository(AppDbContext db) : IAiModeRepository
            };
 
     public async Task SetModeAsync(AiMode mode, string actor, CancellationToken ct = default)
-        => await UpdateConfigAsync(mode, null, actor, ct);
+        => await UpdateConfigAsync(mode, null, null, actor, ct);
 
-    public async Task UpdateConfigAsync(AiMode? mode, string? newsModel, string actor, CancellationToken ct = default)
+    public async Task UpdateConfigAsync(AiMode? mode, string? newsModel, int? minBodyTextLengthForAi, string actor, CancellationToken ct = default)
     {
         var updatedAt = DateTimeOffset.UtcNow;
         var config = await db.AiModeConfigs.FindAsync([1], ct);
@@ -34,6 +34,7 @@ public class AiModeRepository(AppDbContext db) : IAiModeRepository
                 Id = 1,
                 Mode = mode ?? AiMode.Off,
                 NewsModel = newsModel ?? "gemini-2.5-pro",
+                MinBodyTextLengthForAi = minBodyTextLengthForAi ?? 500,
                 UpdatedAt = updatedAt,
                 UpdatedBy = actor,
             });
@@ -64,6 +65,12 @@ public class AiModeRepository(AppDbContext db) : IAiModeRepository
         if (newsModel is not null && !string.Equals(config.NewsModel, newsModel, StringComparison.OrdinalIgnoreCase))
         {
             config.NewsModel = newsModel;
+            changed = true;
+        }
+
+        if (minBodyTextLengthForAi is not null && config.MinBodyTextLengthForAi != minBodyTextLengthForAi.Value)
+        {
+            config.MinBodyTextLengthForAi = minBodyTextLengthForAi.Value;
             changed = true;
         }
 

@@ -1,5 +1,10 @@
 # Deferred Work
 
+## Deferred from: code review of spec-4-12-umbral-body-text-ai-noticias (2026-05-31)
+
+- **D1: Artículos Partial por body corto nunca se re-procesan con IA** — `NewsBodyTextRetryJob` solo reintenta artículos con `BodyText IS NULL`. Artículos guardados como Partial por `bodyText.Length < MinBodyTextLengthForAi` (body no nulo pero corto) no son recogidos por el retry job, ni después de un body text edit manual en Ops. No hay mecanismo automático para re-intentar el análisis IA una vez que el body mejora. Considerar: after `UpdateBodyTextAsync` en Ops, si article.Status == Partial → enqueue AI re-analysis.
+- **D2: Race condition pre-existente en UpdateConfigAsync** [`AiModeRepository.cs`] — `FindAsync → if null → Add` no es atómico. En BD nueva (antes del primer registro seed), dos PUT concurrentes pueden ambos intentar insertar Id=1. El try/catch DbUpdateException + retry mitiga esto, pero el retry re-entra el mismo path no atómico. Pre-existente; impacto bajo bajo Ops de baja concurrencia.
+
 ## Deferred from: code review of 8-2-catalogo-fibras-descripcion-pagina-publica (2026-05-31)
 
 - **D1: ReactMarkdown sin rehype-sanitize en FibraPage pública** [`FibraPage.tsx:239`] — Patrón consistente con NoticiaPage. Descripción solo la escriben AdminOps. Evaluar `rehype-sanitize` si los permisos de escritura se amplían a usuarios no-admin.

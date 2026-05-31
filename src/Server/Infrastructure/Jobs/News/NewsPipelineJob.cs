@@ -43,10 +43,12 @@ public class NewsPipelineJob(
         try
         {
             var currentMode = AiMode.Off;
+            var minBodyLength = 500;
             try
             {
                 var config = await aiModeRepo.GetConfigAsync(ct);
                 currentMode = config.Mode;
+                minBodyLength = config.MinBodyTextLengthForAi;
             }
             catch (Exception ex)
             {
@@ -151,7 +153,9 @@ public class NewsPipelineJob(
                     string? aiAnalysisJson = null;
                     var finalStatus = NewsArticleStatus.Processed;
 
-                    if (currentMode == AiMode.On)
+                    var hasEnoughBody = !string.IsNullOrWhiteSpace(bodyText) && bodyText.Length >= minBodyLength;
+
+                    if (currentMode == AiMode.On && hasEnoughBody)
                     {
                         try
                         {
@@ -203,6 +207,13 @@ public class NewsPipelineJob(
                         }
 
                         await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                    }
+                    else if (currentMode == AiMode.On && !hasEnoughBody)
+                    {
+                        logger.LogInformation(
+                            "Artículo '{Url}' sin suficiente body_text ({Length} chars < umbral {Min}); guardado como Partial sin análisis IA.",
+                            item.Url, bodyText?.Length ?? 0, minBodyLength);
+                        finalStatus = NewsArticleStatus.Partial;
                     }
 
                     var article = new NewsArticle

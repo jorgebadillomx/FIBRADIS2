@@ -8,4 +8,5 @@ public class AiModeConfig
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? UpdatedBy { get; set; }
     public AiMode? PreviousMode { get; set; }
+    public int MinBodyTextLengthForAi { get; set; } = 500;
 }

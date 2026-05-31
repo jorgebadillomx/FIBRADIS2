@@ -3204,6 +3204,8 @@ export interface components {
             updatedAt: string;
             updatedBy: null | string;
             previousMode: null | string;
+            /** Format: int32 */
+            minBodyTextLengthForAi: number;
         };
         AiPromptDto: {
             contentType: string;
@@ -3690,6 +3692,8 @@ export interface components {
         UpdateAiModeRequest: {
             mode: null | string;
             newsModel: null | string;
+            /** Format: int32 */
+            minBodyTextLengthForAi?: null | number;
         };
         UpdateAiPromptRequest: {
             promptTemplate: string;

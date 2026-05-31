@@ -28,6 +28,11 @@ public class AiModeConfigConfiguration : IEntityTypeConfiguration<AiModeConfig>
             .HasConversion<string>()
             .HasMaxLength(20);
 
+        builder.Property(x => x.MinBodyTextLengthForAi)
+            .HasColumnName("min_body_text_length_for_ai")
+            .IsRequired()
+            .HasDefaultValue(500);
+
         builder.HasData(new AiModeConfig
         {
             Id = 1,
@@ -36,6 +41,7 @@ public class AiModeConfigConfiguration : IEntityTypeConfiguration<AiModeConfig>
             UpdatedAt = new DateTimeOffset(2026, 5, 19, 0, 0, 0, TimeSpan.Zero),
             UpdatedBy = "system",
             PreviousMode = null,
+            MinBodyTextLengthForAi = 500,
         });
     }
 }

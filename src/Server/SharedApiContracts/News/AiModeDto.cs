@@ -5,5 +5,6 @@ public sealed record AiModeDto(
     string NewsModel,
     DateTimeOffset UpdatedAt,
     string? UpdatedBy,
-    string? PreviousMode
+    string? PreviousMode,
+    int MinBodyTextLengthForAi
 );

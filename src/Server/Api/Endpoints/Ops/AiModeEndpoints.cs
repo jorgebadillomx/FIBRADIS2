@@ -56,7 +56,8 @@ public static class AiModeEndpoints
                 config.NewsModel,
                 config.UpdatedAt,
                 config.UpdatedBy,
-                config.PreviousMode?.ToString()));
+                config.PreviousMode?.ToString(),
+                config.MinBodyTextLengthForAi));
         })
         .Produces<AiModeDto>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -68,11 +69,19 @@ public static class AiModeEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            if (request.Mode is null && request.NewsModel is null)
+            if (request.Mode is null && request.NewsModel is null && request.MinBodyTextLengthForAi is null)
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["body"] = ["Se debe proporcionar al menos `mode` o `newsModel`."],
+                    ["body"] = ["Se debe proporcionar al menos `mode`, `newsModel` o `minBodyTextLengthForAi`."],
+                });
+            }
+
+            if (request.MinBodyTextLengthForAi is not null && (request.MinBodyTextLengthForAi < 0 || request.MinBodyTextLengthForAi > 10_000))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["minBodyTextLengthForAi"] = ["El valor debe estar entre 0 y 10000."],
                 });
             }
 
@@ -102,7 +111,7 @@ public static class AiModeEndpoints
                 ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
                 ?? "unknown";
 
-            await repo.UpdateConfigAsync(parsedMode, request.NewsModel?.ToLowerInvariant(), actor, ct);
+            await repo.UpdateConfigAsync(parsedMode, request.NewsModel?.ToLowerInvariant(), request.MinBodyTextLengthForAi, actor, ct);
             return Results.NoContent();
         })
         .Produces(StatusCodes.Status204NoContent)
@@ -435,4 +444,4 @@ public static class AiProviderEndpoints
 
 public sealed record SetAiProviderRequest(string Provider, string ModelId);
 
-public sealed record UpdateAiModeRequest(string? Mode, string? NewsModel);
+public sealed record UpdateAiModeRequest(string? Mode, string? NewsModel, int? MinBodyTextLengthForAi);

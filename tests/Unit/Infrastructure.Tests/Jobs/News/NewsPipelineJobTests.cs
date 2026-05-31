@@ -66,7 +66,8 @@ public class NewsPipelineJobTests
     {
         var newsRepo = new FakeNewsRepository();
         var summaryService = new FakeAiNewsAnalysisService("Resumen profesional FIBRA.");
-        var job = CreateJob(newsRepo, AiMode.On, analysisService: summaryService);
+        var job = CreateJob(newsRepo, AiMode.On, analysisService: summaryService,
+            articleContentScraper: new FakeArticleContentScraper(new string('x', 600)));
 
         await job.ExecuteAsync();
 
@@ -228,7 +229,7 @@ public class NewsPipelineJobTests
             new FakeAiModeRepository(AiMode.On),
             new FakeAiProviderConfigRepository(),
             new FakeOgImageScraper(null),
-            new FakeArticleContentScraper(null),
+            new FakeArticleContentScraper(new string('x', 600)),
             summaryService,
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
@@ -406,7 +407,7 @@ internal sealed class FakeNewsBlocklistRepository(IReadOnlyList<string> terms) :
         => Task.FromResult(true);
 }
 
-internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLookup = false, string newsModel = "gemini-2.5-pro") : IAiModeRepository
+internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLookup = false, string newsModel = "gemini-2.5-pro", int minBodyTextLengthForAi = 500) : IAiModeRepository
 {
     private AiModeConfig _config = new()
     {
@@ -416,6 +417,7 @@ internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLo
         PreviousMode = null,
         UpdatedAt = DateTimeOffset.UtcNow,
         UpdatedBy = "test",
+        MinBodyTextLengthForAi = minBodyTextLengthForAi,
     };
 
     public Task<AiMode> GetCurrentModeAsync(CancellationToken ct = default)
@@ -449,10 +451,11 @@ internal sealed class FakeAiModeRepository(AiMode mode, bool shouldThrowOnModeLo
         return Task.CompletedTask;
     }
 
-    public Task UpdateConfigAsync(AiMode? mode, string? newsModel, string actor, CancellationToken ct = default)
+    public Task UpdateConfigAsync(AiMode? mode, string? newsModel, int? minBodyTextLengthForAi, string actor, CancellationToken ct = default)
     {
         if (mode is not null) _config.Mode = mode.Value;
         if (newsModel is not null) _config.NewsModel = newsModel;
+        if (minBodyTextLengthForAi is not null) _config.MinBodyTextLengthForAi = minBodyTextLengthForAi.Value;
         _config.UpdatedAt = DateTimeOffset.UtcNow;
         _config.UpdatedBy = actor;
         return Task.CompletedTask;
