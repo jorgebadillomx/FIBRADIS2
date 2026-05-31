@@ -3,6 +3,7 @@ using Application.Ai;
 using Application.News;
 using Domain.Ai;
 using Domain.News;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Integrations.Ai;
 
@@ -10,7 +11,8 @@ public class RoutingNewsAnalysisService(
     GeminiNewsAnalysisService gemini,
     DeepSeekNewsAnalysisService deepSeek,
     IAiProviderConfigRepository providerRepo,
-    IAiCallLogRepository callLogRepo) : IAiNewsAnalysisService
+    IAiCallLogRepository callLogRepo,
+    ILogger<RoutingNewsAnalysisService> logger) : IAiNewsAnalysisService
 {
     public async Task<NewsAiAnalysis?> GenerateAnalysisAsync(
         string title,
@@ -64,9 +66,12 @@ public class RoutingNewsAnalysisService(
                 Success = success,
                 RequestRaw = requestRaw,
                 ResponseRaw = responseRaw,
-                ErrorMessage = errorMessage,
+                ErrorMessage = errorMessage?[..Math.Min(errorMessage.Length, 500)],
             }, CancellationToken.None);
         }
-        catch { /* never let logging break the call */ }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "No se pudo persistir AiCallLog para NewsAnalysis ({Provider}).", provider);
+        }
     }
 }

@@ -44,7 +44,7 @@ public class RoutingNewsAnalysisServiceTests
         var gemini = BuildGemini(geminiHandler, fakeRepo);
         var deepSeek = BuildDeepSeek(new StubHandler(_ => throw new Exception("DeepSeek no debe llamarse")), fakeRepo);
 
-        var sut = new RoutingNewsAnalysisService(gemini, deepSeek, fakeRepo, new NullCallLogRepo());
+        var sut = new RoutingNewsAnalysisService(gemini, deepSeek, fakeRepo, new NullCallLogRepo(), NullLogger<RoutingNewsAnalysisService>.Instance);
         var result = await sut.GenerateAnalysisAsync("Título", "Snippet", null);
 
         Assert.True(geminiCalled);
@@ -69,7 +69,7 @@ public class RoutingNewsAnalysisServiceTests
         var gemini = BuildGemini(new StubHandler(_ => throw new Exception("Gemini no debe llamarse")), fakeRepo);
         var deepSeek = BuildDeepSeek(deepSeekHandler, fakeRepo);
 
-        var sut = new RoutingNewsAnalysisService(gemini, deepSeek, fakeRepo, new NullCallLogRepo());
+        var sut = new RoutingNewsAnalysisService(gemini, deepSeek, fakeRepo, new NullCallLogRepo(), NullLogger<RoutingNewsAnalysisService>.Instance);
         var result = await sut.GenerateAnalysisAsync("Título", null, null);
 
         Assert.True(deepSeekCalled);
@@ -89,7 +89,7 @@ public class RoutingNewsAnalysisServiceTests
         var gemini = BuildGemini(handler, fakeRepo);
         var deepSeek = BuildDeepSeek(new StubHandler(_ => throw new Exception("no debe llamarse")), fakeRepo);
 
-        var sut = new RoutingNewsAnalysisService(gemini, deepSeek, fakeRepo, spy);
+        var sut = new RoutingNewsAnalysisService(gemini, deepSeek, fakeRepo, spy, NullLogger<RoutingNewsAnalysisService>.Instance);
         await sut.GenerateAnalysisAsync("Título", "Snippet", null);
 
         Assert.Single(spy.Logged);

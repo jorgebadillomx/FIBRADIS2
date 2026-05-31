@@ -36,9 +36,12 @@ public class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
         builder.Property(x => x.Context).HasColumnName("context");
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
-            .HasDefaultValueSql("getutcdate()");
+            .HasDefaultValueSql("getutcdate()")
+            .ValueGeneratedOnAdd();
 
         builder.HasIndex(x => new { x.Operation, x.CreatedAt })
             .HasDatabaseName("IX_AiCallLog_Operation_CreatedAt");
+        builder.HasIndex(x => new { x.Provider, x.CreatedAt })
+            .HasDatabaseName("IX_AiCallLog_Provider_CreatedAt");
     }
 }

@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Domain.Ai;
+using Infrastructure.Persistence.SqlServer;
+using Microsoft.Extensions.DependencyInjection;
 using SharedApiContracts.Auth;
 
 namespace Api.Tests.Ops;
@@ -39,10 +42,79 @@ public class AiCallLogEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     }
 
     [Fact]
-    public async Task GetAiCallLogs_WithProviderFilter_Returns200()
+    public async Task GetAiCallLogs_WithProviderFilter_ReturnOnlyMatchingProvider()
     {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        db.AiCallLogs.AddRange(
+            new AiCallLog
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                Operation = "KpiExtraction",
+                Provider = "Gemini",
+                ModelId = "gemini-2.5-flash",
+                PromptLength = 100,
+                DurationMs = 500,
+                Success = true,
+            },
+            new AiCallLog
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                Operation = "NewsAnalysis",
+                Provider = "DeepSeek",
+                ModelId = "deepseek-chat",
+                PromptLength = 200,
+                DurationMs = 600,
+                Success = true,
+            });
+        await db.SaveChangesAsync();
+
         var response = await _client.GetAsync("/api/v1/ops/ai-call-logs?provider=Gemini");
+        var body = await response.Content.ReadAsStringAsync();
+
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"provider\":\"Gemini\"", body);
+        Assert.DoesNotContain("\"provider\":\"DeepSeek\"", body);
+    }
+
+    [Fact]
+    public async Task GetAiCallLogs_WithOperationFilter_ReturnsOnlyMatchingOperation()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        db.AiCallLogs.AddRange(
+            new AiCallLog
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                Operation = "KpiExtraction",
+                Provider = "Gemini",
+                ModelId = "gemini-2.5-flash",
+                PromptLength = 100,
+                DurationMs = 500,
+                Success = true,
+            },
+            new AiCallLog
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                Operation = "NewsAnalysis",
+                Provider = "Gemini",
+                ModelId = "gemini-2.5-flash",
+                PromptLength = 150,
+                DurationMs = 400,
+                Success = true,
+            });
+        await db.SaveChangesAsync();
+
+        var response = await _client.GetAsync("/api/v1/ops/ai-call-logs?operation=KpiExtraction");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"operation\":\"KpiExtraction\"", body);
+        Assert.DoesNotContain("\"operation\":\"NewsAnalysis\"", body);
     }
 
     [Fact]
