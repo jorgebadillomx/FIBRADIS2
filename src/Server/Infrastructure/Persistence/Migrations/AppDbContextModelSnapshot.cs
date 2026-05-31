@@ -2119,6 +2119,10 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("news_cadence_minutes");
 
+                    b.Property<int>("FibraNewsMonths")
+                        .HasColumnType("int")
+                        .HasColumnName("fibra_news_months");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset")
                         .HasColumnName("updated_at");
@@ -2138,6 +2142,7 @@ namespace Infrastructure.Persistence.Migrations
                             Id = 1,
                             AvgPeriods = 4,
                             CommissionFactor = 0.006m,
+                            FibraNewsMonths = 15,
                             NewsCadenceMinutes = 60,
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             UpdatedBy = "system"
