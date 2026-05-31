@@ -93,7 +93,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     public async Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
     {
-        var since = DateTimeOffset.UtcNow.AddMonths(-6);
+        var since = DateTimeOffset.UtcNow.AddMonths(-15);
         return await db.NewsArticleFibras
             .Where(link => link.FibraId == fibraId)
             .Select(link => link.NewsArticle)
