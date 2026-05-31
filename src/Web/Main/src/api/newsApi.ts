@@ -18,6 +18,12 @@ export async function fetchLatestNews() {
   return data ?? []
 }
 
+export async function fetchRelatedNews(articleId: string): Promise<NewsArticle[]> {
+  const response = await fetch(`/api/v1/news/${articleId}/related`)
+  if (!response.ok) return []
+  return response.json() as Promise<NewsArticle[]>
+}
+
 export async function fetchArticleById(id: string) {
   const apiClient = getApiClient()
   const { data, error, response } = await apiClient.GET('/api/v1/news/{id}', {

@@ -92,17 +92,20 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, CancellationToken ct = default)
-        => await db.NewsArticleFibras
+    {
+        var since = DateTimeOffset.UtcNow.AddMonths(-6);
+        return await db.NewsArticleFibras
             .Where(link => link.FibraId == fibraId)
             .Select(link => link.NewsArticle)
             .Where(article => article.DeletedAt == null
-                && article.AiAnalysisJson != null
+                && article.PublishedAt >= since
                 && (article.Status == NewsArticleStatus.Pending
                     || article.Status == NewsArticleStatus.Processed
                     || article.Status == NewsArticleStatus.Partial))
             .OrderByDescending(article => article.PublishedAt)
             .Take(count)
             .ToListAsync(ct);
+    }
 
     public async Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default)
     {
@@ -149,6 +152,22 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .Select(n => new { n.Id, n.Url })
             .ToListAsync(ct);
         return rows.Select(r => (r.Id, r.Url!)).ToList();
+    }
+
+    public async Task<IReadOnlyList<NewsArticle>> GetRelatedAsync(Guid excludeId, int count, CancellationToken ct = default)
+    {
+        var since = DateTimeOffset.UtcNow.AddMonths(-6);
+        return await db.NewsArticles
+            .Where(n => n.DeletedAt == null
+                && n.Id != excludeId
+                && n.AiAnalysisJson != null
+                && n.PublishedAt >= since
+                && (n.Status == NewsArticleStatus.Pending
+                    || n.Status == NewsArticleStatus.Processed
+                    || n.Status == NewsArticleStatus.Partial))
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(count)
+            .ToListAsync(ct);
     }
 
     public async Task SoftDeleteAsync(Guid id, CancellationToken ct = default)

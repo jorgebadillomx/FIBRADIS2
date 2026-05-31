@@ -31,7 +31,7 @@ public static class NewsEndpoints
             INewsRepository newsRepo,
             CancellationToken ct) =>
         {
-            var articles = await newsRepo.GetLatestForFibraAsync(fibraId, 10, ct);
+            var articles = await newsRepo.GetLatestForFibraAsync(fibraId, 5, ct);
             return Results.Ok(articles.Select(ToDto).ToList());
         })
         .AllowAnonymous()
@@ -49,6 +49,17 @@ public static class NewsEndpoints
         .AllowAnonymous()
         .Produces<NewsArticleDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{id:guid}/related", async (
+            Guid id,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var articles = await newsRepo.GetRelatedAsync(id, 5, ct);
+            return Results.Ok(articles.Select(ToDto).ToList());
+        })
+        .AllowAnonymous()
+        .Produces<IReadOnlyList<NewsArticleDto>>(StatusCodes.Status200OK);
 
         return app;
     }

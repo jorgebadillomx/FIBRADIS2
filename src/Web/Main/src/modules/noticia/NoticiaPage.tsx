@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
-import { fetchArticleById, type NewsKeyFigure } from '@/api/newsApi'
+import { fetchArticleById, fetchRelatedNews, type NewsKeyFigure } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
@@ -208,9 +208,51 @@ export function NoticiaPage() {
             Leer nota completa en {article.source} →
           </a>
         ) : null}
+
+        <RelatedNews articleId={article.id} />
       </div>
     </>
   )
+}
+
+function RelatedNews({ articleId }: { articleId: string }) {
+  const { data: articles = [] } = useQuery({
+    queryKey: ['news', 'related', articleId],
+    queryFn: () => fetchRelatedNews(articleId),
+    staleTime: 5 * 60_000,
+  })
+
+  if (articles.length === 0) return null
+
+  return (
+    <div className="mt-12 border-t border-border pt-8">
+      <div className="mb-4 flex items-center gap-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Noticias relacionadas</h2>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+      <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+        {articles.map(related => (
+          <article key={related.id} className="px-4 py-3">
+            <Link to={`/noticias/${related.id}`} className="block hover:text-brand transition-colors">
+              <h3 className="text-sm font-medium leading-5">{related.title}</h3>
+            </Link>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {related.source} · <RelativeTime value={related.publishedAt} />
+            </p>
+            {related.aiAnalysis?.headline ? (
+              <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                {related.aiAnalysis.headline}
+              </p>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RelativeTime({ value }: { value: string }) {
+  return <>{formatRelativeTime(value)}</>
 }
 
 function sortedFigures(figures: NewsKeyFigure[]) {
