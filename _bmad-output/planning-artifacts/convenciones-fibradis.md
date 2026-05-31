@@ -34,6 +34,8 @@ Estas reglas se aplican en TODA historia y code review. Son no negociables.
 3. Hallazgos van a la sección "Senior Developer Review (AI)" del story file
 4. Actualizar `sprint-status.yaml` solo si el review resulta en `done` o requiere `in-progress` de nuevo
 
+**Micro-features que tocan BD, jobs o contratos de API requieren code review — sin excepción de tamaño.** Cualquier implementación con migración EF, cambio de Hangfire job o contrato de API nuevo/modificado debe pasar por un review pass documentado (Patch/Defer/Dismissed). 4-10 y 4-12 son el antecedente: código en producción sin revisión acumula deuda invisible.
+
 ## EF Core Migrations — workaround con DLLs en uso
 
 Si `dotnet ef migrations add` falla porque el proceso de la API tiene los DLLs bloqueados:
@@ -113,6 +115,28 @@ var links = await _db.ArticleFibras
 ```
 
 **Regla de deduplicación**: si el resultado debe ser "uno por entidad padre" (una fila por FIBRA, un registro por período), agregar `DistinctBy` o `GroupBy` + `First` explícitamente, y documentar la invariante en Dev Notes. No asumir que el WHERE filtra correctamente.
+
+## Hangfire jobs — async end-to-end en clientes HTTP
+
+Los clientes HTTP dentro de un Hangfire job deben ser async en **todas las capas**, no solo en la de orquestación. `.GetAwaiter().GetResult()` o `.Result` en cualquier nivel bloquea sincrónicamente un thread del pool de workers, causando saturación con N pipelines concurrentes. Historia 5-11 tuvo dos bugs HIGH de este tipo (P2, P3).
+
+```csharp
+// MAL — bloqueo síncrono en cliente HTTP dentro de job
+public IReadOnlyList<ListingItem> ParseListingItems(int page)
+{
+    var html = _httpClient.GetStringAsync(url).GetAwaiter().GetResult(); // ⛔
+    return Parse(html);
+}
+
+// BIEN — async end-to-end
+public async Task<IReadOnlyList<ListingItem>> ParseListingItemsAsync(int page, CancellationToken ct)
+{
+    var html = await _httpClient.GetStringAsync(url, ct);
+    return Parse(html);
+}
+```
+
+**Regla adicional**: el warmup o inicialización de sesión HTTP debe ser lazy (una sola vez) y tolerante a fallos. No invocar en cada método público del cliente.
 
 ## Tests de integración — seed temporal y assertions semánticas
 

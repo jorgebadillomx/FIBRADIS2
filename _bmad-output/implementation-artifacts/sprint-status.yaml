@@ -249,6 +249,9 @@ development_status:
   5-10-pagina-publica-fundamentales: done
   # story 5-11 creada e implementada — sincronización incremental AMEFIBRA, manifest de fuentes, pipeline Fundamentals automatizado y observable desde Ops
   5-11-amefibra-pdf-sync: done
+  # sprint-retro-2026-05-31b — cubre 4-12 (gate body_text IA, sin code review) + 5-11 (AMEFIBRA sync, 9 patches, 6 defers); 4 action items antes de Épica 6
+  # 4-12 gate body_text mínimo para IA — implementada 2026-05-31, sin story file formal, sin code review documentado
+  4-12-gate-body-text-minimo-ia: done
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
   epic-8: in-progress
