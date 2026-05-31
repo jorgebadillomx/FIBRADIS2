@@ -264,7 +264,7 @@ public class FundamentalsExtractKpisTests : IClassFixture<ApiWebFactory>, IAsync
     {
         public string? LastMarkdownContent { get; private set; }
 
-        public Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
+        public Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct, Guid? relatedEntityId = null)
         {
             LastMarkdownContent = markdownContent;
             return Task.FromResult(result);

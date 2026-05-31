@@ -376,4 +376,50 @@ public class AiModeGetPutTests(ApiWebFactory factory) : IClassFixture<ApiWebFact
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    // ── minBodyTextLengthForAi — AC4, AC5 ────────────────────────────────────
+
+    [Fact]
+    public async Task GetAiMode_ResponseContainsMinBodyTextLengthForAi()
+    {
+        var response = await _client.GetAsync("/api/v1/ops/ai-mode");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.TryGetProperty("minBodyTextLengthForAi", out var prop), "missing: minBodyTextLengthForAi");
+        Assert.True(prop.TryGetInt32(out var value));
+        Assert.True(value >= 0);
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithMinBodyTextLengthForAi_PersistsAndReflectsInGet()
+    {
+        var putResponse = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { minBodyTextLengthForAi = 200 });
+        Assert.Equal(HttpStatusCode.NoContent, putResponse.StatusCode);
+
+        var getResponse = await _client.GetAsync("/api/v1/ops/ai-mode");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var doc = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.Equal(200, doc.RootElement.GetProperty("minBodyTextLengthForAi").GetInt32());
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithNegativeMinBodyTextLengthForAi_Returns400()
+    {
+        var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { minBodyTextLengthForAi = -5 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("minBodyTextLengthForAi", json);
+    }
+
+    [Fact]
+    public async Task PutAiMode_WithMinBodyTextLengthForAiOver10000_Returns400()
+    {
+        var response = await _client.PutAsJsonAsync("/api/v1/ops/ai-mode", new { minBodyTextLengthForAi = 10_001 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("minBodyTextLengthForAi", json);
+    }
 }

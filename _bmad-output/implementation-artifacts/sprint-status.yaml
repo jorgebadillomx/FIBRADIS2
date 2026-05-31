@@ -3,6 +3,8 @@
 # story 5-5 done — code review 6 patches aplicados (P1: doble copia MemoryStream, P2: log PDF sin texto, P3: error silencioso upload + validación tamaño frontend, P4: badge Error IA con mensaje y dismiss, P5: ProblemDetails parsing, P6: test positivo PdfMarkdownExtractor). 3/3 unit tests verdes
 # generated: 2026-05-15
 # last_updated: 2026-05-31
+# story 5-11 done — code review pass (9 patches: P1 null guard TryLogPipelineError, P2 WarmupAsync lazy+tolerante, P3 async GetPageCount/ParseListingItems, P4 defaultValue 360, P5 PDF después del record BD, P6 CancellationToken.None post-catch, P7 ShortYearRegex rango 2018-2035, P8 AiCallLog Context recordId, P9 test listings vacíos)
+# story 5-11 review — AMEFIBRA discovery incremental, manifest de fuentes, pipeline Fundamentals con Run now/cadencia, dashboard+logs Ops, migración + tests + builds
 # story 8-2 done — code review pass (0 patches, 8 defers: ReactMarkdown sin sanitize, fetchAllFibras cap 100, count label, debounce, useMemo, error state breadcrumb, shortName search, direct-hit test)
 # story 8-2 review — campo Description en Fibra, página /catalogo con grid de tarjetas, breadcrumb en FibraPage, textarea en FibraForm, 22 tests verdes
 # story 8-1 done — code review pasada 2 limpia (0 patches nuevos, 2 defers: GetBySlugAsync dead code, UpdateContentAsync sin test)
@@ -199,7 +201,7 @@ development_status:
   4-8-body-text-anglesharp-catalogo-sitios: done
 
   # ── Épica 5: Centro de Procesos y Fundamentales ───────────────────────────
-  epic-5: done
+  epic-5: in-progress
   # story 5-0 creada — OpsShell multi-pantalla + logs de errores + gestión de prompts de IA
   5-0-ops-shell-navegacion-y-modulos: done
   # story 5-1 creada — dashboard operativo: estado de pipelines, historial, errores y "Run Now" auditado
@@ -245,6 +247,8 @@ development_status:
   # ── 5-10: Página pública comparación de fundamentales cross-FIBRA ─────────
   # story 5-10 creada — /fundamentales tabla comparativa cross-FIBRA, filtro período y fibra, nav "Mercado" → "Fundamentales"
   5-10-pagina-publica-fundamentales: done
+  # story 5-11 creada e implementada — sincronización incremental AMEFIBRA, manifest de fuentes, pipeline Fundamentals automatizado y observable desde Ops
+  5-11-amefibra-pdf-sync: done
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
   epic-8: in-progress

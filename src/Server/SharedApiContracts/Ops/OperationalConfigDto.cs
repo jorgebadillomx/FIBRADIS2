@@ -5,5 +5,6 @@ public sealed record OperationalConfigDto(
     int AvgPeriods,
     int NewsCadenceMinutes,
     int FibraNewsMonths,
+    int FundamentalsCadenceMinutes,
     DateTimeOffset UpdatedAt,
     string? UpdatedBy);

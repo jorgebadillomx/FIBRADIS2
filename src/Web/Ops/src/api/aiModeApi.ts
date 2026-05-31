@@ -31,11 +31,16 @@ export async function setAiMode(mode: 'Off' | 'On'): Promise<void> {
 export async function setAiConfig(payload: {
   mode?: 'Off' | 'On'
   newsModel?: 'gemini-2.5-flash' | 'gemini-2.5-pro'
+  minBodyTextLengthForAi?: number
 }): Promise<void> {
   assertOpsAccessToken()
 
   const { error } = await apiClient['/api/v1/ops/ai-mode'].PUT({
-    body: { mode: payload.mode ?? null, newsModel: payload.newsModel ?? null },
+    body: {
+      mode: payload.mode ?? null,
+      newsModel: payload.newsModel ?? null,
+      minBodyTextLengthForAi: payload.minBodyTextLengthForAi ?? null,
+    },
     headers: getOpsAuthHeaders(),
   })
 

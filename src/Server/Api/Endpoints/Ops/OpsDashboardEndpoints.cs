@@ -6,7 +6,7 @@ namespace Api.Endpoints.Ops;
 
 public static class OpsDashboardEndpoints
 {
-    private static readonly string[] Pipelines = ["Market", "News", "Distribution"];
+    private static readonly string[] Pipelines = ["Market", "News", "Distribution", "Fundamentals"];
 
     public static IEndpointRouteBuilder MapOpsDashboard(this IEndpointRouteBuilder app)
     {

@@ -15,7 +15,7 @@ public class RoutingKpiExtractorService(
     IAiCallLogRepository callLogRepo,
     ILogger<RoutingKpiExtractorService> logger) : IKpiExtractorService
 {
-    public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
+    public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct, Guid? relatedEntityId = null)
     {
         var config = await providerRepo.GetConfigAsync(ct);
         var sw = Stopwatch.StartNew();
@@ -36,7 +36,7 @@ public class RoutingKpiExtractorService(
             sw.Stop();
             await TryLogAsync("KpiExtraction", config.Provider.ToString(), config.ModelId,
                 markdownContent.Length, sw.ElapsedMilliseconds, false,
-                rawData.RequestBody, rawData.ResponseBody, ex.Message);
+                rawData.RequestBody, rawData.ResponseBody, ex.Message, relatedEntityId);
             throw;
         }
 
@@ -44,14 +44,14 @@ public class RoutingKpiExtractorService(
         await TryLogAsync("KpiExtraction", config.Provider.ToString(), config.ModelId,
             markdownContent.Length, sw.ElapsedMilliseconds, result.Success,
             rawData.RequestBody, rawData.ResponseBody,
-            result.Success ? null : result.ExtractionNotes);
+            result.Success ? null : result.ExtractionNotes, relatedEntityId);
 
         return result;
     }
 
     private async Task TryLogAsync(string operation, string provider, string modelId,
         int promptLength, long durationMs, bool success,
-        string? requestRaw, string? responseRaw, string? errorMessage)
+        string? requestRaw, string? responseRaw, string? errorMessage, Guid? relatedEntityId = null)
     {
         try
         {
@@ -67,6 +67,7 @@ public class RoutingKpiExtractorService(
                 RequestRaw = requestRaw,
                 ResponseRaw = responseRaw,
                 ErrorMessage = errorMessage?[..Math.Min(errorMessage.Length, 500)],
+                Context = relatedEntityId.HasValue ? $"{{\"recordId\":\"{relatedEntityId}\"}}" : null,
             }, CancellationToken.None);
         }
         catch (Exception ex)

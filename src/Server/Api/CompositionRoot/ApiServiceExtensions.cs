@@ -12,10 +12,12 @@ using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Articles;
 using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.OgImage;
+using Infrastructure.Integrations.PdfDiscovery;
 using Infrastructure.Integrations.Yahoo;
 using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
+using Infrastructure.Jobs.Fundamentals;
 using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Catalog;
 using Application.Ai;
@@ -73,6 +75,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<DailySnapshotHistoricalJob>();
         builder.Services.AddScoped<NewsPipelineJob>();
         builder.Services.AddScoped<NewsBodyTextRetryJob>();
+        builder.Services.AddScoped<FundamentalsPipelineJob>();
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
         builder.Services.AddScoped<IAiModeRepository, AiModeRepository>();
@@ -83,7 +86,9 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IPipelineErrorLogRepository, PipelineErrorLogRepository>();
         builder.Services.AddScoped<IPipelineRunLogRepository, PipelineRunLogRepository>();
         builder.Services.AddScoped<IFundamentalRepository, FundamentalRepository>();
+        builder.Services.AddScoped<IFundamentalSourceManifestRepository, FundamentalSourceManifestRepository>();
         builder.Services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
+        builder.Services.AddScoped<IFundamentalsAutomationService, FundamentalsAutomationService>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
@@ -145,6 +150,16 @@ public static class ApiServiceExtensions
         {
             AllowAutoRedirect = true,
             MaxAutomaticRedirections = 5,
+        });
+        builder.Services.AddHttpClient<IAmefibraDiscoveryClient, AmefibraDiscoveryClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 10,
+            UseCookies = true,
         });
 
         // Hangfire — condicional para soportar tests sin SQL

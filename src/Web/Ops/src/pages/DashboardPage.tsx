@@ -9,6 +9,7 @@ const pipelineCards: Array<{ name: PipelineName; target: RunPipelineTarget; acce
   { name: 'Market', target: 'market', accent: 'from-emerald-500/18 to-emerald-100' },
   { name: 'News', target: 'news', accent: 'from-sky-500/18 to-sky-100' },
   { name: 'Distribution', target: 'distribution', accent: 'from-amber-500/18 to-amber-100' },
+  { name: 'Fundamentals', target: 'fundamentals', accent: 'from-cyan-500/18 to-cyan-100' },
 ]
 
 export function DashboardPage() {
@@ -41,10 +42,16 @@ export function DashboardPage() {
     onSuccess: invalidateDashboard,
   })
 
+  const fundamentalsMutation = useMutation({
+    mutationFn: () => runPipeline('fundamentals'),
+    onSuccess: invalidateDashboard,
+  })
+
   const mutationByTarget = {
     market: marketMutation,
     news: newsMutation,
     distribution: distributionMutation,
+    fundamentals: fundamentalsMutation,
   } as const
 
   const pipelines = dashboardQuery.data?.pipelines ?? []
@@ -74,7 +81,7 @@ export function DashboardPage() {
 
       {dashboardQuery.isSuccess ? (
         <>
-          <div className="grid gap-5 xl:grid-cols-3">
+          <div className="grid gap-5 xl:grid-cols-4">
             {pipelineCards.map((card) => {
               const pipeline = pipelines.find((item) => item.pipeline === card.name)
               const mutation = mutationByTarget[card.target]
@@ -157,6 +164,10 @@ export function DashboardPage() {
                     ) : (
                       <p className="mt-4 text-sm text-muted-foreground">Sin ejecuciones registradas.</p>
                     )}
+
+                    {card.name === 'Fundamentals' && pipeline?.recentRuns[0]?.details ? (
+                      <FundamentalsRunSummary details={pipeline.recentRuns[0].details} />
+                    ) : null}
                   </div>
                 </article>
               )
@@ -272,8 +283,37 @@ function getPipelineBadgeClass(pipeline: string) {
       return 'bg-sky-100 text-sky-800'
     case 'Distribution':
       return 'bg-amber-100 text-amber-800'
+    case 'Fundamentals':
+      return 'bg-cyan-100 text-cyan-800'
     default:
       return 'bg-slate-100 text-slate-700'
+  }
+}
+
+function FundamentalsRunSummary({ details }: { details: string }) {
+  try {
+    const parsed = JSON.parse(details) as Partial<Record<string, number>>
+    const entries: Array<[string, number | undefined]> = [
+      ['Detectados', parsed.reportsDetected],
+      ['Nuevos', parsed.newReports],
+      ['Skips', parsed.skippedReports],
+      ['Possible updates', parsed.possibleUpdates],
+      ['Ambiguos', parsed.ambiguousReports],
+      ['Errores', parsed.errors],
+    ]
+
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-600">
+        {entries.map(([label, value]) => (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" key={label}>
+            <span className="block uppercase tracking-[0.14em] text-slate-400">{label}</span>
+            <span className="mt-1 block text-sm font-semibold text-slate-900">{typeof value === 'number' ? value : '—'}</span>
+          </div>
+        ))}
+      </div>
+    )
+  } catch {
+    return null
   }
 }
 

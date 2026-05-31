@@ -4,7 +4,7 @@ import { assertOpsAccessToken, getOpsApiErrorMessage, getOpsAuthHeaders } from '
 
 const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
-export type PipelineLogPipeline = 'all' | 'Market' | 'News' | 'Distribution' | 'BodyTextRetry' | 'ManualAiSummary' | 'KpiExtraction'
+export type PipelineLogPipeline = 'all' | 'Market' | 'News' | 'Distribution' | 'Fundamentals' | 'BodyTextRetry' | 'ManualAiSummary' | 'KpiExtraction'
 export type PipelineErrorLog = components['schemas']['PipelineErrorLogDto']
 export type PipelineErrorLogPage = components['schemas']['PagedResultOfPipelineErrorLogDto']
 

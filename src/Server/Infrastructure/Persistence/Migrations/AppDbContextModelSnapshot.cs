@@ -696,6 +696,116 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("FundamentalRecord", "fundamentals");
                 });
 
+            modelBuilder.Entity("Domain.Fundamentals.FundamentalSourceManifest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("newsequentialid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<string>("DiscoveryStatus")
+                        .IsRequired()
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("discovery_status");
+
+                    b.Property<string>("DownloadSignature")
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("download_signature");
+
+                    b.Property<string>("DownloadUrl")
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("download_url");
+
+                    b.Property<Guid?>("FibraId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("fibra_id");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("nvarchar(260)")
+                        .HasColumnName("file_name");
+
+                    b.Property<DateTimeOffset>("FirstSeenAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("first_seen_at");
+
+                    b.Property<string>("LastDecision")
+                        .IsRequired()
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("last_decision");
+
+                    b.Property<string>("LastDecisionReason")
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("last_decision_reason");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("last_error");
+
+                    b.Property<Guid?>("LastProcessedRecordId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("last_processed_record_id");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<string>("PackageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("package_url");
+
+                    b.Property<string>("PdfUrl")
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("pdf_url");
+
+                    b.Property<string>("Period")
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("period");
+
+                    b.Property<string>("ReportType")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("report_type");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("source_name");
+
+                    b.Property<DateTimeOffset?>("SourcePublishedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("source_published_at");
+
+                    b.Property<string>("SourceTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("source_title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceName", "PackageUrl")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FundamentalSourceManifest_SourceName_PackageUrl");
+
+                    b.HasIndex("FibraId", "Period", "ReportType")
+                        .HasDatabaseName("IX_FundamentalSourceManifest_FibraId_Period_ReportType");
+
+                    b.ToTable("FundamentalSourceManifest", "fundamentals");
+                });
+
             modelBuilder.Entity("Domain.Jobs.PipelineErrorLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1725,6 +1835,12 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
+                    b.Property<int>("MinBodyTextLengthForAi")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(500)
+                        .HasColumnName("min_body_text_length_for_ai");
+
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1759,6 +1875,7 @@ namespace Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = 1,
+                            MinBodyTextLengthForAi = 500,
                             Mode = "Off",
                             NewsModel = "gemini-2.5-pro",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 19, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -2199,6 +2316,10 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("fibra_news_months");
 
+                    b.Property<int>("FundamentalsCadenceMinutes")
+                        .HasColumnType("int")
+                        .HasColumnName("fundamentals_cadence_minutes");
+
                     b.Property<int>("NewsCadenceMinutes")
                         .HasColumnType("int")
                         .HasColumnName("news_cadence_minutes");
@@ -2223,6 +2344,7 @@ namespace Infrastructure.Persistence.Migrations
                             AvgPeriods = 4,
                             CommissionFactor = 0.006m,
                             FibraNewsMonths = 15,
+                            FundamentalsCadenceMinutes = 360,
                             NewsCadenceMinutes = 60,
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             UpdatedBy = "system"
@@ -2247,6 +2369,14 @@ namespace Infrastructure.Persistence.Migrations
                         .HasForeignKey("FibraId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Fundamentals.FundamentalSourceManifest", b =>
+                {
+                    b.HasOne("Domain.Catalog.Fibra", null)
+                        .WithMany()
+                        .HasForeignKey("FibraId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Domain.News.NewsArticleFibra", b =>

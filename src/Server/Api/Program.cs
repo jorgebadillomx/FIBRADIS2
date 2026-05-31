@@ -4,6 +4,7 @@ using Api.Endpoints.Private;
 using Api.Endpoints.Public;
 using Application.Ops;
 using Hangfire;
+using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Infrastructure.Persistence.SqlServer;
@@ -102,6 +103,29 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         j => j.ExecuteAsync(CancellationToken.None),
         "0 6 * * *",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+    var fundamentalsCadenceMinutes = 360;
+    if (!skipStartupDbReads)
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            fundamentalsCadenceMinutes = (await scope.ServiceProvider
+                .GetRequiredService<IOperationalConfigRepository>()
+                .GetAsync()).FundamentalsCadenceMinutes;
+        }
+        catch (Exception ex)
+        {
+            var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+            startupLogger.LogError(ex, "No se pudo leer FundamentalsCadenceMinutes desde BD al arranque. Usando default.");
+        }
+    }
+
+    RecurringJob.AddOrUpdate<FundamentalsPipelineJob>(
+        FundamentalsPipelineSchedule.JobId,
+        j => j.ExecuteAsync(CancellationToken.None),
+        FundamentalsPipelineSchedule.GetCronExpression(fundamentalsCadenceMinutes),
+        new RecurringJobOptions { TimeZone = mexicoTz });
 }
 
 app.Run();

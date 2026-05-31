@@ -13,6 +13,7 @@ interface FormValues {
   avgPeriods: number
   newsCadenceMinutes: number
   fibraNewsMonths: number
+  fundamentalsCadenceMinutes: number
 }
 
 const inputClassName =
@@ -45,6 +46,7 @@ export function ConfigPage() {
       avgPeriods: 4,
       newsCadenceMinutes: 60,
       fibraNewsMonths: 15,
+      fundamentalsCadenceMinutes: 360,
     },
   })
 
@@ -56,6 +58,7 @@ export function ConfigPage() {
       avgPeriods: Number(configQuery.data.avgPeriods),
       newsCadenceMinutes: Number(configQuery.data.newsCadenceMinutes),
       fibraNewsMonths: Number(configQuery.data.fibraNewsMonths ?? 15),
+      fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 360),
     })
   }, [configQuery.data, reset])
 
@@ -78,6 +81,7 @@ export function ConfigPage() {
     if (dirtyFields.avgPeriods) payload.avgPeriods = values.avgPeriods
     if (dirtyFields.newsCadenceMinutes) payload.newsCadenceMinutes = values.newsCadenceMinutes
     if (dirtyFields.fibraNewsMonths) payload.fibraNewsMonths = values.fibraNewsMonths
+    if (dirtyFields.fundamentalsCadenceMinutes) payload.fundamentalsCadenceMinutes = values.fundamentalsCadenceMinutes
 
     if (Object.keys(payload).length === 0) return
     saveMutation.mutate(payload)
@@ -92,7 +96,7 @@ export function ConfigPage() {
             Parámetros operativos sin redespliegue
           </h1>
           <p className="max-w-3xl text-sm leading-6 text-slate-500">
-            Ajusta comisión, ventanas promedio y cadencia del pipeline de noticias con persistencia y auditoría inmediata.
+            Ajusta comisión, ventanas promedio y cadencias automáticas de noticias y fundamentales con persistencia y auditoría inmediata.
           </p>
         </div>
 
@@ -165,6 +169,22 @@ export function ConfigPage() {
                   min={1}
                   max={36}
                 />
+              </Field>
+
+              <Field label="fundamentals_cadence_minutes" error={errors.fundamentalsCadenceMinutes?.message} required>
+                <select
+                  {...register('fundamentalsCadenceMinutes', {
+                    required: 'fundamentals_cadence_minutes es requerido.',
+                    valueAsNumber: true,
+                  })}
+                  className={inputClassName}
+                >
+                  {[60, 120, 180, 240, 360, 720, 1440].map((value) => (
+                    <option key={value} value={value}>
+                      {value === 1440 ? '24 horas' : `${value / 60} horas`}
+                    </option>
+                  ))}
+                </select>
               </Field>
             </div>
 

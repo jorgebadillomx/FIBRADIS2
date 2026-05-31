@@ -1,5 +1,19 @@
 # Deferred Work
 
+## Deferred from: code review of 5-11-amefibra-pdf-sync (2026-05-31)
+
+- **D1 (MEDIUM): `DownloadPdfAsync` materializa PDF completo en memoria** [`AmefibraDiscoveryClient.cs:DownloadPdfAsync`] — Usa `ResponseHeadersRead` pero luego `ReadAsByteArrayAsync` carga todo el contenido en `byte[]`. Con PDFs grandes o corridas concurrentes puede causar presión de memoria severa.
+- **D2 (MEDIUM): Inconsistencia estado manifest/record en error parcial** [`FundamentalsAutomationService.cs:IngestAsync`] — Si `IngestAsync` falla después de insertar el `FundamentalRecord` en BD, el `FundamentalSourceManifest` queda con `LastDecision = "error"` sin `LastProcessedRecordId`. Las corridas futuras detectarán el manifest y marcarán el item como "skip" indefinidamente, dejando el record huérfano. Requiere transacción o manejo de compensación (cleanup del record si el manifest falla).
+- **D3 (LOW): `GetCronExpression` silent fallback** [`FundamentalsPipelineSchedule.cs:GetCronExpression`] — Devuelve `"0 */6 * * *"` silenciosamente para valores no reconocidos en lugar de loggear warning. Un valor corrupto de BD pasa invisible para el operador.
+- **D4 (MEDIUM): `GetLatestByFibraAndPeriodAsync` filtra solo quarterly** [`FundamentalSourceManifestRepository.cs:GetLatestByFibraAndPeriodAsync`] — La lógica de `possibleUpdate` no detecta reportes anuales con distinto packageUrl para el mismo período. Si AMEFIBRA publica una segunda URL para un reporte anual ya registrado, puede causar violación de la unique constraint `UX_FundamentalSourceManifest_SourceName_PackageUrl`.
+- **D5 (LOW): Skips no hidratan `SourcePublishedAt` si quedó null** [`FundamentalsAutomationService.cs:ExecuteAsync`] — Manifiestos en el path de skip no llaman a `HydrateDetailsAsync`. Si `SourcePublishedAt` quedó null en una corrida anterior (portal no disponible), el campo nunca se actualiza en corridas posteriores.
+- **D6 (LOW): Sin tests de regresión para FundamentalsHistory y endpoint público** — El spec requiere verificar que `FundamentalsHistory` en Ops y el endpoint público de fundamentales en Main sigan mostrando correctamente registros `ImportedBy = "system:amefibra"` sin duplicados de período. Agregar en próxima historia del módulo Fundamentals.
+
+## Deferred from: code review of spec-4-12-umbral-body-text-ai-noticias (2026-05-31)
+
+- **D1: Artículos Partial por body corto nunca se re-procesan con IA** — `NewsBodyTextRetryJob` solo reintenta artículos con `BodyText IS NULL`. Artículos guardados como Partial por `bodyText.Length < MinBodyTextLengthForAi` (body no nulo pero corto) no son recogidos por el retry job, ni después de un body text edit manual en Ops. No hay mecanismo automático para re-intentar el análisis IA una vez que el body mejora. Considerar: after `UpdateBodyTextAsync` en Ops, si article.Status == Partial → enqueue AI re-analysis.
+- **D2: Race condition pre-existente en UpdateConfigAsync** [`AiModeRepository.cs`] — `FindAsync → if null → Add` no es atómico. En BD nueva (antes del primer registro seed), dos PUT concurrentes pueden ambos intentar insertar Id=1. El try/catch DbUpdateException + retry mitiga esto, pero el retry re-entra el mismo path no atómico. Pre-existente; impacto bajo bajo Ops de baja concurrencia.
+
 ## Deferred from: code review of 8-2-catalogo-fibras-descripcion-pagina-publica (2026-05-31)
 
 - **D1: ReactMarkdown sin rehype-sanitize en FibraPage pública** [`FibraPage.tsx:239`] — Patrón consistente con NoticiaPage. Descripción solo la escriben AdminOps. Evaluar `rehype-sanitize` si los permisos de escritura se amplían a usuarios no-admin.
@@ -10,29 +24,6 @@
 - **D6: Estado de error en FibraPage no muestra breadcrumb a /catalogo** [`FibraPage.tsx:136`] — El layout principal tiene navegación. Agregar fallback de navegación en FibraErrorState si se mejora la UX de errores.
 - **D7: Búsqueda sin debounce — AC8 especificaba "debounced"** [`CatalogoPage.tsx:67`] — El filtrado es client-side sobre datos cargados; debounce no aporta valor. Spec tenía un requisito innecesario; deuda documental.
 - **D8: Sin test automatizado para hit directo 200 en /catalogo** — Verificación manual en T9.4. Agregar en story de e2e/infra cuando se implemente suite de smoke tests.
-
-## Deferred from: code review of 8-1-seccion-educativa-conoce-las-fibras (2026-05-31)
-
-- **D1: `GetBySlugAsync` definido pero nunca llamado** [`src/Server/Infrastructure/Persistence/Repositories/Ops/EditorialPageRepository.cs:15`] — Interfaz y repositorio exponen el método, pero ningún endpoint lo invoca. Dead code benigno. Remover o usar en un endpoint futuro si surge la necesidad.
-- **D3: `UpdateContentAsync` sin cobertura de tests unitarios** [`tests/Unit/Infrastructure.Tests/Persistence/Repositories/EditorialPageRepositoryTests.cs`] — El spec (AC 12) solo requería 3 tests de `GetAllAsync`. El path de actualización no está testeado. Agregar en próxima historia del módulo editorial si se añaden variantes de comportamiento.
-
-## Deferred from: code review of 5-10-pagina-publica-fundamentales (2026-05-31)
-
-- **D1: `GetSummaryLatestAsync` carga todo en memoria antes de agrupar** [`FundamentalRepository.cs`] — Dev Notes del story aprueba explícitamente este patrón para dataset ~180 filas máx. Revisar si el catálogo crece significativamente.
-- **D2: `GetAllProcessedPeriodsAsync` sin límite `Take`** [`FundamentalRepository.cs`] — AC 12 requiere retornar todos los períodos; sin límite el selector crecerá con el historial. Considerar límite de UX (ej. últimos 20 períodos) en historia futura.
-- **D3: `fetchFundamentalesSummary` silencia errores HTTP retornando `[]`** [`fundamentalesApi.ts`] — Patrón pre-existente en el mismo archivo. Error 500 muestra tabla vacía sin diagnóstico. Unificar manejo de errores al refactorizar el módulo.
-- **D4: Flash de tabla durante background refetch sin indicador de revalidación** [`FundamentalesPage.tsx`] — `isSummaryLoading` solo es `true` en la carga inicial. Cosmético.
-- **D5: Tests con InMemory provider no validan semántica SQL de `Substring` en ordering** [`FundamentalesRepositorySummaryTests.cs`] — Patrón pre-existente del proyecto.
-
-## Deferred from: code review of 4-11-pagina-listado-noticias (2026-05-31)
-
-- **D1: Page reset timing con debounce** [`NoticiasListPage.tsx`] — Ventana de 300ms genera un fetch extra con query antigua al limpiar filtros. No afecta el estado final correcto.
-- **D2: `LIKE '%q%'` sin índice ni garantía de collation** [`NewsRepository.cs:GetPagedPublicAsync`] — Pre-existente en `GetPagedForOpsAsync` también. Añadir full-text index si se detecta degradación de performance.
-- **D3: `CountAsync` + `ToListAsync` sin snapshot isolation** [`NewsRepository.cs:GetPagedPublicAsync`] — Patrón EF Core pre-existente en todo el proyecto.
-- **D4: `fetchAllFibras` trunca silenciosamente a 100 FIBRAs** [`fibrasApi.ts`] — Agregar paginación del dropdown si el catálogo crece más allá de 100.
-- **D5: `fetchAllFibras` singleton a nivel de módulo vs factory pattern** [`fibrasApi.ts`] — Unificar patrón al refactorizar `fibrasApi.ts`.
-- **D6: Batch de tickers excluye FIBRAs inactivas pero filtro `fibraId` no** [`NewsRepository.cs:GetPagedPublicAsync`] — No alcanzable desde la UI.
-- **D7: Test para fibraId inactiva en `GetPagedPublicAsync` ausente** [`NewsRepositoryPublicPagedTests.cs`] — Añadir en próxima historia del módulo news.
 
 ## Deferred from: code review of 5-9-analisis-ia-enriquecido-fundamentales (2026-05-30)
 
