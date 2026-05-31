@@ -79,6 +79,7 @@ export function NoticiaPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
         <div className="min-w-0">
+
         <h1 className="mb-2 font-playfair text-3xl md:text-4xl font-bold leading-tight text-foreground">
           {article.title}
         </h1>

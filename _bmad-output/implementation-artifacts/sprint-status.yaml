@@ -1,5 +1,6 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-31
+# story 8-2 review — campo Description en Fibra, página /catalogo con grid de tarjetas, breadcrumb en FibraPage, textarea en FibraForm, 22 tests verdes
 # story 8-1 done — code review pasada 2 limpia (0 patches nuevos, 2 defers: GetBySlugAsync dead code, UpdateContentAsync sin test)
 # story 5-10 done — code review pass (5 patches: P1 GetSummaryByPeriodAsync deduplicación FibraId, P2 empty state message período, P3 React key ticker+period, P5 test ordering assertion, P6 using redundante)
 # story 5-10 review — /fundamentales página comparativa cross-FIBRA, 2 endpoints nuevos (summary + periods), 6 unit tests, nav renombrado
@@ -241,7 +242,7 @@ development_status:
   # story 8-1 creada — sección pública "Conoce las FIBRAs" con 5 tabs educativos y editor en Ops
   8-1-seccion-educativa-conoce-las-fibras: done
   # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
-  8-2-catalogo-fibras-descripcion-pagina-publica: ready-for-dev
+  8-2-catalogo-fibras-descripcion-pagina-publica: review
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: backlog

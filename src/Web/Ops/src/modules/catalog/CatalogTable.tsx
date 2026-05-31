@@ -43,13 +43,14 @@ export function CatalogTable({ fibras, onEdit, onToggleState }: Props) {
             <th className="px-4 py-3 font-medium">Mercado</th>
             <th className="px-4 py-3 font-medium">Moneda</th>
             <th className="px-4 py-3 font-medium">Estado</th>
+            <th className="px-4 py-3 font-medium">Descripción</th>
             <th className="px-4 py-3 font-medium text-right">Acciones</th>
           </tr>
         </thead>
         <tbody className="bg-white">
           {fibras.length === 0 ? (
             <tr>
-              <td className="px-4 py-6 text-sm text-slate-500" colSpan={7}>
+              <td className="px-4 py-6 text-sm text-slate-500" colSpan={8}>
                 No hay FIBRAs registradas.
               </td>
             </tr>
@@ -74,6 +75,17 @@ export function CatalogTable({ fibras, onEdit, onToggleState }: Props) {
                     }`}
                   >
                     {fibra.state}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                      fibra.description
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-200 text-slate-500'
+                    }`}
+                  >
+                    {fibra.description ? 'Con texto' : 'Sin texto'}
                   </span>
                 </td>
                 <td className="px-4 py-4">

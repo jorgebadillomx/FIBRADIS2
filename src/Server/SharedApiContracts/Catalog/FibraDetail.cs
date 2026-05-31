@@ -14,4 +14,5 @@ public record FibraDetail(
     string? InvestorUrl,
     string? ReportsUrl,
     IReadOnlyList<string> NameVariants,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? Description);

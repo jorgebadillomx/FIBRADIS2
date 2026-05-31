@@ -76,6 +76,7 @@ public static class OpsCatalogEndpoints
                 InvestorUrl = NormalizeOptional(request.InvestorUrl),
                 ReportsUrl = NormalizeOptional(request.ReportsUrl),
                 NameVariants = NormalizeVariants(request.NameVariants),
+                Description = NormalizeOptional(request.Description),
                 State = FibraState.Active,
                 CreatedAt = timestamp,
             };
@@ -139,6 +140,7 @@ public static class OpsCatalogEndpoints
             fibra.SiteUrl = NormalizeOptional(request.SiteUrl);
             fibra.InvestorUrl = NormalizeOptional(request.InvestorUrl);
             fibra.ReportsUrl = NormalizeOptional(request.ReportsUrl);
+            fibra.Description = NormalizeOptional(request.Description);
 
             if (request.NameVariants is not null)
             {
@@ -257,6 +259,11 @@ public static class OpsCatalogEndpoints
             errors["currency"] = ["Moneda no reconocida. Valores válidos: MXN, USD, EUR, UDI."];
         }
 
+        if (request.Description is not null && request.Description.Length > 10_000)
+        {
+            errors["description"] = ["La descripción no puede superar 10 000 caracteres."];
+        }
+
         return errors;
     }
 
@@ -280,6 +287,11 @@ public static class OpsCatalogEndpoints
             !AllowedCurrencies.Contains(request.Currency.Trim().ToUpperInvariant()))
         {
             errors["currency"] = ["Moneda no reconocida. Valores válidos: MXN, USD, EUR, UDI."];
+        }
+
+        if (request.Description is not null && request.Description.Length > 10_000)
+        {
+            errors["description"] = ["La descripción no puede superar 10 000 caracteres."];
         }
 
         return errors;
@@ -367,7 +379,8 @@ public static class OpsCatalogEndpoints
         fibra.InvestorUrl,
         fibra.ReportsUrl,
         fibra.NameVariants.AsReadOnly(),
-        fibra.CreatedAt);
+        fibra.CreatedAt,
+        fibra.Description);
 
     private static string GetActor(HttpContext ctx, ILogger logger)
     {

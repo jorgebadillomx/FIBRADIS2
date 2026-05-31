@@ -82,7 +82,8 @@ public class CatalogOpsEndpointTests(ApiWebFactory factory) : IClassFixture<ApiW
             SiteUrl: null,
             InvestorUrl: null,
             ReportsUrl: null,
-            NameVariants: null);
+            NameVariants: null,
+            Description: null);
 
         var response = await _adminClient.PostAsJsonAsync("/api/v1/ops/catalog", payload);
         var json = await response.Content.ReadAsStringAsync();
@@ -122,7 +123,8 @@ public class CatalogOpsEndpointTests(ApiWebFactory factory) : IClassFixture<ApiW
             SiteUrl: "https://fibra.uno",
             InvestorUrl: "https://fibra.uno/ri",
             ReportsUrl: "https://fibra.uno/reportes",
-            NameVariants: ["Fibra Uno", "FUNO", "FUNO11"]);
+            NameVariants: ["Fibra Uno", "FUNO", "FUNO11"],
+            Description: null);
 
         var response = await _adminClient.PutAsJsonAsync("/api/v1/ops/catalog/FUNO11", payload);
         var body = await response.Content.ReadFromJsonAsync<FibraDetail>();
@@ -146,7 +148,8 @@ public class CatalogOpsEndpointTests(ApiWebFactory factory) : IClassFixture<ApiW
             SiteUrl: null,
             InvestorUrl: null,
             ReportsUrl: null,
-            NameVariants: []));
+            NameVariants: [],
+            Description: null));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -234,5 +237,6 @@ public class CatalogOpsEndpointTests(ApiWebFactory factory) : IClassFixture<ApiW
         SiteUrl: "https://example.com",
         InvestorUrl: "https://example.com/investors",
         ReportsUrl: "https://example.com/reports",
-        NameVariants: [ticker, $"Fibra {ticker}"]);
+        NameVariants: [ticker, $"Fibra {ticker}"],
+        Description: null);
 }

@@ -11,4 +11,5 @@ public sealed record CreateFibraRequest(
     string? SiteUrl,
     string? InvestorUrl,
     string? ReportsUrl,
-    IReadOnlyList<string>? NameVariants);
+    IReadOnlyList<string>? NameVariants,
+    string? Description);
