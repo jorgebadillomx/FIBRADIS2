@@ -5,7 +5,7 @@ import { assertOpsAccessToken, getOpsApiErrorMessage, getOpsAuthHeaders } from '
 const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
 export type PipelineDashboardDto = components['schemas']['PipelineDashboardDto']
-export type RunPipelineTarget = 'market' | 'news' | 'distribution'
+export type RunPipelineTarget = 'market' | 'news' | 'distribution' | 'fundamentals'
 
 export async function fetchPipelineDashboard(): Promise<PipelineDashboardDto> {
   assertOpsAccessToken()
@@ -33,6 +33,12 @@ export async function runPipeline(target: RunPipelineTarget): Promise<void> {
   if (target === 'news') {
     const { error } = await apiClient['/api/v1/ops/news-pipeline/run'].POST({ headers })
     if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar pipeline News: ${JSON.stringify(error)}`))
+    return
+  }
+
+  if (target === 'fundamentals') {
+    const { error } = await apiClient['/api/v1/ops/market/fundamentals/run'].POST({ headers })
+    if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar pipeline Fundamentals: ${JSON.stringify(error)}`))
     return
   }
 

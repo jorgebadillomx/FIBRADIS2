@@ -297,6 +297,38 @@
         }
       }
     },
+    "/api/v1/ops/market/fundamentals/run": {
+      "post": {
+        "tags": [
+          "Ops"
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/dashboard": {
       "get": {
         "tags": [
@@ -2942,7 +2974,11 @@
             ]
           },
           "minBodyTextLengthForAi": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -4384,6 +4420,7 @@
           "avgPeriods",
           "newsCadenceMinutes",
           "fibraNewsMonths",
+          "fundamentalsCadenceMinutes",
           "updatedAt",
           "updatedBy"
         ],
@@ -4414,6 +4451,14 @@
             "format": "int32"
           },
           "fibraNewsMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fundamentalsCadenceMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -5124,7 +5169,8 @@
       "UpdateAiModeRequest": {
         "required": [
           "mode",
-          "newsModel"
+          "newsModel",
+          "minBodyTextLengthForAi"
         ],
         "type": "object",
         "properties": {
@@ -5141,9 +5187,11 @@
             ]
           },
           "minBodyTextLengthForAi": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer"
+              "integer",
+              "string"
             ],
             "format": "int32"
           }
@@ -5280,6 +5328,15 @@
             "format": "int32"
           },
           "fibraNewsMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fundamentalsCadenceMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",

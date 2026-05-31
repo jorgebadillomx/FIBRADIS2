@@ -20,7 +20,7 @@ public class DeepSeekKpiExtractorService(
     // 2048 was exhausted entirely by reasoning, leaving no budget for the actual JSON response.
     private const int MaxOutputTokens = 8000;
 
-    public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
+    public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct, Guid? relatedEntityId = null)
     {
         var apiKey = configuration["DeepSeek:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))

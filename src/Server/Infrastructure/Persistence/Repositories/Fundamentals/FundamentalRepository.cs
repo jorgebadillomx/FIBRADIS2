@@ -149,10 +149,12 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
 
     public async Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct)
     {
-        await db.FundamentalRecords
-            .Where(r => r.Id == id)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(r => r.DeletedAt, DateTimeOffset.UtcNow)
-                .SetProperty(r => r.DeletedBy, deletedBy), ct);
+        var record = await db.FundamentalRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (record is null)
+            return;
+
+        record.DeletedAt = DateTimeOffset.UtcNow;
+        record.DeletedBy = deletedBy;
+        await db.SaveChangesAsync(ct);
     }
 }

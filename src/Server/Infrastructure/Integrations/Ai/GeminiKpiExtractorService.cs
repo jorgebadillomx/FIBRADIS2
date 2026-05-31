@@ -18,7 +18,7 @@ public class GeminiKpiExtractorService(
     private const int MaxMarkdownChars = 80_000;
     private const int MaxOutputTokens = 2048;
 
-    public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
+    public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct, Guid? relatedEntityId = null)
     {
         var apiKey = configuration["Gemini:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))

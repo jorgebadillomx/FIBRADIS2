@@ -30,6 +30,7 @@ desktop.ini
 
 ## Dev scripts runtime
 .dev-wt-pid
+tmp-*.log
 
 ## Uploaded files
 src/Server/Api/wwwroot/uploads/

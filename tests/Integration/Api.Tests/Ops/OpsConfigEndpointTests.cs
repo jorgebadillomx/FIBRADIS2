@@ -44,6 +44,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
         Assert.Equal(0.006m, body!.CommissionFactor);
         Assert.Equal(4, body.AvgPeriods);
         Assert.Equal(60, body.NewsCadenceMinutes);
+        Assert.Equal(360, body.FundamentalsCadenceMinutes);
     }
 
     [Fact]
@@ -152,6 +153,20 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     }
 
     [Fact]
+    public async Task PutConfig_WithValidFundamentalsCadence_PersistsValue()
+    {
+        var response = await _adminClient.PutAsJsonAsync(
+            "/api/v1/ops/config",
+            new UpdateOperationalConfigRequest(null, null, null, null, 720));
+        var getResponse = await _adminClient.GetAsync("/api/v1/ops/config");
+        var body = await getResponse.Content.ReadFromJsonAsync<OperationalConfigDto>();
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal(720, body!.FundamentalsCadenceMinutes);
+    }
+
+    [Fact]
     public async Task PutConfig_WithoutToken_Returns401()
     {
         var response = await _anonClient.PutAsJsonAsync(
@@ -235,6 +250,8 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
                 CommissionFactor = 0.006m,
                 AvgPeriods = 4,
                 NewsCadenceMinutes = 60,
+                FibraNewsMonths = 15,
+                FundamentalsCadenceMinutes = 360,
                 UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
                 UpdatedBy = "system",
             });
@@ -244,6 +261,8 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
             config.CommissionFactor = 0.006m;
             config.AvgPeriods = 4;
             config.NewsCadenceMinutes = 60;
+            config.FibraNewsMonths = 15;
+            config.FundamentalsCadenceMinutes = 360;
             config.UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero);
             config.UpdatedBy = "system";
         }

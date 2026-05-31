@@ -30,10 +30,11 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(body);
-        Assert.Equal(3, body!.Pipelines.Count);
+        Assert.Equal(4, body!.Pipelines.Count);
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "Market");
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "News");
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "Distribution");
+        Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "Fundamentals");
         Assert.NotNull(body.RecentErrors);
     }
 
@@ -89,6 +90,23 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     }
 
     [Fact]
+    public async Task PostFundamentalsRun_ReturnsAcceptedAndCreatesQueuedPipelineRunLog()
+    {
+        var response = await _adminClient.PostAsync("/api/v1/ops/market/fundamentals/run", content: null);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var entry = db.PipelineRunLogs
+            .OrderByDescending(x => x.StartedAt)
+            .FirstOrDefault(x => x.Pipeline == "Fundamentals" && x.Status == "Queued");
+
+        Assert.NotNull(entry);
+        Assert.Equal("adminops@test.com", entry!.TriggeredBy);
+    }
+
+    [Fact]
     public async Task GetDashboard_WithUserRole_ReturnsForbidden()
     {
         using var client = _factory.CreateClient();
@@ -103,6 +121,7 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     [InlineData("/api/v1/ops/market/run")]
     [InlineData("/api/v1/ops/news-pipeline/run")]
     [InlineData("/api/v1/ops/market/distribution/run")]
+    [InlineData("/api/v1/ops/market/fundamentals/run")]
     public async Task RunEndpoints_WithoutToken_ReturnUnauthorized(string path)
     {
         using var client = _factory.CreateClient();
@@ -116,6 +135,7 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     [InlineData("/api/v1/ops/market/run")]
     [InlineData("/api/v1/ops/news-pipeline/run")]
     [InlineData("/api/v1/ops/market/distribution/run")]
+    [InlineData("/api/v1/ops/market/fundamentals/run")]
     public async Task RunEndpoints_WithUserRole_ReturnForbidden(string path)
     {
         using var client = _factory.CreateClient();

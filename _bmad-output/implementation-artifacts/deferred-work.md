@@ -1,5 +1,14 @@
 # Deferred Work
 
+## Deferred from: code review of 5-11-amefibra-pdf-sync (2026-05-31)
+
+- **D1 (MEDIUM): `DownloadPdfAsync` materializa PDF completo en memoria** [`AmefibraDiscoveryClient.cs:DownloadPdfAsync`] — Usa `ResponseHeadersRead` pero luego `ReadAsByteArrayAsync` carga todo el contenido en `byte[]`. Con PDFs grandes o corridas concurrentes puede causar presión de memoria severa.
+- **D2 (MEDIUM): Inconsistencia estado manifest/record en error parcial** [`FundamentalsAutomationService.cs:IngestAsync`] — Si `IngestAsync` falla después de insertar el `FundamentalRecord` en BD, el `FundamentalSourceManifest` queda con `LastDecision = "error"` sin `LastProcessedRecordId`. Las corridas futuras detectarán el manifest y marcarán el item como "skip" indefinidamente, dejando el record huérfano. Requiere transacción o manejo de compensación (cleanup del record si el manifest falla).
+- **D3 (LOW): `GetCronExpression` silent fallback** [`FundamentalsPipelineSchedule.cs:GetCronExpression`] — Devuelve `"0 */6 * * *"` silenciosamente para valores no reconocidos en lugar de loggear warning. Un valor corrupto de BD pasa invisible para el operador.
+- **D4 (MEDIUM): `GetLatestByFibraAndPeriodAsync` filtra solo quarterly** [`FundamentalSourceManifestRepository.cs:GetLatestByFibraAndPeriodAsync`] — La lógica de `possibleUpdate` no detecta reportes anuales con distinto packageUrl para el mismo período. Si AMEFIBRA publica una segunda URL para un reporte anual ya registrado, puede causar violación de la unique constraint `UX_FundamentalSourceManifest_SourceName_PackageUrl`.
+- **D5 (LOW): Skips no hidratan `SourcePublishedAt` si quedó null** [`FundamentalsAutomationService.cs:ExecuteAsync`] — Manifiestos en el path de skip no llaman a `HydrateDetailsAsync`. Si `SourcePublishedAt` quedó null en una corrida anterior (portal no disponible), el campo nunca se actualiza en corridas posteriores.
+- **D6 (LOW): Sin tests de regresión para FundamentalsHistory y endpoint público** — El spec requiere verificar que `FundamentalsHistory` en Ops y el endpoint público de fundamentales en Main sigan mostrando correctamente registros `ImportedBy = "system:amefibra"` sin duplicados de período. Agregar en próxima historia del módulo Fundamentals.
+
 ## Deferred from: code review of spec-4-12-umbral-body-text-ai-noticias (2026-05-31)
 
 - **D1: Artículos Partial por body corto nunca se re-procesan con IA** — `NewsBodyTextRetryJob` solo reintenta artículos con `BodyText IS NULL`. Artículos guardados como Partial por `bodyText.Length < MinBodyTextLengthForAi` (body no nulo pero corto) no son recogidos por el retry job, ni después de un body text edit manual en Ops. No hay mecanismo automático para re-intentar el análisis IA una vez que el body mejora. Considerar: after `UpdateBodyTextAsync` en Ops, si article.Status == Partial → enqueue AI re-analysis.

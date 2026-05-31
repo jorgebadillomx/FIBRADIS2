@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Application.Jobs;
 using Domain.Jobs;
 using Hangfire;
+using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Microsoft.Extensions.Logging;
@@ -77,6 +78,21 @@ public static class OpsMarketEndpoints
         {
             jobClient.Enqueue<DistributionPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
             await TryLogQueuedRunAsync("Distribution", ctx, runLogRepo, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
+            return Results.Accepted();
+        })
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPost("/fundamentals/run", async (
+            IBackgroundJobClient jobClient,
+            IPipelineRunLogRepository runLogRepo,
+            ILoggerFactory loggerFactory,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            jobClient.Enqueue<FundamentalsPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
+            await TryLogQueuedRunAsync("Fundamentals", ctx, runLogRepo, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })
         .Produces(StatusCodes.Status202Accepted)

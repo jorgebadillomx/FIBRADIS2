@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchAiMode, fetchAiProvider, setAiMode, setAiProvider } from '@/api/aiModeApi'
+import { fetchAiMode, fetchAiProvider, setAiConfig, setAiMode, setAiProvider } from '@/api/aiModeApi'
 
 export function AiModeSection() {
   const queryClient = useQueryClient()
