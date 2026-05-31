@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 5-10-pagina-publica-fundamentales (2026-05-31)
+
+- **D1: `GetSummaryLatestAsync` carga todo en memoria antes de agrupar** [`FundamentalRepository.cs`] — Dev Notes del story aprueba explícitamente este patrón para dataset ~180 filas máx. Revisar si el catálogo crece significativamente.
+- **D2: `GetAllProcessedPeriodsAsync` sin límite `Take`** [`FundamentalRepository.cs`] — AC 12 requiere retornar todos los períodos; sin límite el selector crecerá con el historial. Considerar límite de UX (ej. últimos 20 períodos) en historia futura.
+- **D3: `fetchFundamentalesSummary` silencia errores HTTP retornando `[]`** [`fundamentalesApi.ts`] — Patrón pre-existente en el mismo archivo (`fetchFundamentalesAvailablePeriods`). Error 500 muestra tabla vacía sin diagnóstico. Unificar manejo de errores al refactorizar el módulo.
+- **D4: Flash de tabla durante background refetch sin indicador de revalidación** [`FundamentalesPage.tsx`] — `isSummaryLoading` solo es `true` en la carga inicial; los refetches de background reemplazan todas las filas sin indicador visual. Cosmético.
+- **D5: Tests con InMemory provider no validan semántica SQL de `Substring` en ordering** [`FundamentalesRepositorySummaryTests.cs`] — EF InMemory usa C# 0-based; SQL Server 1-based. Para el formato `Q3-2024` ambos producen el mismo resultado. Patrón pre-existente del proyecto.
+
 ## Deferred from: code review of 4-11-pagina-listado-noticias (2026-05-31)
 
 - **D1: Page reset timing con debounce** [`NoticiasListPage.tsx`] — Ventana de 300ms genera un fetch extra con query antigua al limpiar filtros. Comportamiento inherente al patrón debounce; no afecta el estado final correcto.

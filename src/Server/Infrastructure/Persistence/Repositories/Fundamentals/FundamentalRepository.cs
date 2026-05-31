@@ -189,10 +189,14 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
                 r => r.FibraId,
                 f => f.Id,
                 (r, f) => new { Record = r, f.Ticker, f.ShortName })
-            .OrderBy(x => x.Ticker)
             .ToListAsync(ct);
 
-        return results.Select(x => (x.Record, x.Ticker, x.ShortName)).ToList();
+        return results
+            .GroupBy(x => x.Record.FibraId)
+            .Select(g => g.OrderByDescending(x => x.Record.ConfirmedAt).First())
+            .OrderBy(x => x.Ticker)
+            .Select(x => (x.Record, x.Ticker, x.ShortName))
+            .ToList();
     }
 
     public async Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default)

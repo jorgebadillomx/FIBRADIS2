@@ -127,6 +127,8 @@ public class FundamentalesRepositorySummaryTests
         var result = await repo.GetAllProcessedPeriodsAsync();
 
         Assert.Equal(2, result.Count);
+        Assert.Equal("Q3-2024", result[0]);
+        Assert.Equal("Q1-2024", result[1]);
     }
 
     [Fact]

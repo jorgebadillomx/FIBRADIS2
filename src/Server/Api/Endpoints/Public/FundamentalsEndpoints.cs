@@ -3,7 +3,6 @@ using Application.Fundamentals;
 using Domain.Fundamentals;
 using Microsoft.AspNetCore.Mvc;
 using SharedApiContracts.Fundamentals;
-using System.Collections.Generic;
 
 namespace Api.Endpoints.Public;
 

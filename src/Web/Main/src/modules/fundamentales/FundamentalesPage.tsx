@@ -105,7 +105,9 @@ export function FundamentalesPage() {
                   <td colSpan={8} className="px-4 py-12 text-center">
                     <p className="text-base font-medium text-muted-foreground">
                       {summaryData?.length === 0
-                        ? 'No hay fundamentales procesados en el sistema.'
+                        ? selectedPeriod
+                          ? `Sin datos para el período «${selectedPeriod}».`
+                          : 'No hay fundamentales procesados en el sistema.'
                         : `Sin resultados para «${fibraFilter}» en el período seleccionado.`}
                     </p>
                     {(summaryData?.length ?? 0) > 0 && fibraFilter && (
@@ -117,7 +119,7 @@ export function FundamentalesPage() {
                 </tr>
               ) : (
                 filteredRows.map((row) => (
-                  <FundamentalesRow key={row.ticker} row={row} />
+                  <FundamentalesRow key={`${row.ticker}-${row.period}`} row={row} />
                 ))
               )}
             </tbody>

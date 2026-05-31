@@ -1,6 +1,6 @@
 # Story 5.10: Página pública de Fundamentales — comparación cross-FIBRA
 
-Status: review
+Status: done
 
 ## Story
 
@@ -422,3 +422,19 @@ claude-sonnet-4-6
 ### Change Log
 
 - 2026-05-31: Implementada historia 5-10. Nuevos endpoints `/api/v1/fundamentals/summary` y `/api/v1/fundamentals/periods`. Nueva página pública `/fundamentales` con tabla comparativa cross-FIBRA, filtro de período y filtro client-side por ticker/nombre. Nav "Mercado" renombrado a "Fundamentales". 6 unit tests nuevos del repositorio.
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+- [x] **Review/Patch P1 [HIGH]** `GetSummaryByPeriodAsync` falta deduplicación por FibraId — puede retornar múltiples filas para la misma FIBRA cuando existen varios registros `processed` del mismo período, rompiendo la invariante "una fila por FIBRA" y causando colisión de React `key={row.ticker}` — `FundamentalRepository.cs`
+- [x] **Review/Patch P2 [MEDIUM]** Empty state message incorrecta cuando hay período seleccionado sin datos — `summaryData?.length === 0` se cumple tanto para "sin datos en el sistema" como para "sin datos del período elegido", mostrando siempre "No hay fundamentales procesados en el sistema" en lugar del mensaje apropiado — `FundamentalesPage.tsx`
+- [x] **Review/Patch P3 [MEDIUM]** React key `row.ticker` no es suficientemente único — si la API retorna duplicados (ver P1), las colisiones de key causan rendering incorrecto; usar key compuesto `row.ticker + '-' + row.period` — `FundamentalesPage.tsx`
+- [x] **Review/Patch P4 [MEDIUM]** `<input>` usa `>` en lugar de `/>` en JSX — falso positivo: el archivo real ya usa `/>` correctamente — `FundamentalesPage.tsx`
+- [x] **Review/Patch P5 [LOW]** Test `GetAllProcessedPeriodsAsync_Returns_DistinctPeriods` no verifica el orden — solo aserta `Count == 2`, sin comprobar que los períodos estén ordenados del más reciente al más antiguo (AC 12) — `FundamentalesRepositorySummaryTests.cs`
+- [x] **Review/Patch P6 [LOW]** `using System.Collections.Generic;` redundante en proyecto .NET 6+ con implicit usings habilitados — `FundamentalsEndpoints.cs`
+- [x] **Review/Defer** `GetSummaryLatestAsync` carga todo en memoria antes de agrupar — deferred, Dev Notes aprueba explícitamente este patrón (~180 filas máx)
+- [x] **Review/Defer** `GetAllProcessedPeriodsAsync` sin límite `Take` — deferred, AC 12 requiere retornar todos los períodos distintos del catálogo
+- [x] **Review/Defer** `fetchFundamentalesSummary` silencia errores HTTP retornando `[]` — deferred, patrón pre-existente en el mismo archivo
+- [x] **Review/Defer** Flash de tabla durante background refetch sin indicador — deferred, cosmético, fuera del scope
+- [x] **Review/Defer** Tests con InMemory provider no validan semántica SQL de `Substring` en ordering — deferred, patrón pre-existente del proyecto
