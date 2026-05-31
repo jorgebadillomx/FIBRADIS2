@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
+import ReactMarkdown from 'react-markdown'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
 import { fetchFundamentalesPublic, fetchFundamentalesAvailablePeriods } from '@/api/fundamentalesApi'
@@ -47,15 +48,8 @@ function FibraErrorState() {
   )
 }
 
-const SECTION_LABELS = [
-  { href: '#mercado', label: 'Mercado' },
-  { href: '#fundamentales', label: 'Fundamentales' },
-  { href: '#distribuciones', label: 'Distribuciones' },
-  { href: '#noticias', label: 'Noticias' },
-  { href: '#reportes', label: 'Reportes' },
-] as const
-
 const SECTION_TITLES: Record<string, string> = {
+  descripcion: 'Descripción',
   mercado: 'Mercado',
   fundamentales: 'Fundamentales',
   distribuciones: 'Distribuciones',
@@ -145,6 +139,15 @@ export function FibraPage() {
   const marketPrice = toNum(marketData?.lastPrice)
   const hasMarketPrice = marketPrice != null && marketData?.freshnessStatus != null
 
+  const sectionLabels = [
+    ...(fibra!.description ? [{ href: '#descripcion', label: 'Descripción' }] : []),
+    { href: '#mercado', label: 'Mercado' },
+    { href: '#fundamentales', label: 'Fundamentales' },
+    { href: '#distribuciones', label: 'Distribuciones' },
+    { href: '#noticias', label: 'Noticias' },
+    { href: '#reportes', label: 'Reportes' },
+  ]
+
   return (
     <>
       <title>{pageTitle}</title>
@@ -192,7 +195,7 @@ export function FibraPage() {
               aria-label="Navegación de secciones de la ficha"
               className="flex gap-1 overflow-x-auto mt-3 -mx-1"
             >
-              {SECTION_LABELS.map((s) => (
+              {sectionLabels.map((s) => (
                 <a
                   key={s.href}
                   href={s.href}
@@ -206,6 +209,20 @@ export function FibraPage() {
         </header>
 
         <div className="container mx-auto px-4 py-6 space-y-10">
+          <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Link
+              className="flex items-center gap-1 transition hover:text-foreground cursor-pointer"
+              to="/catalogo"
+            >
+              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+              </svg>
+              Catálogo
+            </Link>
+            <span aria-hidden="true">/</span>
+            <span className="font-medium text-foreground">{ticker}</span>
+          </nav>
+
           <PrecioSection
             lastPrice={marketData?.lastPrice}
             dailyChange={marketData?.dailyChange}
@@ -213,6 +230,19 @@ export function FibraPage() {
             capturedAt={marketData?.capturedAt}
             freshnessStatus={marketData?.freshnessStatus}
           />
+
+          {fibra!.description ? (
+            <section className="scroll-mt-32 space-y-4" id="descripcion">
+              <SectionHeader title={SECTION_TITLES.descripcion} />
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="prose prose-slate max-w-none text-sm leading-7">
+                  <ReactMarkdown>
+                    {fibra!.description}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           <section id="mercado" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.mercado} />

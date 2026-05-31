@@ -84,8 +84,8 @@ export function NoticiaPage() {
         {false && imageUrl ? (
           <div className="mb-6 aspect-video overflow-hidden rounded-xl bg-muted">
             <img
-              src={imageUrl}
-              alt={article.title}
+              src={imageUrl ?? undefined}
+              alt={article?.title}
               className="h-full w-full object-cover"
               loading="eager"
               onError={(event) => {

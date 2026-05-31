@@ -28,9 +28,12 @@ interface FormValues {
   reportsUrl: string
 }
 
+const MAX_DESC = 10_000
+
 export function FibraForm({ initialData, onSuccess, onCancel }: Props) {
   const queryClient = useQueryClient()
   const [variants, setVariants] = useState<string[]>(initialData?.nameVariants ?? [])
+  const [description, setDescription] = useState<string>(initialData?.description ?? '')
 
   const {
     register,
@@ -55,6 +58,8 @@ export function FibraForm({ initialData, onSuccess, onCancel }: Props) {
     mutationFn: async (values: FormValues) => {
       const normalizedVariants = variants.map((variant) => variant.trim()).filter((variant) => variant.length > 0)
 
+      const normalizedDescription = description.trim() === '' ? null : description
+
       if (initialData) {
         const payload: UpdateFibraRequest = {
           yahooTicker: values.yahooTicker.trim(),
@@ -67,6 +72,7 @@ export function FibraForm({ initialData, onSuccess, onCancel }: Props) {
           investorUrl: toNullable(values.investorUrl),
           reportsUrl: toNullable(values.reportsUrl),
           nameVariants: normalizedVariants,
+          description: normalizedDescription,
         }
 
         return updateFibra(initialData.ticker, payload)
@@ -84,6 +90,7 @@ export function FibraForm({ initialData, onSuccess, onCancel }: Props) {
         investorUrl: toNullable(values.investorUrl),
         reportsUrl: toNullable(values.reportsUrl),
         nameVariants: normalizedVariants,
+        description: normalizedDescription,
       }
 
       return createFibra(payload)
@@ -264,6 +271,34 @@ export function FibraForm({ initialData, onSuccess, onCancel }: Props) {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600">
+              Descripción editorial
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Texto largo en formato Markdown (~10 000 chars). Visible en la ficha pública y catálogo.
+            </p>
+          </div>
+          <span className={`text-xs font-mono ${description.length > MAX_DESC ? 'text-rose-600' : 'text-slate-400'}`}>
+            {description.length} / {MAX_DESC}
+          </span>
+        </div>
+        <textarea
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 font-mono outline-none transition focus:border-teal-600 resize-y"
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={'# Título\n\nDescribe la FIBRA en Markdown...'}
+          rows={20}
+          value={description}
+        />
+        {description.length > MAX_DESC ? (
+          <p className="text-xs text-rose-600">
+            La descripción supera el límite de {MAX_DESC} caracteres.
+          </p>
+        ) : null}
+      </section>
+
       {mutation.isError ? (
         <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {mutation.error.message}
@@ -273,7 +308,7 @@ export function FibraForm({ initialData, onSuccess, onCancel }: Props) {
       <div className="flex justify-end">
         <button
           className="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || description.length > MAX_DESC}
           type="submit"
         >
           {mutation.isPending ? 'Guardando...' : 'Guardar FIBRA'}
