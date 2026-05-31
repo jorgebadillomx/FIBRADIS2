@@ -62,7 +62,11 @@ Aplica a cualquier historia que entregue rutas accesibles sin autenticación (Ho
 Antes de marcar `done`, verificar:
 
 - [ ] La ruta responde 200 en hit directo (no solo desde la SPA navegando)
-- [ ] El prerender genera HTML con las `<meta>` correctas (title, description, og:*)
+- [ ] `<title>Nombre de la página — FIBRADIS</title>` presente en el componente
+- [ ] `<meta name="description" content="..."/>` con descripción útil de 120-160 chars
+- [ ] `<meta property="og:title" content="..."/>` — mismo texto que `<title>`
+- [ ] `<meta property="og:description" content="..."/>` — mismo o similar a description
+- [ ] `<meta property="og:type" content="website"/>` (o `article` para fichas de noticias)
 - [ ] La hidratación de React Query no causa flash de contenido vacío
 - [ ] El SPA fallback en el backend cubre la ruta (sin 404 en F5)
 - [ ] El contraste de color y navegación por teclado cumplen WCAG 2.1 AA para los componentes nuevos
@@ -86,6 +90,29 @@ var dists     = await repo.GetDistributionsAsync(id, 365, ct);
 ```
 
 **Regla**: si el endpoint llama a más de un método del mismo repositorio, usar `await` secuencial. La ganancia de paralelismo no existe cuando el cuello de botella es la misma conexión de BD.
+
+## EF Core — batch queries con JOINs manuales
+
+Los bugs de deduplicación son silenciosos con InMemory provider porque LINQ en memoria es más permisivo que SQL. Dos historias (5-10 y 4-11) tuvieron bugs de este tipo que solo el reviewer detectó.
+
+**Regla**: todo repositorio que implementa batch loading o JOIN manual debe documentar en Dev Notes las columnas exactas de la proyección y un ejemplo de resultado esperado.
+
+```csharp
+// MAL — proyección incompleta: LinkDto.Id siempre Guid.Empty
+var links = await _db.ArticleFibras
+    .Where(l => ids.Contains(l.ArticleId))
+    .Select(l => new { l.ArticleId, l.Fibra.Ticker })   // falta l.FibraId
+    .ToListAsync(ct);
+
+// BIEN — proyección completa documentada en Dev Notes
+// Resultado esperado: { ArticleId, FibraId, Ticker } por cada link
+var links = await _db.ArticleFibras
+    .Where(l => ids.Contains(l.ArticleId))
+    .Select(l => new { l.ArticleId, l.FibraId, l.Fibra.Ticker })
+    .ToListAsync(ct);
+```
+
+**Regla de deduplicación**: si el resultado debe ser "uno por entidad padre" (una fila por FIBRA, un registro por período), agregar `DistinctBy` o `GroupBy` + `First` explícitamente, y documentar la invariante en Dev Notes. No asumir que el WHERE filtra correctamente.
 
 ## Tests de integración — seed temporal y assertions semánticas
 
