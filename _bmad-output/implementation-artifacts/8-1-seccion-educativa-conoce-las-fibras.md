@@ -1,6 +1,6 @@
 # Story 8.1: Sección "Conoce las FIBRAs" — Contenido Editorial Editable desde Ops
 
-Status: review
+Status: done
 
 ## Story
 
@@ -70,6 +70,12 @@ so that puedo entender qué son, cómo funcionan, su historia, por qué invertir
   - [x] T6.2 `dotnet ef database update --project src/Server/Infrastructure --startup-project src/Server/Api` — migración aplica sin errores
   - [x] T6.3 `npm run dev:main` — verificar `/conoce-las-fibras` carga, tabs funcionan, markdown renderiza
   - [x] T6.4 `npm run dev:ops` — verificar sección "Contenido Editorial" carga, guardar actualiza contenido visible en Main
+
+### Review Follow-ups (AI) — Pasada 2 (2026-05-31)
+
+- [x] [Review][Defer] D1: `GetBySlugAsync` definido en interfaz/repositorio pero no lo llama ningún endpoint — dead code benigno [`src/Server/Infrastructure/Persistence/Repositories/Ops/EditorialPageRepository.cs:15`] — deferred, no causa bug, podría usarse en endpoints futuros
+- [x] [Review][Defer] D2: `fibraNewsMonths` type widened a `number | string | null` — ya diferido en pasada 1 [`src/Web/Ops/src/api/configApi.ts:8,11`] — deferred, pre-existente
+- [x] [Review][Defer] D3: `UpdateContentAsync` sin cobertura de tests — spec solo requería tests de `GetAllAsync` [`tests/Unit/Infrastructure.Tests/Persistence/Repositories/EditorialPageRepositoryTests.cs`] — deferred, fuera de alcance del spec
 
 ## Dev Notes
 
@@ -627,3 +633,10 @@ Los tests van en `tests/Unit/Infrastructure.Tests/` siguiendo el patrón de otro
 - [x] Review/Defer `staleTime: 60 * 60_000` (1 hora) — actualizaciones Ops invisibles por 60 min en Main — by design per story spec [`ConoceLasFibrasPage.tsx`] — deferred, by design
 - [x] Review/Defer `PUT /api/v1/ops/pages/{slug}` devuelve 403 sin test de integración — AC 12 solo exige 3 tests unitarios del repositorio — deferred, low priority
 - [x] Review/Defer Frontend no valida que slugs retornados sean exactamente los 5 del catálogo fijo — catálogo controlado por seed [`ConoceLasFibrasPage.tsx`] — deferred, by design
+
+### Pasada 2 (2026-05-31) — Outcome: Clean
+
+Todos los patches de la pasada 1 ya aplicados. Nuevos defers añadidos:
+- D1: `GetBySlugAsync` dead code benigno
+- D3: `UpdateContentAsync` sin test (fuera de alcance del spec)
+- D2: `fibraNewsMonths` type widening — ya diferido en pasada 1
