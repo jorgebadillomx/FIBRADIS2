@@ -157,6 +157,32 @@ public class NewsRepository(AppDbContext db) : INewsRepository
     public async Task<IReadOnlyList<NewsArticle>> GetRelatedAsync(Guid excludeId, int count, CancellationToken ct = default)
     {
         var since = DateTimeOffset.UtcNow.AddMonths(-6);
+
+        var fibraIds = await db.NewsArticleFibras
+            .Where(x => x.NewsArticleId == excludeId)
+            .Select(x => x.FibraId)
+            .ToListAsync(ct);
+
+        if (fibraIds.Count > 0)
+        {
+            var related = await db.NewsArticleFibras
+                .Where(x => fibraIds.Contains(x.FibraId) && x.NewsArticleId != excludeId)
+                .Select(x => x.NewsArticle)
+                .Where(a => a.DeletedAt == null
+                    && a.AiAnalysisJson != null
+                    && a.PublishedAt >= since
+                    && (a.Status == NewsArticleStatus.Pending
+                        || a.Status == NewsArticleStatus.Processed
+                        || a.Status == NewsArticleStatus.Partial))
+                .Distinct()
+                .OrderByDescending(a => a.PublishedAt)
+                .Take(count)
+                .ToListAsync(ct);
+
+            if (related.Count > 0)
+                return related;
+        }
+
         return await db.NewsArticles
             .Where(n => n.DeletedAt == null
                 && n.Id != excludeId
