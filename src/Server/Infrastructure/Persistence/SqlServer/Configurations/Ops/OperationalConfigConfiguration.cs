@@ -27,9 +27,9 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             Id = 1,
             CommissionFactor = 0.006m,
             AvgPeriods = 4,
-            NewsCadenceMinutes = 60,
+            NewsCadenceMinutes = 1440,
             FibraNewsMonths = 15,
-            FundamentalsCadenceMinutes = 360,
+            FundamentalsCadenceMinutes = 1440,
             UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
             UpdatedBy = "system",
         });

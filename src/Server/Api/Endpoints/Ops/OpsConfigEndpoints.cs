@@ -63,11 +63,10 @@ public static class OpsConfigEndpoints
             if (!useInMemoryHangfire && cadenceChanged)
             {
                 var jobManager = ctx.RequestServices.GetRequiredService<IRecurringJobManager>();
-                var cronExpr = $"*/{request.NewsCadenceMinutes!.Value} * * * *";
                 jobManager.AddOrUpdate<NewsPipelineJob>(
                     NewsPipelineSchedule.HourlyJobId,
                     j => j.ExecuteAsync(CancellationToken.None),
-                    cronExpr,
+                    NewsPipelineSchedule.GetCronExpression(request.NewsCadenceMinutes!.Value),
                     new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
             }
 
@@ -129,9 +128,9 @@ public static class OpsConfigEndpoints
             errors["avgPeriods"] = ["avgPeriods debe estar entre 1 y 20."];
         }
 
-        if (request.NewsCadenceMinutes is not null && !IsValidCadence(request.NewsCadenceMinutes.Value))
+        if (request.NewsCadenceMinutes is not null && request.NewsCadenceMinutes.Value != 1440)
         {
-            errors["newsCadenceMinutes"] = ["newsCadenceMinutes debe ser un divisor de 60 entre 15 y 60 (15, 20, 30, 60)."];
+            errors["newsCadenceMinutes"] = ["newsCadenceMinutes debe ser 1440 (24 horas)."];
         }
 
         if (request.FibraNewsMonths is not null && (request.FibraNewsMonths < 1 || request.FibraNewsMonths > 36))
@@ -146,9 +145,6 @@ public static class OpsConfigEndpoints
 
         return errors;
     }
-
-    private static bool IsValidCadence(int minutes)
-        => minutes is >= 15 and <= 60 && 60 % minutes == 0;
 
     private static OperationalConfigDto ToDto(Domain.Ops.OperationalConfig config)
         => new(

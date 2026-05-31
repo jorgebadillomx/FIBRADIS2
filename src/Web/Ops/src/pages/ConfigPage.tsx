@@ -44,9 +44,9 @@ export function ConfigPage() {
     defaultValues: {
       commissionFactor: 0.006,
       avgPeriods: 4,
-      newsCadenceMinutes: 60,
+      newsCadenceMinutes: 1440,
       fibraNewsMonths: 15,
-      fundamentalsCadenceMinutes: 360,
+      fundamentalsCadenceMinutes: 1440,
     },
   })
 
@@ -58,7 +58,7 @@ export function ConfigPage() {
       avgPeriods: Number(configQuery.data.avgPeriods),
       newsCadenceMinutes: Number(configQuery.data.newsCadenceMinutes),
       fibraNewsMonths: Number(configQuery.data.fibraNewsMonths ?? 15),
-      fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 360),
+      fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 1440),
     })
   }, [configQuery.data, reset])
 
@@ -148,9 +148,9 @@ export function ConfigPage() {
                   })}
                   className={inputClassName}
                 >
-                  {[15, 20, 30, 60].map((value) => (
+                  {[1440].map((value) => (
                     <option key={value} value={value}>
-                      {value} minutos
+                      24 horas
                     </option>
                   ))}
                 </select>

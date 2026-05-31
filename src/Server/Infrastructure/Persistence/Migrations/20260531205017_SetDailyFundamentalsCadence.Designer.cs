@@ -4,6 +4,7 @@ using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531205017_SetDailyFundamentalsCadence")]
+    partial class SetDailyFundamentalsCadence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2345,7 +2348,7 @@ namespace Infrastructure.Persistence.Migrations
                             CommissionFactor = 0.006m,
                             FibraNewsMonths = 15,
                             FundamentalsCadenceMinutes = 1440,
-                            NewsCadenceMinutes = 1440,
+                            NewsCadenceMinutes = 60,
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             UpdatedBy = "system"
                         });

@@ -17,7 +17,7 @@ public class OperationalConfigRepositoryTests
 
         Assert.Equal(0.006m, config.CommissionFactor);
         Assert.Equal(4, config.AvgPeriods);
-        Assert.Equal(60, config.NewsCadenceMinutes);
+        Assert.Equal(1440, config.NewsCadenceMinutes);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class OperationalConfigRepositoryTests
         Assert.Equal(1, config.Id);
         Assert.Equal(0.006m, config.CommissionFactor);
         Assert.Equal(4, config.AvgPeriods);
-        Assert.Equal(60, config.NewsCadenceMinutes);
+        Assert.Equal(1440, config.NewsCadenceMinutes);
         Assert.Equal("system", config.UpdatedBy);
     }
 
@@ -76,15 +76,19 @@ public class OperationalConfigRepositoryTests
         await using var db = CreateDbContext();
         var repo = new OperationalConfigRepository(db);
 
-        await repo.UpdateAsync(null, null, 30, null, null, "adminops@test.com");
-
         var config = await db.OperationalConfigs.SingleAsync();
+        config.NewsCadenceMinutes = 60;
+        await db.SaveChangesAsync();
+
+        await repo.UpdateAsync(null, null, 1440, null, null, "adminops@test.com");
+
+        config = await db.OperationalConfigs.SingleAsync();
         var audit = await db.ConfigAuditLogs.SingleAsync();
 
-        Assert.Equal(30, config.NewsCadenceMinutes);
+        Assert.Equal(1440, config.NewsCadenceMinutes);
         Assert.Equal("news_cadence_minutes", audit.FieldName);
         Assert.Equal("60", audit.PreviousValue);
-        Assert.Equal("30", audit.NewValue);
+        Assert.Equal("1440", audit.NewValue);
     }
 
     [Fact]
@@ -93,7 +97,7 @@ public class OperationalConfigRepositoryTests
         await using var db = CreateDbContext();
         var repo = new OperationalConfigRepository(db);
 
-        await repo.UpdateAsync(0.006m, 4, 60, null, null, "adminops@test.com");
+        await repo.UpdateAsync(0.006m, 4, 1440, null, null, "adminops@test.com");
 
         Assert.Empty(db.ConfigAuditLogs);
     }

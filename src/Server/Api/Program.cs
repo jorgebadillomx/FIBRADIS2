@@ -82,13 +82,10 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
                 .GetRequiredService<IOperationalConfigRepository>()
                 .GetAsync();
 
-            var dynCron = opConfig.NewsCadenceMinutes == 60
-                ? "0 * * * *"
-                : $"*/{opConfig.NewsCadenceMinutes} * * * *";
             RecurringJob.AddOrUpdate<NewsPipelineJob>(
                 NewsPipelineSchedule.HourlyJobId,
                 j => j.ExecuteAsync(CancellationToken.None),
-                dynCron,
+                NewsPipelineSchedule.GetCronExpression(opConfig.NewsCadenceMinutes),
                 new RecurringJobOptions { TimeZone = mexicoTz });
         }
         catch (Exception ex)
@@ -104,7 +101,7 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         "0 6 * * *",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-    var fundamentalsCadenceMinutes = 360;
+    var fundamentalsCadenceMinutes = 1440;
     if (!skipStartupDbReads)
     {
         try

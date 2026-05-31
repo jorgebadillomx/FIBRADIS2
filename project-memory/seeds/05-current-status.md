@@ -111,7 +111,7 @@ _Última actualización: 2026-05-19_
 |---|---|---|
 | `AI_MODE` | `Off` | Sí (Épica 5) |
 | Pipeline mercado | Cada 15 min, horario BMV | Sí (Épica 5) |
-| Pipeline noticias | Cada 1 hora | Sí (Épica 5) |
+| Pipeline noticias | Cada 1 día | Sí (Épica 5) |
 | Umbral `fresh` | < 20 minutos | No (código) |
 | Umbral `stale` | 20 min – 6 horas | No (código) |
 | Umbral `crítico` | > 6 horas | No (código) |

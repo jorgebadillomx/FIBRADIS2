@@ -383,7 +383,7 @@ FR-11. El sistema debe recalcular yield anualizado usando frecuencia detectada d
 
 FR-12. Si faltan eventos suficientes de distribucion o el proveedor no entrega datos, el sistema debe mostrar `yield` como no disponible sin romper score ni senales. Trace: UJ-02, UJ-05, UJ-06, SC-11.
 
-FR-13. El modulo de Noticias debe ingerir notas cada hora desde Google News RSS usando dos tipos de queries configurables desde el catalogo y desde Ops sin redeploy: queries especificas por FIBRA (ticker y variantes de nombre almacenadas en el catalogo maestro) y queries generales de mercado (ej. "FIBRAs Mexico", "BMV FIBRAs", "sector FIBRA Mexico"). Cada noticia debe normalizarse con titulo, fecha, fuente, URL y snippet, y almacenar estado de procesamiento por item. Trace: UJ-01, UJ-02, SC-07.
+FR-13. El modulo de Noticias debe ingerir notas una vez al dia desde Google News RSS usando dos tipos de queries configurables desde el catalogo y desde Ops sin redeploy: queries especificas por FIBRA (ticker y variantes de nombre almacenadas en el catalogo maestro) y queries generales de mercado (ej. "FIBRAs Mexico", "BMV FIBRAs", "sector FIBRA Mexico"). Cada noticia debe normalizarse con titulo, fecha, fuente, URL y snippet, y almacenar estado de procesamiento por item. Trace: UJ-01, UJ-02, SC-07.
 
 FR-14. El sistema debe aplicar un blocklist global de terminos que descarten noticias no relacionadas con FIBRAs inmobiliarias antes de persistirlas. Ejemplos de terminos bloqueados: "fibra optica", "fibra dietetica", "fibra alimentaria", "fibra natural". El blocklist debe ser configurable desde Ops sin redeploy. Adicionalmente el sistema debe eliminar duplicados exactos por URL y duplicados probables por similitud de titulo dentro de una ventana de 24 horas. Trace: UJ-01, SC-07.
 
@@ -544,7 +544,7 @@ FR-38. La seccion Fundamentales debe incluir un formulario de importacion que ac
 
 FR-39. La seccion Catalogo debe permitir agregar, editar y desactivar FIBRAs. Los campos editables son: ticker, nombre completo, nombre corto, sector, mercado, moneda, estado (activo/inactivo) y variantes de nombre para queries de Google News RSS. La desactivacion es un soft delete que excluye la FIBRA del universo activo sin eliminar su historial. Trace: UJ-09, FR-49.
 
-FR-40. La seccion Configuracion debe permitir editar sin redeploy: commission_factor, avg_periods, blocklist de terminos de noticias, AI_MODE (Off o Manual), y la cadencia de ejecucion de los pipelines de mercado y noticias. Cada cambio queda auditado con actor y timestamp. Trace: UJ-09, PT-07, DR-13, DR-15.
+FR-40. La seccion Configuracion debe permitir editar sin redeploy: commission_factor, avg_periods, blocklist de terminos de noticias, AI_MODE (Off o Manual), y la cadencia de ejecucion de los pipelines de mercado, noticias y fundamentales. Cada cambio queda auditado con actor y timestamp. Trace: UJ-09, PT-07, DR-13, DR-15.
 
 FR-41. El sistema debe mantener estados operativos por item y corrida: detected, pending, processing, processed, partial y error. Estos estados son visibles en la seccion Fundamentales y en el historial de pipelines. Trace: UJ-08, UJ-09.
 
@@ -564,7 +564,7 @@ NFR-03. El pipeline de mercado debe ejecutarse cada 15 minutos dentro del horari
 
 NFR-04. El sistema debe clasificar frescura de mercado con estas reglas aplicadas automaticamente sobre timestamps persistidos: `Fresh` hasta 20 minutos desde la ultima actualizacion; `Stale` mayor a 20 minutos y hasta 6 horas; degradacion critica mayor a 6 horas. Fuera del horario de mercado el sistema muestra el estado `fuera-de-horario` en lugar de `Stale` o `critico` cuando el timestamp corresponde al ultimo precio de cierre valido del dia. Trace: SC-03, SC-11, DR-15.
 
-NFR-05. El pipeline de noticias debe ejecutarse con cadencia default de 1 hora; cualquier cambio realizado desde Ops debe surtir efecto en la siguiente evaluacion programada sin redeploy. En MVP el procesamiento de PDFs de Fundamentales es manual y no tiene schedule automatico; en modo Api (Growth) se puede configurar una cadencia diaria desde Ops. Trace: SC-06, SC-10.
+NFR-05. El pipeline de noticias debe ejecutarse con cadencia diaria por default; cualquier cambio realizado desde Ops debe surtir efecto en la siguiente evaluacion programada sin redeploy. El pipeline automatico de Fundamentales/AMEFIBRA tambien debe operar con cadencia diaria por default y quedar editable desde Ops. Trace: SC-06, SC-10.
 
 NFR-06. Los snapshots diarios de mercado deben conservarse por 90 dias calendario y seguir consultables durante toda esa ventana. Trace: SC-03.
 
