@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 8-2-catalogo-fibras-descripcion-pagina-publica (2026-05-31)
+
+- **D1: ReactMarkdown sin rehype-sanitize en FibraPage pública** [`FibraPage.tsx:239`] — Patrón consistente con NoticiaPage. Descripción solo la escriben AdminOps. Evaluar `rehype-sanitize` si los permisos de escritura se amplían a usuarios no-admin.
+- **D2: fetchAllFibras hard-capped a pageSize=100** [`fibrasApi.ts:8`] — Con 20 FIBRAs actuales no es problema. Requiere loop de paginación o endpoint de "all" sin paginar si el universo crece más de 100 FIBRAs activas.
+- **D3: Contador "N emisoras activas" usa items retornados, no total del servidor** [`CatalogoPage.tsx`] — Consecuencia del cap de 100. Se corrige junto con D2.
+- **D4: Búsqueda en /catalogo no incluye shortName ni nameVariants** [`CatalogoPage.tsx:30`] — FibraListItem no expone esos campos. Requiere ampliar el DTO o un endpoint de búsqueda dedicado.
+- **D5: sectionLabels sin useMemo en FibraPage** [`FibraPage.tsx:142`] — Array recreado en cada render. No causa bugs; el diffing de React absorbe el costo. Optimización cosmética.
+- **D6: Estado de error en FibraPage no muestra breadcrumb a /catalogo** [`FibraPage.tsx:136`] — El layout principal tiene navegación. Agregar fallback de navegación en FibraErrorState si se mejora la UX de errores.
+- **D7: Búsqueda sin debounce — AC8 especificaba "debounced"** [`CatalogoPage.tsx:67`] — El filtrado es client-side sobre datos cargados; debounce no aporta valor. Spec tenía un requisito innecesario; deuda documental.
+- **D8: Sin test automatizado para hit directo 200 en /catalogo** — Verificación manual en T9.4. Agregar en story de e2e/infra cuando se implemente suite de smoke tests.
+
 ## Deferred from: code review of 5-9-analisis-ia-enriquecido-fundamentales (2026-05-30)
 
 - **D1: `UpdateStatusAsync` guard silencia re-confirmación por actor diferente** [`FundamentalRepository.cs:53-54`] — El guard `if (record.Status == status && status == "processed") return` fue introducido para idempotencia pero impide que un segundo AdminOps registre su nombre como confirmador. Comportamiento deliberado; revisitar si el negocio requiere audit trail de re-confirmaciones.

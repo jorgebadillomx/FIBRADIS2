@@ -1,6 +1,6 @@
 # Story 8.2: Catálogo de FIBRAs — Campo Descripción y Página Pública
 
-Status: review
+Status: done
 
 ## Story
 
@@ -731,4 +731,17 @@ Los tests van en `tests/Integration/Api.Tests/` siguiendo el patrón de integrac
 
 ## Senior Developer Review (AI)
 
-_(Se completa en code review)_
+### Review Findings
+
+**Resumen:** 0 patches críticos · 8 defers · 9 dismissed como ruido
+
+#### Defers (deuda real, no bloquean done)
+
+- [x] `DEFER` ReactMarkdown sin rehype-sanitize en FibraPage pública (`FibraPage.tsx:239`) — pre-existing. Patrón consistente con NoticiaPage. Descripción solo la escriben AdminOps; riesgo insider. Considerar `rehype-sanitize` cuando se evalúen permisos de escritura más amplios.
+- [x] `DEFER` fetchAllFibras hard-capped a pageSize=100 — catálogo silencioso si >100 FIBRAs (`fibrasApi.ts:8`) — diseño. Con 20 FIBRAs actuales no es un problema. Requiere loop de paginación si el universo supera 100.
+- [x] `DEFER` Contador "N emisoras activas" usa fibras.length (items retornados), no total del servidor (`CatalogoPage.tsx`) — depende del anterior. Se vuelve incorrecto solo si items < total.
+- [x] `DEFER` Búsqueda sin debounce — AC8 dice "debounced" (`CatalogoPage.tsx:67`) — bajo impacto. El filtrado es client-side sobre datos ya cargados; debounce no aporta mejora de rendimiento ni UX.
+- [x] `DEFER` sectionLabels sin useMemo — array recreado en cada render incluyendo el refetch de market cada 5 min (`FibraPage.tsx:142`) — optimización menor. No causa bugs; el diffing de React lo maneja.
+- [x] `DEFER` Estado de error en FibraPage no expone breadcrumb de vuelta a /catalogo (`FibraPage.tsx:136`) — pre-existing UX gap. El layout principal sigue disponible para navegar.
+- [x] `DEFER` Búsqueda en /catalogo no incluye shortName ni nameVariants (`CatalogoPage.tsx:30`) — limitación de FibraListItem DTO. Requiere ampliar el contrato o buscar en FibraDetail.
+- [x] `DEFER` Sin test automatizado para hit directo 200 en /catalogo (AC11) — verificación manual documentada en T9.4. Agregar en story de infra/e2e.
