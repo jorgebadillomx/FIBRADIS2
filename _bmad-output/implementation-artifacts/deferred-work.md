@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 8-2-catalogo-fibras-descripcion-pagina-publica (2026-05-31)
+
+- **D1: ReactMarkdown sin rehype-sanitize en FibraPage pública** [`FibraPage.tsx:239`] — Patrón consistente con NoticiaPage. Descripción solo la escriben AdminOps. Evaluar `rehype-sanitize` si los permisos de escritura se amplían a usuarios no-admin.
+- **D2: fetchAllFibras hard-capped a pageSize=100** [`fibrasApi.ts:8`] — Con 20 FIBRAs actuales no es problema. Requiere loop de paginación o endpoint de "all" sin paginar si el universo crece más de 100 FIBRAs activas.
+- **D3: Contador "N emisoras activas" usa items retornados, no total del servidor** [`CatalogoPage.tsx`] — Consecuencia del cap de 100. Se corrige junto con D2.
+- **D4: Búsqueda en /catalogo no incluye shortName ni nameVariants** [`CatalogoPage.tsx:30`] — FibraListItem no expone esos campos. Requiere ampliar el DTO o un endpoint de búsqueda dedicado.
+- **D5: sectionLabels sin useMemo en FibraPage** [`FibraPage.tsx:142`] — Array recreado en cada render. No causa bugs; el diffing de React absorbe el costo. Optimización cosmética.
+- **D6: Estado de error en FibraPage no muestra breadcrumb a /catalogo** [`FibraPage.tsx:136`] — El layout principal tiene navegación. Agregar fallback de navegación en FibraErrorState si se mejora la UX de errores.
+- **D7: Búsqueda sin debounce — AC8 especificaba "debounced"** [`CatalogoPage.tsx:67`] — El filtrado es client-side sobre datos cargados; debounce no aporta valor. Spec tenía un requisito innecesario; deuda documental.
+- **D8: Sin test automatizado para hit directo 200 en /catalogo** — Verificación manual en T9.4. Agregar en story de e2e/infra cuando se implemente suite de smoke tests.
+
 ## Deferred from: code review of 8-1-seccion-educativa-conoce-las-fibras (2026-05-31)
 
 - **D1: `GetBySlugAsync` definido pero nunca llamado** [`src/Server/Infrastructure/Persistence/Repositories/Ops/EditorialPageRepository.cs:15`] — Interfaz y repositorio exponen el método, pero ningún endpoint lo invoca. Dead code benigno. Remover o usar en un endpoint futuro si surge la necesidad.
@@ -9,19 +20,19 @@
 
 - **D1: `GetSummaryLatestAsync` carga todo en memoria antes de agrupar** [`FundamentalRepository.cs`] — Dev Notes del story aprueba explícitamente este patrón para dataset ~180 filas máx. Revisar si el catálogo crece significativamente.
 - **D2: `GetAllProcessedPeriodsAsync` sin límite `Take`** [`FundamentalRepository.cs`] — AC 12 requiere retornar todos los períodos; sin límite el selector crecerá con el historial. Considerar límite de UX (ej. últimos 20 períodos) en historia futura.
-- **D3: `fetchFundamentalesSummary` silencia errores HTTP retornando `[]`** [`fundamentalesApi.ts`] — Patrón pre-existente en el mismo archivo (`fetchFundamentalesAvailablePeriods`). Error 500 muestra tabla vacía sin diagnóstico. Unificar manejo de errores al refactorizar el módulo.
-- **D4: Flash de tabla durante background refetch sin indicador de revalidación** [`FundamentalesPage.tsx`] — `isSummaryLoading` solo es `true` en la carga inicial; los refetches de background reemplazan todas las filas sin indicador visual. Cosmético.
-- **D5: Tests con InMemory provider no validan semántica SQL de `Substring` en ordering** [`FundamentalesRepositorySummaryTests.cs`] — EF InMemory usa C# 0-based; SQL Server 1-based. Para el formato `Q3-2024` ambos producen el mismo resultado. Patrón pre-existente del proyecto.
+- **D3: `fetchFundamentalesSummary` silencia errores HTTP retornando `[]`** [`fundamentalesApi.ts`] — Patrón pre-existente en el mismo archivo. Error 500 muestra tabla vacía sin diagnóstico. Unificar manejo de errores al refactorizar el módulo.
+- **D4: Flash de tabla durante background refetch sin indicador de revalidación** [`FundamentalesPage.tsx`] — `isSummaryLoading` solo es `true` en la carga inicial. Cosmético.
+- **D5: Tests con InMemory provider no validan semántica SQL de `Substring` en ordering** [`FundamentalesRepositorySummaryTests.cs`] — Patrón pre-existente del proyecto.
 
 ## Deferred from: code review of 4-11-pagina-listado-noticias (2026-05-31)
 
-- **D1: Page reset timing con debounce** [`NoticiasListPage.tsx`] — Ventana de 300ms genera un fetch extra con query antigua al limpiar filtros. Comportamiento inherente al patrón debounce; no afecta el estado final correcto.
-- **D2: `LIKE '%q%'` sin índice ni garantía de collation** [`NewsRepository.cs:GetPagedPublicAsync`] — Pre-existente en `GetPagedForOpsAsync` también. Puede fallar en SQL Server con collation case-sensitive o tener tabla-scan en datasets grandes. Añadir full-text index si se detecta degradación de performance.
-- **D3: `CountAsync` + `ToListAsync` sin snapshot isolation** [`NewsRepository.cs:GetPagedPublicAsync`] — Patrón EF Core pre-existente en todo el proyecto. El `total` puede ser inconsistente con los items en caso de inserciones concurrentes. Cosméticamente menor en lectura pública.
-- **D4: `fetchAllFibras` trunca silenciosamente a 100 FIBRAs** [`fibrasApi.ts`] — El endpoint del catálogo limita a 100 resultados; actualmente el sistema tiene 6 FIBRAs. Agregar paginación del dropdown si el catálogo crece más allá de 100.
-- **D5: `fetchAllFibras` singleton a nivel de módulo vs factory pattern** [`fibrasApi.ts`] — Inconsistencia pre-existente con el patrón `getApiClient()` de `newsApi.ts`. Riesgo de SSR context initialization. Unificar patrón al refactorizar `fibrasApi.ts`.
-- **D6: Batch de tickers excluye FIBRAs inactivas pero filtro `fibraId` no** [`NewsRepository.cs:GetPagedPublicAsync`] — Si se filtra por `fibraId` de una FIBRA inactiva (solo vía URL directo), los artículos aparecen pero sin chips de ticker. No alcanzable desde la UI (dropdown solo muestra FIBRAs activas per AC4).
-- **D7: Test para fibraId inactiva en `GetPagedPublicAsync` ausente** [`NewsRepositoryPublicPagedTests.cs`] — Cubre el edge case D6. AC12 ya cumplido con 5 tests (mínimo era 4). Añadir en próxima historia del módulo news.
+- **D1: Page reset timing con debounce** [`NoticiasListPage.tsx`] — Ventana de 300ms genera un fetch extra con query antigua al limpiar filtros. No afecta el estado final correcto.
+- **D2: `LIKE '%q%'` sin índice ni garantía de collation** [`NewsRepository.cs:GetPagedPublicAsync`] — Pre-existente en `GetPagedForOpsAsync` también. Añadir full-text index si se detecta degradación de performance.
+- **D3: `CountAsync` + `ToListAsync` sin snapshot isolation** [`NewsRepository.cs:GetPagedPublicAsync`] — Patrón EF Core pre-existente en todo el proyecto.
+- **D4: `fetchAllFibras` trunca silenciosamente a 100 FIBRAs** [`fibrasApi.ts`] — Agregar paginación del dropdown si el catálogo crece más allá de 100.
+- **D5: `fetchAllFibras` singleton a nivel de módulo vs factory pattern** [`fibrasApi.ts`] — Unificar patrón al refactorizar `fibrasApi.ts`.
+- **D6: Batch de tickers excluye FIBRAs inactivas pero filtro `fibraId` no** [`NewsRepository.cs:GetPagedPublicAsync`] — No alcanzable desde la UI.
+- **D7: Test para fibraId inactiva en `GetPagedPublicAsync` ausente** [`NewsRepositoryPublicPagedTests.cs`] — Añadir en próxima historia del módulo news.
 
 ## Deferred from: code review of 5-9-analisis-ia-enriquecido-fundamentales (2026-05-30)
 
