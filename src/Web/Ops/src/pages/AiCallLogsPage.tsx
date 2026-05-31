@@ -23,11 +23,22 @@ function SuccessBadge({ success }: { success: boolean }) {
 
 function OperationBadge({ operation }: { operation: string }) {
   const cls = operation === 'KpiExtraction'
-    ? 'bg-teal-100 text-teal-800'
-    : operation === 'News'
+    ? 'bg-amber-100 text-amber-800'
+    : operation === 'NewsSummary'
       ? 'bg-sky-100 text-sky-800'
-      : 'bg-violet-100 text-violet-800'
+      : operation === 'News'
+        ? 'bg-sky-100 text-sky-800'
+        : 'bg-slate-100 text-slate-700'
   return <span className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', cls)}>{operation}</span>
+}
+
+function ProviderBadge({ provider }: { provider: string }) {
+  const cls = provider === 'Gemini'
+    ? 'bg-teal-100 text-teal-800'
+    : provider === 'DeepSeek'
+      ? 'bg-violet-100 text-violet-800'
+      : 'bg-slate-100 text-slate-700'
+  return <span className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', cls)}>{provider}</span>
 }
 
 export function AiCallLogsPage() {
@@ -137,8 +148,8 @@ export function AiCallLogsPage() {
                       {new Date(item.timestamp).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="font-medium text-slate-800">{item.provider}</span>
-                      <span className="ml-1 text-xs text-muted-foreground">{item.modelId}</span>
+                      <ProviderBadge provider={item.provider} />
+                      <span className="ml-2 text-xs text-muted-foreground">{item.modelId}</span>
                     </td>
                     <td className="px-4 py-4 text-muted-foreground">{item.promptLength.toLocaleString()} chars</td>
                     <td className="px-4 py-4 text-muted-foreground">{item.durationMs.toLocaleString()} ms</td>

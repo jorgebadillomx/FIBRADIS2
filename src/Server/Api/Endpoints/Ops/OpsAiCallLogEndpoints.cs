@@ -27,25 +27,27 @@ public static class OpsAiCallLogEndpoints
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var normalizedOp = string.IsNullOrWhiteSpace(operation) || string.Equals(operation, "all", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : operation;
+            string? normalizedOp = null;
+            if (!string.IsNullOrWhiteSpace(operation) && !string.Equals(operation, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                normalizedOp = AllowedOperations.FirstOrDefault(o => string.Equals(o, operation, StringComparison.OrdinalIgnoreCase));
+                if (normalizedOp is null)
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["operation"] = [$"Operación no reconocida. Valores permitidos: {string.Join(", ", AllowedOperations)}."],
+                    });
+            }
 
-            if (normalizedOp is not null && !AllowedOperations.Contains(normalizedOp, StringComparer.OrdinalIgnoreCase))
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["operation"] = [$"Operación no reconocida. Valores permitidos: {string.Join(", ", AllowedOperations)}."],
-                });
-
-            var normalizedProvider = string.IsNullOrWhiteSpace(provider) || string.Equals(provider, "all", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : provider;
-
-            if (normalizedProvider is not null && !AllowedProviders.Contains(normalizedProvider, StringComparer.OrdinalIgnoreCase))
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["provider"] = [$"Proveedor no reconocido. Valores permitidos: {string.Join(", ", AllowedProviders)}."],
-                });
+            string? normalizedProvider = null;
+            if (!string.IsNullOrWhiteSpace(provider) && !string.Equals(provider, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                normalizedProvider = AllowedProviders.FirstOrDefault(p => string.Equals(p, provider, StringComparison.OrdinalIgnoreCase));
+                if (normalizedProvider is null)
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["provider"] = [$"Proveedor no reconocido. Valores permitidos: {string.Join(", ", AllowedProviders)}."],
+                    });
+            }
 
             var (items, total) = await repo.GetPagedAsync(normalizedOp, normalizedProvider, success, page, pageSize, ct);
             var dtos = items.Select(item => new AiCallLogDto(

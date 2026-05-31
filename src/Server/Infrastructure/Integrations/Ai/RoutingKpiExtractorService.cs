@@ -4,6 +4,7 @@ using Application.Fundamentals;
 using Application.News;
 using Domain.Ai;
 using Domain.News;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Integrations.Ai;
 
@@ -11,7 +12,8 @@ public class RoutingKpiExtractorService(
     GeminiKpiExtractorService gemini,
     DeepSeekKpiExtractorService deepSeek,
     IAiProviderConfigRepository providerRepo,
-    IAiCallLogRepository callLogRepo) : IKpiExtractorService
+    IAiCallLogRepository callLogRepo,
+    ILogger<RoutingKpiExtractorService> logger) : IKpiExtractorService
 {
     public async Task<KpiExtractionResult> ExtractAsync(string markdownContent, CancellationToken ct)
     {
@@ -64,9 +66,12 @@ public class RoutingKpiExtractorService(
                 Success = success,
                 RequestRaw = requestRaw,
                 ResponseRaw = responseRaw,
-                ErrorMessage = errorMessage,
+                ErrorMessage = errorMessage?[..Math.Min(errorMessage.Length, 500)],
             }, CancellationToken.None);
         }
-        catch { /* never let logging break the call */ }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "No se pudo persistir AiCallLog para KpiExtraction ({Provider}).", provider);
+        }
     }
 }
