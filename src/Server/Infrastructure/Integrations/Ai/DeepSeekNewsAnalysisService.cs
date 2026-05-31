@@ -146,9 +146,13 @@ public class DeepSeekNewsAnalysisService(
             ? "Cuerpo completo no disponible."
             : $"Cuerpo del artículo: {preparedBody}";
 
+        var snippetSection = preparedBody is null && !string.IsNullOrWhiteSpace(snippet)
+            ? $"Resumen: {snippet}"
+            : string.Empty;
+
         return template
             .Replace("{title}", title, StringComparison.Ordinal)
-            .Replace("{snippet_section}", string.Empty, StringComparison.Ordinal)
+            .Replace("{snippet_section}", snippetSection, StringComparison.Ordinal)
             .Replace("{body_section}", bodySection, StringComparison.Ordinal);
     }
 

@@ -81,7 +81,7 @@ export function NoticiaPage() {
         <div className="min-w-0">
 
         <h1 className="mb-2 font-playfair text-3xl md:text-4xl font-bold leading-tight text-foreground">
-          {article.title}
+          {displayTitle}
         </h1>
 
         {/* Metadata: fuente, fecha + badge de impacto */}

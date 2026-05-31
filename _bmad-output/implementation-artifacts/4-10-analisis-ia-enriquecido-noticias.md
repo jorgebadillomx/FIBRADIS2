@@ -508,4 +508,30 @@ El componente `ManualSummaryTriggerSection.tsx` llama al endpoint de generación
 
 ## Senior Developer Review (AI)
 
-_(A rellenar durante el code review)_
+### Review Findings
+
+**Resumen:** 2 patches · 4 defers · 3 dismissed
+
+#### Patches
+
+- [x] **P1 (Medium): `<h1>` en `NoticiaPage` usa `article.title` en lugar de `displayTitle`** — AC6 exige que `aiAnalysis.headline` reemplace al título en el `<h1>` cuando existe. `displayTitle` se calcula correctamente en línea 28 pero solo se usa en el `<title>` meta-tag; el `<h1>` siempre renderiza `article.title`. Fix: cambiar `{article.title}` por `{displayTitle}` en la línea 84. [`src/Web/Main/src/modules/noticia/NoticiaPage.tsx:84`]
+
+- [x] **P2 (Low): Snippet silenciosamente descartado en `BuildPromptAsync`** — ambos servicios aceptan `snippet` como parámetro pero `{snippet_section}` siempre se reemplaza con `string.Empty`. Cuando no hay body text, la IA solo recibe el título y cero contexto adicional; el snippet mejoraría la calidad del análisis en esos casos. Fix: cuando `preparedBody` sea null y `snippet` no sea null, construir `snippetSection = $"Resumen: {snippet}"` e inyectarlo en `{snippet_section}` en lugar de vacío. [`src/Server/Infrastructure/Integrations/Ai/GeminiNewsAnalysisService.cs:151`, `src/Server/Infrastructure/Integrations/Ai/DeepSeekNewsAnalysisService.cs:151`]
+
+#### Deferred
+
+- [x] [Review][Defer] **D1:** `RoutingNewsAnalysisService` llama a `providerRepo.GetConfigAsync` dos veces por request (una en el router para el switch, otra en el servicio delegado Gemini/DeepSeek). Overhead menor, no es race condition porque es lectura de config estática. — deferred, refactorizar en historia futura [`src/Server/Infrastructure/Integrations/Ai/RoutingNewsAnalysisService.cs:21`]
+
+- [x] [Review][Defer] **D2:** El endpoint `/ai-analysis` retorna 409 cuando el artículo tiene `DeletedAt != null` pero ningún test de integración cubre ese caso. AC8 no lo lista explícitamente pero es una rama de error observable. — deferred, agregar test en historia futura [`tests/Integration/Api.Tests/AiModeOpsEndpointTests.cs`]
+
+- [x] [Review][Defer] **D3:** `GetLatestAsync`, `GetLatestForFibraAsync` y `GetRelatedAsync` requieren `AiAnalysisJson != null`, ocultando artículos legacy con solo `AiSummary` en home/fichas/relacionadas. Decisión deliberada pero sin test de integración que la documente. — deferred, agregar test de cobertura [`src/Server/Infrastructure/Persistence/Repositories/News/NewsRepository.cs:83-92`]
+
+- [x] [Review][Defer] **D4:** `MapAnalysis(string? json)` está duplicada en `NewsEndpoints.cs` y `AiModeEndpoints.cs` con lógica idéntica. — deferred, extraer a utilidad compartida en historia futura [`src/Server/Api/Endpoints/Public/NewsEndpoints.cs:124-135`, `src/Server/Api/Endpoints/Ops/AiModeEndpoints.cs:25-29`]
+
+#### Dismissed
+
+- [x] [Review][Dismissed] `responseMimeType` en camelCase — consistente con `GeminiKpiExtractorService` existente; la API Gemini acepta camelCase en `generationConfig`. No es bug.
+
+- [x] [Review][Dismissed] `JsonSerializer.Serialize(analysis)` sin opciones explícitas — el roundtrip funciona porque la deserialización usa `PropertyNameCaseInsensitive = true`. Patrón consistente con el proyecto.
+
+- [x] [Review][Dismissed] Tests unitarios de `GeminiNewsAnalysisService` y `DeepSeekNewsAnalysisService` — los 4 casos por servicio verifican contenido del resultado, no solo status code. Calidad aceptable.
