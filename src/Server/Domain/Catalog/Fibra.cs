@@ -16,4 +16,5 @@ public class Fibra
     public string? ReportsUrl { get; set; }
     public List<string> NameVariants { get; set; } = [];
     public DateTimeOffset CreatedAt { get; set; }
+    public string? Description { get; set; }
 }

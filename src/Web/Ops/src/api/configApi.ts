@@ -4,12 +4,8 @@ import { assertOpsAccessToken, getOpsApiErrorMessage, getOpsAuthHeaders } from '
 
 const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
-export type OperationalConfigDto = components['schemas']['OperationalConfigDto'] & {
-  fibraNewsMonths?: number | string | null
-}
-export type UpdateOperationalConfigRequest = components['schemas']['UpdateOperationalConfigRequest'] & {
-  fibraNewsMonths?: number | string | null
-}
+export type OperationalConfigDto = components['schemas']['OperationalConfigDto']
+export type UpdateOperationalConfigRequest = components['schemas']['UpdateOperationalConfigRequest']
 export type ConfigAuditLogDto = components['schemas']['ConfigAuditLogDto']
 
 export async function fetchOpsConfig(): Promise<OperationalConfigDto> {

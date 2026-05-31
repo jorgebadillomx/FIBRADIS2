@@ -3478,6 +3478,7 @@ export interface components {
             investorUrl: null | string;
             reportsUrl: null | string;
             nameVariants: null | string[];
+            description: null | string;
         };
         DailyPricePointDto: {
             date: string;
@@ -3516,6 +3517,7 @@ export interface components {
             nameVariants: string[];
             /** Format: date-time */
             createdAt: string;
+            description: null | string;
         };
         FibraHistoryDto: {
             ticker: string;
@@ -3535,6 +3537,7 @@ export interface components {
             currency: string;
             state: string;
             siteUrl: null | string;
+            hasDescription: boolean;
         };
         FundamentalesPublicDto: {
             period: string;
@@ -3965,6 +3968,7 @@ export interface components {
             investorUrl: null | string;
             reportsUrl: null | string;
             nameVariants: null | string[];
+            description: null | string;
         };
         UpdateOperationalConfigRequest: {
             /** Format: double */

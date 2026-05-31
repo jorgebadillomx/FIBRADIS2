@@ -3308,7 +3308,8 @@
           "siteUrl",
           "investorUrl",
           "reportsUrl",
-          "nameVariants"
+          "nameVariants",
+          "description"
         ],
         "type": "object",
         "properties": {
@@ -3359,6 +3360,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3453,7 +3460,8 @@
           "investorUrl",
           "reportsUrl",
           "nameVariants",
-          "createdAt"
+          "createdAt",
+          "description"
         ],
         "type": "object",
         "properties": {
@@ -3512,6 +3520,12 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3560,7 +3574,8 @@
           "market",
           "currency",
           "state",
-          "siteUrl"
+          "siteUrl",
+          "hasDescription"
         ],
         "type": "object",
         "properties": {
@@ -3594,6 +3609,9 @@
               "null",
               "string"
             ]
+          },
+          "hasDescription": {
+            "type": "boolean"
           }
         }
       },
@@ -5522,7 +5540,8 @@
           "siteUrl",
           "investorUrl",
           "reportsUrl",
-          "nameVariants"
+          "nameVariants",
+          "description"
         ],
         "type": "object",
         "properties": {
@@ -5570,6 +5589,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

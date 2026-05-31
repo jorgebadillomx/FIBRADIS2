@@ -9,4 +9,5 @@ public record FibraListItem(
     string Market,
     string Currency,
     string State,
-    string? SiteUrl);
+    string? SiteUrl,
+    bool HasDescription);

@@ -22,7 +22,8 @@ public static class CatalogEndpoints
             var (items, total) = await repo.GetActivePagedAsync(new FibraFilter(p, ps), ct);
             var dtos = items.Select(f => new FibraListItem(
                 f.Id, f.Ticker, f.FullName, f.ShortName,
-                f.Sector, f.Market, f.Currency, f.State.ToString(), f.SiteUrl)).ToList();
+                f.Sector, f.Market, f.Currency, f.State.ToString(), f.SiteUrl,
+                !string.IsNullOrWhiteSpace(f.Description))).ToList();
 
             return Results.Ok(new PagedResult<FibraListItem>(dtos, p, ps, total));
         })
@@ -46,7 +47,8 @@ public static class CatalogEndpoints
                 fibra.Id, fibra.Ticker, fibra.YahooTicker, fibra.FullName, fibra.ShortName,
                 fibra.Sector, fibra.Market, fibra.Currency, fibra.State.ToString(),
                 fibra.SiteUrl, fibra.InvestorUrl, fibra.ReportsUrl,
-                fibra.NameVariants.AsReadOnly(), fibra.CreatedAt));
+                fibra.NameVariants.AsReadOnly(), fibra.CreatedAt,
+                fibra.Description));
         })
         .AllowAnonymous()
         .Produces<FibraDetail>(StatusCodes.Status200OK)

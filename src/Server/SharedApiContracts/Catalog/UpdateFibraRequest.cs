@@ -10,4 +10,5 @@ public sealed record UpdateFibraRequest(
     string? SiteUrl,
     string? InvestorUrl,
     string? ReportsUrl,
-    IReadOnlyList<string>? NameVariants);
+    IReadOnlyList<string>? NameVariants,
+    string? Description);

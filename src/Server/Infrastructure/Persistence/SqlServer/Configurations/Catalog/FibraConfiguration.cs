@@ -34,6 +34,10 @@ public class FibraConfiguration : IEntityTypeConfiguration<Fibra>
         builder.Property(f => f.ReportsUrl).HasMaxLength(512).HasColumnName("reports_url");
         builder.Property(f => f.CreatedAt).HasColumnName("created_at");
 
+        builder.Property(f => f.Description)
+            .HasColumnType("nvarchar(max)")
+            .HasColumnName("description");
+
         // name_variants almacenado como JSON — editable desde Ops (Historia 5.3)
         builder.Property(f => f.NameVariants)
             .HasConversion(
