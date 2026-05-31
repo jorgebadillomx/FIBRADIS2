@@ -17,4 +17,8 @@ public interface IFundamentalRepository
     Task UpdateKpisManualAsync(Guid id, decimal? capRate, decimal? navPerCbfi, decimal? ltv, decimal? noiMargin, decimal? ffoMargin, decimal? quarterlyDistribution, string? summary, CancellationToken ct);
     Task UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes, CancellationToken ct);
     Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct);
+
+    Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default);
+    Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default);
 }

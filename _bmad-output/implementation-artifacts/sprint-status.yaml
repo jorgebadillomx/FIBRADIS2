@@ -1,5 +1,7 @@
 # generated: 2026-05-15
 # last_updated: 2026-05-31
+# story 5-10 done — code review pass (5 patches: P1 GetSummaryByPeriodAsync deduplicación FibraId, P2 empty state message período, P3 React key ticker+period, P5 test ordering assertion, P6 using redundante)
+# story 5-10 review — /fundamentales página comparativa cross-FIBRA, 2 endpoints nuevos (summary + periods), 6 unit tests, nav renombrado
 # story 4-11 done — code review pass (6 patches: P1 LinkedFibraDto.id Guid.Empty, P2 imagen og en cards, P3 og: meta tags, P4 skeleton isFetching flash, P5 snippet empty string, P6 toCount NaN guard)
 # story 5-10 creada — /fundamentales tabla comparativa cross-FIBRA, filtro período y fibra, nav "Mercado" → "Fundamentales"
 # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
@@ -231,7 +233,7 @@ development_status:
 
   # ── 5-10: Página pública comparación de fundamentales cross-FIBRA ─────────
   # story 5-10 creada — /fundamentales tabla comparativa cross-FIBRA, filtro período y fibra, nav "Mercado" → "Fundamentales"
-  5-10-pagina-publica-fundamentales: ready-for-dev
+  5-10-pagina-publica-fundamentales: done
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
   epic-8: in-progress

@@ -23,7 +23,7 @@ export function PublicLayout() {
             aria-label="Navegación principal"
             className="hidden md:flex items-center gap-5 text-sm text-muted-foreground"
           >
-            <a href="/mercado" className="hover:text-foreground transition-colors duration-150">Mercado</a>
+            <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
             <a href="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</a>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
           </nav>

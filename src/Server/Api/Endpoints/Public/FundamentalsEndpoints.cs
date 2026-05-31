@@ -12,6 +12,43 @@ public static class FundamentalsEndpoints
     {
         var group = app.MapGroup("/api/v1/fundamentals").WithTags("Catalog");
 
+        group.MapGet("/summary", async (
+            [FromQuery] string? period,
+            IFundamentalRepository fundamentalRepo,
+            CancellationToken ct) =>
+        {
+            IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)> rows =
+                string.IsNullOrWhiteSpace(period)
+                    ? await fundamentalRepo.GetSummaryLatestAsync(ct)
+                    : await fundamentalRepo.GetSummaryByPeriodAsync(period.Trim().ToUpperInvariant(), ct);
+
+            var dtos = rows.Select(r => new FundamentalesSummaryItemDto(
+                Ticker: r.Ticker,
+                Name: r.ShortName,
+                Period: r.Record.Period,
+                CapRate: r.Record.CapRate,
+                NavPerCbfi: r.Record.NavPerCbfi,
+                Ltv: r.Record.Ltv,
+                NoiMargin: r.Record.NoiMargin,
+                FfoMargin: r.Record.FfoMargin,
+                QuarterlyDistribution: r.Record.QuarterlyDistribution,
+                CapturedAt: r.Record.CapturedAt)).ToList();
+
+            return Results.Ok(dtos);
+        })
+        .AllowAnonymous()
+        .Produces<IReadOnlyList<FundamentalesSummaryItemDto>>(StatusCodes.Status200OK);
+
+        group.MapGet("/periods", async (
+            IFundamentalRepository fundamentalRepo,
+            CancellationToken ct) =>
+        {
+            var periods = await fundamentalRepo.GetAllProcessedPeriodsAsync(ct);
+            return Results.Ok(periods);
+        })
+        .AllowAnonymous()
+        .Produces<IReadOnlyList<string>>(StatusCodes.Status200OK);
+
         group.MapGet("/{ticker}/latest", async (
             string ticker,
             [FromQuery] string? period,
