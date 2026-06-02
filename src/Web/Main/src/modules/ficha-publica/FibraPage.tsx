@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
 import { fetchFundamentalesPublic, fetchFundamentalesAvailablePeriods } from '@/api/fundamentalesApi'
@@ -49,12 +50,12 @@ function FibraErrorState() {
 }
 
 const SECTION_TITLES: Record<string, string> = {
-  descripcion: 'Descripción',
   mercado: 'Mercado',
   fundamentales: 'Fundamentales',
   distribuciones: 'Distribuciones',
   noticias: 'Noticias',
-  reportes: 'Reportes',
+  descripcion: 'Descripción',
+  enlaces: 'Enlaces',
 }
 
 export function FibraPage() {
@@ -140,12 +141,12 @@ export function FibraPage() {
   const hasMarketPrice = marketPrice != null && marketData?.freshnessStatus != null
 
   const sectionLabels = [
-    ...(fibra!.description ? [{ href: '#descripcion', label: 'Descripción' }] : []),
     { href: '#mercado', label: 'Mercado' },
     { href: '#fundamentales', label: 'Fundamentales' },
     { href: '#distribuciones', label: 'Distribuciones' },
     { href: '#noticias', label: 'Noticias' },
-    { href: '#reportes', label: 'Reportes' },
+    ...(fibra!.description ? [{ href: '#descripcion', label: 'Descripción' }] : []),
+    { href: '#enlaces', label: 'Enlaces' },
   ]
 
   return (
@@ -231,19 +232,6 @@ export function FibraPage() {
             freshnessStatus={marketData?.freshnessStatus}
           />
 
-          {fibra!.description ? (
-            <section className="scroll-mt-32 space-y-4" id="descripcion">
-              <SectionHeader title={SECTION_TITLES.descripcion} />
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="prose prose-slate max-w-none text-sm leading-7">
-                  <ReactMarkdown>
-                    {fibra!.description}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </section>
-          ) : null}
-
           <section id="mercado" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.mercado} />
             <MercadoSection
@@ -283,8 +271,21 @@ export function FibraPage() {
             <NoticiasSection fibraId={fibra!.id} fibra={fibra} />
           </section>
 
-          <section id="reportes" className="scroll-mt-32 space-y-4">
-            <SectionHeader title={SECTION_TITLES.reportes} />
+          {fibra!.description ? (
+            <section className="scroll-mt-32 space-y-4" id="descripcion">
+              <SectionHeader title={SECTION_TITLES.descripcion} />
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="prose prose-slate max-w-none text-sm leading-7">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {fibra!.description}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          <section id="enlaces" className="scroll-mt-32 space-y-4">
+            <SectionHeader title={SECTION_TITLES.enlaces} />
             <ReportesSection
               siteUrl={fibra!.siteUrl ?? null}
               investorUrl={fibra!.investorUrl ?? null}

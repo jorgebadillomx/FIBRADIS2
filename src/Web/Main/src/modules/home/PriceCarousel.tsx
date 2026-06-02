@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMarketSnapshots, fetchAllFibras } from '@/api/fibrasApi'
-import { toNum } from '@/shared/lib/format-time'
+import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
+import { FreshnessBadge } from '@/shared/ui/freshness-badge'
+import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
 
 const CARD_WIDTH = 144 + 12 // w-36 (144px) + gap-3 (12px)
 const AUTO_SCROLL_MS = 3000
@@ -79,8 +81,18 @@ export function PriceCarousel() {
     )
   }
 
+  const refSnap = snapshots.find(s => s.freshnessStatus != null)
+
   return (
     <div aria-label="Carrusel de precios" className="relative">
+      {refSnap && (
+        <div className="flex justify-end mb-2">
+          <FreshnessBadge
+            status={refSnap.freshnessStatus as FreshnessStatus}
+            lastUpdated={refSnap.capturedAt ? formatRelativeTime(refSnap.capturedAt) : undefined}
+          />
+        </div>
+      )}
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
         {snapshots.map((snap) => {
           const fibra = fibraByTicker[snap.ticker]

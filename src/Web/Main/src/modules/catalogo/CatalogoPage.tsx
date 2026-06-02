@@ -138,7 +138,10 @@ interface FibraCardProps {
 
 function FibraCard({ fibra }: FibraCardProps) {
   return (
-    <div className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
+    <Link
+      to={`/fibras/${fibra.ticker}`}
+      className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+    >
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-2">
           <span className="font-playfair text-2xl font-bold text-primary leading-none">
@@ -157,17 +160,14 @@ function FibraCard({ fibra }: FibraCardProps) {
       </div>
 
       <div className="mt-5">
-        <Link
-          className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition hover:text-primary/80 cursor-pointer"
-          to={`/fibras/${fibra.ticker}`}
-        >
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition group-hover:text-primary/80">
           Ver ficha
           <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
           </svg>
-        </Link>
+        </span>
       </div>
-    </div>
+    </Link>
   )
 }
 
