@@ -41,6 +41,8 @@ services:
       - ConnectionStrings__DefaultConnection=Host=fibradis-postgres;Port=5432;Database=fibradis_dev;Username=fibradis_app;Password=devpassword
       - Jwt__Secret=dev-only-secret-key-must-be-at-least-32-chars-long!!
       - Hangfire__UseInMemoryStorage=false
+      - Gemini__ApiKey=${GEMINI__APIKEY}
+      - DeepSeek__ApiKey=${DEEPSEEK__APIKEY}
     networks:
       - traefik_public
       - fibradis_internal
