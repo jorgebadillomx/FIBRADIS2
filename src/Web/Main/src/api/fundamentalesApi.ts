@@ -20,10 +20,15 @@ export async function fetchFundamentalesAvailablePeriods(ticker: string): Promis
   return response.json() as Promise<string[]>
 }
 
-export async function fetchFundamentalesSummary(period?: string): Promise<FundamentalesSummaryItemDto[]> {
-  const url = period
-    ? `/api/v1/fundamentals/summary?period=${encodeURIComponent(period)}`
-    : '/api/v1/fundamentals/summary'
+export async function fetchFundamentalesSummary(
+  opts?: { period?: string; recent?: number }
+): Promise<FundamentalesSummaryItemDto[]> {
+  let url = '/api/v1/fundamentals/summary'
+  if (opts?.recent != null && opts.recent > 0) {
+    url += `?recent=${opts.recent}`
+  } else if (opts?.period) {
+    url += `?period=${encodeURIComponent(opts.period)}`
+  }
   const response = await fetch(url)
   if (!response.ok) return []
   return response.json() as Promise<FundamentalesSummaryItemDto[]>

@@ -14,13 +14,16 @@ public static class FundamentalsEndpoints
 
         group.MapGet("/summary", async (
             [FromQuery] string? period,
+            [FromQuery] int? recent,
             IFundamentalRepository fundamentalRepo,
             CancellationToken ct) =>
         {
             IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)> rows =
-                string.IsNullOrWhiteSpace(period)
-                    ? await fundamentalRepo.GetSummaryLatestAsync(ct)
-                    : await fundamentalRepo.GetSummaryByPeriodAsync(period.Trim().ToUpperInvariant(), ct);
+                recent > 0
+                    ? await fundamentalRepo.GetSummaryForRecentPeriodsAsync(recent.Value, ct)
+                    : string.IsNullOrWhiteSpace(period)
+                        ? await fundamentalRepo.GetSummaryLatestAsync(ct)
+                        : await fundamentalRepo.GetSummaryByPeriodAsync(period.Trim().ToUpperInvariant(), ct);
 
             var dtos = rows.Select(r => new FundamentalesSummaryItemDto(
                 Ticker: r.Ticker,
