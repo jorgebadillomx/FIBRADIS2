@@ -41,7 +41,7 @@ public class OperationalConfigRepositoryTests
         await using var db = CreateDbContext();
         var repo = new OperationalConfigRepository(db);
 
-        await repo.UpdateAsync(0.008m, null, null, null, null, "adminops@test.com");
+        await repo.UpdateAsync(0.008m, null, null, null, null, null, "adminops@test.com");
 
         var config = await db.OperationalConfigs.SingleAsync();
         var audit = await db.ConfigAuditLogs.SingleAsync();
@@ -59,7 +59,7 @@ public class OperationalConfigRepositoryTests
         await using var db = CreateDbContext();
         var repo = new OperationalConfigRepository(db);
 
-        await repo.UpdateAsync(null, 6, null, null, null, "adminops@test.com");
+        await repo.UpdateAsync(null, 6, null, null, null, null, "adminops@test.com");
 
         var config = await db.OperationalConfigs.SingleAsync();
         var audit = await db.ConfigAuditLogs.SingleAsync();
@@ -80,7 +80,7 @@ public class OperationalConfigRepositoryTests
         config.NewsCadenceMinutes = 60;
         await db.SaveChangesAsync();
 
-        await repo.UpdateAsync(null, null, 1440, null, null, "adminops@test.com");
+        await repo.UpdateAsync(null, null, 1440, null, null, null, "adminops@test.com");
 
         config = await db.OperationalConfigs.SingleAsync();
         var audit = await db.ConfigAuditLogs.SingleAsync();
@@ -97,7 +97,7 @@ public class OperationalConfigRepositoryTests
         await using var db = CreateDbContext();
         var repo = new OperationalConfigRepository(db);
 
-        await repo.UpdateAsync(0.006m, 4, 1440, null, null, "adminops@test.com");
+        await repo.UpdateAsync(0.006m, 4, 1440, null, null, null, "adminops@test.com");
 
         Assert.Empty(db.ConfigAuditLogs);
     }
@@ -108,7 +108,7 @@ public class OperationalConfigRepositoryTests
         await using var db = CreateDbContext();
         var repo = new OperationalConfigRepository(db);
 
-        await repo.UpdateAsync(0.008m, 6, null, null, null, "adminops@test.com");
+        await repo.UpdateAsync(0.008m, 6, null, null, null, null, "adminops@test.com");
 
         var audits = await db.ConfigAuditLogs
             .OrderBy(x => x.FieldName)

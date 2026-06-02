@@ -14,6 +14,7 @@ interface FormValues {
   newsCadenceMinutes: number
   fibraNewsMonths: number
   fundamentalsCadenceMinutes: number
+  distributionCadenceMinutes: number
 }
 
 const inputClassName =
@@ -47,6 +48,7 @@ export function ConfigPage() {
       newsCadenceMinutes: 1440,
       fibraNewsMonths: 15,
       fundamentalsCadenceMinutes: 1440,
+      distributionCadenceMinutes: 1440,
     },
   })
 
@@ -59,6 +61,7 @@ export function ConfigPage() {
       newsCadenceMinutes: Number(configQuery.data.newsCadenceMinutes),
       fibraNewsMonths: Number(configQuery.data.fibraNewsMonths ?? 15),
       fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 1440),
+      distributionCadenceMinutes: Number(configQuery.data.distributionCadenceMinutes ?? 1440),
     })
   }, [configQuery.data, reset])
 
@@ -82,6 +85,7 @@ export function ConfigPage() {
     if (dirtyFields.newsCadenceMinutes) payload.newsCadenceMinutes = values.newsCadenceMinutes
     if (dirtyFields.fibraNewsMonths) payload.fibraNewsMonths = values.fibraNewsMonths
     if (dirtyFields.fundamentalsCadenceMinutes) payload.fundamentalsCadenceMinutes = values.fundamentalsCadenceMinutes
+    if (dirtyFields.distributionCadenceMinutes) payload.distributionCadenceMinutes = values.distributionCadenceMinutes
 
     if (Object.keys(payload).length === 0) return
     saveMutation.mutate(payload)
@@ -182,6 +186,22 @@ export function ConfigPage() {
                   {[60, 120, 180, 240, 360, 720, 1440].map((value) => (
                     <option key={value} value={value}>
                       {value === 1440 ? '24 horas' : `${value / 60} horas`}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="distribution_cadence_minutes" error={errors.distributionCadenceMinutes?.message} required>
+                <select
+                  {...register('distributionCadenceMinutes', {
+                    required: 'distribution_cadence_minutes es requerido.',
+                    valueAsNumber: true,
+                  })}
+                  className={inputClassName}
+                >
+                  {[720, 1440].map((value) => (
+                    <option key={value} value={value}>
+                      {value === 1440 ? '24 horas' : '12 horas'}
                     </option>
                   ))}
                 </select>

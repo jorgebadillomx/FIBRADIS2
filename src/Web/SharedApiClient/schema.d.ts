@@ -483,6 +483,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/market/fundamentals/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Accepted */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/dashboard": {
         parameters: {
             query?: never;
@@ -3427,7 +3478,7 @@ export interface components {
             updatedBy: null | string;
             previousMode: null | string;
             /** Format: int32 */
-            minBodyTextLengthForAi: number;
+            minBodyTextLengthForAi: number | string;
         };
         AiPromptDto: {
             contentType: string;
@@ -3789,6 +3840,10 @@ export interface components {
             newsCadenceMinutes: number | string;
             /** Format: int32 */
             fibraNewsMonths: number | string;
+            /** Format: int32 */
+            fundamentalsCadenceMinutes: number | string;
+            /** Format: int32 */
+            distributionCadenceMinutes: number | string;
             /** Format: date-time */
             updatedAt: string;
             updatedBy: null | string;
@@ -3950,7 +4005,7 @@ export interface components {
             mode: null | string;
             newsModel: null | string;
             /** Format: int32 */
-            minBodyTextLengthForAi?: null | number;
+            minBodyTextLengthForAi: null | number | string;
         };
         UpdateAiPromptRequest: {
             promptTemplate: string;
@@ -3983,6 +4038,10 @@ export interface components {
             newsCadenceMinutes: null | number | string;
             /** Format: int32 */
             fibraNewsMonths: null | number | string;
+            /** Format: int32 */
+            fundamentalsCadenceMinutes?: null | number | string;
+            /** Format: int32 */
+            distributionCadenceMinutes?: null | number | string;
         };
     };
     responses: never;

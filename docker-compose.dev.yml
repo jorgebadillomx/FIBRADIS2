@@ -1,0 +1,29 @@
+# Stack de desarrollo rápido
+# Solo PostgreSQL — para usar con `dotnet run` (hot reload, debugging).
+# El volumen fibradis_pgdata_dev es COMPARTIDO con docker-compose.yml,
+# así que los datos persisten entre ambos modos.
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up -d   → solo BD
+#   dotnet run --project src/Server/Api              → app local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: fibradis_dev
+      POSTGRES_USER: fibradis_app
+      POSTGRES_PASSWORD: devpassword
+    volumes:
+      - fibradis_pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fibradis_app -d fibradis_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  fibradis_pgdata_dev:
+    name: fibradis_pgdata_dev

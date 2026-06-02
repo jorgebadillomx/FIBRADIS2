@@ -156,7 +156,8 @@ public class NewsLatestEndpointTests(ApiWebFactory factory) : IClassFixture<ApiW
             Url = $"https://example.com/noticias/{id}",
             Snippet = "Snippet de prueba.",
             ImageUrl = null,
-            AiSummary = null,
+            AiSummary = "Resumen de prueba.",
+            AiAnalysisJson = "{}",
             Status = NewsArticleStatus.Processed,
             CapturedAt = DateTimeOffset.UtcNow,
         };

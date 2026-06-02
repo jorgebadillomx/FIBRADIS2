@@ -34,7 +34,7 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
                 await db.SaveChangesAsync(ct);
                 return true;
             }
-            catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2627 or 2601 })
+            catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
             {
                 db.Entry(snapshot).State = EntityState.Detached;
                 return false;
@@ -100,7 +100,7 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             await db.SaveChangesAsync(ct);
             return true;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2627 or 2601 })
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
         {
             db.Entry(dist).State = EntityState.Detached;
             return false;

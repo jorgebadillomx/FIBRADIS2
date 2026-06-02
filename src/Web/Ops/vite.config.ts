@@ -5,6 +5,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  base: process.env.NODE_ENV === 'production' ? '/ops/' : '/',
   server: {
     port: 5174,
     proxy: {

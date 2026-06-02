@@ -1,0 +1,90 @@
+# jbadillo-server — stack local
+# Replica la estructura del servidor de producción.
+# Traefik como entrada, cada proyecto en su propia red interna.
+#
+# Uso:
+#   docker compose up -d           → levanta el servidor completo
+#   docker compose down            → apaga todo
+#   http://fibradis.localhost      → FIBRADIS Main
+#   http://fibradis.localhost/ops/ → FIBRADIS Ops
+#   http://localhost:8081          → Traefik dashboard
+
+services:
+
+  # ─── Infraestructura del servidor ────────────────────────────────
+  traefik:
+    image: traefik:v3
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8081:8080"   # dashboard local
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik_public"
+      - "--entrypoints.web.address=:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik_public
+
+  # ─── FIBRADIS ────────────────────────────────────────────────────
+  fibradis-api:
+    image: fibradis:local
+    restart: unless-stopped
+    depends_on:
+      fibradis-postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=fibradis-postgres;Port=5432;Database=fibradis_dev;Username=fibradis_app;Password=devpassword
+      - Jwt__Secret=dev-only-secret-key-must-be-at-least-32-chars-long!!
+      - Hangfire__UseInMemoryStorage=false
+    networks:
+      - traefik_public
+      - fibradis_internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fibradis.rule=Host(`fibradis.localhost`)"
+      - "traefik.http.services.fibradis.loadbalancer.server.port=8080"
+
+  fibradis-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"   # expuesto al host para DBeaver y dotnet ef
+    environment:
+      - POSTGRES_DB=fibradis_dev
+      - POSTGRES_USER=fibradis_app
+      - POSTGRES_PASSWORD=devpassword
+    volumes:
+      - fibradis_pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fibradis_app -d fibradis_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fibradis_internal
+
+  # ─── Aquí van los próximos proyectos ─────────────────────────────
+  # Ejemplo:
+  # otro-proyecto:
+  #   image: otro-proyecto:local
+  #   networks:
+  #     - traefik_public
+  #     - otro_internal
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.otro.rule=Host(`otro.localhost`)"
+
+volumes:
+  fibradis_pgdata_dev:
+    name: fibradis_pgdata_dev
+
+networks:
+  traefik_public:
+    name: traefik_public
+  fibradis_internal:
+    name: fibradis_internal

@@ -25,7 +25,7 @@ public class EditorialPageConfiguration : IEntityTypeConfiguration<EditorialPage
 
         builder.Property(page => page.Content)
             .HasColumnName("content")
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("text")
             .IsRequired();
 
         builder.Property(page => page.Order)

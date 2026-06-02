@@ -14,7 +14,7 @@ public class FundamentalSourceManifestConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("newsequentialid()")
+            .HasDefaultValueSql("gen_random_uuid()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.SourceName)
@@ -27,7 +27,7 @@ public class FundamentalSourceManifestConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(x => x.SourceTitle)
             .HasColumnName("source_title")
-            .HasColumnType("nvarchar(300)")
+            .HasColumnType("varchar(300)")
             .IsRequired();
 
         builder.Property(x => x.Period)
@@ -46,24 +46,24 @@ public class FundamentalSourceManifestConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(x => x.PackageUrl)
             .HasColumnName("package_url")
-            .HasColumnType("nvarchar(500)")
+            .HasColumnType("varchar(500)")
             .IsRequired();
 
         builder.Property(x => x.DownloadUrl)
             .HasColumnName("download_url")
-            .HasColumnType("nvarchar(1000)");
+            .HasColumnType("varchar(1000)");
 
         builder.Property(x => x.DownloadSignature)
             .HasColumnName("download_signature")
-            .HasColumnType("nvarchar(500)");
+            .HasColumnType("varchar(500)");
 
         builder.Property(x => x.PdfUrl)
             .HasColumnName("pdf_url")
-            .HasColumnType("nvarchar(1000)");
+            .HasColumnType("varchar(1000)");
 
         builder.Property(x => x.FileName)
             .HasColumnName("file_name")
-            .HasColumnType("nvarchar(260)");
+            .HasColumnType("varchar(260)");
 
         builder.Property(x => x.SourcePublishedAt)
             .HasColumnName("source_published_at");
@@ -81,22 +81,22 @@ public class FundamentalSourceManifestConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(x => x.LastDecisionReason)
             .HasColumnName("last_decision_reason")
-            .HasColumnType("nvarchar(500)");
+            .HasColumnType("varchar(500)");
 
         builder.Property(x => x.LastProcessedRecordId)
             .HasColumnName("last_processed_record_id");
 
         builder.Property(x => x.LastError)
             .HasColumnName("last_error")
-            .HasColumnType("nvarchar(500)");
+            .HasColumnType("varchar(500)");
 
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
-            .HasDefaultValueSql("getutcdate()");
+            .HasDefaultValueSql("now()");
 
         builder.Property(x => x.UpdatedAt)
             .HasColumnName("updated_at")
-            .HasDefaultValueSql("getutcdate()");
+            .HasDefaultValueSql("now()");
 
         builder.HasIndex(x => new { x.SourceName, x.PackageUrl })
             .IsUnique()

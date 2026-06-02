@@ -29,6 +29,8 @@
   <Target Name="EnsureDevelopmentEnvForOpenApiGeneration" BeforeTargets="GenerateOpenApiDocuments">
     <SetEnvVarInProcess Name="ASPNETCORE_ENVIRONMENT" Value="Development" />
     <SetEnvVarInProcess Name="FIBRADIS_SKIP_STARTUP_DB_READS" Value="1" />
+    <!-- Evita que Hangfire intente conectar a PostgreSQL durante la generación del spec -->
+    <SetEnvVarInProcess Name="Hangfire__UseInMemoryStorage" Value="true" />
   </Target>
 
   <ItemGroup>

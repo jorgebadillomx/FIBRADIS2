@@ -16,14 +16,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddApiInfrastructure();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-app.UseApiInfrastructure();
-app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseRouting(); // explícito: debe ir después de static files para que los assets no sean interceptados por el fallback
+app.UseApiInfrastructure();
+app.UseHttpsRedirection();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();
@@ -46,6 +47,7 @@ app.MapOpsEditorial();
 app.MapFundamentalsPublic();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("/ops/{**slug}", "ops/index.html");
 app.MapFallbackToFile("index.html");
 
 var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
@@ -95,11 +97,28 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         }
     }
 
+    var distributionCadenceMinutes = 1440;
+    if (!skipStartupDbReads)
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            distributionCadenceMinutes = (await scope.ServiceProvider
+                .GetRequiredService<IOperationalConfigRepository>()
+                .GetAsync()).DistributionCadenceMinutes;
+        }
+        catch (Exception ex)
+        {
+            var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+            startupLogger.LogError(ex, "No se pudo leer DistributionCadenceMinutes desde BD al arranque. Usando default.");
+        }
+    }
+
     RecurringJob.AddOrUpdate<DistributionPipelineJob>(
-        "distribution-pipeline",
+        DistributionPipelineSchedule.JobId,
         j => j.ExecuteAsync(CancellationToken.None),
-        "0 6 * * *",
-        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+        DistributionPipelineSchedule.GetCronExpression(distributionCadenceMinutes),
+        new RecurringJobOptions { TimeZone = mexicoTz });
 
     var fundamentalsCadenceMinutes = 1440;
     if (!skipStartupDbReads)

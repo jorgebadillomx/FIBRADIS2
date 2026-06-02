@@ -13,7 +13,7 @@ public class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("newsequentialid()");
+            .HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.Timestamp).HasColumnName("timestamp").IsRequired();
         builder.Property(x => x.Operation)
             .HasColumnName("operation")
@@ -36,7 +36,7 @@ public class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
         builder.Property(x => x.Context).HasColumnName("context");
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
-            .HasDefaultValueSql("getutcdate()")
+            .HasDefaultValueSql("now()")
             .ValueGeneratedOnAdd();
 
         builder.HasIndex(x => new { x.Operation, x.CreatedAt })

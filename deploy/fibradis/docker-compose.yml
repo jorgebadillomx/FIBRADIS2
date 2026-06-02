@@ -1,0 +1,59 @@
+# FIBRADIS — stack de producción en jbadillo-server
+# Requiere que Traefik esté corriendo (deploy/traefik/)
+# y la red traefik_public creada.
+#
+# Uso en el servidor:
+#   cp .env.example .env && nano .env
+#   docker compose up -d
+
+services:
+  api:
+    image: ghcr.io/jorgebadillomx/fibradis:prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=fibradis
+      - Jwt__Audience=fibradis-client
+      - Jwt__AccessTokenMinutes=480
+      - Hangfire__UseInMemoryStorage=false
+      - Gemini__ApiKey=${GEMINI_API_KEY}
+      - DeepSeek__ApiKey=${DEEPSEEK_API_KEY}
+    networks:
+      - traefik_public
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fibradis.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
+      - "traefik.http.routers.fibradis.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fibradis.loadbalancer.server.port=8080"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+
+networks:
+  traefik_public:
+    external: true
+  internal:
+    name: fibradis_internal

@@ -53,6 +53,7 @@ public static class OpsConfigEndpoints
                 request.NewsCadenceMinutes,
                 request.FibraNewsMonths,
                 request.FundamentalsCadenceMinutes,
+                request.DistributionCadenceMinutes,
                 actor,
                 ct);
 
@@ -79,6 +80,18 @@ public static class OpsConfigEndpoints
                     FundamentalsPipelineSchedule.JobId,
                     j => j.ExecuteAsync(CancellationToken.None),
                     FundamentalsPipelineSchedule.GetCronExpression(request.FundamentalsCadenceMinutes!.Value),
+                    new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
+            }
+
+            var distributionCadenceChanged = request.DistributionCadenceMinutes.HasValue
+                && currentConfig.DistributionCadenceMinutes != request.DistributionCadenceMinutes.Value;
+            if (!useInMemoryHangfire && distributionCadenceChanged)
+            {
+                var jobManager = ctx.RequestServices.GetRequiredService<IRecurringJobManager>();
+                jobManager.AddOrUpdate<DistributionPipelineJob>(
+                    DistributionPipelineSchedule.JobId,
+                    j => j.ExecuteAsync(CancellationToken.None),
+                    DistributionPipelineSchedule.GetCronExpression(request.DistributionCadenceMinutes!.Value),
                     new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
             }
 
@@ -111,7 +124,8 @@ public static class OpsConfigEndpoints
             && request.AvgPeriods is null
             && request.NewsCadenceMinutes is null
             && request.FibraNewsMonths is null
-            && request.FundamentalsCadenceMinutes is null)
+            && request.FundamentalsCadenceMinutes is null
+            && request.DistributionCadenceMinutes is null)
         {
             errors["body"] = ["Se debe proporcionar al menos un campo para actualizar."];
             return errors;
@@ -143,6 +157,11 @@ public static class OpsConfigEndpoints
             errors["fundamentalsCadenceMinutes"] = ["fundamentalsCadenceMinutes debe ser uno de: 60, 120, 180, 240, 360, 720 o 1440."];
         }
 
+        if (request.DistributionCadenceMinutes is not null && request.DistributionCadenceMinutes is not (720 or 1440))
+        {
+            errors["distributionCadenceMinutes"] = ["distributionCadenceMinutes debe ser 720 (12h) o 1440 (24h)."];
+        }
+
         return errors;
     }
 
@@ -153,6 +172,7 @@ public static class OpsConfigEndpoints
             config.NewsCadenceMinutes,
             config.FibraNewsMonths,
             config.FundamentalsCadenceMinutes,
+            config.DistributionCadenceMinutes,
             config.UpdatedAt,
             config.UpdatedBy);
 

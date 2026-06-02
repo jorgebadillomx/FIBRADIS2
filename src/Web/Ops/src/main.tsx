@@ -18,6 +18,7 @@ import { PipelineLogsPage } from '@/pages/PipelineLogsPage'
 import './index.css'
 
 const queryClient = new QueryClient()
+const basename = import.meta.env.PROD ? '/ops' : '/'
 const router = createBrowserRouter([
   {
     path: '/',
@@ -38,7 +39,7 @@ const router = createBrowserRouter([
       { path: '*', element: <Navigate replace to="/ai-config" /> },
     ],
   },
-])
+], { basename })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

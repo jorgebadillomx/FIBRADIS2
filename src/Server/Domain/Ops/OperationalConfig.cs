@@ -8,6 +8,7 @@ public class OperationalConfig
     public int NewsCadenceMinutes { get; set; } = 1440;
     public int FibraNewsMonths { get; set; } = 15;
     public int FundamentalsCadenceMinutes { get; set; } = 1440;
+    public int DistributionCadenceMinutes { get; set; } = 1440;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? UpdatedBy { get; set; }
 }

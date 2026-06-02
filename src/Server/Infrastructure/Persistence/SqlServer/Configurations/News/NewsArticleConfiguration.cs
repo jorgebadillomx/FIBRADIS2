@@ -18,10 +18,10 @@ public class NewsArticleConfiguration : IEntityTypeConfiguration<NewsArticle>
         builder.Property(x => x.PublishedAt).HasColumnName("published_at").IsRequired();
         builder.Property(x => x.Url).HasColumnName("url").HasMaxLength(1024).IsRequired();
         builder.Property(x => x.Snippet).HasColumnName("snippet").HasMaxLength(2048);
-        builder.Property(x => x.BodyText).HasColumnName("body_text").HasColumnType("nvarchar(max)");
+        builder.Property(x => x.BodyText).HasColumnName("body_text").HasColumnType("text");
         builder.Property(x => x.ImageUrl).HasColumnName("image_url").HasMaxLength(2048);
-        builder.Property(x => x.AiSummary).HasColumnName("ai_summary").HasColumnType("nvarchar(max)");
-        builder.Property(x => x.AiAnalysisJson).HasColumnName("ai_analysis_json").HasColumnType("nvarchar(max)").IsRequired(false);
+        builder.Property(x => x.AiSummary).HasColumnName("ai_summary").HasColumnType("text");
+        builder.Property(x => x.AiAnalysisJson).HasColumnName("ai_analysis_json").HasColumnType("text").IsRequired(false);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(x => x.CapturedAt).HasColumnName("captured_at").IsRequired();
         builder.Property(x => x.ErrorReason).HasColumnName("error_reason").HasMaxLength(512);

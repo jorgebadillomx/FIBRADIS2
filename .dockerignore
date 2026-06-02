@@ -1,0 +1,47 @@
+## Control de versiones
+.git
+.gitignore
+
+## Dependencias (nunca copiar — se reinstalan en el build)
+**/node_modules/
+**/bin/
+**/obj/
+
+## Builds previos
+**/dist/
+
+## Secretos y config local
+**/.env
+**/.env.*
+**/*.user
+**/*.local
+
+## IDEs
+**/.vs/
+**/.vscode/
+**/.idea/
+
+## Tests (no se usan en producción)
+tests/
+
+## Solución completa (no necesaria — se restore por proyecto)
+FIBRADIS.slnx
+
+## Docs y herramientas de desarrollo
+_bmad/
+_bmad-output/
+docs/
+design-system/
+project-memory/
+scripts/
+deploy/
+
+## Archivos temporales
+tmp*
+*.log
+
+## Markdown
+README.md
+AGENTS.md
+CLAUDE.md
+workflow-rules.md

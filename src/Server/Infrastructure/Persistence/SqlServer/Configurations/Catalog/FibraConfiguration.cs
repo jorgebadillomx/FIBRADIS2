@@ -35,7 +35,7 @@ public class FibraConfiguration : IEntityTypeConfiguration<Fibra>
         builder.Property(f => f.CreatedAt).HasColumnName("created_at");
 
         builder.Property(f => f.Description)
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("text")
             .HasColumnName("description");
 
         // name_variants almacenado como JSON — editable desde Ops (Historia 5.3)
@@ -43,7 +43,7 @@ public class FibraConfiguration : IEntityTypeConfiguration<Fibra>
             .HasConversion(
                 v => JsonSerializer.Serialize(v, _jsonOpts),
                 v => JsonSerializer.Deserialize<List<string>>(v, _jsonOpts) ?? new())
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("text")
             .HasColumnName("name_variants")
             .Metadata.SetValueComparer(_listComparer);
     }

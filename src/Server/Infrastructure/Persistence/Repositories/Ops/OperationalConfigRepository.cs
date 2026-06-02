@@ -17,6 +17,7 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         int? newsCadenceMinutes,
         int? fibraNewsMonths,
         int? fundamentalsCadenceMinutes,
+        int? distributionCadenceMinutes,
         string actor,
         CancellationToken ct = default)
     {
@@ -93,6 +94,19 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
                 NewValue = fundamentalsCadenceMinutes.Value.ToString(CultureInfo.InvariantCulture),
             });
             config.FundamentalsCadenceMinutes = fundamentalsCadenceMinutes.Value;
+        }
+
+        if (distributionCadenceMinutes.HasValue && config.DistributionCadenceMinutes != distributionCadenceMinutes.Value)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor,
+                ChangedAt = now,
+                FieldName = "distribution_cadence_minutes",
+                PreviousValue = config.DistributionCadenceMinutes.ToString(CultureInfo.InvariantCulture),
+                NewValue = distributionCadenceMinutes.Value.ToString(CultureInfo.InvariantCulture),
+            });
+            config.DistributionCadenceMinutes = distributionCadenceMinutes.Value;
         }
 
         if (auditEntries.Count == 0)

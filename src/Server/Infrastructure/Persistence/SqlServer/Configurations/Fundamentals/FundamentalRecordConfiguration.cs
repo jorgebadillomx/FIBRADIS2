@@ -14,7 +14,7 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("newsequentialid()")
+            .HasDefaultValueSql("gen_random_uuid()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.FibraId)
@@ -62,11 +62,11 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
 
         builder.Property(x => x.Summary)
             .HasColumnName("summary")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(x => x.PdfReference)
             .HasColumnName("pdf_reference")
-            .HasColumnType("nvarchar(500)");
+            .HasColumnType("varchar(500)");
 
         builder.Property(x => x.PdfUploadedAt)
             .HasColumnName("pdf_uploaded_at");
@@ -85,7 +85,7 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
 
         builder.Property(x => x.CapturedAt)
             .HasColumnName("captured_at")
-            .HasDefaultValueSql("getutcdate()")
+            .HasDefaultValueSql("now()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.ConfirmedAt)
@@ -93,19 +93,19 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
 
         builder.Property(x => x.MarkdownContent)
             .HasColumnName("markdown_content")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(x => x.FieldNotesJson)
             .HasColumnName("FieldNotesJson")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(x => x.AiAnalysisJson)
             .HasColumnName("ai_analysis_json")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(x => x.ErrorReason)
             .HasColumnName("error_reason")
-            .HasColumnType("nvarchar(500)");
+            .HasColumnType("varchar(500)");
 
         builder.Property(x => x.DeletedAt)
             .HasColumnName("deleted_at");

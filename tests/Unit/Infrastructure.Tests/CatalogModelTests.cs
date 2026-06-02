@@ -68,7 +68,7 @@ public class CatalogModelTests
     private static AppDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=FIBRADIS-CatalogModelTests;Trusted_Connection=True;TrustServerCertificate=True")
+            .UseNpgsql("Host=localhost;Database=fibradis_model_tests;Username=fibradis_app;Password=devpassword")
             .Options;
 
         return new AppDbContext(options);

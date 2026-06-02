@@ -45,8 +45,8 @@ El sistema no es un CRUD convencional. Combina aplicacion web, pipelines program
 
 - Monolito modular con un solo deploy
 - Backend ASP.NET Core en capas API/Application/Domain/Infrastructure
-- SQL Server existente como almacenamiento principal
-- Hosting en IIS compartido
+- PostgreSQL 16 como almacenamiento principal (migrado desde SQL Server — ver `docs/infra/oracle-postgresql.md`)
+- Hosting en Oracle Cloud Free Tier — Ubuntu 24.04, Nginx, systemd (migrado desde IIS compartido)
 - Hangfire in-app para jobs y scheduling
 - Dos frontends React independientes: sistema principal y `/ops/*`
 - Integracion con Yahoo Finance para mercado/distribuciones (best effort)
@@ -298,14 +298,24 @@ No se adoptara un starter full-stack adicional ni una plantilla SPA integrada qu
 ### Infrastructure & Deployment
 
 - Hosting model:
+  - Oracle Cloud Free Tier — VM Ampere A1 (4 cores ARM64, 24 GB RAM), Querétaro MX, Always Free
+  - Ubuntu 24.04 LTS + Nginx (reverse proxy) + systemd (process manager)
   - one ASP.NET Core application as system host
   - backend APIs + Hangfire server + static serving for `Main` and `Ops`
+- Database:
+  - PostgreSQL 16 (open source, sin licencia, native Linux ARM64)
+  - provider: `Npgsql.EntityFrameworkCore.PostgreSQL`
+  - Hangfire storage: `Hangfire.PostgreSql`
+  - schemas: `catalog`, `market`, `news`, `fundamentals`, `portfolio`, `ai`, `jobs` (soportados nativamente en PostgreSQL)
 - Deploy shape:
-  - single deployable artifact
+  - single deployable artifact (`dotnet publish -r linux-arm64`)
   - `Main` served from `/`
   - `Ops` served from `/ops`
+  - managed via `systemd` service
+- SSL/TLS:
+  - Let's Encrypt via Certbot — gratuito, renovación automática cada 90 días
 - Background processing:
-  - Hangfire in-app with persistent storage
+  - Hangfire in-app with persistent storage (PostgreSQL)
   - all jobs designed for restart safety and overlap protection
 - Environment configuration:
   - `appsettings.*` + environment variables + DB-backed operational config where runtime edits are needed
@@ -316,12 +326,12 @@ No se adoptara un starter full-stack adicional ni una plantilla SPA integrada qu
   - operational read models for `PipelineRun` and `WorkItem`
 - CI/CD:
   - provider deferred
-  - pipeline must build backend, both frontends, run tests, generate OpenAPI client, and gate DB migration execution
-  - pipeline must validate public route metadata generation, sitemap output and any prerender artifact required by indexable routes
+  - pipeline must build backend (linux-arm64 target), both frontends, run tests, generate OpenAPI client, and gate DB migration execution
 - Scaling strategy:
-  - architect for single-node shared-hosting reality now
+  - architect for single-node reality now (24 GB RAM cubre FIBRADIS + proyectos adicionales con margen)
   - preserve seams for later external Hangfire worker, distributed cache, or split deploy if needed
 - Job execution architecture prioritizes restart safety, overlap protection, idempotency, and operator-visible state over raw throughput optimization.
+- Decisión de migración completa: ver `docs/infra/oracle-postgresql.md`
 
 ### Decision Impact Analysis
 
@@ -754,7 +764,8 @@ FIBRADIS/
 - Empaquetado de artefactos estaticos para servir desde un host unico
 
 **Deployment Structure:**
-- Deploy unico al host ASP.NET Core sobre IIS
+- Deploy unico: ASP.NET Core como servicio `systemd` en Ubuntu 24.04 (Oracle Cloud, Querétaro MX)
+- Nginx como reverse proxy enfrente del proceso .NET
 - `Main` publicado en `/`
 - `Ops` publicado en `/ops`
 - Jobs y API viven en el mismo proceso deployable
@@ -764,7 +775,7 @@ FIBRADIS/
 ### Coherence Validation ✅
 
 **Decision Compatibility:**
-Las decisiones tecnologicas y de despliegue son compatibles entre si. El stack `.NET 10 LTS + EF Core 10 + SQL Server + Hangfire in-app + React 19.2 + Vite 7 + TanStack Query v5 + React Router 7` soporta el modelo de monolito modular, dos SPAs, un solo host ASP.NET Core y operacion en IIS compartido sin contradicciones internas relevantes.
+Las decisiones tecnologicas y de despliegue son compatibles entre si. El stack `.NET 10 LTS + EF Core 10 + PostgreSQL 16 + Hangfire in-app + React 19.2 + Vite 7 + TanStack Query v5 + React Router 7` soporta el modelo de monolito modular, dos SPAs, un solo host ASP.NET Core y operacion en Ubuntu 24.04 sobre Oracle Cloud Free Tier sin contradicciones internas relevantes.
 
 **Pattern Consistency:**
 Los patrones de implementacion soportan las decisiones arquitectonicas de forma consistente. Naming, contratos API, convenciones de error, ownership de estado cliente/servidor, reglas de comunicacion cross-module y enforcement por CI quedaron alineados con el stack y con el modelo de modular monolith definido.
@@ -781,7 +792,7 @@ Aunque no se trabajo con epicas formales, todas las superficies funcionales del 
 Todos los FR cuentan con soporte arquitectonico. El documento cubre ingestion y procesamiento de datos, exposicion de API publica/privada/ops, tolerancia a parcialidad, configuracion operativa editable, auditoria, jobs persistentes, contratos tipados para ambos SPAs y fronteras de modulo suficientes para implementar consistentemente.
 
 **Non-Functional Requirements Coverage:**
-Los 16 NFR quedaron soportados arquitectonicamente. Rendimiento, frescura, resiliencia ante datos faltantes, almacenamiento documental, observabilidad, contrato API versionado, seguridad por roles, SEO, accesibilidad, browser support y despliegue unico sobre hosting compartido estan reflejados en decisiones, patrones y estructura.
+Los 16 NFR quedaron soportados arquitectonicamente. Rendimiento, frescura, resiliencia ante datos faltantes, almacenamiento documental, observabilidad, contrato API versionado, seguridad por roles, SEO, accesibilidad, browser support y despliegue unico sobre Oracle Cloud Free Tier (Linux) estan reflejados en decisiones, patrones y estructura.
 
 ### Implementation Readiness Validation ✅
 
