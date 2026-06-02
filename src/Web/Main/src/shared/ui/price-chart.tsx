@@ -10,6 +10,9 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/shared/ui/chart'
 import { buildPriceChartPoints, summarizePriceChart, type PriceChartInputPoint } from '@/shared/ui/price-chart.utils'
 
+const dayMonthFmt = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short' })
+const monthYearFmt = new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' })
+
 interface PriceChartProps {
   data: PriceChartInputPoint[]
   periodLabel: string
@@ -41,6 +44,7 @@ function getYAxisDomain(min: number | null, max: number | null): [number, number
 export function PriceChart({ data, periodLabel }: PriceChartProps) {
   const points = buildPriceChartPoints(data)
   const summary = summarizePriceChart(points)
+  const multiYear = (points.at(0)?.date.slice(0, 4) ?? '') !== (points.at(-1)?.date.slice(0, 4) ?? '')
 
   if (summary.last == null) {
     return (
@@ -102,7 +106,12 @@ export function PriceChart({ data, periodLabel }: PriceChartProps) {
               tickMargin={10}
               minTickGap={24}
               interval="preserveStartEnd"
-              tickFormatter={(_, index) => points[index]?.shortLabel ?? ''}
+              tickFormatter={(value: string) => {
+                const date = new Date(`${value}T00:00:00`)
+                return multiYear
+                  ? monthYearFmt.format(date).replace('.', '')
+                  : dayMonthFmt.format(date)
+              }}
             />
 
             <YAxis

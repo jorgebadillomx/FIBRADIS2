@@ -172,7 +172,7 @@ export function NoticiasListPage() {
                 return (
                   <article key={article.id} className="group overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm transition-colors hover:border-primary/35">
                     <Link to={`/noticias/${article.id}`} className="block h-full">
-                      {imageUrl ? (
+                      {false && imageUrl ? (
                         <div className="aspect-video overflow-hidden bg-muted">
                           <img
                             src={imageUrl}
@@ -265,7 +265,7 @@ function NoticiasListSkeleton() {
           key={index}
           className="overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm"
         >
-          <div className="aspect-video animate-pulse bg-muted" />
+          {false && <div className="aspect-video animate-pulse bg-muted" />}
           <div className="space-y-3 p-5">
             <div className="h-3 w-40 animate-pulse rounded bg-muted" />
             <div className="h-8 w-11/12 animate-pulse rounded bg-muted" />

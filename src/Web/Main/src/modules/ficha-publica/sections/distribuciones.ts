@@ -55,24 +55,27 @@ export function inferDistributionCadence(distributions: DistributionPoint[]): Ca
 export function getDistributionPeriodLabel(date: string, cadence: Cadence): string {
   const current = parseDate(date)
   const year = current.getUTCFullYear()
-  const month = current.getUTCMonth()
+  const month = current.getUTCMonth() // 0-11
 
   if (cadence === 'monthly') {
-    return monthFormatter.format(current).replace('.', '')
+    const prev = new Date(Date.UTC(year, month - 1, 1))
+    return monthFormatter.format(prev).replace('.', '')
   }
 
   if (cadence === 'quarterly') {
-    return `Q${Math.floor(month / 3) + 1} ${year}`
+    const q = Math.floor(month / 3) + 1 // 1-4
+    return q === 1 ? `Q4 ${year - 1}` : `Q${q - 1} ${year}`
   }
 
   if (cadence === 'semiannual') {
-    return `S${month < 6 ? '1' : '2'} ${year}`
+    return month < 6 ? `S2 ${year - 1}` : `S1 ${year}`
   }
 
   if (cadence === 'annual') {
-    return `${year}`
+    return `${year - 1}`
   }
 
-  return monthFormatter.format(current).replace('.', '')
+  const prev = new Date(Date.UTC(year, month - 1, 1))
+  return monthFormatter.format(prev).replace('.', '')
 }
 
