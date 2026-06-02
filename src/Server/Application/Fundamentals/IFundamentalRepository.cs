@@ -20,5 +20,6 @@ public interface IFundamentalRepository
 
     Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default);
     Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default);
+    Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryForRecentPeriodsAsync(int count, CancellationToken ct = default);
     Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default);
 }

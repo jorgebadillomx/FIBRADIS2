@@ -201,6 +201,31 @@ public class FundamentalRepository(AppDbContext db) : IFundamentalRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryForRecentPeriodsAsync(int count, CancellationToken ct = default)
+    {
+        var periods = (await GetAllProcessedPeriodsAsync(ct)).Take(count).ToList();
+        if (periods.Count == 0)
+            return Array.Empty<(FundamentalRecord, string, string)>();
+
+        var results = await db.FundamentalRecords
+            .Where(r => r.Status == "processed" && r.DeletedAt == null && periods.Contains(r.Period))
+            .Join(
+                db.Fibras.Where(f => f.State == FibraState.Active),
+                r => r.FibraId,
+                f => f.Id,
+                (r, f) => new { Record = r, f.Ticker, f.ShortName })
+            .ToListAsync(ct);
+
+        return results
+            .GroupBy(x => (x.Record.FibraId, x.Record.Period))
+            .Select(g => g.OrderByDescending(x => x.Record.ConfirmedAt).First())
+            .OrderByDescending(x => x.Record.Period.Length >= 7 ? x.Record.Period.Substring(3, 4) : "0000")
+            .ThenByDescending(x => x.Record.Period.Length >= 2 ? x.Record.Period.Substring(1, 1) : "0")
+            .ThenBy(x => x.Ticker)
+            .Select(x => (x.Record, x.Ticker, x.ShortName))
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default)
         => await db.FundamentalRecords
             .Where(r => r.Status == "processed" && r.DeletedAt == null && r.Period.Length == 7)

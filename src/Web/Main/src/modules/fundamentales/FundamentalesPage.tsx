@@ -10,9 +10,16 @@ export function FundamentalesPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('')
   const [fibraFilter, setFibraFilter] = useState('')
 
+  const isAllPeriods = selectedPeriod === 'all'
+
   const { data: summaryData, isLoading: isSummaryLoading } = useQuery({
-    queryKey: ['fundamentales', 'summary', { period: selectedPeriod || undefined }],
-    queryFn: () => fetchFundamentalesSummary(selectedPeriod || undefined),
+    queryKey: isAllPeriods
+      ? ['fundamentales', 'summary', { recent: 12 }]
+      : ['fundamentales', 'summary', { period: selectedPeriod || undefined }],
+    queryFn: () =>
+      isAllPeriods
+        ? fetchFundamentalesSummary({ recent: 12 })
+        : fetchFundamentalesSummary({ period: selectedPeriod || undefined }),
     staleTime: 5 * 60_000,
   })
 
@@ -63,6 +70,7 @@ export function FundamentalesPage() {
                 aria-label="Seleccionar período de fundamentales"
               >
                 <option value="">Último disponible</option>
+                <option value="all">Todas las disponibles</option>
                 {periods.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
@@ -105,9 +113,11 @@ export function FundamentalesPage() {
                   <td colSpan={8} className="px-4 py-12 text-center">
                     <p className="text-base font-medium text-muted-foreground">
                       {summaryData?.length === 0
-                        ? selectedPeriod
-                          ? `Sin datos para el período «${selectedPeriod}».`
-                          : 'No hay fundamentales procesados en el sistema.'
+                        ? isAllPeriods
+                          ? 'Sin datos disponibles.'
+                          : selectedPeriod
+                            ? `Sin datos para el período «${selectedPeriod}».`
+                            : 'No hay fundamentales procesados en el sistema.'
                         : `Sin resultados para «${fibraFilter}» en el período seleccionado.`}
                     </p>
                     {(summaryData?.length ?? 0) > 0 && fibraFilter && (
