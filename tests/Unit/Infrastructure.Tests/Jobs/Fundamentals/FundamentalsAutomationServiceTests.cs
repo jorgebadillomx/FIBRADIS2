@@ -155,6 +155,58 @@ public class FundamentalsAutomationServiceTests
         Assert.Equal(1, result.PossibleUpdates);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenFibrasPrologisAndPlusArePresent_FibraPlusTitleMatchesFibraPlus()
+    {
+        await using var db = CreateDbContext();
+
+        var prologis = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FIBRAPL14",
+            YahooTicker = "FIBRAPL14.MX",
+            FullName = "Fibra Prologis",
+            ShortName = "Prologis",
+            Currency = "MXN",
+            Market = "BMV",
+            Sector = "Industrial",
+            State = FibraState.Active,
+            NameVariants = ["Fibra Prologis", "Prologis", "FIBRAPL"],
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        var plus = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FPLUS16",
+            YahooTicker = "FPLUS16.MX",
+            FullName = "Fibra Plus",
+            ShortName = "Fibra Plus",
+            Currency = "MXN",
+            Market = "BMV",
+            Sector = "Diversificado",
+            State = FibraState.Active,
+            NameVariants = ["Fibra Plus", "FPLUS", "FPLUS16"],
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        db.Fibras.AddRange(prologis, plus);
+        await db.SaveChangesAsync();
+
+        // Prologis seeded first — reproduces the original bug where Prologis stole Plus matches
+        var service = BuildService(
+            db,
+            new FakeAmefibraDiscoveryClient(
+                [new AmefibraListingItem("Fibra Plus Reporte Trimestral T4 2023", "https://amefibra.com/fibra-plus-q4-2023/", "https://amefibra.com/fibra-plus-q4-2023/?wpdmdl=99")],
+                "https://amefibra.com/fibra-plus-q4-2023/",
+                DateTimeOffset.Parse("2024-02-15T00:00:00Z"),
+                ReadFixturePdf()),
+            [prologis, plus]);
+
+        await service.ExecuteAsync(CancellationToken.None);
+
+        var record = await db.FundamentalRecords.SingleAsync();
+        Assert.Equal(plus.Id, record.FibraId);
+    }
+
     private static FundamentalsAutomationService BuildService(
         AppDbContext db,
         IAmefibraDiscoveryClient discoveryClient,

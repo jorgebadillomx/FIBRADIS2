@@ -249,23 +249,38 @@ public class FundamentalsAutomationService(
             return null;
 
         var normalizedHint = NormalizeMatchKey(fibraHint);
-        return fibras.FirstOrDefault(fibra =>
-        {
-            var candidates = new[]
-                {
-                    fibra.Ticker,
-                    fibra.Ticker.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
-                    fibra.ShortName,
-                    fibra.FullName,
-                }
-                .Concat(fibra.NameVariants)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Select(NormalizeMatchKey)
-                .Distinct(StringComparer.Ordinal);
 
-            return candidates.Any(candidate => candidate.Contains(normalizedHint, StringComparison.Ordinal)
-                || normalizedHint.Contains(candidate, StringComparison.Ordinal));
-        });
+        return fibras
+            .Select(fibra =>
+            {
+                var candidates = new[]
+                    {
+                        fibra.Ticker,
+                        fibra.Ticker.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
+                        fibra.ShortName,
+                        fibra.FullName,
+                    }
+                    .Concat(fibra.NameVariants)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(NormalizeMatchKey)
+                    .Distinct(StringComparer.Ordinal);
+
+                var best = candidates.Aggregate(0.0, (acc, c) =>
+                {
+                    double s = 0;
+                    if (c.Contains(normalizedHint, StringComparison.Ordinal))
+                        s = Math.Max(s, (double)normalizedHint.Length / c.Length);
+                    if (normalizedHint.Contains(c, StringComparison.Ordinal))
+                        s = Math.Max(s, (double)c.Length / normalizedHint.Length);
+                    return Math.Max(acc, s);
+                });
+                return (Fibra: fibra, Score: best);
+            })
+            .Where(x => x.Score > 0)
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Fibra.Ticker, StringComparer.Ordinal)
+            .Select(x => x.Fibra)
+            .FirstOrDefault();
     }
 
     private static string NormalizeMatchKey(string value)
