@@ -13,10 +13,32 @@ public static partial class OfficialSitePeriodParser
 
         var lower = text.ToLowerInvariant();
 
-        if (lower.Contains("annual") || lower.Contains("anual"))
+        // P1: word-boundary check prevents "manual" matching "anual"
+        if (AnnualKeywordRegex().IsMatch(lower))
             return (null, "annual");
 
-        // Try combined quarter+year pattern first (handles embedded filenames like "1q26", "Q1-2024")
+        // P4: Spanish ordinal form — "1er-trimestre-2024", "2do-trimestre-2024", etc.
+        var ordinal = OrdinalTrimestralRegex().Match(lower);
+        if (ordinal.Success)
+        {
+            var quarter = int.Parse(ordinal.Groups["ord"].Value);
+            var year = ParseYear(ordinal.Groups["oy"].Value);
+            if (quarter >= 1 && quarter <= 4 && year >= 2018)
+                return ($"Q{quarter}-{year}", "quarterly");
+        }
+
+        // P5: year/month in path — "/2025/02/" → Q1-2025
+        var pathDate = PathDateRegex().Match(lower);
+        if (pathDate.Success)
+        {
+            var year = int.Parse(pathDate.Groups["py"].Value);
+            var month = int.Parse(pathDate.Groups["pm"].Value);
+            var quarter = (month - 1) / 3 + 1;
+            if (year is >= 2018 and <= 2035)
+                return ($"Q{quarter}-{year}", "quarterly");
+        }
+
+        // Combined quarter+year pattern (handles "1q26", "Q1-2024", "4T25")
         var combined = CombinedPeriodRegex().Match(lower);
         if (combined.Success)
         {
@@ -54,20 +76,32 @@ public static partial class OfficialSitePeriodParser
 
         var year = int.Parse(match.Groups["year"].Value);
         var quarter = int.Parse(match.Groups["quarter"].Value);
-        if (quarter is < 1 or > 4)
+        // P3: validate year lower bound; P-dead: guard quarter is always 1-4 by regex
+        if (quarter is < 1 or > 4 || year < 2018)
             return null;
 
         return $"Q{quarter}-{year}";
     }
 
+    // P2: consistent [2018, 2035] range for both 2-digit and 4-digit years
     private static int ParseYear(string raw)
     {
-        if (raw.Length == 4)
-            return int.Parse(raw);
-        var y = int.Parse(raw); // 2-digit
-        var candidate = 2000 + y;
-        return candidate is >= 2018 and <= 2035 ? candidate : 0;
+        var y = int.Parse(raw);
+        var full = raw.Length == 2 ? 2000 + y : y;
+        return full is >= 2018 and <= 2035 ? full : 0;
     }
+
+    // P1: word-boundary match prevents "manual" and "biannual" false positives
+    [GeneratedRegex(@"\b(annual|anual)\b")]
+    private static partial Regex AnnualKeywordRegex();
+
+    // P4: "1er-trimestre-2024", "2do-trimestre-2025", "3er-trimestre-26", "4to-trimestre-2024"
+    [GeneratedRegex(@"(?<ord>[1-4])(?:er|do|ro|to)-trimestre-(?<oy>20\d{2}|\d{2})")]
+    private static partial Regex OrdinalTrimestralRegex();
+
+    // P5: year/month in URL path like "/2025/02/" or "/2024/11/"
+    [GeneratedRegex(@"/(?<py>20\d{2})/(?<pm>0[1-9]|1[0-2])/")]
+    private static partial Regex PathDateRegex();
 
     // Matches embedded quarter+year patterns in filenames:
     // Group q1+y1: "{q}[qt]{year}" — e.g. 1q26, 4T25, 3Q2025

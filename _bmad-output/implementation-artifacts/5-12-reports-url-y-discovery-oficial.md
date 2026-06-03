@@ -1,6 +1,6 @@
 # Historia 5.12: Cobertura completa de ReportsUrl y discovery nativo para fibras fuera de Amefibra
 
-Status: review
+Status: done
 
 ## Story
 
@@ -372,6 +372,34 @@ tests/Fixtures/                                             (nuevos HTML/JSON)
 - [_bmad-output/implementation-artifacts/5-11-amefibra-pdf-sync.md](5-11-amefibra-pdf-sync.md) — pipeline Amefibra, reglas que no romper
 - [_bmad-output/planning-artifacts/convenciones-fibradis.md](../planning-artifacts/convenciones-fibradis.md)
 - [Source: docs/req/prd.md#FR-02, FR-20] — ReportsUrl para discovery; modo Api fundamentales
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+**Patches aplicados:**
+
+- [x] `Review/Patch` `annual`/`anual` falso positivo en `OfficialSitePeriodParser` — "manual".Contains("anual")=true; reemplazado por `\b(annual|anual)\b` [OfficialSitePeriodParser.cs:16]
+- [x] `Review/Patch` `ParseYear` sin cota superior para años de 4 dígitos — permitía "Q1-2099"; unificado rango [2018,2035] para ambas ramas [OfficialSitePeriodParser.cs:63]
+- [x] `Review/Patch` `ParseBmvSegment` sin validación `year >= 2018` — `"2001-01"` producía `"Q1-2001"`; añadido guard [OfficialSitePeriodParser.cs:57]
+- [x] `Review/Patch` Patrón `1er-trimestre-YYYY` no soportado — violación AC3; añadido `OrdinalTrimestralRegex` [OfficialSitePeriodParser.cs]
+- [x] `Review/Patch` Patrón `YYYY/MM/` en path no soportado — violación AC3; añadido `PathDateRegex` [OfficialSitePeriodParser.cs]
+- [x] `Review/Patch` `RunResult.ReportsDetected` siempre igual a `FibrasScanned` — bug semántico; añadido contador `totalCandidates` [FundamentalsAutomationService.cs:33]
+- [x] `Review/Patch` VESTA15 `ReportsUrl` incorrecta — apuntaba a `/informacion-financiera/asg` (ASG); corregida a `https://ir.vesta.com.mx/financial-results` [CatalogSeed.cs, migración, snapshot, OfficialSiteDiscoverySource.cs]
+- [x] `Review/Patch` `SomaDiscoverySource` eliminada — SOMA21 está en Amefibra; clase + DI + tests + fixture removidos para evitar candidatos duplicados con `possibleUpdate` innecesario
+- [x] `Review/Patch` NEXT25 y FUNO11 quitados de `OfficialSiteDiscoverySource` — ambas están en Amefibra; mismo riesgo de duplicados [OfficialSiteDiscoverySource.cs]
+- [x] `Review/Patch` FIHO12 quitado de `BmvDiscoverySource` — está en Amefibra; `SupportedTickers` queda `["HCITY17"]` [BmvDiscoverySource.cs:12]
+- [x] `Review/Patch` Tests `OfficialSiteDiscoverySourceTests` — añadidos tests para VESTA15 y FCFE18 (cobertura AC3 incompleta) [OfficialSiteDiscoverySourceTests.cs]
+- [x] `Review/Patch` `BmvDiscoverySourceTests` migrados a HCITY17 como ticker canónico [BmvDiscoverySourceTests.cs]
+
+**Defers:**
+
+- [x] `Review/Defer` `_cachedListings` de `AmefibraDiscoverySource` funciona porque `sources.ToList()` se materializa una vez, pero es frágil; considerar Scoped si cambia el patrón de resolución — deferred, by design actual
+- [x] `Review/Defer` `OfficialSiteDiscoverySource.ResolveUrl` tercera rama es código muerto (inalcanzable) — deferred, no es bug
+- [x] `Review/Defer` `BmvDiscoverySource`: concatenación `BmvBase + href` rompe si href relativo no empieza con `/` — deferred, patrón BMV siempre usa paths absolutos
+- [x] `Review/Defer` `TryLogPipelineErrorAsync` pierde `SourceTitle` del candidato en el contexto del error log — deferred, mejora de observabilidad
+- [x] `Review/Defer` `isPossibleUpdate`: 2 queries BD por candidato sin caché local fibra+período — deferred, optimización futura
+- [x] `Review/Defer` `CombinedPeriodRegex` sin anclas de límite de palabra — puede hacer match dentro de tokens más largos; bajo riesgo con filenames reales — deferred, monitorear
 
 ## Dev Agent Record
 

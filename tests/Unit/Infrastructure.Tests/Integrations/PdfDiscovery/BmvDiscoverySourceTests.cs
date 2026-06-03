@@ -10,48 +10,7 @@ public class BmvDiscoverySourceTests
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Fixtures");
 
     [Fact]
-    public async Task DiscoverCandidatesAsync_Fiho_ExtractsBmvPdfLinks()
-    {
-        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "bmv-fiho-sample.html"));
-        var fibra = BuildFibra("FIHO12", "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/FIHO-30057-CGEN_CAPIT");
-        var source = BuildSource(html);
-
-        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
-
-        Assert.Equal(4, candidates.Count);
-        Assert.All(candidates, c => Assert.Contains("indrpfn_", c.PackageUrl, StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public async Task DiscoverCandidatesAsync_ConvertsBmvPeriodFormat()
-    {
-        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "bmv-fiho-sample.html"));
-        var fibra = BuildFibra("FIHO12", "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/FIHO-30057-CGEN_CAPIT");
-        var source = BuildSource(html);
-
-        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
-
-        Assert.Contains(candidates, c => c.Period == "Q1-2026"); // 2026-01
-        Assert.Contains(candidates, c => c.Period == "Q4-2025"); // 2025-04
-        Assert.Contains(candidates, c => c.Period == "Q3-2025"); // 2025-03
-        Assert.Contains(candidates, c => c.Period == "Q2-2025"); // 2025-02
-    }
-
-    [Fact]
-    public async Task DiscoverCandidatesAsync_NonIndrpfnLinks_AreExcluded()
-    {
-        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "bmv-fiho-sample.html"));
-        var fibra = BuildFibra("FIHO12", "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/FIHO-30057-CGEN_CAPIT");
-        var source = BuildSource(html);
-
-        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
-
-        // "some-other-doc.pdf" in fixture should not be included
-        Assert.DoesNotContain(candidates, c => c.PackageUrl.Contains("some-other-doc"));
-    }
-
-    [Fact]
-    public async Task DiscoverCandidatesAsync_HcityFixture_ExtractsCorrectLinks()
+    public async Task DiscoverCandidatesAsync_Hcity_ExtractsBmvPdfLinks()
     {
         var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "bmv-hcity-sample.html"));
         var fibra = BuildFibra("HCITY17", "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/HCITY-31249-CGEN_CAPIT");
@@ -60,14 +19,46 @@ public class BmvDiscoverySourceTests
         var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
 
         Assert.Equal(2, candidates.Count);
-        Assert.Contains(candidates, c => c.Period == "Q1-2026");
-        Assert.Contains(candidates, c => c.Period == "Q4-2025");
+        Assert.All(candidates, c => Assert.Contains("indrpfn_", c.PackageUrl, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task DiscoverCandidatesAsync_ConvertsBmvPeriodFormat()
+    {
+        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "bmv-hcity-sample.html"));
+        var fibra = BuildFibra("HCITY17", "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/HCITY-31249-CGEN_CAPIT");
+        var source = BuildSource(html);
+
+        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
+
+        Assert.Contains(candidates, c => c.Period == "Q1-2026"); // 2026-01
+        Assert.Contains(candidates, c => c.Period == "Q4-2025"); // 2025-04
+    }
+
+    [Fact]
+    public async Task DiscoverCandidatesAsync_NonIndrpfnLinks_AreExcluded()
+    {
+        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "bmv-hcity-sample.html"));
+        var fibra = BuildFibra("HCITY17", "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/HCITY-31249-CGEN_CAPIT");
+        var source = BuildSource(html);
+
+        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
+
+        // "otro-documento.pdf" in fixture (non-indrpfn) should not be included
+        Assert.DoesNotContain(candidates, c => c.PackageUrl.Contains("otro-documento"));
+    }
+
+    [Fact]
+    public async Task SupportedTickers_ContainsOnlyHcity17()
+    {
+        var source = new BmvDiscoverySource(new HttpClient());
+        Assert.Equal(["HCITY17"], source.SupportedTickers);
     }
 
     [Fact]
     public async Task DiscoverCandidatesAsync_WhenReportsUrlIsNull_ReturnsEmpty()
     {
-        var fibra = BuildFibra("FIHO12", null);
+        var fibra = BuildFibra("HCITY17", null);
         var source = BuildSource("<html></html>");
 
         var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);

@@ -89,7 +89,7 @@ namespace Infrastructure.Migrations
                 keyColumn: "Id",
                 keyValue: new Guid("ae26cf6f-b4dc-be5a-3355-f4f4a9165499"),
                 column: "reports_url",
-                value: "https://vesta.com.mx/informacion-financiera/asg");
+                value: "https://ir.vesta.com.mx/financial-results");
 
             migrationBuilder.UpdateData(
                 schema: "catalog",

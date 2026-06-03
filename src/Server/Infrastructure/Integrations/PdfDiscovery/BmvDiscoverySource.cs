@@ -9,7 +9,7 @@ public class BmvDiscoverySource(HttpClient http) : IFundamentalsDiscoverySource
     private const string BmvBase = "https://www.bmv.com.mx";
 
     public string SourceName => "bmv";
-    public IReadOnlyList<string> SupportedTickers { get; } = ["FIHO12", "HCITY17"];
+    public IReadOnlyList<string> SupportedTickers { get; } = ["HCITY17"];
 
     public async Task<IReadOnlyList<FundamentalsDiscoveryCandidate>> DiscoverCandidatesAsync(Fibra fibra, CancellationToken ct)
     {

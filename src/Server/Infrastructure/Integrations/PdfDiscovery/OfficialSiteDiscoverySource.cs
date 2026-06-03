@@ -21,8 +21,8 @@ public class OfficialSiteDiscoverySource(HttpClient http) : IFundamentalsDiscove
                                  || href.Contains("-earnings-release-spa", StringComparison.OrdinalIgnoreCase)),
 
             ["VESTA15"] = new(
-                PdfLinkSelector: "a[href*=\"/storage/app/uploads/\"][href$=\".pdf\"]",
-                BaseUrl: "https://vesta.com.mx"),
+                PdfLinkSelector: "a[href$=\".pdf\"]",
+                BaseUrl: "https://ir.vesta.com.mx"),
 
             ["FHIPO14"] = new(
                 PdfLinkSelector: "a[href*=\"wp-content/uploads/\"][href$=\".pdf\"]",
@@ -32,13 +32,6 @@ public class OfficialSiteDiscoverySource(HttpClient http) : IFundamentalsDiscove
                 PdfLinkSelector: "a[href*=\"wp-content/uploads/\"][href$=\".pdf\"]",
                 BaseUrl: "https://cfecapital.com.mx"),
 
-            ["NEXT25"] = new(
-                PdfLinkSelector: "a[href*=\"site_media/uploads/documentos/\"][href$=\".pdf\"]",
-                BaseUrl: "https://fibranext.mx"),
-
-            ["FUNO11"] = new(
-                PdfLinkSelector: "a[href*=\"site_media/uploads/documentos/\"][href$=\".pdf\"]",
-                BaseUrl: "https://funo.mx"),
         };
 
     public string SourceName => "official";

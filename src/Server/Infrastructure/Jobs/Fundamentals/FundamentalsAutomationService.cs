@@ -31,6 +31,7 @@ public class FundamentalsAutomationService(
         var sources = discoverySources.ToList();
 
         var scannedFibraIds = new HashSet<Guid>();
+        var totalCandidates = 0;
         var newReports = 0;
         var skippedReports = 0;
         var possibleUpdates = 0;
@@ -59,6 +60,7 @@ public class FundamentalsAutomationService(
                     continue;
                 }
 
+                totalCandidates += candidates.Count;
                 foreach (var candidate in candidates)
                 {
                     var existingManifest = await manifestRepo.GetByPackageUrlAsync(candidate.PackageUrl, ct);
@@ -153,7 +155,7 @@ public class FundamentalsAutomationService(
 
         return new FundamentalsAutomationRunResult(
             scannedFibraIds.Count,
-            scannedFibraIds.Count, // total candidates processed per fibra
+            totalCandidates,
             newReports,
             skippedReports,
             possibleUpdates,

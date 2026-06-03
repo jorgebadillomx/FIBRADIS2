@@ -63,6 +63,37 @@ public class OfficialSiteDiscoverySourceTests
     }
 
     [Fact]
+    public async Task DiscoverCandidatesAsync_Vesta_ExtractsPdfsAndParsesPeriods()
+    {
+        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "vesta-financial-info-sample.html"));
+        var fibra = BuildFibra("VESTA15", "https://ir.vesta.com.mx/financial-results");
+        var source = BuildSource(html, fibra.ReportsUrl!);
+
+        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
+
+        Assert.Equal(3, candidates.Count);
+        Assert.Contains(candidates, c => c.Period == "Q1-2026");
+        Assert.Contains(candidates, c => c.Period == "Q4-2025");
+        Assert.Contains(candidates, c => c.Period == "Q3-2025");
+        Assert.All(candidates, c => Assert.Equal("quarterly", c.ReportType));
+    }
+
+    [Fact]
+    public async Task DiscoverCandidatesAsync_Fcfe18_ExtractsPdfsFromWordPress()
+    {
+        var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "cfecapital-info-financiera-sample.html"));
+        var fibra = BuildFibra("FCFE18", "https://cfecapital.com.mx/informacion-financiera");
+        var source = BuildSource(html, fibra.ReportsUrl!);
+
+        var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
+
+        Assert.Equal(2, candidates.Count);
+        Assert.Contains(candidates, c => c.Period == "Q1-2026");
+        Assert.Contains(candidates, c => c.Period == "Q4-2025");
+        Assert.All(candidates, c => Assert.Equal("quarterly", c.ReportType));
+    }
+
+    [Fact]
     public async Task DiscoverCandidatesAsync_UnsupportedTicker_ReturnsEmpty()
     {
         var html = "<html><body></body></html>";
