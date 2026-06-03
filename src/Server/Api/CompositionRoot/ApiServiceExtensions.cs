@@ -162,6 +162,50 @@ public static class ApiServiceExtensions
             UseCookies = true,
         });
 
+        // Discovery sources — multi-source fundamentals pipeline
+        builder.Services.AddTransient<AmefibraDiscoverySource>();
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<AmefibraDiscoverySource>());
+        builder.Services.AddHttpClient<OfficialSiteDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<OfficialSiteDiscoverySource>());
+        builder.Services.AddHttpClient<SomaDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<SomaDiscoverySource>());
+        builder.Services.AddHttpClient<BmvDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<BmvDiscoverySource>());
+        builder.Services.AddHttpClient("FundamentalsDownloader", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 10,
+            UseCookies = true,
+        });
+
         // Hangfire — condicional para soportar tests sin SQL
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
         var hangfireConnStr = builder.Configuration.GetConnectionString("DefaultConnection");

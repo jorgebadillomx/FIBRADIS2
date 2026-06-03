@@ -3295,6 +3295,7 @@ export interface paths {
             parameters: {
                 query?: {
                     period?: string;
+                    recent?: number | string;
                 };
                 header?: never;
                 path?: never;

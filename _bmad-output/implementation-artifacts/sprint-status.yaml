@@ -77,7 +77,8 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-31
+last_updated: 2026-06-02
+# story 5-12 in-progress — ReportsUrl 11 fibras + IFundamentalsDiscoverySource multi-source + 4 discovery clients
 # story 8-1 creada — sección educativa "Conoce las FIBRAs" + editor Ops, epic-8 in-progress
 # story 5-9 done — code review pasada 2: 10 patches (P1 empty strings→null, P2 NullRef updated!, P3 ErrorReason cleared on processed, P4 arrays empty en error path, P5 useEffect dialog, P6 ReactMarkdown urlTransform, P7 GetAiAnalysis local var, P8 React keys, P9 null-forgiving tests, P10 round-trips BD)
 # story 5-9 vuelve a review — fix hallazgo High: UpdateKpiExtractionAsync usa result.Success en vez de hasAnyKpi (solo numéricos), 2 tests nuevos, 162+35+9 unit tests verdes
@@ -252,6 +253,8 @@ development_status:
   # sprint-retro-2026-05-31b — cubre 4-12 (gate body_text IA, sin code review) + 5-11 (AMEFIBRA sync, 9 patches, 6 defers); 4 action items antes de Épica 6
   # 4-12 gate body_text mínimo para IA — implementada 2026-05-31, sin story file formal, sin code review documentado
   4-12-gate-body-text-minimo-ia: done
+  # story 5-12 creada — cobertura completa ReportsUrl (20 fibras) + discovery nativo para SOMA21 y VESTA15; arquitectura multi-source IFundamentalsDiscoverySource
+  5-12-reports-url-y-discovery-oficial: review
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
   epic-8: in-progress
