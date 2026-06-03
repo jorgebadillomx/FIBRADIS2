@@ -74,4 +74,25 @@ public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
                     .SetProperty(s => s.UpdatedAt, now), ct);
         }
     }
+
+    public async Task<PortfolioPosition?> GetPositionAsync(Guid userId, Guid fibraId, CancellationToken ct)
+        => await db.PortfolioPositions
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.FibraId == fibraId, ct);
+
+    public async Task UpdatePositionAsync(PortfolioPosition position, CancellationToken ct)
+    {
+        db.PortfolioPositions.Update(position);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> DeletePositionAsync(Guid userId, Guid fibraId, CancellationToken ct)
+    {
+        var position = await db.PortfolioPositions
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.FibraId == fibraId, ct);
+        if (position is null)
+            return false;
+        db.PortfolioPositions.Remove(position);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 }

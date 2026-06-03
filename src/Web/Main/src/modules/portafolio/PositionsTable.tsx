@@ -1,14 +1,19 @@
 import { Fragment, useMemo, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import type { components } from '@fibradis/shared-api-client'
 import { PositionExpandedDetail } from '@/modules/portafolio/PositionExpandedDetail'
 import { PortfolioExpandIcon, SignalBadge } from '@/modules/portafolio/SignalBadge'
 import { formatMoney, formatPercent, formatVolume } from '@/modules/portafolio/portfolio-format'
+import { EditableCell } from '@/modules/portafolio/EditableCell'
+import { DeletePositionDialog } from '@/modules/portafolio/DeletePositionDialog'
 
 type PortfolioPositionDto = components['schemas']['PortfolioPositionDto']
 
 interface PositionsTableProps {
   positions: PortfolioPositionDto[]
   enabledColumns: string[]
+  onUpdate: (fibraId: string, titulos: number, costoPromedio: number) => Promise<void>
+  onDelete: (fibraId: string) => Promise<void>
 }
 
 type SortDirection = 'asc' | 'desc'
@@ -97,9 +102,11 @@ function SortArrow({ dir }: { dir: SortDirection }) {
   return <span className="ml-1 text-xs text-muted-foreground">{dir === 'asc' ? '↑' : '↓'}</span>
 }
 
-export function PositionsTable({ positions, enabledColumns }: PositionsTableProps) {
+export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }: PositionsTableProps) {
   const [sortKeys, setSortKeys] = useState<SortEntry[]>([])
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [deletingFibraId, setDeletingFibraId] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const visibleOptionalColumns = useMemo(
     () => OPTIONAL_COLUMNS.filter((column) => enabledColumns.includes(column.key)),
@@ -125,7 +132,18 @@ export function PositionsTable({ positions, enabledColumns }: PositionsTableProp
     })
   }, [positions, sortKeys])
 
-  const totalCols = 11 + visibleOptionalColumns.length
+  const totalCols = 12 + visibleOptionalColumns.length
+
+  async function handleDeleteConfirm() {
+    if (!deletingFibraId) return
+    setDeleteLoading(true)
+    try {
+      await onDelete(deletingFibraId)
+      setDeletingFibraId(null)
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   function handleHeaderClick(column: string, shiftKey: boolean) {
     setSortKeys((current) => {
@@ -178,13 +196,14 @@ export function PositionsTable({ positions, enabledColumns }: PositionsTableProp
   }
 
   return (
+    <>
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="sticky top-0 z-10 bg-muted/70 text-muted-foreground backdrop-blur">
             <tr className="border-b border-border/80">
               <th className="w-20 px-2 py-3 text-left font-semibold text-foreground">Señal</th>
-              <th className="w-8 px-1 py-3" />
+              <th className="w-8 px-1 py-3"><span className="sr-only">Expandir</span></th>
               {renderHeader('Ticker / Nombre', 'ticker')}
               {renderHeader('Títulos', 'titulos')}
               {renderHeader('Costo Promedio', 'costoPromedio')}
@@ -195,6 +214,7 @@ export function PositionsTable({ positions, enabledColumns }: PositionsTableProp
               {renderHeader('Renta Anual', 'rentaAnual')}
               {renderHeader('% Portafolio', 'pctPortafolio')}
               {visibleOptionalColumns.map((column) => renderHeader(column.label, column.sortKey))}
+              <th className="w-16 px-2 py-3 text-center font-semibold text-foreground">Acc.</th>
             </tr>
           </thead>
           <tbody>
@@ -225,8 +245,35 @@ export function PositionsTable({ positions, enabledColumns }: PositionsTableProp
                         <span className="text-xs text-muted-foreground">{position.nombre}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatVolume(position.titulos)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatMoney(position.costoPromedio)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      <EditableCell
+                        value={Number(position.titulos)}
+                        format={(v) => formatVolume(v)}
+                        validate={(raw) => {
+                          const trimmed = raw.trim()
+                          const n = parseInt(trimmed, 10)
+                          if (!Number.isInteger(n) || n <= 0 || String(n) !== trimmed)
+                            return 'La cantidad debe ser un entero positivo'
+                          return null
+                        }}
+                        parse={(raw) => parseInt(raw.trim(), 10)}
+                        onSave={(newVal) => onUpdate(position.fibraId, newVal, Number(position.costoPromedio))}
+                      />
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      <EditableCell
+                        value={Number(position.costoPromedio)}
+                        format={(v) => formatMoney(v)}
+                        validate={(raw) => {
+                          const n = parseFloat(raw.trim())
+                          if (!Number.isFinite(n) || n <= 0)
+                            return 'El costo promedio debe ser mayor a cero'
+                          return null
+                        }}
+                        parse={(raw) => parseFloat(raw.trim())}
+                        onSave={(newVal) => onUpdate(position.fibraId, Number(position.titulos), newVal)}
+                      />
+                    </td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatMoney(position.precioActual)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatMoney(position.valorMercado)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatPercent(position.plusvaliaFilaPct)}</td>
@@ -248,6 +295,17 @@ export function PositionsTable({ positions, enabledColumns }: PositionsTableProp
                         )}
                       </td>
                     ))}
+                    <td className="px-2 py-3 text-center">
+                      <button
+                        type="button"
+                        className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setDeletingFibraId(position.fibraId)}
+                        aria-label={`Eliminar posición ${position.ticker}`}
+                        title={`Eliminar posición ${position.ticker}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                   {isExpanded && (
                     <tr key={`${position.fibraId}-detail`}>
@@ -263,5 +321,15 @@ export function PositionsTable({ positions, enabledColumns }: PositionsTableProp
         </table>
       </div>
     </div>
+    {deletingFibraId && (
+      <DeletePositionDialog
+        ticker={positions.find((p) => p.fibraId === deletingFibraId)?.ticker ?? deletingFibraId}
+        open={deletingFibraId !== null}
+        onOpenChange={(open) => { if (!open) setDeletingFibraId(null) }}
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteLoading}
+      />
+    )}
+    </>
   )
 }

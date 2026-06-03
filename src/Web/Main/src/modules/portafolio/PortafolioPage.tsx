@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { KpiCards } from '@/modules/portafolio/KpiCards'
@@ -53,6 +53,39 @@ export function PortafolioPage() {
   })
 
   const enabledColumns = columnConfigQuery.data?.columns ?? []
+
+  const patchMutation = useMutation({
+    mutationFn: async ({
+      fibraId,
+      titulos,
+      costoPromedio,
+    }: {
+      fibraId: string
+      titulos: number
+      costoPromedio: number
+    }) => {
+      const { error } = await apiClient.PATCH('/api/v1/portfolio/positions/{fibraId}', {
+        params: { path: { fibraId } },
+        body: { titulos, costoPromedio },
+      })
+      if (error) throw new Error('No se pudo guardar la posición.')
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['portfolio', 'positions'] })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (fibraId: string) => {
+      const { error } = await apiClient.DELETE('/api/v1/portfolio/positions/{fibraId}', {
+        params: { path: { fibraId } },
+      })
+      if (error) throw new Error('No se pudo eliminar la posición.')
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['portfolio', 'positions'] })
+    },
+  })
 
   if (!accessToken) {
     return <Navigate to="/login" replace />
@@ -147,7 +180,14 @@ export function PortafolioPage() {
               </div>
             </div>
 
-            <PositionsTable positions={positions} enabledColumns={enabledColumns} />
+            <PositionsTable
+              positions={positions}
+              enabledColumns={enabledColumns}
+              onUpdate={(fibraId, titulos, costoPromedio) =>
+                patchMutation.mutateAsync({ fibraId, titulos, costoPromedio })
+              }
+              onDelete={(fibraId) => deleteMutation.mutateAsync(fibraId)}
+            />
           </div>
 
           <UploadZone

@@ -279,7 +279,7 @@ development_status:
   6-1-carga-y-validacion-del-portafolio: done
   6-2-kpis-del-portafolio-y-tabla-con-multi-sort-y-columnas-configurables: done
   6-3-filas-expandibles-con-detalle-de-posicion-y-badge-de-senal-nav: done
-  6-4-edicion-inline-y-eliminacion-de-posiciones: ready-for-dev
+  6-4-edicion-inline-y-eliminacion-de-posiciones: review
   epic-6-retrospective: optional
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────

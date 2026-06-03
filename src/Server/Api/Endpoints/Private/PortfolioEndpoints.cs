@@ -201,6 +201,51 @@ public static class PortfolioEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapPatch("/positions/{fibraId:guid}", async (
+            Guid fibraId,
+            PortfolioPositionPatchDto request,
+            IPortfolioRepository portfolioRepo,
+            IOperationalConfigRepository configRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            if (request.Titulos <= 0)
+                return Results.Problem("La cantidad debe ser un entero positivo.", statusCode: 400);
+            if (request.CostoPromedio <= 0)
+                return Results.Problem("El costo promedio debe ser mayor a cero.", statusCode: 400);
+
+            var userId = GetUserId(ctx);
+            var position = await portfolioRepo.GetPositionAsync(userId, fibraId, ct);
+            if (position is null)
+                return Results.NotFound();
+
+            var config = await configRepo.GetAsync(ct);
+            position.Titulos = request.Titulos;
+            position.CostoPromedio = request.CostoPromedio;
+            position.CostoTotalCompra = request.Titulos * request.CostoPromedio * (1 + config.CommissionFactor);
+
+            await portfolioRepo.UpdatePositionAsync(position, ct);
+            return Results.NoContent();
+        })
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapDelete("/positions/{fibraId:guid}", async (
+            Guid fibraId,
+            IPortfolioRepository portfolioRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var userId = GetUserId(ctx);
+            var deleted = await portfolioRepo.DeletePositionAsync(userId, fibraId, ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
+        })
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         return app;
     }
 

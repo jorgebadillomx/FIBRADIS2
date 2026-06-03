@@ -9,4 +9,7 @@ public interface IPortfolioRepository
     Task<int> GetPositionCountByUserIdAsync(Guid userId, CancellationToken ct);
     Task<UserPortfolioSettings?> GetSettingsAsync(Guid userId, CancellationToken ct);
     Task UpsertSettingsAsync(Guid userId, string? columnConfigJson, CancellationToken ct);
+    Task<PortfolioPosition?> GetPositionAsync(Guid userId, Guid fibraId, CancellationToken ct = default);
+    Task UpdatePositionAsync(PortfolioPosition position, CancellationToken ct = default);
+    Task<bool> DeletePositionAsync(Guid userId, Guid fibraId, CancellationToken ct = default);
 }

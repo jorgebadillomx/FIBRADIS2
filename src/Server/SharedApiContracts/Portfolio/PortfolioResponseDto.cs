@@ -52,3 +52,8 @@ public sealed record PortfolioResponseDto(
 public sealed record PortfolioColumnConfigDto(
     IReadOnlyList<string> Columns
 );
+
+public sealed record PortfolioPositionPatchDto(
+    int Titulos,
+    decimal CostoPromedio
+);
