@@ -6,6 +6,7 @@ using Domain.Jobs;
 using Domain.Market;
 using Domain.News;
 using Domain.Ops;
+using Domain.Portfolio;
 using Infrastructure.Persistence.Seed;
 using Infrastructure.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EditorialPage> EditorialPages => Set<EditorialPage>();
     public DbSet<ConfigAuditLog> ConfigAuditLogs => Set<ConfigAuditLog>();
     public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
+    public DbSet<PortfolioPosition> PortfolioPositions => Set<PortfolioPosition>();
+    public DbSet<UserPortfolioSettings> UserPortfolioSettings => Set<UserPortfolioSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

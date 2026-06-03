@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260603150822_AddPortfolioPositions")]
+    partial class AddPortfolioPositions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2370,8 +2373,7 @@ namespace Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("CostoPromedio")
                         .HasPrecision(18, 6)
@@ -2401,32 +2403,11 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FibraId");
-
                     b.HasIndex("UserId", "FibraId")
                         .IsUnique()
                         .HasDatabaseName("UX_PortfolioPositions_UserId_FibraId");
 
                     b.ToTable("PortfolioPositions", "portfolio");
-                });
-
-            modelBuilder.Entity("Domain.Portfolio.UserPortfolioSettings", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("ColumnConfigJson")
-                        .HasColumnType("text")
-                        .HasColumnName("column_config_json");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("UserPortfolioSettings", "portfolio");
                 });
 
             modelBuilder.Entity("Domain.Auth.RefreshToken", b =>
@@ -2466,30 +2447,6 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("NewsArticle");
-                });
-
-            modelBuilder.Entity("Domain.Portfolio.PortfolioPosition", b =>
-                {
-                    b.HasOne("Domain.Catalog.Fibra", null)
-                        .WithMany()
-                        .HasForeignKey("FibraId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Auth.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Domain.Portfolio.UserPortfolioSettings", b =>
-                {
-                    b.HasOne("Domain.Auth.User", null)
-                        .WithOne()
-                        .HasForeignKey("Domain.Portfolio.UserPortfolioSettings", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Auth.User", b =>

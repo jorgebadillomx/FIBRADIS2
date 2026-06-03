@@ -175,7 +175,7 @@ export function NoticiasListPage() {
                       {false && imageUrl ? (
                         <div className="aspect-video overflow-hidden bg-muted">
                           <img
-                            src={imageUrl}
+                            src={imageUrl ?? undefined}
                             alt={article.title}
                             className="h-full w-full object-cover"
                             loading="lazy"

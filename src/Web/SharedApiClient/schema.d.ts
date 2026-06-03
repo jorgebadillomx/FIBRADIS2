@@ -3447,6 +3447,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portfolio/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": unknown;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioResponseDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/column-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioColumnConfigDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PortfolioColumnConfigDto"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file: components["schemas"]["IFormFile"];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioUploadResponseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3986,6 +4207,86 @@ export interface components {
             /** Format: int32 */
             lastErrorCount: null | number | string;
             recentRuns: components["schemas"]["PipelineRunLogDto"][];
+        };
+        PortfolioColumnConfigDto: {
+            columns: string[];
+        };
+        PortfolioDistributionDto: {
+            paymentDate: string;
+            /** Format: double */
+            amountPerUnit: number | string;
+        };
+        PortfolioKpisDto: {
+            /** Format: double */
+            inversionTotal: number | string;
+            /** Format: double */
+            valorTotal: null | number | string;
+            /** Format: double */
+            plusvaliaTotal_Pct: null | number | string;
+            /** Format: double */
+            plusvaliaTotal_Mxn: null | number | string;
+            /** Format: double */
+            rentasAnualesBrutas: number | string;
+            /** Format: double */
+            rentasRealesBrutas: number | string;
+            /** Format: double */
+            pctRentasPortafolio: number | string;
+            isPartial: boolean;
+        };
+        PortfolioPositionDto: {
+            /** Format: uuid */
+            fibraId: string;
+            ticker: string;
+            nombre: string;
+            /** Format: int32 */
+            titulos: number | string;
+            /** Format: double */
+            costoPromedio: number | string;
+            /** Format: double */
+            costoTotalCompra: number | string;
+            /** Format: double */
+            pctPortafolio: number | string;
+            /** Format: double */
+            precioActual: null | number | string;
+            /** Format: double */
+            valorMercado: null | number | string;
+            /** Format: double */
+            plusvaliaFilaPct: null | number | string;
+            /** Format: double */
+            plusvaliaFilaMxn: null | number | string;
+            /** Format: double */
+            rentaAnual: null | number | string;
+            freshnessStatus: null | string;
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+            /** Format: double */
+            dailyChangePct: null | number | string;
+            /** Format: double */
+            week52High: null | number | string;
+            /** Format: int64 */
+            volume: null | number | string;
+            /** Format: double */
+            week52Low: null | number | string;
+            /** Format: double */
+            week52Avg: null | number | string;
+            fundamentalsPeriod: null | string;
+            recentDistributions: components["schemas"]["PortfolioDistributionDto"][];
+        };
+        PortfolioResponseDto: {
+            kpis: null | components["schemas"]["PortfolioKpisDto"];
+            positions: components["schemas"]["PortfolioPositionDto"][];
+        };
+        PortfolioUploadResponseDto: {
+            /** Format: int32 */
+            positionCount: number | string;
         };
         ProblemDetails: {
             type?: null | string;

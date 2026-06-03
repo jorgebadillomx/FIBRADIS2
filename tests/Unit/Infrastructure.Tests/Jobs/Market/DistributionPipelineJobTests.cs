@@ -273,6 +273,18 @@ internal sealed class FakeDistMarketRepository : IMarketRepository
         Guid fibraId, int? maxDays = null, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<Distribution>>([]);
 
+    public Task<IReadOnlyList<Distribution>> GetDistributionsByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds,
+        int days,
+        CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<Distribution>>([]);
+
+    public Task<IReadOnlyDictionary<Guid, decimal>> GetWeek52AvgByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds,
+        int days = 365,
+        CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
+
     public Task AddDistributionAsync(Distribution dist, CancellationToken ct = default)
         => Task.CompletedTask;
 }

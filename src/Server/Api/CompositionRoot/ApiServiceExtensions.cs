@@ -21,13 +21,16 @@ using Infrastructure.Jobs.Fundamentals;
 using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Catalog;
 using Application.Ai;
+using Application.Portfolio;
 using Infrastructure.Persistence.Repositories.Ai;
 using Infrastructure.Persistence.Repositories.Fundamentals;
 using Infrastructure.Persistence.Repositories.Jobs;
 using Infrastructure.Persistence.Repositories.Market;
 using Infrastructure.Persistence.Repositories.News;
 using Infrastructure.Persistence.Repositories.Ops;
+using Infrastructure.Persistence.Repositories.Portfolio;
 using Infrastructure.Persistence.SqlServer;
+using Infrastructure.Portfolio;
 using Infrastructure.Security;
 using Infrastructure.Time;
 
@@ -89,6 +92,8 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFundamentalSourceManifestRepository, FundamentalSourceManifestRepository>();
         builder.Services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
         builder.Services.AddScoped<IFundamentalsAutomationService, FundamentalsAutomationService>();
+        builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
+        builder.Services.AddScoped<IPortfolioUploadService, PortfolioUploadService>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
@@ -177,13 +182,6 @@ public static class ApiServiceExtensions
         });
         builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
             sp.GetRequiredService<OfficialSiteDiscoverySource>());
-        builder.Services.AddHttpClient<SomaDiscoverySource>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("FIBRADIS/1.0 (+https://fibradis.mx)");
-        });
-        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
-            sp.GetRequiredService<SomaDiscoverySource>());
         builder.Services.AddHttpClient<BmvDiscoverySource>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);

@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260603153835_PortfolioPositionForeignKeysAndPkRename")]
+    partial class PortfolioPositionForeignKeysAndPkRename
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2410,25 +2413,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("PortfolioPositions", "portfolio");
                 });
 
-            modelBuilder.Entity("Domain.Portfolio.UserPortfolioSettings", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("ColumnConfigJson")
-                        .HasColumnType("text")
-                        .HasColumnName("column_config_json");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("UserPortfolioSettings", "portfolio");
-                });
-
             modelBuilder.Entity("Domain.Auth.RefreshToken", b =>
                 {
                     b.HasOne("Domain.Auth.User", "User")
@@ -2479,15 +2463,6 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Auth.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Domain.Portfolio.UserPortfolioSettings", b =>
-                {
-                    b.HasOne("Domain.Auth.User", null)
-                        .WithOne()
-                        .HasForeignKey("Domain.Portfolio.UserPortfolioSettings", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
