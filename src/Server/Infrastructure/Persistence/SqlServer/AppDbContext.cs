@@ -36,6 +36,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ConfigAuditLog> ConfigAuditLogs => Set<ConfigAuditLog>();
     public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
     public DbSet<PortfolioPosition> PortfolioPositions => Set<PortfolioPosition>();
+    public DbSet<PortfolioSnapshot> PortfolioSnapshots => Set<PortfolioSnapshot>();
     public DbSet<UserPortfolioSettings> UserPortfolioSettings => Set<UserPortfolioSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

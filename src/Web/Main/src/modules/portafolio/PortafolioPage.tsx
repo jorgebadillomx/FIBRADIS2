@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { KpiCards } from '@/modules/portafolio/KpiCards'
@@ -7,34 +7,33 @@ import { ColumnPicker } from '@/modules/portafolio/ColumnPicker'
 import { PositionsTable } from '@/modules/portafolio/PositionsTable'
 import { UploadZone } from '@/modules/portafolio/UploadZone'
 import { Button } from '@/shared/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 
 type PortfolioResponseDto = components['schemas']['PortfolioResponseDto']
 type PortfolioColumnConfigDto = components['schemas']['PortfolioColumnConfigDto']
+type PortfolioSnapshotStatusDto = components['schemas']['PortfolioSnapshotStatusDto']
 
-const ACCESS_TOKEN_KEYS = [
-  'fibradis.accessToken',
-  'accessToken',
-  'fibradis.user.accessToken',
-] as const
+function formatSnapshotDate(archivedAt: string | null | undefined) {
+  if (!archivedAt) return 'fecha desconocida'
 
-function getStoredAccessToken(): string | null {
-  if (typeof window === 'undefined') return null
-
-  for (const key of ACCESS_TOKEN_KEYS) {
-    const token = window.localStorage.getItem(key)
-    if (token) return token
-  }
-
-  return null
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(archivedAt))
 }
 
 export function PortafolioPage() {
-  const accessToken = getStoredAccessToken()
   const queryClient = useQueryClient()
-
   const portfolioQuery = useQuery<PortfolioResponseDto>({
     queryKey: ['portfolio', 'positions'],
-    enabled: Boolean(accessToken),
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/portfolio', {})
       if (error || !data) throw new Error('No se pudo cargar el portafolio.')
@@ -44,11 +43,44 @@ export function PortafolioPage() {
 
   const columnConfigQuery = useQuery<PortfolioColumnConfigDto>({
     queryKey: ['portfolio', 'column-config'],
-    enabled: Boolean(accessToken),
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/portfolio/column-config', {})
       if (error || !data) throw new Error('No se pudo cargar la configuración de columnas.')
       return data
+    },
+  })
+
+  const snapshotQuery = useQuery<PortfolioSnapshotStatusDto>({
+    queryKey: ['portfolio', 'snapshot'],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/api/v1/portfolio/snapshot', {})
+      if (error || !data) throw new Error('No se pudo cargar el respaldo del portafolio.')
+      return data
+    },
+  })
+
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false)
+
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.POST('/api/v1/portfolio/archive', {})
+      if (error) throw new Error('No se pudo archivar el portafolio.')
+    },
+    onSuccess: async () => {
+      setShowArchiveDialog(false)
+      await queryClient.invalidateQueries({ queryKey: ['portfolio'] })
+    },
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.POST('/api/v1/portfolio/restore', {})
+      if (error) throw new Error('No se pudo restaurar el respaldo.')
+    },
+    onSuccess: async () => {
+      setShowRestoreDialog(false)
+      await queryClient.invalidateQueries({ queryKey: ['portfolio'] })
     },
   })
 
@@ -87,10 +119,6 @@ export function PortafolioPage() {
     },
   })
 
-  if (!accessToken) {
-    return <Navigate to="/login" replace />
-  }
-
   if (portfolioQuery.isLoading) {
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -125,6 +153,9 @@ export function PortafolioPage() {
   const portfolio = portfolioQuery.data
   const positions = portfolio?.positions ?? []
   const hasPositions = positions.length > 0
+  const snapshot = snapshotQuery.data
+  const hasSnapshot = snapshot?.hasSnapshot ?? false
+  const archivedAtLabel = formatSnapshotDate(snapshot?.archivedAt)
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -137,7 +168,7 @@ export function PortafolioPage() {
         </div>
 
         {hasPositions && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <ColumnPicker
               enabledColumns={enabledColumns}
               onEnabledColumnsChange={(columns) => {
@@ -146,9 +177,25 @@ export function PortafolioPage() {
                 })
               }}
             />
+            <Button variant="outline" onClick={() => setShowArchiveDialog(true)}>
+              Archivar portafolio
+            </Button>
           </div>
         )}
       </div>
+
+      {hasSnapshot && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">
+              Tienes un respaldo del {archivedAtLabel}. Puedes restaurarlo cuando quieras.
+            </p>
+            <Button variant="outline" onClick={() => setShowRestoreDialog(true)}>
+              Restaurar respaldo
+            </Button>
+          </div>
+        </div>
+      )}
 
       {!hasPositions ? (
         <div className="space-y-6">
@@ -196,6 +243,44 @@ export function PortafolioPage() {
           />
         </div>
       )}
+
+      <Dialog open={showArchiveDialog} onOpenChange={(open) => { if (!open) setShowArchiveDialog(false) }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>¿Guardar respaldo y vaciar tu portafolio?</DialogTitle>
+            <DialogDescription>
+              Podrás restaurarlo después.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowArchiveDialog(false)} disabled={archiveMutation.isPending}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={() => archiveMutation.mutate()} disabled={archiveMutation.isPending}>
+              {archiveMutation.isPending ? 'Archivando...' : 'Archivar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRestoreDialog} onOpenChange={(open) => { if (!open) setShowRestoreDialog(false) }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>¿Restaurar el respaldo del {archivedAtLabel}?</DialogTitle>
+            <DialogDescription>
+              Tu portafolio actual se perderá si tienes posiciones.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRestoreDialog(false)} disabled={restoreMutation.isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={() => restoreMutation.mutate()} disabled={restoreMutation.isPending}>
+              {restoreMutation.isPending ? 'Restaurando...' : 'Restaurar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
