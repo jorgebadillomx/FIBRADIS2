@@ -1,7 +1,25 @@
 import createClient from 'openapi-fetch'
 import type { paths } from '@fibradis/shared-api-client'
+import { clearMainAccessToken, getStoredMainAccessToken, notifyMainAuthRequired } from '@/modules/auth/mainAuth'
 
 export const apiClient = createClient<paths>({ baseUrl: '' })
+
+apiClient.use({
+  onRequest({ request }) {
+    const token = getStoredMainAccessToken()
+    if (token) {
+      request.headers.set('Authorization', `Bearer ${token}`)
+    }
+    return request
+  },
+  onResponse({ response }) {
+    if (response.status === 401 && getStoredMainAccessToken()) {
+      clearMainAccessToken()
+      notifyMainAuthRequired()
+    }
+    return response
+  },
+})
 
 export async function fetchAllFibras() {
   const { data, error } = await apiClient.GET('/api/v1/fibras', {

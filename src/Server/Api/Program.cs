@@ -46,6 +46,7 @@ app.MapOpsConfig();
 app.MapOpsEditorial();
 app.MapFundamentalsPublic();
 app.MapPortfolio();
+app.MapOpsUsers();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("/ops/{**slug}", "ops/index.html");
@@ -143,6 +144,27 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         j => j.ExecuteAsync(CancellationToken.None),
         FundamentalsPipelineSchedule.GetCronExpression(fundamentalsCadenceMinutes),
         new RecurringJobOptions { TimeZone = mexicoTz });
+}
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (!db.Users.Any())
+    {
+        db.Users.Add(new Domain.Auth.User
+        {
+            Id = Guid.NewGuid(),
+            Email = "dev@fibradis.mx",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Fibradis2026!"),
+            Role = Domain.Auth.UserRole.User,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true,
+        });
+        await db.SaveChangesAsync();
+        var log = app.Services.GetRequiredService<ILogger<Program>>();
+        log.LogInformation("[DEV] Usuario seed creado → dev@fibradis.mx");
+    }
 }
 
 app.Run();

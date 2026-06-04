@@ -3,6 +3,7 @@ import { createRoot, hydrateRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider, hydrate } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router'
 import { router } from './app/router'
+import { AuthProvider } from './modules/auth/AuthContext'
 import './index.css'
 
 declare global {
@@ -22,7 +23,9 @@ const rootEl = document.getElementById('root')!
 const app = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>
   </StrictMode>
 )

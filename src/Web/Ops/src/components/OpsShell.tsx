@@ -13,6 +13,7 @@ const navigationItems = [
   { label: 'Fundamentales', to: '/fundamentals', description: 'Importar, revisar y confirmar datos financieros por FIBRA.' },
   { label: 'Prompts de IA', to: '/ai-prompts', description: 'Templates editables sin redespliegue.' },
   { label: 'Configuración', to: '/config', description: 'Parámetros operativos del sistema sin redespliegue.' },
+  { label: 'Usuarios', to: '/users', description: 'Crear y listar cuentas de usuario del sitio principal.' },
 ]
 
 export function OpsShell() {

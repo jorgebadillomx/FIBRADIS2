@@ -1,5 +1,22 @@
 # Deferred Work
 
+## Deferred from: code review de 6-6-importacion-portafolio-gbm (2026-06-04)
+
+- D1: `snapshotQuery` sin manejo de estado error en `PortafolioPage.tsx:53` — si `/portfolio/snapshot` devuelve 500, el banner de respaldo no aparece silenciosamente aunque exista snapshot. `portfolioQuery` sí tiene error UI.
+- D2: `RestoreSnapshotAsync` carga snapshot fuera de la transacción `PortfolioRepository.cs:56` — mismo TOCTOU que P1; requiere refactorizar a variable local interna al lambda para corregirlo limpiamente.
+- D3: Doble fetch de posiciones en modo merge — endpoint llama `GetByUserIdAsync` para chequeo de duplicados y `MergePositionsAsync` lo llama de nuevo internamente; ventana de race condition estrecha.
+- D4: `handleConfirmDuplicate` en `UploadZone.tsx:98` no captura `selectedFile` al momento de detección — edge case teórico donde el archivo podría limpiarse antes de confirmar.
+- D5: Banner post-archivado reutiliza el de AC-10 — AC-8 especifica texto "Portafolio archivado el [fecha]" pero la UI muestra "Tienes un respaldo del..." sin distinción visual.
+- D6: `currentPositionCount={0}` hardcodeado en `PortafolioPage.tsx:211` — debería ser `positions.length` para consistencia; cosmético.
+
+## Deferred from: code review de 6-5-autenticacion-y-menus-privados (2026-06-03)
+
+- D1: Bootstrap de AuthContext marca status='authenticated' con token stale de sessionStorage cuando refreshMainSession() lanza error de red — patrón consistente con OpsLoginGate, produce flash de UI autenticada seguido de logout por 401 en primera query. (`AuthContext.tsx`)
+- D2: Doble cleanup en logout — clearMainAccessToken/queryClient.clear/setStatus se ejecutan dos veces: una directa en logout() y otra en el handler del evento MAIN_AUTH_REQUIRED_EVENT disparado por logoutMain(). Idempotente, no rompe. (`AuthContext.tsx` + `authApi.ts`)
+- D3: Bloque de seed en Program.cs sin guard de migración — db.Users.Any() lanza si la migración no se ha aplicado, crash en dev recién clonado. Scope: dev-only. (`Program.cs`)
+- D4: GetAllUsersAsync materializa toda la tabla Users sin paginación. Consistente con patrón de otros endpoints Ops (catalogos, etc.). (`UserService.cs`)
+- D5: Access token almacenado en sessionStorage es accesible por JS en caso de XSS — patrón idéntico al Ops SPA, deuda cross-cutting. (`mainAuth.ts`)
+
 ## Deferred from: code review de 6-3-filas-expandibles-con-detalle-de-posicion-y-badge-de-senal-nav (2026-06-03)
 
 - D1: `GetUserId` (PortfolioEndpoints.cs:207) lanza 500 en vez de 401 si el claim NameIdentifier está ausente/malformado — pre-existente de 6-1/6-2.

@@ -1,7 +1,16 @@
-import { Link, Outlet } from 'react-router'
+import { Link, Outlet, useNavigate } from 'react-router'
 import { GlobalSearch } from '@/modules/home/GlobalSearch'
+import { useAuth } from '@/modules/auth/AuthContext'
 
 export function PublicLayout() {
+  const { status, logout } = useAuth()
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    logout()
+    void navigate('/', { replace: true })
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <a
@@ -27,18 +36,32 @@ export function PublicLayout() {
             <a href="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</a>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
             <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
-            <Link to="/portafolio" className="hover:text-foreground transition-colors duration-150">Portafolio</Link>
+            {status === 'authenticated' && (
+              <Link to="/portafolio" className="hover:text-foreground transition-colors duration-150">
+                Portafolio
+              </Link>
+            )}
           </nav>
           <div className="flex-1 min-w-0 flex justify-center">
             <GlobalSearch />
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <a
-              href="/login"
-              className="text-sm font-medium px-3 py-1.5 rounded border border-border text-foreground hover:border-primary hover:text-primary transition-colors duration-150 cursor-pointer"
-            >
-              Iniciar sesión
-            </a>
+            {status === 'authenticated' ? (
+              <button
+                className="text-sm font-medium px-3 py-1.5 rounded border border-border text-foreground hover:border-primary hover:text-primary transition-colors duration-150 cursor-pointer"
+                onClick={handleLogout}
+                type="button"
+              >
+                Cerrar sesión
+              </button>
+            ) : status === 'anonymous' ? (
+              <Link
+                to="/login"
+                className="text-sm font-medium px-3 py-1.5 rounded border border-border text-foreground hover:border-primary hover:text-primary transition-colors duration-150"
+              >
+                Iniciar sesión
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>

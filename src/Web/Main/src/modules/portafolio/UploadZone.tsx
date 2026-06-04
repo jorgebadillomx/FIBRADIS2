@@ -31,16 +31,68 @@ export function UploadZone({ currentPositionCount, onUploadSuccess }: UploadZone
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
+  const [uploadMode, setUploadMode] = useState<'replace' | 'merge'>('replace')
+  const [showModeDialog, setShowModeDialog] = useState(false)
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
   const [errors, setErrors] = useState<RowError[]>([])
   const [isUploading, setIsUploading] = useState(false)
+
+  function resetFileSelection() {
+    setSelectedFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function doUpload(fileArg?: File, mode: 'replace' | 'merge' = uploadMode, force = false) {
+    const file = fileArg ?? selectedFile
+    if (!file) return
+
+    setIsUploading(true)
+    setErrors([])
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const { data, error, response } = await apiClient.POST('/api/v1/portfolio/upload', {
+      params: { query: { mode, force } },
+      body: formData as unknown as { file: string },
+      bodySerializer: () => formData,
+    })
+
+    setIsUploading(false)
+
+    if (response.ok && data) {
+      if ((data as PortfolioUploadResponseDto).duplicateDetected) {
+        setShowDuplicateDialog(true)
+        return
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['portfolio'] })
+      const positionCount = Number((data as PortfolioUploadResponseDto).positionCount)
+      setShowModeDialog(false)
+      setShowDuplicateDialog(false)
+      resetFileSelection()
+      onUploadSuccess(positionCount)
+      return
+    }
+
+    if (error && 'errors' in error) {
+      setErrors((error.errors as RowError[]) ?? [])
+    } else {
+      setErrors([{ rowNumber: 0, ticker: '', message: 'Error inesperado al subir el archivo.' }])
+    }
+  }
 
   function handleFileSelect(file: File) {
     setErrors([])
     setSelectedFile(file)
+
     if (currentPositionCount > 0) {
-      setShowConfirm(true)
+      setUploadMode('replace')
+      setShowModeDialog(true)
+      return
     }
+
+    void doUpload(file, 'replace')
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,45 +109,24 @@ export function UploadZone({ currentPositionCount, onUploadSuccess }: UploadZone
     }
   }
 
-  async function doUpload() {
-    if (!selectedFile) return
-    setIsUploading(true)
-    setErrors([])
-
-    const formData = new FormData()
-    formData.append('file', selectedFile)
-
-    const { data, error, response } = await apiClient.POST('/api/v1/portfolio/upload', {
-      body: formData as unknown as { file: string },
-      bodySerializer: () => formData,
-    })
-
-    setIsUploading(false)
-
-    if (response.ok && data) {
-      await queryClient.invalidateQueries({ queryKey: ['portfolio'] })
-      setSelectedFile(null)
-      const positionCount = Number((data as PortfolioUploadResponseDto).positionCount)
-      onUploadSuccess(positionCount)
-      return
-    }
-
-    if (error && 'errors' in error) {
-      setErrors((error.errors as RowError[]) ?? [])
-    } else {
-      setErrors([{ rowNumber: 0, ticker: '', message: 'Error inesperado al subir el archivo.' }])
-    }
+  function handleConfirmMode() {
+    setShowModeDialog(false)
+    void doUpload(undefined, uploadMode)
   }
 
-  function handleConfirm() {
-    setShowConfirm(false)
-    void doUpload()
+  function handleCancelMode() {
+    setShowModeDialog(false)
+    resetFileSelection()
   }
 
-  function handleCancelConfirm() {
-    setShowConfirm(false)
-    setSelectedFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  function handleConfirmDuplicate() {
+    setShowDuplicateDialog(false)
+    void doUpload(undefined, 'merge', true)
+  }
+
+  function handleCancelDuplicate() {
+    setShowDuplicateDialog(false)
+    resetFileSelection()
   }
 
   return (
@@ -126,15 +157,11 @@ export function UploadZone({ currentPositionCount, onUploadSuccess }: UploadZone
         />
       </div>
 
-      {selectedFile && !showConfirm && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
-          <span className="text-sm text-muted-foreground flex-1 truncate">{selectedFile.name}</span>
-          <Button
-            onClick={doUpload}
-            disabled={isUploading}
-            size="sm"
-          >
-            {isUploading ? 'Cargando...' : 'Cargar portafolio'}
+      {selectedFile && !showModeDialog && !showDuplicateDialog && !isUploading && (
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3">
+          <span className="flex-1 truncate text-sm text-muted-foreground">{selectedFile.name}</span>
+          <Button onClick={() => void doUpload()} size="sm">
+            Cargar portafolio
           </Button>
         </div>
       )}
@@ -148,17 +175,68 @@ export function UploadZone({ currentPositionCount, onUploadSuccess }: UploadZone
         </div>
       )}
 
-      <Dialog open={showConfirm} onOpenChange={(open) => { if (!open) handleCancelConfirm() }}>
+      <Dialog open={showModeDialog} onOpenChange={(open) => { if (!open) handleCancelMode() }}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Reemplazar portafolio</DialogTitle>
+            <DialogTitle>¿Cómo quieres subir este archivo?</DialogTitle>
             <DialogDescription>
-              Esto reemplazará tus {currentPositionCount} posiciones actuales. ¿Continuar?
+              Elige si quieres reemplazar tu portafolio actual o sumar las posiciones del archivo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <button
+              type="button"
+              className={[
+                'w-full rounded-xl border p-4 text-left transition-colors',
+                uploadMode === 'replace'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/40',
+              ].join(' ')}
+              onClick={() => setUploadMode('replace')}
+            >
+              <div className="font-medium">Actualizar portafolio</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Reemplaza todo con el contenido del archivo. Se guardará un respaldo.
+              </div>
+            </button>
+            <button
+              type="button"
+              className={[
+                'w-full rounded-xl border p-4 text-left transition-colors',
+                uploadMode === 'merge'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/40',
+              ].join(' ')}
+              onClick={() => setUploadMode('merge')}
+            >
+              <div className="font-medium">Agregar al portafolio</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Suma los títulos a los existentes y promedia el costo. Útil si tienes varios portafolios en GBM.
+              </div>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelMode} disabled={isUploading}>Cancelar</Button>
+            <Button onClick={handleConfirmMode} disabled={isUploading}>Continuar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDuplicateDialog} onOpenChange={(open) => { if (!open) handleCancelDuplicate() }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Este archivo ya está en tu portafolio</DialogTitle>
+            <DialogDescription>
+              Las posiciones ya existen con los mismos valores. ¿Quieres cargarlo de todas formas?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancelConfirm}>Cancelar</Button>
-            <Button onClick={handleConfirm}>Continuar</Button>
+            <Button variant="outline" onClick={handleCancelDuplicate} disabled={isUploading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmDuplicate} disabled={isUploading}>
+              Cargar de todas formas
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

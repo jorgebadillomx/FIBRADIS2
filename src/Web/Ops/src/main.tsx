@@ -15,6 +15,7 @@ import { FundamentalsPage } from '@/pages/FundamentalsPage'
 import { NewsBodyPage } from '@/pages/NewsBodyPage'
 import { AiCallLogsPage } from '@/pages/AiCallLogsPage'
 import { PipelineLogsPage } from '@/pages/PipelineLogsPage'
+import { UsersPage } from '@/pages/UsersPage'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: 'ai-prompts', element: <AiPromptsPage /> },
       { path: 'fundamentals', element: <FundamentalsPage /> },
       { path: 'config', element: <ConfigPage /> },
+      { path: 'users', element: <UsersPage /> },
       { path: '*', element: <Navigate replace to="/ai-config" /> },
     ],
   },

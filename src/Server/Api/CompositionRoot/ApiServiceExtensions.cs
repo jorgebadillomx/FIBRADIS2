@@ -72,6 +72,7 @@ public static class ApiServiceExtensions
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IFibraRepository, FibraRepository>();
         builder.Services.AddScoped<IMarketRepository, MarketRepository>();
         builder.Services.AddScoped<MarketPipelineJob>();

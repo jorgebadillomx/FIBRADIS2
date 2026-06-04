@@ -6,6 +6,7 @@ using Application.Market;
 using Application.Ops;
 using Application.Portfolio;
 using Domain.Market;
+using Microsoft.AspNetCore.Mvc;
 using SharedApiContracts.Portfolio;
 
 namespace Api.Endpoints.Private;
@@ -30,6 +31,43 @@ public static class PortfolioEndpoints
             return Results.Ok(new { hasPortfolio = count > 0, positionCount = count });
         })
         .Produces<object>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/snapshot", async (
+            IPortfolioRepository portfolioRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var userId = GetUserId(ctx);
+            var snapshot = await portfolioRepo.GetSnapshotAsync(userId, ct);
+            return Results.Ok(new PortfolioSnapshotStatusDto(snapshot is not null, snapshot?.ArchivedAt));
+        })
+        .Produces<PortfolioSnapshotStatusDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/archive", async (
+            IPortfolioRepository portfolioRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var userId = GetUserId(ctx);
+            await portfolioRepo.ArchivePortfolioAsync(userId, ct);
+            return Results.NoContent();
+        })
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/restore", async (
+            IPortfolioRepository portfolioRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var userId = GetUserId(ctx);
+            var restored = await portfolioRepo.RestoreSnapshotAsync(userId, ct);
+            return restored ? Results.NoContent() : Results.NotFound();
+        })
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         group.MapGet("/", async (
@@ -163,7 +201,9 @@ public static class PortfolioEndpoints
             IFibraRepository fibraRepo,
             IOperationalConfigRepository configRepo,
             HttpContext ctx,
-            CancellationToken ct) =>
+            CancellationToken ct,
+            [FromQuery] string mode = "replace",
+            [FromQuery] bool force = false) =>
         {
             var userId = GetUserId(ctx);
             var config = await configRepo.GetAsync(ct);
@@ -192,6 +232,16 @@ public static class PortfolioEndpoints
                 CostoTotalCompra = p.CostoTotalCompra,
                 UploadedAt = DateTimeOffset.UtcNow,
             }).ToList();
+
+            if (string.Equals(mode, "merge", StringComparison.OrdinalIgnoreCase))
+            {
+                var existingPositions = await portfolioRepo.GetByUserIdAsync(userId, ct);
+                if (!force && AreDuplicatePositions(positions, existingPositions))
+                    return Results.Ok(new PortfolioUploadResponseDto(0) { DuplicateDetected = true });
+
+                await portfolioRepo.MergePositionsAsync(userId, positions, ct);
+                return Results.Ok(new PortfolioUploadResponseDto(positions.Count));
+            }
 
             await portfolioRepo.UpsertPortfolioAsync(userId, positions, ct);
             return Results.Ok(new PortfolioUploadResponseDto(positions.Count));
@@ -291,5 +341,19 @@ public static class PortfolioEndpoints
             .Where(column => !string.IsNullOrWhiteSpace(column) && allowed.Contains(column))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private static bool AreDuplicatePositions(
+        IReadOnlyList<Domain.Portfolio.PortfolioPosition> parsed,
+        IReadOnlyList<Domain.Portfolio.PortfolioPosition> existing)
+    {
+        if (parsed.Count != existing.Count)
+            return false;
+
+        var existingByFibra = existing.ToDictionary(p => p.FibraId);
+        return parsed.All(position =>
+            existingByFibra.TryGetValue(position.FibraId, out var current)
+            && current.Titulos == position.Titulos
+            && Math.Abs(current.CostoPromedio - position.CostoPromedio) < 0.001m);
     }
 }

@@ -41,6 +41,15 @@ public class PortfolioUploadService : IPortfolioUploadService
     {
         using var workbook = new XLWorkbook(stream);
         var ws = workbook.Worksheets.First();
+        var a1 = ws.Cell(1, 1).GetString().Trim();
+
+        if (a1.Equals("Emisora/Fondo", StringComparison.OrdinalIgnoreCase)
+            || a1.StartsWith("Mercado de Capitales", StringComparison.OrdinalIgnoreCase))
+            return ParseGbmOfficial(ws, activeFibras, commissionFactor);
+
+        if (a1.Equals("Emisora", StringComparison.OrdinalIgnoreCase))
+            return ParseGbmPasted(ws, activeFibras, commissionFactor);
+
         var lastCol = ws.LastColumnUsed()?.ColumnNumber() ?? 0;
 
         var headers = ws.Row(1)
@@ -79,6 +88,143 @@ public class PortfolioUploadService : IPortfolioUploadService
 
         return ValidateAndBuild(rows, activeFibras, commissionFactor);
     }
+
+    private static PortfolioUploadResult ParseGbmOfficial(
+        IXLWorksheet ws,
+        IReadOnlyList<Fibra> activeFibras,
+        decimal commissionFactor)
+    {
+        var rows = new List<RawRow>();
+        var fibraByTicker = activeFibras.ToDictionary(
+            f => NormalizeTicker(f.Ticker),
+            f => f,
+            StringComparer.OrdinalIgnoreCase);
+        var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+
+        for (var r = 2; r <= lastRow; r++)
+        {
+            var rawTicker = ws.Cell(r, 1).GetString().Replace("\u00A0", " ").Trim();
+            if (IsGbmOfficialSectionHeader(rawTicker))
+                continue;
+
+            var ticker = NormalizeTicker(rawTicker);
+            if (string.IsNullOrWhiteSpace(ticker))
+                continue;
+
+            if (ticker.Equals("EFEC.", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!fibraByTicker.TryGetValue(ticker, out var fibra))
+                continue;
+
+            var qtyCell = ws.Cell(r, 2);
+            var qtyStr = qtyCell.GetString()?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(qtyStr) && qtyCell.DataType == XLDataType.Number)
+                qtyStr = qtyCell.GetDouble().ToString(CultureInfo.InvariantCulture);
+
+            var avgCostCell = ws.Cell(r, 3);
+            var avgCostStr = avgCostCell.GetString()?.Trim() ?? string.Empty;
+            if (TryParseCurrencyString(avgCostStr, out var currencyValue))
+            {
+                avgCostStr = currencyValue.ToString(CultureInfo.InvariantCulture);
+            }
+            else if (string.IsNullOrWhiteSpace(avgCostStr) && avgCostCell.DataType == XLDataType.Number)
+            {
+                avgCostStr = avgCostCell.GetDouble().ToString(CultureInfo.InvariantCulture);
+            }
+
+            if (string.IsNullOrWhiteSpace(qtyStr) || string.IsNullOrWhiteSpace(avgCostStr))
+                continue;
+
+            rows.Add(new RawRow(r, fibra.Ticker, qtyStr, avgCostStr));
+        }
+
+        return ValidateAndBuild(rows, activeFibras, commissionFactor);
+    }
+
+    private static PortfolioUploadResult ParseGbmPasted(
+        IXLWorksheet ws,
+        IReadOnlyList<Fibra> activeFibras,
+        decimal commissionFactor)
+    {
+        var rows = new List<RawRow>();
+        var fibraByTicker = activeFibras.ToDictionary(
+            f => NormalizeTicker(f.Ticker),
+            f => f,
+            StringComparer.OrdinalIgnoreCase);
+        var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+        RawRow? pendingData = null;
+
+        for (var r = 2; r <= lastRow; r++)
+        {
+            var tickerCell = ws.Cell(r, 1).GetString()
+                .Replace("&nbsp;", string.Empty)
+                .Replace("\u00A0", string.Empty)
+                .Trim();
+            var qtyCell = ws.Cell(r, 2);
+            var avgCostCell = ws.Cell(r, 3);
+
+            var hasNumericData = qtyCell.DataType == XLDataType.Number || avgCostCell.DataType == XLDataType.Number;
+            var isDataRow = string.IsNullOrWhiteSpace(tickerCell) && hasNumericData;
+
+            if (isDataRow)
+            {
+                var qtyStr = qtyCell.DataType == XLDataType.Number
+                    ? qtyCell.GetDouble().ToString(CultureInfo.InvariantCulture)
+                    : qtyCell.GetString()?.Trim() ?? string.Empty;
+
+                var avgCostStr = avgCostCell.GetString()?.Trim() ?? string.Empty;
+                if (TryParseCurrencyString(avgCostStr, out var currencyValue))
+                {
+                    avgCostStr = currencyValue.ToString(CultureInfo.InvariantCulture);
+                }
+                else if (string.IsNullOrWhiteSpace(avgCostStr) && avgCostCell.DataType == XLDataType.Number)
+                {
+                    avgCostStr = avgCostCell.GetDouble().ToString(CultureInfo.InvariantCulture);
+                }
+
+                pendingData = new RawRow(r, string.Empty, qtyStr, avgCostStr);
+                continue;
+            }
+
+            if (pendingData is not null && !string.IsNullOrWhiteSpace(tickerCell))
+            {
+                var ticker = NormalizeTicker(tickerCell);
+                if (fibraByTicker.TryGetValue(ticker, out var fibra))
+                    rows.Add(pendingData with { Ticker = fibra.Ticker });
+
+                pendingData = null;
+                continue;
+            }
+
+            pendingData = null;
+        }
+
+        return ValidateAndBuild(rows, activeFibras, commissionFactor);
+    }
+
+    private static bool IsGbmOfficialSectionHeader(string rawTicker)
+        => rawTicker.StartsWith("Mercado de Capitales", StringComparison.OrdinalIgnoreCase)
+            || rawTicker.Equals("Emisora/Fondo", StringComparison.OrdinalIgnoreCase)
+            || rawTicker.Equals("Efectivo", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseCurrencyString(string raw, out decimal value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(raw) || raw == "-")
+            return false;
+
+        var cleaned = raw
+            .Replace("$", string.Empty)
+            .Replace(",", string.Empty)
+            .Replace("\u00A0", string.Empty)
+            .Trim();
+
+        return decimal.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static string NormalizeTicker(string raw)
+        => raw.Replace(" ", string.Empty).Trim();
 
     private static PortfolioUploadResult ParseCsv(
         Stream stream, IReadOnlyList<Fibra> activeFibras, decimal commissionFactor)

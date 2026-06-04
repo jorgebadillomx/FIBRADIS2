@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Application.Portfolio;
 using Domain.Portfolio;
 using Infrastructure.Persistence.SqlServer;
@@ -7,6 +8,8 @@ namespace Infrastructure.Persistence.Repositories.Portfolio;
 
 public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
 {
+    private static readonly JsonSerializerOptions SnapshotJsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task<IReadOnlyList<PortfolioPosition>> GetByUserIdAsync(Guid userId, CancellationToken ct)
         => await db.PortfolioPositions
             .Where(p => p.UserId == userId)
@@ -18,16 +21,105 @@ public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
         IReadOnlyList<PortfolioPosition> positions,
         CancellationToken ct)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await ExecuteInTransactionAsync(async () =>
+        {
+            var existing = await GetByUserIdAsync(userId, ct);
+            if (existing.Count > 0)
+            {
+                await UpsertSnapshotAsync(userId, existing, DateTimeOffset.UtcNow, ct);
+                db.PortfolioPositions.RemoveRange(existing);
+            }
 
-        await db.PortfolioPositions
-            .Where(p => p.UserId == userId)
-            .ExecuteDeleteAsync(ct);
+            db.PortfolioPositions.AddRange(positions);
+            await db.SaveChangesAsync(ct);
+        }, ct);
+    }
 
-        db.PortfolioPositions.AddRange(positions);
-        await db.SaveChangesAsync(ct);
+    public async Task ArchivePortfolioAsync(Guid userId, CancellationToken ct)
+    {
+        await ExecuteInTransactionAsync(async () =>
+        {
+            var positions = await GetByUserIdAsync(userId, ct);
+            if (positions.Count == 0)
+                return;
 
-        await tx.CommitAsync(ct);
+            await UpsertSnapshotAsync(userId, positions, DateTimeOffset.UtcNow, ct);
+            db.PortfolioPositions.RemoveRange(positions);
+
+            await db.SaveChangesAsync(ct);
+        }, ct);
+    }
+
+    public async Task<bool> RestoreSnapshotAsync(Guid userId, CancellationToken ct)
+    {
+        var snapshot = await GetSnapshotAsync(userId, ct);
+        if (snapshot is null)
+            return false;
+
+        var snapshotPositions = DeserializeSnapshotPositions(snapshot.PositionsJson);
+        if (snapshotPositions is null)
+            return false;
+
+        await ExecuteInTransactionAsync(async () =>
+        {
+            var activePositions = await GetByUserIdAsync(userId, ct);
+            if (activePositions.Count > 0)
+                db.PortfolioPositions.RemoveRange(activePositions);
+
+            db.PortfolioPositions.AddRange(snapshotPositions.Select(position => new PortfolioPosition
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                FibraId = position.FibraId,
+                Titulos = position.Titulos,
+                CostoPromedio = position.CostoPromedio,
+                CostoTotalCompra = position.CostoTotalCompra,
+                UploadedAt = position.UploadedAt,
+            }));
+
+            db.PortfolioSnapshots.Remove(snapshot);
+            await db.SaveChangesAsync(ct);
+        }, ct);
+        return true;
+    }
+
+    public async Task<PortfolioSnapshot?> GetSnapshotAsync(Guid userId, CancellationToken ct)
+        => await db.PortfolioSnapshots
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
+
+    public async Task MergePositionsAsync(
+        Guid userId,
+        IReadOnlyList<PortfolioPosition> positions,
+        CancellationToken ct)
+    {
+        if (positions.Count == 0)
+            return;
+
+        await ExecuteInTransactionAsync(async () =>
+        {
+            var existingPositions = await GetByUserIdAsync(userId, ct);
+            var existingByFibra = existingPositions.ToDictionary(p => p.FibraId);
+
+            foreach (var position in positions)
+            {
+                if (existingByFibra.TryGetValue(position.FibraId, out var existing))
+                {
+                    var totalTitulos = existing.Titulos + position.Titulos;
+                    existing.CostoPromedio = (
+                        (existing.Titulos * existing.CostoPromedio)
+                        + (position.Titulos * position.CostoPromedio))
+                        / totalTitulos;
+                    existing.Titulos = totalTitulos;
+                    existing.CostoTotalCompra += position.CostoTotalCompra;
+                    existing.UploadedAt = position.UploadedAt;
+                    continue;
+                }
+
+                db.PortfolioPositions.Add(position);
+            }
+
+            await db.SaveChangesAsync(ct);
+        }, ct);
     }
 
     public async Task<int> GetPositionCountByUserIdAsync(Guid userId, CancellationToken ct)
@@ -95,4 +187,70 @@ public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
         await db.SaveChangesAsync(ct);
         return true;
     }
+
+    private async Task UpsertSnapshotAsync(
+        Guid userId,
+        IReadOnlyList<PortfolioPosition> positions,
+        DateTimeOffset archivedAt,
+        CancellationToken ct)
+    {
+        var snapshotJson = JsonSerializer.Serialize(
+            positions.Select(position => new SnapshotPositionDto(
+                position.FibraId,
+                position.Titulos,
+                position.CostoPromedio,
+                position.CostoTotalCompra,
+                position.UploadedAt)).ToArray(),
+            SnapshotJsonOptions);
+
+        var snapshot = await db.PortfolioSnapshots
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
+
+        if (snapshot is null)
+        {
+            db.PortfolioSnapshots.Add(new PortfolioSnapshot
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                ArchivedAt = archivedAt,
+                PositionsJson = snapshotJson,
+            });
+            return;
+        }
+
+        snapshot.ArchivedAt = archivedAt;
+        snapshot.PositionsJson = snapshotJson;
+    }
+
+    private async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct)
+    {
+        if (!db.Database.IsRelational())
+        {
+            await action();
+            return;
+        }
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await action();
+        await tx.CommitAsync(ct);
+    }
+
+    private static IReadOnlyList<SnapshotPositionDto>? DeserializeSnapshotPositions(string positionsJson)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<List<SnapshotPositionDto>>(positionsJson, SnapshotJsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private sealed record SnapshotPositionDto(
+        Guid FibraId,
+        int Titulos,
+        decimal CostoPromedio,
+        decimal CostoTotalCompra,
+        DateTimeOffset UploadedAt);
 }
