@@ -4,4 +4,7 @@ namespace SharedApiContracts.Auth;
 
 public sealed record CreateUserRequest(
     [Required, EmailAddress] string Email,
-    [Required, MinLength(8)] string Password);
+    [Required] string Password,
+    [Required] string Role,
+    decimal? Pago,
+    DateTime? FechaPago);

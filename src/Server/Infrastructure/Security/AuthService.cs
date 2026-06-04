@@ -6,16 +6,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Security;
 
-public class AuthService(AppDbContext db, ITokenService tokenService) : IAuthService
+public class AuthService(AppDbContext db, ITokenService tokenService, IEmailEncryptor emailEncryptor) : IAuthService
 {
     public async Task<(string AccessToken, string RefreshToken)> LoginAsync(
         string email, string password, CancellationToken ct = default)
     {
+        var encryptedEmail = emailEncryptor.Encrypt(email.Trim().ToLowerInvariant());
+
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Email == email && u.IsActive, ct);
+            .FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             throw new InvalidCredentialsException();
+
+        if (!user.IsActive)
+            throw new AccountDisabledException();
 
         return await IssueTokensAsync(user, ct);
     }

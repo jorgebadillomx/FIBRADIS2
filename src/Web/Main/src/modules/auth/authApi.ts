@@ -16,11 +16,14 @@ export async function loginMain(email: string, password: string): Promise<void> 
   })
 
   if (error) {
-    const detail =
-      error && typeof error === 'object' && 'detail' in error && typeof error.detail === 'string'
-        ? error.detail
+    const domainCode =
+      error && typeof error === 'object' && 'domainCode' in error && typeof error.domainCode === 'string'
+        ? error.domainCode
         : null
-    throw new Error(detail ?? 'Credenciales incorrectas. Verifica tu correo y contraseña.')
+    if (domainCode === 'ACCOUNT_DISABLED') {
+      throw new Error('Tu cuenta está deshabilitada. Contacta al administrador.')
+    }
+    throw new Error('Correo o contraseña incorrectos.')
   }
 
   const token = data?.accessToken?.trim()
