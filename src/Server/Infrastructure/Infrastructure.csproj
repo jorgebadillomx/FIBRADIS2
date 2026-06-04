@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <PackageReference Include="AngleSharp" />
+    <PackageReference Include="ClosedXML" />
+    <PackageReference Include="CsvHelper" />
     <PackageReference Include="PdfPig" />
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />

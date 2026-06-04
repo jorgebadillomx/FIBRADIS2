@@ -10,25 +10,23 @@ using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace Infrastructure.Tests.Jobs.Fundamentals;
 
 public class FundamentalsAutomationServiceTests
 {
     [Fact]
-    public async Task ExecuteAsync_WhenListingsEmpty_ReturnsZeroCountsAndNoRecords()
+    public async Task ExecuteAsync_WhenNoCandidates_ReturnsZeroCountsAndNoRecords()
     {
         await using var db = CreateDbContext();
         var fibra = SeedFibra(db, "FUNO11");
-        var service = BuildService(
-            db,
-            new FakeAmefibraDiscoveryClient([], "", DateTimeOffset.UtcNow, []),
-            [fibra]);
+        var source = new FakeDiscoverySource("AMEFIBRA", [], ["FUNO11"]);
+        var service = BuildService(db, [source], [fibra]);
 
         var result = await service.ExecuteAsync(CancellationToken.None);
 
-        Assert.Equal(0, result.FibrasScanned);
-        Assert.Equal(0, result.ReportsDetected);
         Assert.Equal(0, result.NewReports);
         Assert.Equal(0, result.Errors);
         Assert.Empty(await db.FundamentalSourceManifests.ToListAsync());
@@ -36,18 +34,18 @@ public class FundamentalsAutomationServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenListingIsNew_CreatesProcessedRecordAndManifest()
+    public async Task ExecuteAsync_WhenCandidateIsNew_CreatesProcessedRecordAndManifest()
     {
         await using var db = CreateDbContext();
         var fibra = SeedFibra(db, "FUNO11");
-        var service = BuildService(
-            db,
-            new FakeAmefibraDiscoveryClient(
-                [new AmefibraListingItem("2022 Reporte T4 FUNO", "https://amefibra.com/download/funo-q4-2022/", "https://amefibra.com/download/funo-q4-2022/?wpdmdl=1&refresh=abc")],
-                "https://amefibra.com/download/funo-q4-2022/",
-                DateTimeOffset.Parse("2023-02-28T00:00:00Z"),
-                ReadFixturePdf()),
-            [fibra]);
+        var candidate = new FundamentalsDiscoveryCandidate(
+            "AMEFIBRA", "2022 Reporte T4 FUNO",
+            "https://amefibra.com/download/funo-q4-2022/",
+            "https://amefibra.com/download/funo-q4-2022/report.pdf",
+            "Q4-2022", "quarterly", DateTimeOffset.Parse("2023-02-28T00:00:00Z"));
+
+        var source = new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11"]);
+        var service = BuildService(db, [source], [fibra], pdfContent: ReadFixturePdf());
 
         var result = await service.ExecuteAsync(CancellationToken.None);
 
@@ -57,6 +55,7 @@ public class FundamentalsAutomationServiceTests
         var record = await db.FundamentalRecords.SingleAsync();
         Assert.Equal("processed", record.Status);
         Assert.Equal("api", record.ProcessingMode);
+        Assert.Equal("system:AMEFIBRA", record.ImportedBy);
         Assert.False(record.IsPossibleUpdate);
     }
 
@@ -83,14 +82,13 @@ public class FundamentalsAutomationServiceTests
         });
         await db.SaveChangesAsync();
 
-        var service = BuildService(
-            db,
-            new FakeAmefibraDiscoveryClient(
-                [new AmefibraListingItem("2022 Reporte T4 FUNO", "https://amefibra.com/download/funo-q4-2022/", "https://amefibra.com/download/funo-q4-2022/?wpdmdl=1&refresh=abc")],
-                "https://amefibra.com/download/funo-q4-2022/",
-                DateTimeOffset.Parse("2023-02-28T00:00:00Z"),
-                ReadFixturePdf()),
-            [fibra]);
+        var candidate = new FundamentalsDiscoveryCandidate(
+            "AMEFIBRA", "2022 Reporte T4 FUNO",
+            "https://amefibra.com/download/funo-q4-2022/",
+            "https://amefibra.com/download/funo-q4-2022/report.pdf",
+            "Q4-2022", "quarterly", null);
+        var source = new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11"]);
+        var service = BuildService(db, [source], [fibra]);
 
         var result = await service.ExecuteAsync(CancellationToken.None);
 
@@ -134,20 +132,18 @@ public class FundamentalsAutomationServiceTests
         });
         await db.SaveChangesAsync();
 
-        var service = BuildService(
-            db,
-            new FakeAmefibraDiscoveryClient(
-                [new AmefibraListingItem("2022 Reporte T4 FUNO", "https://amefibra.com/download/funo-q4-2022-v2/", "https://amefibra.com/download/funo-q4-2022-v2/?wpdmdl=2&refresh=def")],
-                "https://amefibra.com/download/funo-q4-2022-v2/",
-                DateTimeOffset.Parse("2023-03-01T00:00:00Z"),
-                ReadFixturePdf()),
-            [fibra]);
+        var candidate = new FundamentalsDiscoveryCandidate(
+            "AMEFIBRA", "2022 Reporte T4 FUNO v2",
+            "https://amefibra.com/download/funo-q4-2022-v2/",
+            "https://amefibra.com/download/funo-q4-2022-v2/report.pdf",
+            "Q4-2022", "quarterly", null);
+        var source = new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11"]);
+        var service = BuildService(db, [source], [fibra], pdfContent: ReadFixturePdf());
 
         var result = await service.ExecuteAsync(CancellationToken.None);
 
         Assert.Equal(1, result.RecordsProcessed);
         Assert.Equal(2, await db.FundamentalRecords.CountAsync());
-
         var records = await db.FundamentalRecords.OrderBy(x => x.CapturedAt).ToListAsync();
         Assert.NotNull(records[0].DeletedAt);
         Assert.Equal("processed", records[1].Status);
@@ -155,69 +151,102 @@ public class FundamentalsAutomationServiceTests
         Assert.Equal(1, result.PossibleUpdates);
     }
 
+    // T7.5 — multi-source tests
+
     [Fact]
-    public async Task ExecuteAsync_WhenFibrasPrologisAndPlusArePresent_FibraPlusTitleMatchesFibraPlus()
+    public async Task ExecuteAsync_TwoSources_OneNewCandidateEach_CreatesTwoRecords()
     {
         await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "FHIPO14");
 
-        var prologis = new Fibra
-        {
-            Id = Guid.NewGuid(),
-            Ticker = "FIBRAPL14",
-            YahooTicker = "FIBRAPL14.MX",
-            FullName = "Fibra Prologis",
-            ShortName = "Prologis",
-            Currency = "MXN",
-            Market = "BMV",
-            Sector = "Industrial",
-            State = FibraState.Active,
-            NameVariants = ["Fibra Prologis", "Prologis", "FIBRAPL"],
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
-        var plus = new Fibra
-        {
-            Id = Guid.NewGuid(),
-            Ticker = "FPLUS16",
-            YahooTicker = "FPLUS16.MX",
-            FullName = "Fibra Plus",
-            ShortName = "Fibra Plus",
-            Currency = "MXN",
-            Market = "BMV",
-            Sector = "Diversificado",
-            State = FibraState.Active,
-            NameVariants = ["Fibra Plus", "FPLUS", "FPLUS16"],
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
-        db.Fibras.AddRange(prologis, plus);
-        await db.SaveChangesAsync();
+        var source1 = new FakeDiscoverySource("official:FHIPO14", [
+            new FundamentalsDiscoveryCandidate("official:FHIPO14", "1T26 FHipo", "https://fhipo.com/1t26.pdf", "https://fhipo.com/1t26.pdf", "Q1-2026", "quarterly", null)
+        ], ["FHIPO14"]);
 
-        // Prologis seeded first — reproduces the original bug where Prologis stole Plus matches
-        var service = BuildService(
-            db,
-            new FakeAmefibraDiscoveryClient(
-                [new AmefibraListingItem("Fibra Plus Reporte Trimestral T4 2023", "https://amefibra.com/fibra-plus-q4-2023/", "https://amefibra.com/fibra-plus-q4-2023/?wpdmdl=99")],
-                "https://amefibra.com/fibra-plus-q4-2023/",
-                DateTimeOffset.Parse("2024-02-15T00:00:00Z"),
-                ReadFixturePdf()),
-            [prologis, plus]);
+        var source2 = new FakeDiscoverySource("official:FHIPO14-v2", [
+            new FundamentalsDiscoveryCandidate("official:FHIPO14-v2", "4T25 FHipo", "https://fhipo.com/4t25.pdf", "https://fhipo.com/4t25.pdf", "Q4-2025", "quarterly", null)
+        ], ["FHIPO14"]);
+
+        var service = BuildService(db, [source1, source2], [fibra], pdfContent: ReadFixturePdf());
+
+        var result = await service.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.NewReports);
+        Assert.Equal(2, result.RecordsProcessed);
+        Assert.Equal(2, await db.FundamentalRecords.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_SameFibraAndPeriodFromTwoSources_SecondMarkedPossibleUpdate()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "FHIPO14");
+
+        var source1 = new FakeDiscoverySource("official:FHIPO14-a", [
+            new FundamentalsDiscoveryCandidate("official:FHIPO14-a", "1T26 FHipo via A", "https://fhipo.com/a/1t26.pdf", "https://fhipo.com/a/1t26.pdf", "Q1-2026", "quarterly", null)
+        ], ["FHIPO14"]);
+
+        var source2 = new FakeDiscoverySource("official:FHIPO14-b", [
+            new FundamentalsDiscoveryCandidate("official:FHIPO14-b", "1T26 FHipo via B", "https://fhipo.com/b/1t26.pdf", "https://fhipo.com/b/1t26.pdf", "Q1-2026", "quarterly", null)
+        ], ["FHIPO14"]);
+
+        var service = BuildService(db, [source1, source2], [fibra], pdfContent: ReadFixturePdf());
+
+        var result = await service.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(1, result.NewReports);
+        Assert.Equal(1, result.PossibleUpdates);
+        Assert.Equal(2, result.RecordsProcessed);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenSourceThrows_ErrorIsolatedAndRestContinues()
+    {
+        await using var db = CreateDbContext();
+        var fibra1 = SeedFibra(db, "FHIPO14");
+        var fibra2 = SeedFibra(db, "FCFE18", "CFE Fibra E");
+
+        var failingSource = new FakeDiscoverySource("failing", null /* throws */, ["FHIPO14"]);
+        var goodSource = new FakeDiscoverySource("official:FCFE18", [
+            new FundamentalsDiscoveryCandidate("official:FCFE18", "1T26 FCFE", "https://cfecapital.com.mx/1t26.pdf", "https://cfecapital.com.mx/1t26.pdf", "Q1-2026", "quarterly", null)
+        ], ["FCFE18"]);
+
+        var service = BuildService(db, [failingSource, goodSource], [fibra1, fibra2], pdfContent: ReadFixturePdf());
+
+        var result = await service.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(1, result.Errors);
+        Assert.Equal(1, result.NewReports);
+        Assert.Equal(1, await db.FundamentalRecords.CountAsync());
+    }
+
+    // T7.6 — regression: EmptySource returns [] without crashing
+    [Fact]
+    public async Task ExecuteAsync_WhenSourceReturnsEmpty_NoManifestCreated()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "SOMA21");
+        var source = new FakeDiscoverySource("official:SOMA21", [], ["SOMA21"]);
+        var service = BuildService(db, [source], [fibra]);
 
         await service.ExecuteAsync(CancellationToken.None);
 
-        var record = await db.FundamentalRecords.SingleAsync();
-        Assert.Equal(plus.Id, record.FibraId);
+        Assert.Empty(await db.FundamentalSourceManifests.ToListAsync());
     }
 
     private static FundamentalsAutomationService BuildService(
         AppDbContext db,
-        IAmefibraDiscoveryClient discoveryClient,
-        IReadOnlyList<Fibra> fibras)
+        IEnumerable<IFundamentalsDiscoverySource> sources,
+        IReadOnlyList<Fibra> fibras,
+        byte[]? pdfContent = null)
         => new(
-            discoveryClient,
+            sources,
             new FakeFundamentalsFibraRepository(fibras),
             new FundamentalRepository(db),
             new FundamentalSourceManifestRepository(db),
             new FakeKpiExtractorService(),
             new FakePipelineErrorLogRepository(),
+            new FakePdfHttpClientFactory(pdfContent ?? []),
             new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Uploads:BasePath"] = Path.Combine(Path.GetTempPath(), $"fibradis-tests-{Guid.NewGuid():N}")
@@ -229,20 +258,20 @@ public class FundamentalsAutomationServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options);
 
-    private static Fibra SeedFibra(AppDbContext db, string ticker)
+    private static Fibra SeedFibra(AppDbContext db, string ticker, string fullName = "Test Fibra")
     {
         var fibra = new Fibra
         {
             Id = Guid.NewGuid(),
             Ticker = ticker,
             YahooTicker = $"{ticker}.MX",
-            FullName = "Fibra Uno",
-            ShortName = "FUNO",
+            FullName = fullName,
+            ShortName = ticker,
             Currency = "MXN",
             Market = "BMV",
             Sector = "Diversificado",
             State = FibraState.Active,
-            NameVariants = ["Fibra Uno", "FUNO"],
+            NameVariants = [ticker],
             CreatedAt = DateTimeOffset.UtcNow,
         };
         db.Fibras.Add(fibra);
@@ -254,23 +283,42 @@ public class FundamentalsAutomationServiceTests
         => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Fixtures", "amefibra-sample.pdf"));
 }
 
-internal sealed class FakeAmefibraDiscoveryClient(
-    IReadOnlyList<AmefibraListingItem> listings,
-    string packageUrl,
-    DateTimeOffset publishedAt,
-    byte[] pdfContent) : IAmefibraDiscoveryClient
+// FakeDiscoverySource — returns pre-configured candidates; null candidates list simulates exception
+internal sealed class FakeDiscoverySource(
+    string sourceName,
+    IReadOnlyList<FundamentalsDiscoveryCandidate>? candidates,
+    IReadOnlyList<string> tickers) : IFundamentalsDiscoverySource
 {
-    public Task<IReadOnlyList<AmefibraListingItem>> GetListingItemsAsync(CancellationToken ct)
-        => Task.FromResult(listings);
+    public string SourceName => sourceName;
+    public IReadOnlyList<string> SupportedTickers => tickers;
 
-    public Task<AmefibraPackageDetails> GetPackageDetailsAsync(string requestedPackageUrl, CancellationToken ct)
-        => Task.FromResult(new AmefibraPackageDetails(
-            requestedPackageUrl,
-            listings.First(x => x.PackageUrl == requestedPackageUrl).DownloadUrl,
-            requestedPackageUrl == packageUrl ? publishedAt : null));
+    public Task<IReadOnlyList<FundamentalsDiscoveryCandidate>> DiscoverCandidatesAsync(Fibra fibra, CancellationToken ct)
+    {
+        if (candidates is null)
+            throw new InvalidOperationException($"Simulated failure in source {sourceName}");
+        return Task.FromResult(candidates);
+    }
+}
 
-    public Task<(byte[] Content, string? PdfUrl, string? FileName)> DownloadPdfAsync(string requestedPackageUrl, string downloadUrl, CancellationToken ct)
-        => Task.FromResult<(byte[] Content, string? PdfUrl, string? FileName)>((pdfContent, $"{requestedPackageUrl.TrimEnd('/')}.pdf", "report.pdf"));
+// Fake IHttpClientFactory that returns an HttpClient returning fixed PDF bytes
+internal sealed class FakePdfHttpClientFactory(byte[] pdfContent) : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name)
+        => new(new FakePdfHandler(pdfContent));
+
+    private sealed class FakePdfHandler(byte[] content) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(content),
+                RequestMessage = request,
+            };
+            response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+            return Task.FromResult(response);
+        }
+    }
 }
 
 internal sealed class FakeFundamentalsFibraRepository(IReadOnlyList<Fibra> fibras) : IFibraRepository

@@ -86,6 +86,39 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
         return await query.OrderByDescending(d => d.PaymentDate).ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Distribution>> GetDistributionsByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds,
+        int days,
+        CancellationToken ct = default)
+    {
+        if (fibraIds.Count == 0)
+            return [];
+
+        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-days);
+        return await db.Distributions
+            .Where(d => fibraIds.Contains(d.FibraId) && d.PaymentDate >= cutoff)
+            .OrderByDescending(d => d.PaymentDate)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, decimal>> GetWeek52AvgByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds,
+        int days,
+        CancellationToken ct = default)
+    {
+        if (fibraIds.Count == 0)
+            return new Dictionary<Guid, decimal>();
+
+        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-days);
+        var result = await db.DailySnapshots
+            .Where(s => fibraIds.Contains(s.FibraId) && s.Date >= cutoff && s.Close.HasValue)
+            .GroupBy(s => s.FibraId)
+            .Select(g => new { FibraId = g.Key, Avg = g.Average(s => s.Close!.Value) })
+            .ToListAsync(ct);
+
+        return result.ToDictionary(r => r.FibraId, r => r.Avg);
+    }
+
     public async Task AddDistributionAsync(Distribution dist, CancellationToken ct = default)
     {
         db.Distributions.Add(dist);

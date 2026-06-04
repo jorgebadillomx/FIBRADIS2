@@ -265,6 +265,7 @@ namespace Infrastructure.Migrations
                             InvestorUrl = "https://fibra.uno/inversionistas",
                             Market = "BMV",
                             NameVariants = "[\"Fibra Uno\",\"FUNO\"]",
+                            ReportsUrl = "https://funo.mx/inversionistas/suplementos-informativos",
                             Sector = "Diversificado",
                             ShortName = "Fibra Uno",
                             SiteUrl = "https://fibra.uno",
@@ -281,6 +282,7 @@ namespace Infrastructure.Migrations
                             InvestorUrl = "https://fibradanhos.com.mx/ri",
                             Market = "BMV",
                             NameVariants = "[\"Danhos\",\"DANHOS\"]",
+                            ReportsUrl = "https://fibradanhos.com.mx/reportes-trimestrales.html",
                             Sector = "Comercial",
                             ShortName = "Danhos",
                             SiteUrl = "https://fibradanhos.com.mx",
@@ -312,6 +314,7 @@ namespace Infrastructure.Migrations
                             InvestorUrl = "https://fibramacquarie.com.mx/ri",
                             Market = "BMV",
                             NameVariants = "[\"Fibra MQ\",\"Macquarie\",\"FIBRAMQ\"]",
+                            ReportsUrl = "https://www.fibramacquarie.com/es/inversionistas.html",
                             Sector = "Industrial",
                             ShortName = "FibraMQ",
                             SiteUrl = "https://fibramacquarie.com.mx",
@@ -328,6 +331,7 @@ namespace Infrastructure.Migrations
                             InvestorUrl = "https://fibramty.com/inversionistas",
                             Market = "BMV",
                             NameVariants = "[\"Fibra Monterrey\",\"FibraMTY\",\"FMTY\"]",
+                            ReportsUrl = "https://www.fibramty.com/en/inversionistas",
                             Sector = "Industrial",
                             ShortName = "Fibra MTY",
                             SiteUrl = "https://fibramty.com",
@@ -343,6 +347,7 @@ namespace Infrastructure.Migrations
                             FullName = "Fibra Inn",
                             Market = "BMV",
                             NameVariants = "[\"Fibra Inn\",\"FINN\"]",
+                            ReportsUrl = "https://fibrainn.mx/inversionistas/resultados-trimestrales",
                             Sector = "Hotelero",
                             ShortName = "Fibra Inn",
                             SiteUrl = "https://fibrainn.com.mx",
@@ -358,6 +363,7 @@ namespace Infrastructure.Migrations
                             FullName = "Fibra Hotel",
                             Market = "BMV",
                             NameVariants = "[\"Fibra Hotel\",\"FIHO\"]",
+                            ReportsUrl = "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/FIHO-30057-CGEN_CAPIT",
                             Sector = "Hotelero",
                             ShortName = "Fibra Hotel",
                             SiteUrl = "https://fibrahotel.com",
@@ -374,6 +380,7 @@ namespace Infrastructure.Migrations
                             InvestorUrl = "https://fibravesta.com/ri",
                             Market = "BMV",
                             NameVariants = "[\"Fibra Vesta\",\"VESTA\"]",
+                            ReportsUrl = "https://ir.vesta.com.mx/financial-results",
                             Sector = "Industrial",
                             ShortName = "Vesta",
                             SiteUrl = "https://fibravesta.com",
@@ -389,6 +396,7 @@ namespace Infrastructure.Migrations
                             FullName = "Fibra Hotel City Express",
                             Market = "BMV",
                             NameVariants = "[\"Hotel City Express\",\"HCITY\",\"HC\"]",
+                            ReportsUrl = "https://www.bmv.com.mx/es/emisoras/informacionfinanciera/HCITY-31249-CGEN_CAPIT",
                             Sector = "Hotelero",
                             ShortName = "HC",
                             SiteUrl = "https://hcity.com.mx",
@@ -438,6 +446,7 @@ namespace Infrastructure.Migrations
                             FullName = "Fibra Upsite",
                             Market = "BMV",
                             NameVariants = "[\"Fibra Upsite\",\"Upsite\",\"FIBRAUP\"]",
+                            ReportsUrl = "https://fibra-upsite.com/inversionistas/razones",
                             Sector = "Industrial",
                             ShortName = "Upsite",
                             SiteUrl = "https://fibra-upsite.com",
@@ -520,6 +529,7 @@ namespace Infrastructure.Migrations
                             FullName = "Fibra SOMA",
                             Market = "BIVA",
                             NameVariants = "[\"Fibra SOMA\",\"SOMA\",\"SOMA21\"]",
+                            ReportsUrl = "https://fibrasoma.group/investors/quarterly-reports-2/",
                             Sector = "Comercial",
                             ShortName = "Fibra SOMA",
                             SiteUrl = "https://fibrasoma.group",
@@ -569,7 +579,7 @@ namespace Infrastructure.Migrations
                             InvestorUrl = "https://cfecapital.com.mx/inversionistas",
                             Market = "BMV/BIVA",
                             NameVariants = "[\"CFE Fibra E\",\"FCFE\",\"FCFE18\"]",
-                            ReportsUrl = "https://cfecapital.com.mx/inversionistas",
+                            ReportsUrl = "https://cfecapital.com.mx/informacion-financiera",
                             Sector = "Infraestructura",
                             ShortName = "CFE Fibra E",
                             SiteUrl = "https://cfecapital.com.mx",
@@ -2356,6 +2366,69 @@ namespace Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Domain.Portfolio.PortfolioPosition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("CostoPromedio")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("costo_promedio");
+
+                    b.Property<decimal>("CostoTotalCompra")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("costo_total_compra");
+
+                    b.Property<Guid>("FibraId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fibra_id");
+
+                    b.Property<int>("Titulos")
+                        .HasColumnType("integer")
+                        .HasColumnName("titulos");
+
+                    b.Property<DateTimeOffset>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FibraId");
+
+                    b.HasIndex("UserId", "FibraId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_PortfolioPositions_UserId_FibraId");
+
+                    b.ToTable("PortfolioPositions", "portfolio");
+                });
+
+            modelBuilder.Entity("Domain.Portfolio.UserPortfolioSettings", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("ColumnConfigJson")
+                        .HasColumnType("text")
+                        .HasColumnName("column_config_json");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserPortfolioSettings", "portfolio");
+                });
+
             modelBuilder.Entity("Domain.Auth.RefreshToken", b =>
                 {
                     b.HasOne("Domain.Auth.User", "User")
@@ -2393,6 +2466,30 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("NewsArticle");
+                });
+
+            modelBuilder.Entity("Domain.Portfolio.PortfolioPosition", b =>
+                {
+                    b.HasOne("Domain.Catalog.Fibra", null)
+                        .WithMany()
+                        .HasForeignKey("FibraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Portfolio.UserPortfolioSettings", b =>
+                {
+                    b.HasOne("Domain.Auth.User", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Portfolio.UserPortfolioSettings", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Auth.User", b =>

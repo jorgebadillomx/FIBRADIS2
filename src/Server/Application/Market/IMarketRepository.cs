@@ -12,6 +12,9 @@ public interface IMarketRepository
 
     Task<IReadOnlyList<DailySnapshot>> GetDailySnapshotsAsync(Guid fibraId, int days, CancellationToken ct = default);
     Task<IReadOnlyList<Distribution>> GetDistributionsAsync(Guid fibraId, int? maxDays = null, CancellationToken ct = default);
+    Task<IReadOnlyList<Distribution>> GetDistributionsByFibrasAsync(IReadOnlyList<Guid> fibraIds, int days, CancellationToken ct = default);
+    Task<IReadOnlyDictionary<Guid, decimal>> GetWeek52AvgByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds, int days = 365, CancellationToken ct = default);
     Task AddDistributionAsync(Distribution dist, CancellationToken ct = default);
     Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default);
 }

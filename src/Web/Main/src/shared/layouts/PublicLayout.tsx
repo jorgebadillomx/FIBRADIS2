@@ -27,6 +27,7 @@ export function PublicLayout() {
             <a href="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</a>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
             <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
+            <Link to="/portafolio" className="hover:text-foreground transition-colors duration-150">Portafolio</Link>
           </nav>
           <div className="flex-1 min-w-0 flex justify-center">
             <GlobalSearch />

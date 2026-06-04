@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-server",
     "build:full": "npm run build && npm run build:ssr && node scripts/prerender.mjs",
-    "test": "node --experimental-strip-types --test src/modules/home/global-search.test.ts src/modules/home/movers-logic.test.ts src/modules/ficha-publica/sections/fundamentales.test.ts src/modules/ficha-publica/sections/reportes.test.ts src/modules/ficha-publica/sections/distribuciones.test.ts src/shared/lib/safe-external-url.test.ts src/api/newsApi.test.ts scripts/prerender-utils.test.mjs src/modules/home/universe-table-logic.test.ts src/shared/ui/price-chart.test.ts",
+    "test": "node --experimental-strip-types --test src/modules/home/global-search.test.ts src/modules/home/movers-logic.test.ts src/modules/ficha-publica/sections/fundamentales.test.ts src/modules/ficha-publica/sections/reportes.test.ts src/modules/ficha-publica/sections/distribuciones.test.ts src/shared/lib/safe-external-url.test.ts src/api/newsApi.test.ts scripts/prerender-utils.test.mjs src/modules/home/universe-table-logic.test.ts src/shared/ui/price-chart.test.ts src/modules/portafolio/SignalBadge.test.ts",
     "test:e2e": "node scripts/run-e2e.mjs",
     "test:e2e:runner": "playwright test",
     "lint": "eslint .",

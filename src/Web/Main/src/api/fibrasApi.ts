@@ -1,7 +1,7 @@
 import createClient from 'openapi-fetch'
 import type { paths } from '@fibradis/shared-api-client'
 
-const apiClient = createClient<paths>({ baseUrl: '' })
+export const apiClient = createClient<paths>({ baseUrl: '' })
 
 export async function fetchAllFibras() {
   const { data, error } = await apiClient.GET('/api/v1/fibras', {

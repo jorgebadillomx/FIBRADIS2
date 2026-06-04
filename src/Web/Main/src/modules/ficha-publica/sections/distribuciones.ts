@@ -58,24 +58,21 @@ export function getDistributionPeriodLabel(date: string, cadence: Cadence): stri
   const month = current.getUTCMonth() // 0-11
 
   if (cadence === 'monthly') {
-    const prev = new Date(Date.UTC(year, month - 1, 1))
-    return monthFormatter.format(prev).replace('.', '')
+    return monthFormatter.format(current).replace('.', '')
   }
 
   if (cadence === 'quarterly') {
     const q = Math.floor(month / 3) + 1 // 1-4
-    return q === 1 ? `Q4 ${year - 1}` : `Q${q - 1} ${year}`
+    return `Q${q} ${year}`
   }
 
   if (cadence === 'semiannual') {
-    return month < 6 ? `S2 ${year - 1}` : `S1 ${year}`
+    return month < 6 ? `S1 ${year}` : `S2 ${year}`
   }
 
   if (cadence === 'annual') {
-    return `${year - 1}`
+    return `${year}`
   }
 
-  const prev = new Date(Date.UTC(year, month - 1, 1))
-  return monthFormatter.format(prev).replace('.', '')
+  return monthFormatter.format(current).replace('.', '')
 }
-

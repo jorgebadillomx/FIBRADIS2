@@ -77,7 +77,18 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-05-31
+last_updated: 2026-06-03
+# story 6-4 done — code review pass (6 patches: P1 savingRef guard double-save, P2 Number.isFinite guard en onSave, P3 null guard config PATCH endpoint, P4 DialogTitle ¿?, P5 queryKey ['portfolio'] consistente, P6 DeletePositionDialog siempre montado). Builds: 0 errores backend + frontend
+# story 6-4 creada — edición inline Qty/CostoPromedio y eliminación de posiciones, branch story/6-4-edicion-inline
+# story 6-3 done — code review pass (7 patches: P1 calcSignal price<=0, P2 week52Avg TryGetValue, P3 discount=0 tooltip, P4 days default duplicado, P5 toNumberOrNull(''), P6 GroupBy orden explícito, P7 key distribuciones única). 4 backend + 66 frontend tests verdes
+# story 6-3 creada — filas expandibles con detalle de posición y badge señal NAV, branch story/6-3-filas-expandibles
+# story 6-2 done — code review pass (2 patches: P1 FreshnessStatus dead code en PortfolioPositionRow, P2 floating promise handleConfirm). 5 defers. KPIs backend, multi-sort, columnas configurables, 6 unit tests verdes
+# story 6-2 creada — KPIs portafolio, tabla multi-sort, columnas configurables (UserPortfolioSettings, GET /portfolio, column-config)
+# story 6-1 done — code review pass (6 patches: P1 CSV PrepareHeaderForMatch, P2 FK constraints + migración, P3 empty-file guard, P4 PK snake_case, P5 extensión inválida, P6 React key). 9/9 unit tests verdes
+# story 6-1 in-progress — implementando módulo Portfolio (T1-T7)
+# story 6-1 creada — carga y validación de portafolio desde Excel/CSV, módulo Portfolio desde cero, branch story/6-1-carga-portafolio
+# story 5-12 done — code review pass (12 patches: annual word-boundary, year bounds, 1er-trimestre/path patterns, RunResult counter, VESTA15 URL, SomaDiscoverySource eliminada, FIHO12/NEXT25/FUNO11 a Amefibra, VESTA15+FCFE18 tests). 237 unit tests verdes
+# story 5-12 in-progress — ReportsUrl 11 fibras + IFundamentalsDiscoverySource multi-source + 4 discovery clients
 # story 8-1 creada — sección educativa "Conoce las FIBRAs" + editor Ops, epic-8 in-progress
 # story 5-9 done — code review pasada 2: 10 patches (P1 empty strings→null, P2 NullRef updated!, P3 ErrorReason cleared on processed, P4 arrays empty en error path, P5 useEffect dialog, P6 ReactMarkdown urlTransform, P7 GetAiAnalysis local var, P8 React keys, P9 null-forgiving tests, P10 round-trips BD)
 # story 5-9 vuelve a review — fix hallazgo High: UpdateKpiExtractionAsync usa result.Success en vez de hasAnyKpi (solo numéricos), 2 tests nuevos, 162+35+9 unit tests verdes
@@ -252,6 +263,8 @@ development_status:
   # sprint-retro-2026-05-31b — cubre 4-12 (gate body_text IA, sin code review) + 5-11 (AMEFIBRA sync, 9 patches, 6 defers); 4 action items antes de Épica 6
   # 4-12 gate body_text mínimo para IA — implementada 2026-05-31, sin story file formal, sin code review documentado
   4-12-gate-body-text-minimo-ia: done
+  # story 5-12 creada — cobertura completa ReportsUrl (20 fibras) + discovery nativo para SOMA21 y VESTA15; arquitectura multi-source IFundamentalsDiscoverySource
+  5-12-reports-url-y-discovery-oficial: done
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
   epic-8: in-progress
@@ -263,11 +276,11 @@ development_status:
   epic-8-retrospective: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
-  epic-6: backlog
-  6-1-carga-y-validacion-del-portafolio: backlog
-  6-2-kpis-del-portafolio-y-tabla-con-multi-sort-y-columnas-configurables: backlog
-  6-3-filas-expandibles-con-detalle-de-posicion-y-badge-de-senal-nav: backlog
-  6-4-edicion-inline-y-eliminacion-de-posiciones: backlog
+  epic-6: in-progress
+  6-1-carga-y-validacion-del-portafolio: done
+  6-2-kpis-del-portafolio-y-tabla-con-multi-sort-y-columnas-configurables: done
+  6-3-filas-expandibles-con-detalle-de-posicion-y-badge-de-senal-nav: done
+  6-4-edicion-inline-y-eliminacion-de-posiciones: done
   epic-6-retrospective: optional
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────

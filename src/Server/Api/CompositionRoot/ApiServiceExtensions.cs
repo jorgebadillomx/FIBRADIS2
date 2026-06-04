@@ -21,13 +21,16 @@ using Infrastructure.Jobs.Fundamentals;
 using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Catalog;
 using Application.Ai;
+using Application.Portfolio;
 using Infrastructure.Persistence.Repositories.Ai;
 using Infrastructure.Persistence.Repositories.Fundamentals;
 using Infrastructure.Persistence.Repositories.Jobs;
 using Infrastructure.Persistence.Repositories.Market;
 using Infrastructure.Persistence.Repositories.News;
 using Infrastructure.Persistence.Repositories.Ops;
+using Infrastructure.Persistence.Repositories.Portfolio;
 using Infrastructure.Persistence.SqlServer;
+using Infrastructure.Portfolio;
 using Infrastructure.Security;
 using Infrastructure.Time;
 
@@ -89,6 +92,8 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFundamentalSourceManifestRepository, FundamentalSourceManifestRepository>();
         builder.Services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
         builder.Services.AddScoped<IFundamentalsAutomationService, FundamentalsAutomationService>();
+        builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
+        builder.Services.AddScoped<IPortfolioUploadService, PortfolioUploadService>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
         builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
@@ -152,6 +157,43 @@ public static class ApiServiceExtensions
             MaxAutomaticRedirections = 5,
         });
         builder.Services.AddHttpClient<IAmefibraDiscoveryClient, AmefibraDiscoveryClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 10,
+            UseCookies = true,
+        });
+
+        // Discovery sources — multi-source fundamentals pipeline
+        builder.Services.AddTransient<AmefibraDiscoverySource>();
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<AmefibraDiscoverySource>());
+        builder.Services.AddHttpClient<OfficialSiteDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<OfficialSiteDiscoverySource>());
+        builder.Services.AddHttpClient<BmvDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<BmvDiscoverySource>());
+        builder.Services.AddHttpClient("FundamentalsDownloader", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);
         })
