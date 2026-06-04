@@ -33,13 +33,22 @@ public class EmailEncryptor : IEmailEncryptor
 
     public string Decrypt(string storedEmail)
     {
-        var raw = Convert.FromBase64String(storedEmail);
-        var iv = raw[..16];
-        var cipher = raw[16..];
-        using var aes = Aes.Create();
-        aes.Key = _key;
-        aes.IV = iv;
-        return Encoding.UTF8.GetString(aes.DecryptCbc(cipher, iv));
+        // Fallback para emails legacy almacenados antes del cifrado
+        try
+        {
+            var raw = Convert.FromBase64String(storedEmail);
+            if (raw.Length <= 16) return storedEmail;
+            var iv = raw[..16];
+            var cipher = raw[16..];
+            using var aes = Aes.Create();
+            aes.Key = _key;
+            aes.IV = iv;
+            return Encoding.UTF8.GetString(aes.DecryptCbc(cipher, iv));
+        }
+        catch
+        {
+            return storedEmail;
+        }
     }
 
     private byte[] DeriveIV(string normalizedEmail)

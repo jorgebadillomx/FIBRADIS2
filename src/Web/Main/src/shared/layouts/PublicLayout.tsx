@@ -69,6 +69,24 @@ export function PublicLayout() {
       <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <Outlet />
       </main>
+
+      <footer className="border-t border-border bg-background/80 py-4 text-center text-xs text-muted-foreground">
+        <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-1 px-4">
+          <span>© {new Date().getFullYear()} FIBRADIS — Solo información de referencia, no asesoría de inversión.</span>
+          <a
+            className="hover:text-foreground transition-colors"
+            href="mailto:contacto@fibradis.mx"
+          >
+            Contacto
+          </a>
+          <Link
+            className="hover:text-foreground transition-colors"
+            to="/privacidad"
+          >
+            Aviso de privacidad
+          </Link>
+        </div>
+      </footer>
     </div>
   )
 }
