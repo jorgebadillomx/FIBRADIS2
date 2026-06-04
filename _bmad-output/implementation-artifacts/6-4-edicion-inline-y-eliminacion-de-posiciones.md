@@ -1,6 +1,6 @@
 # Historia 6.4: Edición inline y eliminación de posiciones
 
-Status: review
+Status: done
 
 ## Story
 
@@ -590,7 +590,25 @@ if (!Number.isFinite(n) || n <= 0) return 'El costo promedio debe ser mayor a ce
 
 ## Senior Developer Review (AI)
 
-_Pendiente — completar después de implementación._
+### Review Findings
+
+#### Patches (deben resolverse antes de `done`)
+
+- [x] [Review/Patch] P1 — Double-save Enter→onBlur: dos PATCH simultáneos [EditableCell.tsx] — Al presionar Enter se llama `save()` (async); el input pierde foco inmediatamente y `onBlur` dispara un segundo `save()` antes de que el primero resuelva. El flag `saving` es state (no ref), por lo que el segundo call pasa la guardia. Fix: usar `useRef<boolean>` para `saving` en lugar de `useState`, o cancelar el `onBlur` si el keydown fue Enter.
+- [x] [Review/Patch] P2 — `Number(position.costoPromedio)` / `Number(position.titulos)` pueden devolver `0` si el campo viene como `null` [PositionsTable.tsx] — El schema genera `titulos: number | string` y `costoPromedio: number | string`. Si el backend devuelve `null` (caso de posición parcial), `Number(null)` = `0` y el backend rechaza con 400 mostrando solo "Error al guardar. Intenta de nuevo." Fix: guard previo `position.costoPromedio != null ? Number(position.costoPromedio) : value`.
+- [x] [Review/Patch] P3 — `NullReferenceException` si `config` es `null` en PATCH endpoint [PortfolioEndpoints.cs] — `configRepo.GetAsync(ct)` puede devolver `null` si la configuración no está inicializada. La línea `1 + config.CommissionFactor` lanza `NullReferenceException` → HTTP 500. Fix: `var config = await configRepo.GetAsync(ct) ?? throw new InvalidOperationException("Configuración operacional no inicializada.");`
+- [x] [Review/Patch] P4 — AC5: `DialogTitle` sin `¿` ni `?` [DeletePositionDialog.tsx] — La spec dice `"¿Eliminar posición FUNO11? Esta acción no se puede deshacer."`. El título implementado es `"Eliminar posición {ticker}"`. Fix: cambiar a `"¿Eliminar posición {ticker}?"`.
+- [x] [Review/Patch] P5 — `queryKey` de mutations inconsistente con `UploadZone` [PortafolioPage.tsx] — Las mutations usan `['portfolio', 'positions']` (key exacta). `UploadZone` usa `['portfolio']` (prefijo). Si se añade `['portfolio', 'status']` en una historia futura, el upload lo invalidaría pero el delete/patch no. Fix: cambiar a `queryClient.invalidateQueries({ queryKey: ['portfolio'] })` en ambas mutations.
+- [x] [Review/Patch] P6 — `DeletePositionDialog` montado condicionalmente suprime animación de cierre [PositionsTable.tsx] — `{deletingFibraId && <DeletePositionDialog open={deletingFibraId !== null} .../>}` hace que `open` siempre sea `true` mientras el componente está montado; al confirmar/cancelar el componente se desmonta abruptamente sin transición. Fix: montar siempre el dialog y controlar solo con `open={deletingFibraId !== null}`.
+
+#### Defers (documentados, no bloquean)
+
+- [x] [Review/Defer] D1 — Stale data en onSave: campo "par" usa valor pre-refetch [PositionsTable.tsx] — `onSave={(newVal) => onUpdate(position.fibraId, newVal, Number(position.costoPromedio))}` captura `costoPromedio` del render actual. Si el usuario edita Títulos → guarda → edita CostoPromedio antes del refetch, el segundo PATCH sobreescribe con el valor viejo del primer campo. — deferred, requiere cambio arquitectónico (optimistic updates o read-before-write)
+- [x] [Review/Defer] D2 — DELETE no idempotente: retry de red recibe 404 aunque la op fue exitosa [PortfolioEndpoints.cs] — Si la respuesta se pierde en tránsito y el cliente reintenta, recibe 404 y muestra error aunque la posición fue eliminada. — deferred, decisión de diseño REST
+- [x] [Review/Defer] D3 — `db.Update()` sobre entidad ya rastreada (frágil) [PortfolioRepository.cs] — El endpoint llama `GetPositionAsync` (trackea la entidad) y luego `UpdatePositionAsync` que llama `db.Update()`. Funciona hoy, pero si `GetPositionAsync` usa `.AsNoTracking()` en el futuro rompe. — deferred, patrón pre-existente del proyecto
+- [x] [Review/Defer] D4 — Sin integration tests para endpoints PATCH y DELETE — Los tests nuevos son solo de repository (InMemory). Autorización y binding JSON no cubiertos end-to-end. — deferred, deuda de proyecto
+- [x] [Review/Defer] D5 — `CostoPromedio` sin límite de escala decimal [PortfolioPositionPatchDto] — `parseFloat` sin redondeo; si la columna BD tiene scale fijo (e.g. `decimal(18,4)`), EF puede truncar silenciosamente. — deferred, depende de schema BD
+- [x] [Review/Defer] D6 — `deletingFibraId` no se limpia en error → UUID crudo como ticker [PositionsTable.tsx] — Si la posición desaparece durante el error (refetch concurrente), el dialog muestra el `fibraId` UUID como ticker. — deferred, edge case visual de baja probabilidad
 
 ## Dev Agent Record
 

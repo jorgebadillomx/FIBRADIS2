@@ -71,7 +71,7 @@ export function PortafolioPage() {
       if (error) throw new Error('No se pudo guardar la posición.')
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['portfolio', 'positions'] })
+      void queryClient.invalidateQueries({ queryKey: ['portfolio'] })
     },
   })
 
@@ -83,7 +83,7 @@ export function PortafolioPage() {
       if (error) throw new Error('No se pudo eliminar la posición.')
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['portfolio', 'positions'] })
+      void queryClient.invalidateQueries({ queryKey: ['portfolio'] })
     },
   })
 

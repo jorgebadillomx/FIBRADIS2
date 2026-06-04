@@ -257,7 +257,11 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
                           return null
                         }}
                         parse={(raw) => parseInt(raw.trim(), 10)}
-                        onSave={(newVal) => onUpdate(position.fibraId, newVal, Number(position.costoPromedio))}
+                        onSave={(newVal) => {
+                          const costo = Number(position.costoPromedio)
+                          if (!Number.isFinite(costo) || costo <= 0) return Promise.reject(new Error('Datos de posición inválidos.'))
+                          return onUpdate(position.fibraId, newVal, costo)
+                        }}
                       />
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">
@@ -271,7 +275,11 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
                           return null
                         }}
                         parse={(raw) => parseFloat(raw.trim())}
-                        onSave={(newVal) => onUpdate(position.fibraId, Number(position.titulos), newVal)}
+                        onSave={(newVal) => {
+                          const titulos = Number(position.titulos)
+                          if (!Number.isInteger(titulos) || titulos <= 0) return Promise.reject(new Error('Datos de posición inválidos.'))
+                          return onUpdate(position.fibraId, titulos, newVal)
+                        }}
                       />
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatMoney(position.precioActual)}</td>
@@ -321,15 +329,13 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
         </table>
       </div>
     </div>
-    {deletingFibraId && (
-      <DeletePositionDialog
-        ticker={positions.find((p) => p.fibraId === deletingFibraId)?.ticker ?? deletingFibraId}
-        open={deletingFibraId !== null}
-        onOpenChange={(open) => { if (!open) setDeletingFibraId(null) }}
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteLoading}
-      />
-    )}
+    <DeletePositionDialog
+      ticker={positions.find((p) => p.fibraId === deletingFibraId)?.ticker ?? (deletingFibraId ?? '')}
+      open={deletingFibraId !== null}
+      onOpenChange={(open) => { if (!open) setDeletingFibraId(null) }}
+      onConfirm={handleDeleteConfirm}
+      isLoading={deleteLoading}
+    />
     </>
   )
 }

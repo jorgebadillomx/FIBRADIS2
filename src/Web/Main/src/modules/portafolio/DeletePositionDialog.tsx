@@ -27,7 +27,7 @@ export function DeletePositionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Eliminar posición {ticker}</DialogTitle>
+          <DialogTitle>¿Eliminar posición {ticker}?</DialogTitle>
           <DialogDescription>
             Esta acción no se puede deshacer. La posición {ticker} será eliminada de tu portafolio.
           </DialogDescription>

@@ -16,6 +16,7 @@ export function EditableCell({ value, format, validate, parse, onSave, className
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const savingRef = useRef(false)
 
   function startEditing() {
     setDraft(String(value))
@@ -30,6 +31,7 @@ export function EditableCell({ value, format, validate, parse, onSave, className
   }
 
   async function save() {
+    if (savingRef.current) return
     const trimmed = draft.trim()
     const err = validate(trimmed)
     if (err) {
@@ -42,6 +44,7 @@ export function EditableCell({ value, format, validate, parse, onSave, className
       setError(null)
       return
     }
+    savingRef.current = true
     setSaving(true)
     try {
       await onSave(parsed)
@@ -50,6 +53,7 @@ export function EditableCell({ value, format, validate, parse, onSave, className
     } catch {
       setError('Error al guardar. Intenta de nuevo.')
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }

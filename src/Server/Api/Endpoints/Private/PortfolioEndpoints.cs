@@ -220,6 +220,9 @@ public static class PortfolioEndpoints
                 return Results.NotFound();
 
             var config = await configRepo.GetAsync(ct);
+            if (config is null)
+                return Results.Problem("Configuración operacional no inicializada.", statusCode: 500);
+
             position.Titulos = request.Titulos;
             position.CostoPromedio = request.CostoPromedio;
             position.CostoTotalCompra = request.Titulos * request.CostoPromedio * (1 + config.CommissionFactor);
