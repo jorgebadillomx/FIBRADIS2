@@ -34,6 +34,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("hasAcceptedTerms", user.HasAcceptedTerms ? "true" : "false"),
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));

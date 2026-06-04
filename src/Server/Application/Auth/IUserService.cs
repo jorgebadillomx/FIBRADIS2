@@ -17,4 +17,6 @@ public interface IUserService
     Task ChangePasswordAsync(Guid id, string newPassword, CancellationToken ct = default);
 
     Task<UserData> UpdatePaymentAsync(Guid id, decimal? pago, DateTime? fechaPago, CancellationToken ct = default);
+
+    Task AcceptTermsAsync(Guid userId, CancellationToken ct = default);
 }

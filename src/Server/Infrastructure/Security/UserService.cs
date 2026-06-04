@@ -98,6 +98,16 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         return ToData(user);
     }
 
+    public async Task AcceptTermsAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([userId], ct)
+            ?? throw new UserNotFoundException();
+
+        user.HasAcceptedTerms = true;
+        user.TermsAcceptedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+    }
+
     private UserData ToData(User u) =>
         new(u.Id, emailEncryptor.Decrypt(u.Email), u.Role.ToString(), u.IsActive, u.CreatedAt, u.Pago, u.FechaPago);
 

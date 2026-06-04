@@ -61,3 +61,12 @@ export function logoutMain(): void {
   clearMainAccessToken()
   notifyMainAuthRequired()
 }
+
+export async function acceptTermsApi(): Promise<void> {
+  const { getMainAuthHeaders } = await import('./mainAuth')
+  const res = await fetch('/api/v1/account/accept-terms', {
+    method: 'POST',
+    headers: { ...getMainAuthHeaders() },
+  })
+  if (!res.ok && res.status !== 204) throw new Error('Error al aceptar términos.')
+}

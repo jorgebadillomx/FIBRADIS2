@@ -8,4 +8,7 @@ public sealed record OperationalConfigDto(
     int FundamentalsCadenceMinutes,
     int DistributionCadenceMinutes,
     DateTimeOffset UpdatedAt,
-    string? UpdatedBy);
+    string? UpdatedBy,
+    bool TermsEnabled,
+    string? TermsText,
+    string? ContactEmail);

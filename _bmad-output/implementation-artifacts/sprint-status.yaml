@@ -293,7 +293,10 @@ development_status:
   6-6-importacion-portafolio-gbm: done
 
   # story 6-7 creada — gestión completa usuarios Ops: tipos AdminOps/Main, deshabilitar, contraseña fuerte, pago, cifrado AES-256 email, mensajes login diferenciados, quitar seed dev
-  6-7-gestion-usuarios-ops: review
+  6-7-gestion-usuarios-ops: done
+
+  # story 6-9 creada — T&C configurable desde Ops (modal bloqueante primer login), footer Main con contacto y aviso de privacidad, sección contenido del sitio en Ops
+  6-9-terminos-footer-contenido: review
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: backlog

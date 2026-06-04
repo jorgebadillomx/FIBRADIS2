@@ -14,6 +14,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).HasMaxLength(512).IsRequired();
         builder.Property(u => u.PasswordHash).HasMaxLength(512).IsRequired();
         builder.Property(u => u.Role).HasConversion<string>().HasMaxLength(32);
+        builder.Property(u => u.HasAcceptedTerms);
+        builder.Property(u => u.TermsAcceptedAt);
         builder.Property(u => u.Pago).HasPrecision(18, 2);
         builder.Property(u => u.FechaPago);
         builder.HasMany(u => u.RefreshTokens)

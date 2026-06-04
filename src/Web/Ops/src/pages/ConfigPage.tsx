@@ -8,6 +8,25 @@ import {
   type UpdateOperationalConfigRequest,
 } from '@/api/configApi'
 
+const DEFAULT_TERMS_TEXT = `FIBRADIS — Términos de uso y aviso de privacidad
+
+1. Información de referencia únicamente
+La información publicada en esta plataforma tiene carácter exclusivamente informativo y no constituye asesoría de inversión ni recomendación de compra o venta de valores. Las decisiones de inversión son de exclusiva responsabilidad del usuario. FIBRADIS no será responsable de pérdidas derivadas del uso de los datos del sitio.
+
+2. Protección de datos personales
+Tu correo electrónico se almacena cifrado en nuestra base de datos. No lo compartimos, vendemos ni cedemos a terceros. Lo usamos únicamente para identificarte en la plataforma.
+
+3. Seguridad
+Las contraseñas se almacenan como hash unidireccional (bcrypt). La comunicación entre tu dispositivo y nuestros servidores usa HTTPS. Tu información está cifrada y segura.
+
+4. Uso apropiado
+El acceso a la plataforma es personal e intransferible. Está prohibido su uso para actividades ilegales o que violen derechos de terceros.
+
+5. Derechos del usuario
+Para ejercer derechos de acceso, rectificación o cancelación, escribe a contacto@fibradis.mx. Atendemos en 5 días hábiles.
+
+Al usar esta plataforma aceptas estos términos.`
+
 interface FormValues {
   commissionFactor: number
   avgPeriods: number
@@ -23,6 +42,10 @@ const inputClassName =
 export function ConfigPage() {
   const queryClient = useQueryClient()
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [termsEnabled, setTermsEnabled] = useState(false)
+  const [termsText, setTermsText] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [siteSuccessMessage, setSiteSuccessMessage] = useState<string | null>(null)
 
   const configQuery = useQuery({
     queryKey: ['ops-config'],
@@ -63,6 +86,9 @@ export function ConfigPage() {
       fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 1440),
       distributionCadenceMinutes: Number(configQuery.data.distributionCadenceMinutes ?? 1440),
     })
+    setTermsEnabled(configQuery.data.termsEnabled ?? false)
+    setTermsText(configQuery.data.termsText ?? DEFAULT_TERMS_TEXT)
+    setContactEmail(configQuery.data.contactEmail ?? 'contacto@fibradis.mx')
   }, [configQuery.data, reset])
 
   const saveMutation = useMutation({
@@ -75,6 +101,23 @@ export function ConfigPage() {
       ])
     },
   })
+
+  const saveSiteMutation = useMutation({
+    mutationFn: (payload: Partial<UpdateOperationalConfigRequest>) => updateOpsConfig(payload),
+    onSuccess: async () => {
+      setSiteSuccessMessage('✓ Contenido del sitio guardado')
+      await queryClient.invalidateQueries({ queryKey: ['ops-config'] })
+    },
+  })
+
+  function handleSaveSite() {
+    setSiteSuccessMessage(null)
+    saveSiteMutation.mutate({
+      termsEnabled,
+      termsText: termsText || null,
+      contactEmail: contactEmail || null,
+    })
+  }
 
   const onSubmit = handleSubmit((values) => {
     setSuccessMessage(null)
@@ -243,6 +286,85 @@ export function ConfigPage() {
             </div>
           </form>
         ) : null}
+      </section>
+
+      {/* ── Contenido del sitio ───────────────────────────────────────────── */}
+      <section className="rounded-[1.75rem] border border-slate-200 bg-white/90 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold tracking-tight text-slate-950">Contenido del sitio</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Términos y condiciones + correo de contacto que aparecen en el footer de Main.
+        </p>
+
+        <div className="mt-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <input
+              checked={termsEnabled}
+              className="h-4 w-4 rounded border-slate-300 accent-teal-600"
+              id="terms-enabled"
+              onChange={(e) => setTermsEnabled(e.target.checked)}
+              type="checkbox"
+            />
+            <label className="text-sm font-medium text-slate-700" htmlFor="terms-enabled">
+              Activar modal de términos y condiciones al primer login
+            </label>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-700" htmlFor="contact-email">
+              Correo de contacto (footer)
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600"
+              id="contact-email"
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="contacto@fibradis.mx"
+              type="email"
+              value={contactEmail}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700" htmlFor="terms-text">
+                Texto de términos y condiciones
+              </label>
+              <button
+                className="text-xs text-teal-600 hover:underline"
+                onClick={() => setTermsText(DEFAULT_TERMS_TEXT)}
+                type="button"
+              >
+                Restaurar texto por defecto
+              </button>
+            </div>
+            <textarea
+              className="min-h-[280px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600"
+              id="terms-text"
+              onChange={(e) => setTermsText(e.target.value)}
+              placeholder="Escribe aquí los términos..."
+              value={termsText}
+            />
+          </div>
+
+          {siteSuccessMessage ? (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {siteSuccessMessage}
+            </p>
+          ) : null}
+          {saveSiteMutation.isError ? (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {saveSiteMutation.error.message}
+            </p>
+          ) : null}
+
+          <button
+            className="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={saveSiteMutation.isPending}
+            onClick={handleSaveSite}
+            type="button"
+          >
+            {saveSiteMutation.isPending ? 'Guardando...' : 'Guardar contenido'}
+          </button>
+        </div>
       </section>
 
       <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/90 shadow-sm">
