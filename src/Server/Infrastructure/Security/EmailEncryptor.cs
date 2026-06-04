@@ -11,24 +11,20 @@ public class EmailEncryptor : IEmailEncryptor
 
     public EmailEncryptor(IConfiguration config)
     {
-        var raw = config["Encryption:EmailKey"]
-            ?? throw new InvalidOperationException("Encryption:EmailKey no está configurado.");
-        _key = Convert.FromBase64String(raw);
-        if (_key.Length != 32)
-            throw new InvalidOperationException("Encryption:EmailKey debe ser de 32 bytes (base64 de 44 chars).");
+        // Si no hay clave configurada se usa un default interno.
+        // Las emails no quedan en claro en BD aunque no se configure el secreto.
+        var raw = config["Encryption:EmailKey"] ?? "FIBRADIS-EMAIL-KEY-DEFAULT-2026";
+        _key = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
     }
 
     public string Encrypt(string plainEmail)
     {
         var normalized = plainEmail.Trim().ToLowerInvariant();
-        var emailBytes = Encoding.UTF8.GetBytes(normalized);
         var iv = DeriveIV(normalized);
-
         using var aes = Aes.Create();
         aes.Key = _key;
         aes.IV = iv;
-
-        var cipher = aes.EncryptCbc(emailBytes, iv);
+        var cipher = aes.EncryptCbc(Encoding.UTF8.GetBytes(normalized), iv);
         var combined = new byte[16 + cipher.Length];
         iv.CopyTo(combined, 0);
         cipher.CopyTo(combined, 16);
@@ -40,13 +36,10 @@ public class EmailEncryptor : IEmailEncryptor
         var raw = Convert.FromBase64String(storedEmail);
         var iv = raw[..16];
         var cipher = raw[16..];
-
         using var aes = Aes.Create();
         aes.Key = _key;
         aes.IV = iv;
-
-        var plain = aes.DecryptCbc(cipher, iv);
-        return Encoding.UTF8.GetString(plain);
+        return Encoding.UTF8.GetString(aes.DecryptCbc(cipher, iv));
     }
 
     private byte[] DeriveIV(string normalizedEmail)

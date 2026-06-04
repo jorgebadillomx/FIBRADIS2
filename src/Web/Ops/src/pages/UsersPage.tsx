@@ -23,6 +23,23 @@ function validatePassword(pwd: string): string | null {
   return null
 }
 
+function generateStrongPassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const lower = 'abcdefghjkmnpqrstuvwxyz'
+  const digits = '23456789'
+  const special = '!@#$%&*'
+  const all = upper + lower + digits + special
+  const pick = (s: string) => s[Math.floor(Math.random() * s.length)]
+  const chars = [
+    pick(upper), pick(upper),
+    pick(lower), pick(lower),
+    pick(digits), pick(digits),
+    pick(special),
+    ...Array.from({ length: 5 }, () => pick(all)),
+  ]
+  return chars.sort(() => Math.random() - 0.5).join('')
+}
+
 // ── Create form ──────────────────────────────────────────────────────────────
 
 function CreateUserForm({ onCreated }: { onCreated: () => void }) {
@@ -98,16 +115,26 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
           <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500" htmlFor="u-password">
             Contraseña
           </label>
-          <input
-            className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
-            disabled={mutation.isPending}
-            id="u-password"
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mínimo 8 chars, mayúscula, número, especial"
-            required
-            type="password"
-            value={password}
-          />
+          <div className="flex gap-2">
+            <input
+              className="h-10 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+              disabled={mutation.isPending}
+              id="u-password"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 8 chars, mayúscula, número, especial"
+              required
+              type="text"
+              value={password}
+            />
+            <button
+              className="h-10 flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-100 px-3 text-slate-600 transition hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700"
+              onClick={() => setPassword(generateStrongPassword())}
+              title="Generar contraseña segura"
+              type="button"
+            >
+              🎲
+            </button>
+          </div>
         </div>
 
         {role === 'User' && (
@@ -195,17 +222,27 @@ function ChangePasswordDialog({ userId, onClose }: { userId: string; onClose: ()
             <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500" htmlFor="cp-pwd">
               Nueva contraseña
             </label>
-            <input
-              autoFocus
-              className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
-              disabled={mutation.isPending}
-              id="cp-pwd"
-              onChange={(e) => setPwd(e.target.value)}
-              placeholder="Mínimo 8 chars, mayúscula, número, especial"
-              required
-              type="password"
-              value={pwd}
-            />
+            <div className="flex gap-2">
+              <input
+                autoFocus
+                className="h-10 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                disabled={mutation.isPending}
+                id="cp-pwd"
+                onChange={(e) => setPwd(e.target.value)}
+                placeholder="Mínimo 8 chars, mayúscula, número, especial"
+                required
+                type="text"
+                value={pwd}
+              />
+              <button
+                className="h-10 flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-100 px-3 text-slate-600 transition hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700"
+                onClick={() => setPwd(generateStrongPassword())}
+                title="Generar contraseña segura"
+                type="button"
+              >
+                🎲
+              </button>
+            </div>
           </div>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <div className="flex gap-3">
