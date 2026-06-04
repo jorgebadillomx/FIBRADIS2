@@ -5,4 +5,6 @@ public sealed record UserSummaryDto(
     string Email,
     string Role,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    decimal? Pago,
+    DateTime? FechaPago);

@@ -11,6 +11,7 @@ import { PortafolioPage } from '@/modules/portafolio/PortafolioPage'
 import { LoginPage } from '@/modules/auth/LoginPage'
 import { ProtectedRoute } from '@/modules/auth/ProtectedRoute'
 import { NotFound } from '@/shared/layouts/NotFound'
+import { PrivacidadPage } from '@/modules/privacidad/PrivacidadPage'
 
 export const routes: RouteObject[] = [
   {
@@ -24,6 +25,7 @@ export const routes: RouteObject[] = [
       { path: '/noticias/:id', element: <NoticiaPage /> },
       { path: '/fundamentales', element: <FundamentalesPage /> },
       { path: '/login', element: <LoginPage /> },
+      { path: '/privacidad', element: <PrivacidadPage /> },
       {
         element: <ProtectedRoute />,
         children: [

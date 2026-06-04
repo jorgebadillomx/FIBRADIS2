@@ -13,10 +13,13 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
         if (exception is not DomainException domainEx)
             return false;
 
-        httpContext.Response.StatusCode = exception is InvalidCredentialsException
-            or InvalidRefreshTokenException
-                ? StatusCodes.Status401Unauthorized
-                : StatusCodes.Status422UnprocessableEntity;
+        httpContext.Response.StatusCode = exception switch
+        {
+            InvalidCredentialsException or InvalidRefreshTokenException
+                or AccountDisabledException => StatusCodes.Status401Unauthorized,
+            UserNotFoundException           => StatusCodes.Status404NotFound,
+            _                               => StatusCodes.Status422UnprocessableEntity,
+        };
 
         await problemDetailsService.WriteAsync(new ProblemDetailsContext
         {

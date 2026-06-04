@@ -1,5 +1,30 @@
 # Deferred Work
 
+## Backlog: Historia 6-9 — Términos y condiciones, footer y editor de textos del sitio (2026-06-04)
+
+Deferred desde el scope de 6-7 (split multi-goal). Implementar después de 6-8.
+
+- **OperationalConfig**: agregar `TermsEnabled (bool)` y `TermsText (string?)` con migración; exponer en el endpoint de config existente.
+- **User**: agregar `HasAcceptedTerms (bool, default false)` y `TermsAcceptedAt (DateTime?)` con migración.
+- **Endpoint**: `POST /api/v1/account/accept-terms` (requiere auth User) — marca `HasAcceptedTerms = true`, guarda timestamp.
+- **Main — Modal bloqueante**: al hacer login, si `TermsEnabled && !user.HasAcceptedTerms` mostrar modal con texto T&C que bloquea toda la UI hasta que el usuario acepte (botón "Acepto"). No puede cerrarse sin aceptar. La respuesta del login debe incluir `hasAcceptedTerms`.
+- **Main — Footer**: componente fijo al pie que no rompe el diseño del sitio; contiene "Contacto" (mailto o URL configurable desde config) y "Términos y condiciones" (abre modal o enlaza a la página de T&C).
+- **Ops — Sección "Contenido del sitio"**: editor para `TermsEnabled` (toggle), `TermsText` (textarea rico o markdown), `ContactEmail`. Guardar vía PATCH al endpoint de config.
+- **T&C pre-poblado** al hacer seed inicial (o via migration data): texto en español que incluya: (1) la información del sitio es únicamente orientativa y no constituye asesoría de inversión; (2) FIBRADIS no se responsabiliza de pérdidas derivadas de decisiones de inversión tomadas con base en los datos del sitio; (3) los datos personales del usuario no son vendidos ni cedidos a terceros; (4) la información personal se almacena cifrada; (5) el usuario puede solicitar la eliminación de su cuenta contactando al administrador.
+
+## Backlog: Historia 6-8 — Perfil del usuario en Main (apodo y cambio de contraseña propia) (2026-06-04)
+
+Deferred desde el scope de 6-7 (split multi-goal). Implementar antes de 6-9.
+
+- **User entity**: agregar `Apodo (string?)` nullable con migración.
+- **JWT claims**: incluir `apodo` en el access token (o devolver en endpoint de perfil).
+- **Endpoints account** (requieren auth User — no AdminOps):
+  - `GET /api/v1/account/me` → devuelve email descifrado, role, apodo.
+  - `PATCH /api/v1/account/me` `{apodo}` → actualiza apodo; validar max 50 chars.
+  - `PATCH /api/v1/account/password` `{currentPassword, newPassword}` → valida contraseña actual antes de cambiar; aplica criterios de contraseña fuerte.
+- **Main — Sección de perfil**: accesible desde el menú del usuario (ej. dropdown o página `/perfil`); muestra email (no editable), apodo (editable inline), botón "Cambiar contraseña" con diálogo.
+- **Validación**: contraseña fuerte igual que en 6-7; apodo max 50 chars, sin caracteres de control.
+
 ## Deferred from: code review de 6-6-importacion-portafolio-gbm (2026-06-04)
 
 - D1: `snapshotQuery` sin manejo de estado error en `PortafolioPage.tsx:53` — si `/portfolio/snapshot` devuelve 500, el banner de respaldo no aparece silenciosamente aunque exista snapshot. `portfolioQuery` sí tiene error UI.

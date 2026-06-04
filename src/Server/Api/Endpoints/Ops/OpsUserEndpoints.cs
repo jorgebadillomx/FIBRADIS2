@@ -23,7 +23,7 @@ public static class OpsUserEndpoints
             IUserService svc,
             CancellationToken ct) =>
         {
-            var user = await svc.CreateUserAsync(req.Email, req.Password, ct);
+            var user = await svc.CreateUserAsync(req.Email, req.Password, req.Role, req.Pago, req.FechaPago, ct);
             var dto = ToDto(user);
             return Results.Created($"/api/v1/ops/users/{dto.Id}", dto);
         })
@@ -34,9 +34,58 @@ public static class OpsUserEndpoints
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        app.MapPatch("/api/v1/ops/users/{id:guid}/active", async (
+            Guid id,
+            SetUserActiveRequest req,
+            IUserService svc,
+            CancellationToken ct) =>
+        {
+            var user = await svc.SetUserActiveAsync(id, req.IsActive, ct);
+            return Results.Ok(ToDto(user));
+        })
+        .RequireAuthorization("AdminOps")
+        .WithTags("Ops")
+        .Produces<UserSummaryDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
+
+        app.MapPatch("/api/v1/ops/users/{id:guid}/password", async (
+            Guid id,
+            ChangePasswordRequest req,
+            IUserService svc,
+            CancellationToken ct) =>
+        {
+            await svc.ChangePasswordAsync(id, req.NewPassword, ct);
+            return Results.NoContent();
+        })
+        .RequireAuthorization("AdminOps")
+        .WithTags("Ops")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        app.MapPatch("/api/v1/ops/users/{id:guid}/payment", async (
+            Guid id,
+            UpdatePaymentRequest req,
+            IUserService svc,
+            CancellationToken ct) =>
+        {
+            var user = await svc.UpdatePaymentAsync(id, req.Pago, req.FechaPago, ct);
+            return Results.Ok(ToDto(user));
+        })
+        .RequireAuthorization("AdminOps")
+        .WithTags("Ops")
+        .Produces<UserSummaryDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound);
+
         return app;
     }
 
     private static UserSummaryDto ToDto(UserData u) =>
-        new(u.Id, u.Email, u.Role, u.IsActive, u.CreatedAt);
+        new(u.Id, u.Email, u.Role, u.IsActive, u.CreatedAt, u.Pago, u.FechaPago);
 }

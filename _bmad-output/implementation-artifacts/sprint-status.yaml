@@ -292,6 +292,9 @@ development_status:
   # story 6-6 creada — importación GBM: formato oficial + pegado, modo merge/replace, archivo con respaldo, restore
   6-6-importacion-portafolio-gbm: done
 
+  # story 6-7 creada — gestión completa usuarios Ops: tipos AdminOps/Main, deshabilitar, contraseña fuerte, pago, cifrado AES-256 email, mensajes login diferenciados, quitar seed dev
+  6-7-gestion-usuarios-ops: review
+
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: backlog
   7-1-score-de-oportunidad-y-ranking-del-universo: backlog

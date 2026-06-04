@@ -8,6 +8,8 @@ public class User
     public UserRole Role { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
+    public decimal? Pago { get; set; }
+    public DateTime? FechaPago { get; set; }
 
     public List<RefreshToken> RefreshTokens { get; set; } = [];
 }

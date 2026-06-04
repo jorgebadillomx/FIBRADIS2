@@ -71,6 +71,7 @@ public static class ApiServiceExtensions
         builder.AddFibradisAuthorization();
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
+        builder.Services.AddSingleton<IEmailEncryptor, EmailEncryptor>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IFibraRepository, FibraRepository>();
