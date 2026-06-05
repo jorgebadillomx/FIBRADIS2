@@ -26,7 +26,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var count = await portfolioRepo.GetPositionCountByUserIdAsync(userId, ct);
             return Results.Ok(new { hasPortfolio = count > 0, positionCount = count });
         })
@@ -38,7 +40,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var snapshot = await portfolioRepo.GetSnapshotAsync(userId, ct);
             return Results.Ok(new PortfolioSnapshotStatusDto(snapshot is not null, snapshot?.ArchivedAt));
         })
@@ -50,7 +54,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             await portfolioRepo.ArchivePortfolioAsync(userId, ct);
             return Results.NoContent();
         })
@@ -62,7 +68,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var restored = await portfolioRepo.RestoreSnapshotAsync(userId, ct);
             return restored ? Results.NoContent() : Results.NotFound();
         })
@@ -79,7 +87,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var positions = await portfolioRepo.GetByUserIdAsync(userId, ct);
             if (positions.Count == 0)
                 return Results.Ok(new PortfolioResponseDto(null, []));
@@ -172,7 +182,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var settings = await portfolioRepo.GetSettingsAsync(userId, ct);
             return Results.Ok(new PortfolioColumnConfigDto(ParseColumns(settings?.ColumnConfigJson)));
         })
@@ -185,7 +197,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var columns = NormalizeColumns(request.Columns);
             var json = JsonSerializer.Serialize(new PortfolioColumnConfigDto(columns), JsonOptions);
             await portfolioRepo.UpsertSettingsAsync(userId, json, ct);
@@ -205,7 +219,9 @@ public static class PortfolioEndpoints
             [FromQuery] string mode = "replace",
             [FromQuery] bool force = false) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var config = await configRepo.GetAsync(ct);
             var activeFibras = await fibraRepo.GetAllActiveAsync(ct);
 
@@ -264,7 +280,9 @@ public static class PortfolioEndpoints
             if (request.CostoPromedio <= 0)
                 return Results.Problem("El costo promedio debe ser mayor a cero.", statusCode: 400);
 
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var position = await portfolioRepo.GetPositionAsync(userId, fibraId, ct);
             if (position is null)
                 return Results.NotFound();
@@ -291,7 +309,9 @@ public static class PortfolioEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var deleted = await portfolioRepo.DeletePositionAsync(userId, fibraId, ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         })
@@ -302,8 +322,8 @@ public static class PortfolioEndpoints
         return app;
     }
 
-    private static Guid GetUserId(HttpContext ctx)
-        => Guid.Parse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private static Guid? TryGetUserId(HttpContext ctx) =>
+        Guid.TryParse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
     private static IReadOnlyList<string> ParseColumns(string? json)
     {

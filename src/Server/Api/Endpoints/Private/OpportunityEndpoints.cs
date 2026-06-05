@@ -30,33 +30,21 @@ public static class OpportunityEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var weights = await ResolveWeightsAsync(weightsRepo, userId, ct);
 
-            // Config primero (DbContext no es thread-safe — fuera del WhenAll)
+            // DbContext es Scoped y no thread-safe — await secuencial obligatorio
             var config = await configRepo.GetAsync(ct);
-
-            // Cargar universo activo y datos de mercado en paralelo
-            var fibrasTask = fibraRepo.GetAllActiveAsync(ct);
-            var snapshotsTask = marketRepo.GetLatestSnapshotPerFibraAsync(ct);
-            var fundamentalsTask = fundamentalRepo.GetSummaryLatestAsync(ct);
-
-            await Task.WhenAll(fibrasTask, snapshotsTask, fundamentalsTask);
-
-            var fibras = await fibrasTask;
-            var snapshots = await snapshotsTask;
-            var fundamentals = await fundamentalsTask;
+            var fibras = await fibraRepo.GetAllActiveAsync(ct);
+            var snapshots = await marketRepo.GetLatestSnapshotPerFibraAsync(ct);
+            var fundamentals = await fundamentalRepo.GetSummaryLatestAsync(ct);
 
             var fibraIds = fibras.Select(f => f.Id).ToList();
 
-            // Datos de distribuciones y AVG 52S
-            var distsTask = marketRepo.GetDistributionsByFibrasAsync(fibraIds, 365, ct);
-            var avg52wTask = marketRepo.GetWeek52AvgByFibrasAsync(fibraIds, 365, ct);
-
-            await Task.WhenAll(distsTask, avg52wTask);
-
-            var distributions = await distsTask;
-            var avg52w = await avg52wTask;
+            var distributions = await marketRepo.GetDistributionsByFibrasAsync(fibraIds, 365, ct);
+            var avg52w = await marketRepo.GetWeek52AvgByFibrasAsync(fibraIds, 365, ct);
 
             // Diccionarios de lookup
             var snapshotByFibra = snapshots.ToDictionary(s => s.FibraId);
@@ -115,7 +103,9 @@ public static class OpportunityEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var weights = await ResolveWeightsAsync(weightsRepo, userId, ct);
             return Results.Ok(ToDto(weights));
         })
@@ -132,7 +122,8 @@ public static class OpportunityEndpoints
             if (!ValidateWeights(request, out var problem))
                 return Results.Problem(problem, statusCode: StatusCodes.Status422UnprocessableEntity);
 
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
             var weights = new Domain.Portfolio.UserOpportunityWeights
             {
                 UserId = userId,
@@ -160,8 +151,8 @@ public static class OpportunityEndpoints
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static Guid GetUserId(HttpContext ctx) =>
-        Guid.Parse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private static Guid? TryGetUserId(HttpContext ctx) =>
+        Guid.TryParse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
     private static async Task<OpportunityWeights> ResolveWeightsAsync(
         IOpportunityWeightsRepository repo, Guid userId, CancellationToken ct)
