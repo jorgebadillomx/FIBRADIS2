@@ -187,6 +187,36 @@ Cuando un hallazgo de code review no bloquea el cierre de la historia pero repre
 
 Este proceso evita que los findings de calidad media queden enterrados en Dev Agent Records sin visibilidad en el tracker.
 
+## Testing — Funciones de Cálculo Financiero
+
+Toda función pura que realice división debe tener como **primer test** el caso denominador = 0, antes de cualquier otro escenario. Esta regla aplica sin excepción para funciones de cálculo de portafolio, score, yield, plusvalía, promedios ponderados o cualquier fórmula financiera.
+
+```typescript
+// Orden obligatorio de tests para funciones con división
+describe('calcDifPct', () => {
+  it('devuelve 0 cuando costoPromedio es 0', () => {  // ← primer test siempre
+    expect(calcDifPct(100, 0)).toBe(0);
+  });
+  it('calcula correctamente con valores positivos', () => {
+    expect(calcDifPct(110, 100)).toBeCloseTo(0.1);
+  });
+});
+```
+
+```csharp
+// En C# igualmente: el primer test cubre el denominador cero
+[Fact]
+public void Calculate_WhenUniverseSizeIsZero_ReturnsSafeFallback()
+{
+    var result = UniverseCoverageCalculator.Calculate(fibrasWithPrice: 0, universeSize: 0);
+    Assert.Equal(CoverageStatus.Normal, result.Status); // o el valor seguro documentado
+}
+```
+
+**Regla de DevNotes**: si una historia introduce funciones de cálculo con división, la sección Dev Notes debe listar explícitamente los invariantes de denominador y cuál es el valor de retorno correcto cuando el denominador es cero (0, null, excepción controlada).
+
+Origen: retro Épica 7, patrón 1 — tres instancias de división por cero en 7-2 (`difPct`, `calcNuevoAvg`, `calcNuevaPlusvaliaPct`) atrapadas en review, no en dev.
+
 ## mem0 — usar SOLO en estos casos
 
 - Tomaste una decisión que contradice o extiende el story file Y afectará historias futuras
