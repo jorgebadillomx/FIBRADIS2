@@ -280,7 +280,7 @@ development_status:
   5-12-reports-url-y-discovery-oficial: done
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
-  epic-8: in-progress
+  epic-8: done
   # story 8-1 creada — sección pública "Conoce las FIBRAs" con 5 tabs educativos y editor en Ops
   8-1-seccion-educativa-conoce-las-fibras: done
   # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
