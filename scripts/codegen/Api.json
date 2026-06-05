@@ -3425,6 +3425,48 @@
         }
       }
     },
+    "/api/v1/compare": {
+      "get": {
+        "tags": [
+          "Compare"
+        ],
+        "parameters": [
+          {
+            "name": "tickers",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComparadorFibraDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/portfolio/status": {
       "get": {
         "tags": [
@@ -4228,6 +4270,272 @@
         "properties": {
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "ComparadorDistribucionesDto": {
+        "required": [
+          "distribucionTrimestral",
+          "yieldCalculadoPct",
+          "yieldDecretadoPct"
+        ],
+        "type": "object",
+        "properties": {
+          "distribucionTrimestral": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "yieldCalculadoPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "yieldDecretadoPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ComparadorFibraDto": {
+        "required": [
+          "fibraId",
+          "ticker",
+          "nombre",
+          "mercado",
+          "fundamentales",
+          "distribuciones",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "fibraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticker": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "mercado": {
+            "$ref": "#/components/schemas/ComparadorMercadoDto"
+          },
+          "fundamentales": {
+            "$ref": "#/components/schemas/ComparadorFundamentalesDto"
+          },
+          "distribuciones": {
+            "$ref": "#/components/schemas/ComparadorDistribucionesDto"
+          },
+          "score": {
+            "$ref": "#/components/schemas/ComparadorScoreDto"
+          }
+        }
+      },
+      "ComparadorFundamentalesDto": {
+        "required": [
+          "periodo",
+          "capRate",
+          "navPerCbfi",
+          "ltv",
+          "noiMargin",
+          "ffoMargin"
+        ],
+        "type": "object",
+        "properties": {
+          "periodo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "capRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "navPerCbfi": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ltv": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "noiMargin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ffoMargin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ComparadorMercadoDto": {
+        "required": [
+          "precioActual",
+          "cambiaDiaPct",
+          "avg52S",
+          "volumen",
+          "freshnessStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "precioActual": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "cambiaDiaPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "avg52S": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "volumen": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "freshnessStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ComparadorScoreDto": {
+        "required": [
+          "score",
+          "isLimitedData",
+          "isExcluded",
+          "navDescuentoScore",
+          "dividendYieldScore",
+          "ltvScore",
+          "noiMarginScore",
+          "priceVs52wScore"
+        ],
+        "type": "object",
+        "properties": {
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isLimitedData": {
+            "type": "boolean"
+          },
+          "isExcluded": {
+            "type": "boolean"
+          },
+          "navDescuentoScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "dividendYieldScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ltvScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "noiMarginScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "priceVs52wScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
@@ -7661,6 +7969,9 @@
     },
     {
       "name": "Fundamentals"
+    },
+    {
+      "name": "Compare"
     },
     {
       "name": "Portfolio"

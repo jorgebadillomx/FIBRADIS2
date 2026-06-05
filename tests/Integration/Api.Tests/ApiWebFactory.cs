@@ -1,5 +1,6 @@
 using Domain.Auth;
 using Domain.Catalog;
+using Domain.Fundamentals;
 using Domain.Market;
 using Domain.News;
 using Infrastructure.Persistence.SqlServer;
@@ -197,6 +198,145 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                     Volume = 1_000_000L,
                 });
             }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    public async Task SeedCompareAsync()
+    {
+        await SeedMarketAsync();
+
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        var funo = await db.Fibras.FirstAsync(f => f.Ticker == "FUNO11");
+        var fmty = await db.Fibras.FirstAsync(f => f.Ticker == "FMTY14");
+        var terra = await db.Fibras.FirstAsync(f => f.Ticker == "TERRA13");
+
+        if (!await db.PriceSnapshots.AnyAsync(p => p.FibraId == fmty.Id))
+        {
+            db.PriceSnapshots.Add(new PriceSnapshot
+            {
+                Id = Guid.NewGuid(),
+                FibraId = fmty.Id,
+                Ticker = "FMTY14",
+                LastPrice = 16.20m,
+                DailyChange = -0.08m,
+                DailyChangePct = -0.49m,
+                Volume = 2_345_678L,
+                Week52High = 17.80m,
+                Week52Low = 15.10m,
+                CapturedAt = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(8),
+                Status = MarketDataStatus.Processed,
+            });
+        }
+
+        if (!await db.DailySnapshots.AnyAsync(d => d.FibraId == fmty.Id))
+        {
+            foreach (var daysAgo in new[] { 12, 62, 188 })
+            {
+                db.DailySnapshots.Add(new DailySnapshot
+                {
+                    Id = Guid.NewGuid(),
+                    FibraId = fmty.Id,
+                    Ticker = "FMTY14",
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-daysAgo)),
+                    Open = 15.90m,
+                    High = 16.30m,
+                    Low = 15.70m,
+                    Close = daysAgo == 12 ? 16.20m : daysAgo == 62 ? 16.00m : 15.80m,
+                    Volume = 1_500_000L + daysAgo * 1000L,
+                });
+            }
+        }
+
+        if (!await db.Distributions.AnyAsync(d => d.FibraId == fmty.Id))
+        {
+            foreach (var (date, amount) in new[]
+            {
+                (new DateOnly(2025, 3, 17), 0.34m),
+                (new DateOnly(2025, 6, 16), 0.35m),
+                (new DateOnly(2025, 9, 15), 0.36m),
+                (new DateOnly(2025, 12, 15), 0.37m),
+            })
+            {
+                db.Distributions.Add(new Distribution
+                {
+                    Id = Guid.NewGuid(),
+                    FibraId = fmty.Id,
+                    Ticker = "FMTY14",
+                    PaymentDate = date,
+                    AmountPerUnit = amount,
+                    Currency = "MXN",
+                    Source = "compare-seed",
+                    CapturedAt = DateTimeOffset.UtcNow,
+                });
+            }
+        }
+
+        if (!await db.FundamentalRecords.AnyAsync(r => r.FibraId == funo.Id && r.Period == "Q4-2025"))
+        {
+            db.FundamentalRecords.Add(new FundamentalRecord
+            {
+                Id = Guid.NewGuid(),
+                FibraId = funo.Id,
+                Period = "Q4-2025",
+                Status = "processed",
+                ProcessingMode = "manual",
+                CapRate = 0.071m,
+                NavPerCbfi = 25.40m,
+                Ltv = 0.31m,
+                NoiMargin = 0.72m,
+                FfoMargin = 0.64m,
+                QuarterlyDistribution = 0.38m,
+                Summary = "FUNO11 con datos completos para comparador.",
+                CapturedAt = DateTimeOffset.UtcNow.AddMinutes(-3),
+                ConfirmedAt = DateTimeOffset.UtcNow.AddMinutes(-1),
+            });
+        }
+
+        if (!await db.FundamentalRecords.AnyAsync(r => r.FibraId == fmty.Id && r.Period == "Q4-2025"))
+        {
+            db.FundamentalRecords.Add(new FundamentalRecord
+            {
+                Id = Guid.NewGuid(),
+                FibraId = fmty.Id,
+                Period = "Q4-2025",
+                Status = "processed",
+                ProcessingMode = "manual",
+                CapRate = 0.061m,
+                NavPerCbfi = null,
+                Ltv = null,
+                NoiMargin = null,
+                FfoMargin = null,
+                QuarterlyDistribution = 0.36m,
+                Summary = "FMTY14 con datos parciales para el comparador.",
+                CapturedAt = DateTimeOffset.UtcNow.AddMinutes(-2),
+                ConfirmedAt = DateTimeOffset.UtcNow,
+            });
+        }
+
+        if (!await db.FundamentalRecords.AnyAsync(r => r.FibraId == terra.Id && r.Period == "Q4-2025"))
+        {
+            db.FundamentalRecords.Add(new FundamentalRecord
+            {
+                Id = Guid.NewGuid(),
+                FibraId = terra.Id,
+                Period = "Q4-2025",
+                Status = "processed",
+                ProcessingMode = "manual",
+                CapRate = 0.065m,
+                NavPerCbfi = 18.90m,
+                Ltv = 0.28m,
+                NoiMargin = 0.69m,
+                FfoMargin = 0.61m,
+                QuarterlyDistribution = 0.18m,
+                Summary = "TERRA13 sin precio para validar exclusión de score.",
+                CapturedAt = DateTimeOffset.UtcNow.AddMinutes(-4),
+                ConfirmedAt = DateTimeOffset.UtcNow.AddMinutes(-2),
+            });
         }
 
         await db.SaveChangesAsync();
