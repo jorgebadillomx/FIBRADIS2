@@ -3838,6 +3838,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    tickers: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComparadorFibraDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolio/status": {
         parameters: {
             query?: never;
@@ -4607,6 +4653,64 @@ export interface components {
         };
         ChangePasswordRequest: {
             newPassword: string;
+        };
+        ComparadorDistribucionesDto: {
+            /** Format: double */
+            distribucionTrimestral: null | number | string;
+            /** Format: double */
+            yieldCalculadoPct: null | number | string;
+            /** Format: double */
+            yieldDecretadoPct: null | number | string;
+        };
+        ComparadorFibraDto: {
+            /** Format: uuid */
+            fibraId: string;
+            ticker: string;
+            nombre: string;
+            mercado: components["schemas"]["ComparadorMercadoDto"];
+            fundamentales: components["schemas"]["ComparadorFundamentalesDto"];
+            distribuciones: components["schemas"]["ComparadorDistribucionesDto"];
+            score: components["schemas"]["ComparadorScoreDto"];
+        };
+        ComparadorFundamentalesDto: {
+            periodo: null | string;
+            /** Format: double */
+            capRate: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            ltv: null | number | string;
+            /** Format: double */
+            noiMargin: null | number | string;
+            /** Format: double */
+            ffoMargin: null | number | string;
+        };
+        ComparadorMercadoDto: {
+            /** Format: double */
+            precioActual: null | number | string;
+            /** Format: double */
+            cambiaDiaPct: null | number | string;
+            /** Format: double */
+            avg52S: null | number | string;
+            /** Format: int64 */
+            volumen: null | number | string;
+            freshnessStatus: null | string;
+        };
+        ComparadorScoreDto: {
+            /** Format: double */
+            score: null | number | string;
+            isLimitedData: boolean;
+            isExcluded: boolean;
+            /** Format: double */
+            navDescuentoScore: null | number | string;
+            /** Format: double */
+            dividendYieldScore: null | number | string;
+            /** Format: double */
+            ltvScore: null | number | string;
+            /** Format: double */
+            noiMarginScore: null | number | string;
+            /** Format: double */
+            priceVs52wScore: null | number | string;
         };
         ConfigAuditLogDto: {
             /** Format: uuid */

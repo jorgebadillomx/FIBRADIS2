@@ -7,6 +7,7 @@ import { NoticiasListPage } from '@/modules/noticias/NoticiasListPage'
 import { FundamentalesPage } from '@/modules/fundamentales/FundamentalesPage'
 import { ConoceLasFibrasPage } from '@/modules/conoce-las-fibras/ConoceLasFibrasPage'
 import { CatalogoPage } from '@/modules/catalogo/CatalogoPage'
+import { ComparadorPage } from '@/modules/comparador/ComparadorPage'
 import { PortafolioPage } from '@/modules/portafolio/PortafolioPage'
 import { OportunidadesPage } from '@/modules/oportunidades/OportunidadesPage'
 import { LoginPage } from '@/modules/auth/LoginPage'
@@ -20,6 +21,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/catalogo', element: <CatalogoPage /> },
+      { path: '/comparar', element: <ComparadorPage /> },
       { path: '/fibras/:ticker', element: <FibraPage /> },
       { path: '/noticias', element: <NoticiasListPage /> },
       { path: '/conoce-las-fibras', element: <ConoceLasFibrasPage /> },

@@ -340,3 +340,12 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **Estado `'checking'` sin timeout en `refreshOpsSession`** [`src/Web/Ops/src/api/authApi.ts`] — Timeout del browser como fallback; aceptable para tool admin de bajo volumen. Agregar `AbortController` con timeout configurable en Epic 5 junto con infraestructura de resiliencia global.
 
 - **[fix-amefibra-fibra-matching] FundamentalRecords huérfanos sin manifest link no corregidos por migración** — Si la migración FixFibraPlusPrologisMismatch no puede encontrar el registro vía last_processed_record_id (manifest.LastProcessedRecordId = null), el FundamentalRecord queda con FibraId de Prologis. Poco frecuente; se recupera en el siguiente run del pipeline con el algoritmo corregido.
+
+
+## Deferred from: code review of 8-3-comparador-publico (2026-06-05)
+
+- ~~**D1 — `fetchAllFibras` capped at 100**~~ ✅ **RESUELTO 2026-06-05** — Loop de paginación implementado en `fibrasApi.ts`; carga todas las páginas hasta que `items.length < pageSize`.
+- ~~**D2 — `/comparar` ausente del listado SSR prerender**~~ ✅ **RESUELTO 2026-06-05** — Ruta agregada en `routesToRender` de `prerender.mjs`; meta tags disponibles para crawlers.
+- ~~**D3 — Botón "Reintentar" siempre visible en el selector**~~ ✅ **RESUELTO 2026-06-05** — Botón condicional a `hasComparisonError`; solo se muestra cuando hay error activo.
+- ~~**D4 — Browse-on-focus suprimido**~~ ✅ **RESUELTO 2026-06-05** — Eliminada la condición `search.trim().length > 0` de `showSuggestions`; el pool inicial de 8 FIBRAs se renderiza al hacer foco.
+- **D5 — `cutoff` usa `DateTime.UtcNow` fresco** [`src/Server/Api/Endpoints/Public/CompareEndpoints.cs:99`] — `utcNow` ya está capturado en línea 71; la segunda llamada puede diferir milisegundos a medianoche UTC. Inmaterial en práctica.

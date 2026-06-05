@@ -6,6 +6,8 @@
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
 # last_updated: 2026-06-05
+# epic-8 done — retrospectiva completa (epic-8-retro-2026-06-05), D1-D4 resueltos, TS build limpio
+# story 8-3 done — code review pass (5 patches: P1 isExcluded sub-rows renderScoreComponent, P2 parseCompareTickers cap MAX_COMPARE_FIBRAS, P3 duplicate queries, P4 OpportunityWeights.Balanced, P5 meta description). 5 defers.
 # story 7-4 ready-for-dev — branch story/7-4-favoritos creado; favoritos con PK compuesta portfolio.UserFavorites, 3 endpoints REST, hook useFavorites optimistic, StarButton en M5/M8/M9
 # story 7-3 creada — monitoreo cobertura universo, banner degradado (30%), suspensión (50%), umbral configurable desde Ops
 # story 7-2 done — code review pass (4 patches: P1 difPct guard costoPromedio>0, P2 rankingQuery.isError handler, P3 guards denominador cero en funciones puras, P4 tests edge cases). 4 defers. 79/79 unit tests verdes
@@ -285,8 +287,10 @@ development_status:
   8-1-seccion-educativa-conoce-las-fibras: done
   # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
   8-2-catalogo-fibras-descripcion-pagina-publica: done
-  # sprint-retro-ext-2026-05-31 — cubre 8-1, 8-2 + cross-epic (5-9, 4-11, 5-10); 5-8 y 4-10 con deuda crítica pendiente
+  # epic-8-retro-2026-06-05 — cubre 8-3 completa; D1-D4 resueltos post-retro (paginación fetchAllFibras, prerender /comparar, Reintentar condicional, browse-on-focus); TS build failure schema types corregido
   epic-8-retrospective: done
+  # story 8-3 done — code review pass (5 patches: P1 isExcluded sub-rows renderScoreComponent, P2 parseCompareTickers cap MAX_COMPARE_FIBRAS, P3 duplicate GetLatestSnapshotPerFibraAsync+GetSummaryLatestAsync queries, P4 usar OpportunityWeights.Balanced, P5 meta description 117→132 chars). 5 defers.
+  8-3-comparador-publico: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: done

@@ -65,7 +65,7 @@ Antes de marcar `done`, verificar:
 
 - [ ] La ruta responde 200 en hit directo (no solo desde la SPA navegando)
 - [ ] `<title>Nombre de la página — FIBRADIS</title>` presente en el componente
-- [ ] `<meta name="description" content="..."/>` con descripción útil de 120-160 chars
+- [ ] `<meta name="description" content="..."/>` con descripción útil de 120-160 chars — **verificar con contador** (`"tu texto".length` en consola del navegador o en el editor)
 - [ ] `<meta property="og:title" content="..."/>` — mismo texto que `<title>`
 - [ ] `<meta property="og:description" content="..."/>` — mismo o similar a description
 - [ ] `<meta property="og:type" content="website"/>` (o `article` para fichas de noticias)
@@ -93,6 +93,30 @@ var dists     = await repo.GetDistributionsAsync(id, 365, ct);
 
 **Regla**: si el endpoint llama a más de un método del mismo repositorio, usar `await` secuencial. La ganancia de paralelismo no existe cuando el cuello de botella es la misma conexión de BD.
 
+## Testing — Checklist de ACs antes del primer commit
+
+Para cada Criterio de Aceptación que defina un límite, borde o caso null, debe existir al menos un test unitario explícito **antes del primer commit**, no solo en el code review. Aplica especialmente a:
+
+- Límites numéricos (`min`/`max` items, rangos de chars, conteos)
+- Comportamiento con `null`/`undefined` en datos de la API
+- Flags booleanos de estado (`isExcluded`, `isLimitedData`, `isError`)
+- Validaciones de URL/query params (tickers en `/comparar`, paginación, etc.)
+
+```typescript
+// Ejemplo: AC6 del comparador — máximo 4 FIBRAs desde URL
+it('limita a MAX_COMPARE_FIBRAS tickers al parsear query param', () => {
+  const result = parseCompareTickers('A,B,C,D,E')  // 5 tickers en URL
+  expect(result).toHaveLength(MAX_COMPARE_FIBRAS)  // ← primer test antes de commit
+})
+
+// Ejemplo: AC5 — isExcluded muestra — en sub-componentes de score
+it('renderScoreComponent muestra — cuando isExcluded es true', () => {
+  // ...
+})
+```
+
+Origen: retro Épica 8 — P1 (`isExcluded` en sub-rows) y P2 (`parseCompareTickers` sin cap) atrapados en review, no en dev.
+
 ## EF Core — batch queries con JOINs manuales
 
 Los bugs de deduplicación son silenciosos con InMemory provider porque LINQ en memoria es más permisivo que SQL. Dos historias (5-10 y 4-11) tuvieron bugs de este tipo que solo el reviewer detectó.
@@ -115,6 +139,26 @@ var links = await _db.ArticleFibras
 ```
 
 **Regla de deduplicación**: si el resultado debe ser "uno por entidad padre" (una fila por FIBRA, un registro por período), agregar `DistinctBy` o `GroupBy` + `First` explícitamente, y documentar la invariante en Dev Notes. No asumir que el WHERE filtra correctamente.
+
+## Endpoints con 5+ queries — documentar el grafo antes de implementar
+
+Cuando un endpoint necesita 5 o más queries de base de datos, el grafo completo debe quedar documentado en Dev Notes **antes de codear el handler**. Esto previene la duplicación silenciosa de queries (e.g., cargar el mismo conjunto dos veces porque el dev perdió la pista de qué ya se consultó).
+
+**Formato mínimo en Dev Notes:**
+
+```text
+Queries de este endpoint (en orden de ejecución):
+1. fibraRepo.GetByTickerAsync — valida tickers seleccionados
+2. marketRepo.GetLatestSnapshotPerFibraAsync — snapshots seleccionados y universo completo (una sola llamada, reusar)
+3. fundamentalRepo.GetSummaryLatestAsync — fundas seleccionados y universo completo (una sola llamada, reusar)
+4. marketRepo.GetDistributionsByFibrasAsync — distribuciones seleccionados
+5. marketRepo.GetWeek52AvgByFibrasAsync — AVG 52S seleccionados
+6. fibraRepo.GetAllActiveAsync — universo para score
+7. marketRepo.GetDistributionsByFibrasAsync (universo) — reutilizar 4 si los ids coinciden
+8. marketRepo.GetWeek52AvgByFibrasAsync (universo) — reutilizar 5 si los ids coinciden
+```
+
+Origen: retro Épica 8 — P3 en CompareEndpoints llamaba `GetLatestSnapshotPerFibraAsync` y `GetSummaryLatestAsync` dos veces (para seleccionados y para universo) en lugar de reusar.
 
 ## Hangfire jobs — async end-to-end en clientes HTTP
 

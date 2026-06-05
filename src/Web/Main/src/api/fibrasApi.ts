@@ -22,11 +22,26 @@ apiClient.use({
 })
 
 export async function fetchAllFibras() {
-  const { data, error } = await apiClient.GET('/api/v1/fibras', {
-    params: { query: { page: 1, pageSize: 100 } },
+  const pageSize = 100
+  const { data: first, error: firstError } = await apiClient.GET('/api/v1/fibras', {
+    params: { query: { page: 1, pageSize } },
   })
-  if (error) throw new Error(`Error al obtener fibras: ${JSON.stringify(error)}`)
-  return data?.items ?? []
+  if (firstError) throw new Error(`Error al obtener fibras: ${JSON.stringify(firstError)}`)
+
+  const all = [...(first?.items ?? [])]
+  let page = 2
+  while (all.length > 0 && all.length % pageSize === 0) {
+    const { data, error } = await apiClient.GET('/api/v1/fibras', {
+      params: { query: { page, pageSize } },
+    })
+    if (error) throw new Error(`Error al obtener fibras: ${JSON.stringify(error)}`)
+    const items = data?.items ?? []
+    all.push(...items)
+    if (items.length < pageSize) break
+    page++
+  }
+
+  return all
 }
 
 export async function fetchMarketSnapshots() {
