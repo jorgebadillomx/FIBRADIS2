@@ -17,7 +17,9 @@ public static class FavoriteEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             var ids = await repo.GetFavoriteIdsAsync(userId, ct);
             return Results.Ok(new UserFavoritesDto(ids));
         })
@@ -30,7 +32,9 @@ public static class FavoriteEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             await repo.AddAsync(userId, fibraId, ct);
             return Results.NoContent();
         })
@@ -43,7 +47,9 @@ public static class FavoriteEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var userId = GetUserId(ctx);
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
             await repo.RemoveAsync(userId, fibraId, ct);
             return Results.NoContent();
         })
@@ -53,6 +59,6 @@ public static class FavoriteEndpoints
         return app;
     }
 
-    private static Guid GetUserId(HttpContext ctx) =>
-        Guid.Parse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private static Guid? TryGetUserId(HttpContext ctx) =>
+        Guid.TryParse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 }
