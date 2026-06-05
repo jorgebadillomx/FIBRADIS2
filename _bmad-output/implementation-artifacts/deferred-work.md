@@ -2,7 +2,7 @@
 
 ## Deferred from: code review of 7-4-favoritos-marcar-y-destacar-fibras-en-todas-las-superficies (2026-06-05)
 
-- **D1 (MEDIUM): `GetUserId` sin guarda si falta el claim `NameIdentifier`** [`src/Server/Api/Endpoints/Private/FavoriteEndpoints.cs:57`] — Patrón pre-existente en todos los endpoints privados del proyecto; protegido por `RequireAuthorization("User")` que exige JWT válido. No causa problema en la práctica pero no es defensivo. Refactorizar cuando se estandarice el patrón de extracción de claims.
+- ~~**D1 (MEDIUM): `GetUserId` sin guarda si falta el claim `NameIdentifier`**~~ → **RESUELTO** 2026-06-05: `TryGetUserId` retorna `Guid?` en `OpportunityEndpoints`, `FavoriteEndpoints`, `PortfolioEndpoints` (16 handlers). Cada handler responde 401 si falta el claim.
 - **D2 (MEDIUM): Sin FK para `UserFavorite.FibraId`/`UserId`** [`portfolio.UserFavorites`] — Convención del módulo Portfolio: ninguna entidad declara FKs explícitas. Si una FIBRA es eliminada, sus favoritos quedan huérfanos y se siguen devolviendo en `GetFavoriteIdsAsync`. Evaluar al introducir borrado físico de FIBRAs.
 - **D3 (LOW): `isAuthenticated` no migrado en 4 callers pre-existentes** [`PublicLayout.tsx`, `LoginPage.tsx`] — Usan `status === 'authenticated'` inline en lugar del nuevo campo `isAuthenticated` del contexto. Pre-existente antes de esta historia; cosmético, no funcional.
 - **D4 (LOW): Separador visual desplazado cuando la última fila favorita está expandida** [`OportunidadesPage.tsx:181`, `PositionsTable.tsx:254`] — `showSeparator` se renderiza después de la fila de detalle expandida, no de la fila principal. Edge case visual, sin impacto funcional.
@@ -11,6 +11,8 @@
 - **D7 (LOW): `useFavorites()` se instancia en rutas públicas para usuarios anónimos** [`FibraPage.tsx`] — La query está deshabilitada (`enabled: isAuthenticated`), overhead mínimo. Aceptable como está.
 
 ## Deferred from: code review of 7-3-monitoreo-de-cobertura-del-universo-y-ranking-degradado (2026-06-05)
+
+- ~~**D1 (HIGH): Pre-existing Task.WhenAll con múltiples repos compartiendo AppDbContext**~~ → **RESUELTO** 2026-06-05 en `fix/deuda-d1-d2-whenall-getuserid`: awaits secuenciales en `OpportunityEndpoints.cs`
 
 - **D5 (MEDIUM): `degradationThresholdPct = 0` haría todo el universo perpetuamente "Degraded"** [`src/Server/Application/Opportunities/UniverseCoverageCalculator.cs`] — Solo alcanzable vía `UPDATE` directo en SQL; el endpoint valida 1–49, `GetAsync` fallback usa default C# `= 30`. Agregar guard `ArgumentOutOfRangeException` o `Math.Max(1, ...)` en historia futura del módulo.
 - **D6 (LOW): Status strings `"Normal"/"Degraded"/"Suspended"` sin type union en TypeScript** [`src/Web/Main/src/modules/oportunidades/OportunidadesPage.tsx`] — Comparaciones `coverage?.status === 'Degraded'` son frágiles a renombres silenciosos. Definir `type CoverageStatus = 'Normal' | 'Degraded' | 'Suspended'` cuando se toque este módulo de nuevo.
