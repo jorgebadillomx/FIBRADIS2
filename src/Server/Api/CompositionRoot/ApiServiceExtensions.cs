@@ -98,6 +98,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFundamentalsAutomationService, FundamentalsAutomationService>();
         builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         builder.Services.AddScoped<IOpportunityWeightsRepository, OpportunityWeightsRepository>();
+        builder.Services.AddScoped<IUserFavoritesRepository, UserFavoritesRepository>();
         builder.Services.AddScoped<IPortfolioUploadService, PortfolioUploadService>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
