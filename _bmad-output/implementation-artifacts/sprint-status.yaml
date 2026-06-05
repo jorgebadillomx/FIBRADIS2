@@ -280,13 +280,15 @@ development_status:
   5-12-reports-url-y-discovery-oficial: done
 
   # ── Épica 8: Contenido Editorial ──────────────────────────────────────────
-  epic-8: done
+  epic-8: in-progress
   # story 8-1 creada — sección pública "Conoce las FIBRAs" con 5 tabs educativos y editor en Ops
   8-1-seccion-educativa-conoce-las-fibras: done
   # story 8-2 creada — campo Description en Fibra, página pública /catalogo con grid de tarjetas, indicador en Ops
   8-2-catalogo-fibras-descripcion-pagina-publica: done
   # sprint-retro-ext-2026-05-31 — cubre 8-1, 8-2 + cross-epic (5-9, 4-11, 5-10); 5-8 y 4-10 con deuda crítica pendiente
   epic-8-retrospective: done
+  # story 8-3 creada — comparador público /comparar: 2-4 FIBRAs lado a lado, 4 bloques (Mercado/Fundamentales/Distribuciones/Score), endpoint público GET /api/v1/compare, URL state via ?fibras=
+  8-3-comparador-publico: ready-for-dev
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: done
