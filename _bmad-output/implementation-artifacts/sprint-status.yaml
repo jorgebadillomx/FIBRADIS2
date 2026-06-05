@@ -2,7 +2,8 @@
 # sprint-retro-ext-2026-05-31 creada — cubre 5-9, 4-11, 5-10, 8-1, 8-2; documenta deuda crítica de 5-8 (9 patches sin aplicar) y 4-10 (sin code review); 4 action items antes de Épica 6
 # story 5-5 done — code review 6 patches aplicados (P1: doble copia MemoryStream, P2: log PDF sin texto, P3: error silencioso upload + validación tamaño frontend, P4: badge Error IA con mensaje y dismiss, P5: ProblemDetails parsing, P6: test positivo PdfMarkdownExtractor). 3/3 unit tests verdes
 # generated: 2026-05-15
-# last_updated: 2026-06-04
+# story 6-7 done — code review pass (4 patches: P1 EmailEncryptor key base64-decode vs SHA256-hash, P2 AuthService login order null→disabled→pwd, P3 password inputs type=password, P4 generateStrongPassword crypto.getRandomValues+Fisher-Yates). 4 defers (D1 ChangePasswordAsync no revoca tokens, D2 SetUserActiveAsync sin guard último AdminOps, D3 toggleActiveMutation sin onError, D4 PaymentCell sin onError). 25/25 unit tests verdes
+# last_updated: 2026-06-05
 # story 5-11 done — code review pass (9 patches: P1 null guard TryLogPipelineError, P2 WarmupAsync lazy+tolerante, P3 async GetPageCount/ParseListingItems, P4 defaultValue 360, P5 PDF después del record BD, P6 CancellationToken.None post-catch, P7 ShortYearRegex rango 2018-2035, P8 AiCallLog Context recordId, P9 test listings vacíos)
 # story 5-11 review — AMEFIBRA discovery incremental, manifest de fuentes, pipeline Fundamentals con Run now/cadencia, dashboard+logs Ops, migración + tests + builds
 # story 8-2 done — code review pass (0 patches, 8 defers: ReactMarkdown sin sanitize, fetchAllFibras cap 100, count label, debounce, useMemo, error state breadcrumb, shortName search, direct-hit test)
@@ -77,7 +78,8 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-04
+last_updated: 2026-06-05
+# story 7-1 done — code review pass (5 patches: P1 DefaultWeightsDto dead field, P2 effectiveWeights ||0 bug, P3 saveWeightsMutation onError, P4 ComponentBar contribution pts, P5 button type attribute)
 # story 6-9 done — code review pass (7 patches: P1 refreshMainSession tras acceptTerms, P2 idempotencia AcceptTermsAsync, P3 tests AcceptTermsAsync x3, P4 validación termsText obligatorio si termsEnabled, P5 UserNotFoundException→401 en accept-terms, P6 tests repositorio TermsEnabled+ContactEmail, P7 condición redundante acceptTermsApi). 7 defers.
 # story 6-6 done — code review pass (1 patch: P1 ArchivePortfolioAsync carga posiciones dentro de transacción). 6 defers. 29 unit tests verdes
 # story 6-5 done — code review pass (7 patches: P1 TOCTOU race condition UserService, P2 password en logs seed, P3 open redirect LoginPage, P4 validación server-side CreateUserRequest, P5 AC7 logout navigate('/'), P6 navigate en useEffect LoginPage, P7 middleware 401 solo con token activo). 5 defers.
@@ -280,12 +282,12 @@ development_status:
   epic-8-retrospective: done
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
-  epic-6: in-progress
+  epic-6: done
   6-1-carga-y-validacion-del-portafolio: done
   6-2-kpis-del-portafolio-y-tabla-con-multi-sort-y-columnas-configurables: done
   6-3-filas-expandibles-con-detalle-de-posicion-y-badge-de-senal-nav: done
   6-4-edicion-inline-y-eliminacion-de-posiciones: done
-  epic-6-retrospective: optional
+  epic-6-retrospective: done
 
   # story 6-5 creada — autenticación SPA Main (LoginPage, AuthContext, ProtectedRoute, apiClient middleware), menú público/privado, gestión de usuarios desde Ops
   6-5-autenticacion-y-menus-privados: done
@@ -300,8 +302,9 @@ development_status:
   6-9-terminos-footer-contenido: done
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
-  epic-7: backlog
-  7-1-score-de-oportunidad-y-ranking-del-universo: backlog
+  epic-7: in-progress
+  # story 7-1 creada — score de oportunidad 5 componentes, ranking universo activo, sliders de peso configurables y perfiles persistibles
+  7-1-score-de-oportunidad-y-ranking-del-universo: done
   7-2-vista-promediar-posicion-con-simulador: backlog
   7-3-monitoreo-de-cobertura-del-universo-y-ranking-degradado: backlog
   7-4-favoritos-marcar-y-destacar-fibras-en-todas-las-superficies: backlog

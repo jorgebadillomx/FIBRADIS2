@@ -11,10 +11,17 @@ public class EmailEncryptor : IEmailEncryptor
 
     public EmailEncryptor(IConfiguration config)
     {
-        // Si no hay clave configurada se usa un default interno.
-        // Las emails no quedan en claro en BD aunque no se configure el secreto.
-        var raw = config["Encryption:EmailKey"] ?? "FIBRADIS-EMAIL-KEY-DEFAULT-2026";
-        _key = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
+        var raw = config["Encryption:EmailKey"];
+        if (!string.IsNullOrWhiteSpace(raw))
+        {
+            _key = Convert.FromBase64String(raw);
+        }
+        else
+        {
+            // Fallback para entornos sin user-secrets — emails cifrados pero con clave conocida.
+            // Configurar Encryption:EmailKey en producción con: [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+            _key = SHA256.HashData(Encoding.UTF8.GetBytes("FIBRADIS-EMAIL-KEY-DEFAULT-2026"));
+        }
     }
 
     public string Encrypt(string plainEmail)

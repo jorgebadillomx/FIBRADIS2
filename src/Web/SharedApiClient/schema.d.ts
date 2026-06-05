@@ -4302,6 +4302,133 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpportunityRankingResponseDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/weights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpportunityWeightsDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OpportunityWeightsDto"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4718,6 +4845,61 @@ export interface components {
             termsEnabled: boolean;
             termsText: null | string;
             contactEmail: null | string;
+        };
+        OpportunityFibraRowDto: {
+            /** Format: uuid */
+            fibraId: string;
+            ticker: string;
+            nombre: string;
+            /** Format: double */
+            score: null | number | string;
+            /** Format: int32 */
+            componentCount: number | string;
+            isLimitedData: boolean;
+            /** Format: double */
+            navDiscountScore: null | number | string;
+            /** Format: double */
+            dividendYieldScore: null | number | string;
+            /** Format: double */
+            ltvInvertedScore: null | number | string;
+            /** Format: double */
+            noiMarginScore: null | number | string;
+            /** Format: double */
+            pricevs52wScore: null | number | string;
+            /** Format: double */
+            navDiscountPct: null | number | string;
+            /** Format: double */
+            dividendYieldPct: null | number | string;
+            /** Format: double */
+            ltvPct: null | number | string;
+            /** Format: double */
+            noiMarginPct: null | number | string;
+            /** Format: double */
+            priceVsAvg52wPct: null | number | string;
+            /** Format: double */
+            precioActual: null | number | string;
+            /** Format: double */
+            navPerCbfi: null | number | string;
+            /** Format: double */
+            avg52w: null | number | string;
+        };
+        OpportunityRankingResponseDto: {
+            ranked: components["schemas"]["OpportunityFibraRowDto"][];
+            limitedData: components["schemas"]["OpportunityFibraRowDto"][];
+            weights: components["schemas"]["OpportunityWeightsDto"];
+        };
+        OpportunityWeightsDto: {
+            /** Format: double */
+            navDiscount: number | string;
+            /** Format: double */
+            dividendYield: number | string;
+            /** Format: double */
+            ltvInverted: number | string;
+            /** Format: double */
+            noiMargin: number | string;
+            /** Format: double */
+            pricevs52w: number | string;
+            profile: string;
         };
         OpsNewsArticleDto: {
             /** Format: uuid */

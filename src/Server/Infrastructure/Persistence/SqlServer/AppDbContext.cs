@@ -38,6 +38,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PortfolioPosition> PortfolioPositions => Set<PortfolioPosition>();
     public DbSet<PortfolioSnapshot> PortfolioSnapshots => Set<PortfolioSnapshot>();
     public DbSet<UserPortfolioSettings> UserPortfolioSettings => Set<UserPortfolioSettings>();
+    public DbSet<UserOpportunityWeights> UserOpportunityWeights => Set<UserOpportunityWeights>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

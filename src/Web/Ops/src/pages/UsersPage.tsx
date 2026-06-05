@@ -29,7 +29,12 @@ function generateStrongPassword(): string {
   const digits = '23456789'
   const special = '!@#$%&*'
   const all = upper + lower + digits + special
-  const pick = (s: string) => s[Math.floor(Math.random() * s.length)]
+  const randomIndex = (max: number) => {
+    const buf = new Uint32Array(1)
+    crypto.getRandomValues(buf)
+    return buf[0] % max
+  }
+  const pick = (s: string) => s[randomIndex(s.length)]
   const chars = [
     pick(upper), pick(upper),
     pick(lower), pick(lower),
@@ -37,7 +42,11 @@ function generateStrongPassword(): string {
     pick(special),
     ...Array.from({ length: 5 }, () => pick(all)),
   ]
-  return chars.sort(() => Math.random() - 0.5).join('')
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomIndex(i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+  return chars.join('')
 }
 
 // ── Create form ──────────────────────────────────────────────────────────────
@@ -123,7 +132,7 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 8 chars, mayúscula, número, especial"
               required
-              type="text"
+              type="password"
               value={password}
             />
             <button
@@ -231,7 +240,7 @@ function ChangePasswordDialog({ userId, onClose }: { userId: string; onClose: ()
                 onChange={(e) => setPwd(e.target.value)}
                 placeholder="Mínimo 8 chars, mayúscula, número, especial"
                 required
-                type="text"
+                type="password"
                 value={pwd}
               />
               <button

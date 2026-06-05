@@ -134,14 +134,16 @@ public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
     {
         var now = DateTimeOffset.UtcNow;
 
-        var updated = await db.Set<UserPortfolioSettings>()
-            .Where(s => s.UserId == userId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(s => s.ColumnConfigJson, columnConfigJson)
-                .SetProperty(s => s.UpdatedAt, now), ct);
+        var existing = await db.Set<UserPortfolioSettings>()
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
 
-        if (updated > 0)
+        if (existing is not null)
+        {
+            existing.ColumnConfigJson = columnConfigJson;
+            existing.UpdatedAt = now;
+            await db.SaveChangesAsync(ct);
             return;
+        }
 
         var settings = new UserPortfolioSettings
         {
@@ -158,12 +160,16 @@ public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
         }
         catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
         {
+            // Concurrent insert won the race; retry as update
             db.Entry(settings).State = EntityState.Detached;
-            await db.Set<UserPortfolioSettings>()
-                .Where(s => s.UserId == userId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(s => s.ColumnConfigJson, columnConfigJson)
-                    .SetProperty(s => s.UpdatedAt, now), ct);
+            var retried = await db.Set<UserPortfolioSettings>()
+                .FirstOrDefaultAsync(s => s.UserId == userId, ct);
+            if (retried is not null)
+            {
+                retried.ColumnConfigJson = columnConfigJson;
+                retried.UpdatedAt = now;
+                await db.SaveChangesAsync(ct);
+            }
         }
     }
 
