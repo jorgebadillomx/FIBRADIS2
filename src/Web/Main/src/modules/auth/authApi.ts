@@ -68,5 +68,5 @@ export async function acceptTermsApi(): Promise<void> {
     method: 'POST',
     headers: { ...getMainAuthHeaders() },
   })
-  if (!res.ok && res.status !== 204) throw new Error('Error al aceptar términos.')
+  if (!res.ok) throw new Error('Error al aceptar términos.')
 }

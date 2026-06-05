@@ -109,7 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function acceptTerms() {
     await acceptTermsApi()
-    setHasAcceptedTerms(true)
+    try {
+      await refreshMainSession()
+    } catch {
+      // Network error — the acceptance was persisted; keep going
+    }
+    setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? true)
   }
 
   return (

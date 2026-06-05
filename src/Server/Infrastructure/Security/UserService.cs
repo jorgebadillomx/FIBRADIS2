@@ -103,6 +103,9 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         var user = await db.Users.FindAsync([userId], ct)
             ?? throw new UserNotFoundException();
 
+        if (user.HasAcceptedTerms)
+            return;
+
         user.HasAcceptedTerms = true;
         user.TermsAcceptedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);

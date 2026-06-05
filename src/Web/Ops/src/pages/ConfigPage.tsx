@@ -46,6 +46,7 @@ export function ConfigPage() {
   const [termsText, setTermsText] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [siteSuccessMessage, setSiteSuccessMessage] = useState<string | null>(null)
+  const [siteValidationError, setSiteValidationError] = useState<string | null>(null)
 
   const configQuery = useQuery({
     queryKey: ['ops-config'],
@@ -112,6 +113,11 @@ export function ConfigPage() {
 
   function handleSaveSite() {
     setSiteSuccessMessage(null)
+    setSiteValidationError(null)
+    if (termsEnabled && !termsText.trim()) {
+      setSiteValidationError('El texto de términos es obligatorio cuando el modal está activo.')
+      return
+    }
     saveSiteMutation.mutate({
       termsEnabled,
       termsText: termsText || null,
@@ -345,6 +351,11 @@ export function ConfigPage() {
             />
           </div>
 
+          {siteValidationError ? (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {siteValidationError}
+            </p>
+          ) : null}
           {siteSuccessMessage ? (
             <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               {siteSuccessMessage}

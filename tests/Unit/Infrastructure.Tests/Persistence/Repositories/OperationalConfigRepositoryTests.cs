@@ -121,6 +121,40 @@ public class OperationalConfigRepositoryTests
             entry => Assert.Equal("commission_factor", entry.FieldName));
     }
 
+    [Fact]
+    public async Task UpdateAsync_TermsEnabled_UpdatesAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var repo = new OperationalConfigRepository(db);
+
+        await repo.UpdateAsync(null, null, null, null, null, null, true, null, null, "adminops@test.com");
+
+        var config = await db.OperationalConfigs.SingleAsync();
+        var audit = await db.ConfigAuditLogs.SingleAsync();
+
+        Assert.True(config.TermsEnabled);
+        Assert.Equal("terms_enabled", audit.FieldName);
+        Assert.Equal("false", audit.PreviousValue);
+        Assert.Equal("true", audit.NewValue);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ContactEmail_UpdatesAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var repo = new OperationalConfigRepository(db);
+
+        await repo.UpdateAsync(null, null, null, null, null, null, null, null, "nuevo@fibradis.mx", "adminops@test.com");
+
+        var config = await db.OperationalConfigs.SingleAsync();
+        var audit = await db.ConfigAuditLogs.SingleAsync();
+
+        Assert.Equal("nuevo@fibradis.mx", config.ContactEmail);
+        Assert.Equal("contact_email", audit.FieldName);
+        Assert.Equal("contacto@fibradis.mx", audit.PreviousValue);
+        Assert.Equal("nuevo@fibradis.mx", audit.NewValue);
+    }
+
     private static AppDbContext CreateDbContext(bool ensureCreated = true)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

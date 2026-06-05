@@ -78,6 +78,7 @@
 
 generated: 2026-05-15
 last_updated: 2026-06-04
+# story 6-9 done — code review pass (7 patches: P1 refreshMainSession tras acceptTerms, P2 idempotencia AcceptTermsAsync, P3 tests AcceptTermsAsync x3, P4 validación termsText obligatorio si termsEnabled, P5 UserNotFoundException→401 en accept-terms, P6 tests repositorio TermsEnabled+ContactEmail, P7 condición redundante acceptTermsApi). 7 defers.
 # story 6-6 done — code review pass (1 patch: P1 ArchivePortfolioAsync carga posiciones dentro de transacción). 6 defers. 29 unit tests verdes
 # story 6-5 done — code review pass (7 patches: P1 TOCTOU race condition UserService, P2 password en logs seed, P3 open redirect LoginPage, P4 validación server-side CreateUserRequest, P5 AC7 logout navigate('/'), P6 navigate en useEffect LoginPage, P7 middleware 401 solo con token activo). 5 defers.
 # story 6-5 creada — autenticación SPA Main, menús públicos/privados, gestión de usuarios desde Ops
@@ -296,7 +297,7 @@ development_status:
   6-7-gestion-usuarios-ops: done
 
   # story 6-9 creada — T&C configurable desde Ops (modal bloqueante primer login), footer Main con contacto y aviso de privacidad, sección contenido del sitio en Ops
-  6-9-terminos-footer-contenido: review
+  6-9-terminos-footer-contenido: done
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: backlog

@@ -1,4 +1,5 @@
 using Application.Auth;
+using Domain.Auth.Exceptions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 
@@ -19,7 +20,15 @@ public static class AccountEndpoints
             if (!Guid.TryParse(sub, out var userId))
                 return Results.Unauthorized();
 
-            await svc.AcceptTermsAsync(userId, ct);
+            try
+            {
+                await svc.AcceptTermsAsync(userId, ct);
+            }
+            catch (UserNotFoundException)
+            {
+                return Results.Unauthorized();
+            }
+
             return Results.NoContent();
         })
         .RequireAuthorization()
