@@ -9,4 +9,5 @@ public sealed record UpdateOperationalConfigRequest(
     int? DistributionCadenceMinutes = null,
     bool? TermsEnabled = null,
     string? TermsText = null,
-    string? ContactEmail = null);
+    string? ContactEmail = null,
+    int? UniverseDegradationThresholdPct = null);
