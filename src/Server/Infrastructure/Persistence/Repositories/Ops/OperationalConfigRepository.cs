@@ -22,6 +22,7 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         string? termsText,
         string? contactEmail,
         string actor,
+        int? universeDegradationThresholdPct = null,
         CancellationToken ct = default)
     {
         var config = await db.OperationalConfigs.FindAsync([1], ct);
@@ -143,6 +144,19 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
                 NewValue = contactEmail,
             });
             config.ContactEmail = contactEmail;
+        }
+
+        if (universeDegradationThresholdPct.HasValue && config.UniverseDegradationThresholdPct != universeDegradationThresholdPct.Value)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor,
+                ChangedAt = now,
+                FieldName = "universe_degradation_threshold_pct",
+                PreviousValue = config.UniverseDegradationThresholdPct.ToString(CultureInfo.InvariantCulture),
+                NewValue = universeDegradationThresholdPct.Value.ToString(CultureInfo.InvariantCulture),
+            });
+            config.UniverseDegradationThresholdPct = universeDegradationThresholdPct.Value;
         }
 
         if (auditEntries.Count == 0)

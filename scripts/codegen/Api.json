@@ -3802,6 +3802,99 @@
         }
       }
     },
+    "/api/v1/portfolio/favorites": {
+      "get": {
+        "tags": [
+          "Favorites"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFavoritesDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio/favorites/{fibraId}": {
+      "put": {
+        "tags": [
+          "Favorites"
+        ],
+        "parameters": [
+          {
+            "name": "fibraId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Favorites"
+        ],
+        "parameters": [
+          {
+            "name": "fibraId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/opportunities": {
       "get": {
         "tags": [
@@ -5670,7 +5763,8 @@
           "updatedBy",
           "termsEnabled",
           "termsText",
-          "contactEmail"
+          "contactEmail",
+          "universeDegradationThresholdPct"
         ],
         "type": "object",
         "properties": {
@@ -5746,6 +5840,14 @@
               "null",
               "string"
             ]
+          },
+          "universeDegradationThresholdPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -5926,7 +6028,8 @@
         "required": [
           "ranked",
           "limitedData",
-          "weights"
+          "weights",
+          "coverage"
         ],
         "type": "object",
         "properties": {
@@ -5944,6 +6047,9 @@
           },
           "weights": {
             "$ref": "#/components/schemas/OpportunityWeightsDto"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/UniverseCoverageDto"
           }
         }
       },
@@ -7153,6 +7259,61 @@
           }
         }
       },
+      "UniverseCoverageDto": {
+        "required": [
+          "universeSize",
+          "fibrasWithPrice",
+          "missingPct",
+          "degradationThresholdPct",
+          "status",
+          "lastValidPriceAt"
+        ],
+        "type": "object",
+        "properties": {
+          "universeSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fibrasWithPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "degradationThresholdPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "lastValidPriceAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "UpdateAiModeRequest": {
         "required": [
           "mode",
@@ -7369,6 +7530,15 @@
               "null",
               "string"
             ]
+          },
+          "universeDegradationThresholdPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -7394,6 +7564,21 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "UserFavoritesDto": {
+        "required": [
+          "fibraIds"
+        ],
+        "type": "object",
+        "properties": {
+          "fibraIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -7479,6 +7664,9 @@
     },
     {
       "name": "Portfolio"
+    },
+    {
+      "name": "Favorites"
     },
     {
       "name": "Opportunities"

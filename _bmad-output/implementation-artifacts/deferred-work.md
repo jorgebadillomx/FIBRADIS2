@@ -1,5 +1,33 @@
 # Deferred Work
 
+## Deferred from: code review of 7-4-favoritos-marcar-y-destacar-fibras-en-todas-las-superficies (2026-06-05)
+
+- **D1 (MEDIUM): `GetUserId` sin guarda si falta el claim `NameIdentifier`** [`src/Server/Api/Endpoints/Private/FavoriteEndpoints.cs:57`] — Patrón pre-existente en todos los endpoints privados del proyecto; protegido por `RequireAuthorization("User")` que exige JWT válido. No causa problema en la práctica pero no es defensivo. Refactorizar cuando se estandarice el patrón de extracción de claims.
+- **D2 (MEDIUM): Sin FK para `UserFavorite.FibraId`/`UserId`** [`portfolio.UserFavorites`] — Convención del módulo Portfolio: ninguna entidad declara FKs explícitas. Si una FIBRA es eliminada, sus favoritos quedan huérfanos y se siguen devolviendo en `GetFavoriteIdsAsync`. Evaluar al introducir borrado físico de FIBRAs.
+- **D3 (LOW): `isAuthenticated` no migrado en 4 callers pre-existentes** [`PublicLayout.tsx`, `LoginPage.tsx`] — Usan `status === 'authenticated'` inline en lugar del nuevo campo `isAuthenticated` del contexto. Pre-existente antes de esta historia; cosmético, no funcional.
+- **D4 (LOW): Separador visual desplazado cuando la última fila favorita está expandida** [`OportunidadesPage.tsx:181`, `PositionsTable.tsx:254`] — `showSeparator` se renderiza después de la fila de detalle expandida, no de la fila principal. Edge case visual, sin impacto funcional.
+- **D5 (LOW): Gaps de tests en `UserFavoritesRepositoryTests`** — No cubren: concurrencia en `AddAsync` (dos inserciones simultáneas), aislamiento cross-user en `RemoveAsync`, y que el orden retornado por `GetFavoriteIdsAsync` sea estable por `AddedAt`. Mejoras incrementales.
+- **D6 (LOW): `fibrasWithoutPrice` puede producir `NaN` en banner de degradación** [`OportunidadesPage.tsx:384`] — Teórico: requeriría que `coverage.universeSize` llegue como string inválido desde el servidor, imposible con la serialización tipada actual. Agregar `|| 0` como guarda defensiva si se detectan problemas en producción.
+- **D7 (LOW): `useFavorites()` se instancia en rutas públicas para usuarios anónimos** [`FibraPage.tsx`] — La query está deshabilitada (`enabled: isAuthenticated`), overhead mínimo. Aceptable como está.
+
+## Deferred from: code review of 7-3-monitoreo-de-cobertura-del-universo-y-ranking-degradado (2026-06-05)
+
+- **D5 (MEDIUM): `degradationThresholdPct = 0` haría todo el universo perpetuamente "Degraded"** [`src/Server/Application/Opportunities/UniverseCoverageCalculator.cs`] — Solo alcanzable vía `UPDATE` directo en SQL; el endpoint valida 1–49, `GetAsync` fallback usa default C# `= 30`. Agregar guard `ArgumentOutOfRangeException` o `Math.Max(1, ...)` en historia futura del módulo.
+- **D6 (LOW): Status strings `"Normal"/"Degraded"/"Suspended"` sin type union en TypeScript** [`src/Web/Main/src/modules/oportunidades/OportunidadesPage.tsx`] — Comparaciones `coverage?.status === 'Degraded'` son frágiles a renombres silenciosos. Definir `type CoverageStatus = 'Normal' | 'Degraded' | 'Suspended'` cuando se toque este módulo de nuevo.
+- **D7 (LOW): Tests de `UniverseCoverageCalculator` sin casos boundary negativos** [`tests/Unit/Application.Tests/Opportunities/UniverseCoverageCalculatorTests.cs`] — Faltan: `fibrasWithPrice > universeSize` (verifica Math.Max guard), `threshold=0` (documenta comportamiento), propagación de `lastValidPriceAt` al resultado. Agregar en próxima historia del módulo Oportunidades.
+
+- **D1 (HIGH): Pre-existing Task.WhenAll con múltiples repos compartiendo AppDbContext** [`src/Server/Api/Endpoints/Private/OpportunityEndpoints.cs`] — El endpoint ya tenía 3 repos en WhenAll violando la convención del proyecto; detectado al agregar el 4to repo. No causado por esta historia. Refactorizar a awaits secuenciales en la próxima historia del módulo Oportunidades.
+- **D2 (MEDIUM): `lastValidPriceAt` itera `snapshotByFibra.Values` (todos los snapshots) mientras `fibrasWithPrice` itera solo `fibras` (FIBRAs activas)** [`src/Server/Api/Endpoints/Private/OpportunityEndpoints.cs`] — Fuentes potencialmente inconsistentes si `snapshotByFibra` incluye FIBRAs inactivas. Requiere verificar cómo se construye `snapshotByFibra`; impacto visible solo en `lastValidPriceAt` reportado.
+- **D3 (LOW): `universeSize == 0` retorna `"Normal"` — universo vacío indistinguible de buena cobertura** [`src/Server/Application/Opportunities/UniverseCoverageCalculator.cs`] — Comportamiento consciente y testeado; solo relevante en setup inicial sin datos.
+- **D4 (LOW): `UpdateData` en migración redundante con `defaultValue: 30`** [`src/Server/Infrastructure/Migrations/20260605183529_AddUniverseDegradationThreshold.cs`] — Sin impacto funcional. No vale la pena una migración correctiva.
+
+## Deferred from: code review of 7-2-vista-promediar-posicion-con-simulador (2026-06-05)
+
+- **D1 (LOW): `staleTime: Infinity` en `rankingQuery` de PromediarTab puede servir scores obsoletos** — Si OportunidadesPage refresca el ranking en background (staleTime default 0), PromediarTab nunca adoptará esos datos actualizados. Tradeoff intencional documentado en dev notes para evitar doble fetch. Evaluar al introducir refetch manual en tab Universo.
+- **D2 (LOW): Unicidad de `fibraId` en portfolio positions asumida sin validación** — Si la API retornara la misma FIBRA en múltiples posiciones, `rowByFibraId` descartaría silenciosamente la primera y React emitiría warning por keys duplicadas. Contrato de API fuera del alcance de esta historia.
+- **D3 (LOW): `toNum` en `OportunidadesPage.tsx` retorna `undefined` para null** — La función declara retorno `number` pero cuando `v` es null/undefined la rama else retorna el valor crudo. Pre-existente en historias anteriores; evaluar refactor en próxima historia del módulo Oportunidades.
+- **D4 (LOW): `ScoreBadge` y `toNum` duplicados entre `PromediarTab.tsx` y `OportunidadesPage.tsx`** — Dev notes de la historia lo permiten explícitamente. Extraer a `oportunidades-ui.ts` compartido cuando se agregue una tercera reutilización.
+
 ## Deferred from: code review of 6-9-terminos-footer-contenido (2026-06-04)
 
 - **D1 (MEDIUM): Imposible limpiar `TermsText`/`ContactEmail` una vez guardado** — El repositorio usa `if (termsText is not null)` para decidir si actualizar; el frontend convierte string vacío a `null` con `|| null`. El resultado es que no hay forma de borrar el texto desde la UI. Requiere cambiar la semántica: usar string vacío como señal de "borrar" o agregar endpoints dedicados de clear.

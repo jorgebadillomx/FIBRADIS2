@@ -4,6 +4,7 @@ using Application.Catalog;
 using Application.Fundamentals;
 using Application.Market;
 using Application.Opportunities;
+using Application.Ops;
 using Domain.Catalog;
 using SharedApiContracts.Opportunities;
 
@@ -25,11 +26,15 @@ public static class OpportunityEndpoints
             IFibraRepository fibraRepo,
             IMarketRepository marketRepo,
             IFundamentalRepository fundamentalRepo,
+            IOperationalConfigRepository configRepo,
             HttpContext ctx,
             CancellationToken ct) =>
         {
             var userId = GetUserId(ctx);
             var weights = await ResolveWeightsAsync(weightsRepo, userId, ct);
+
+            // Config primero (DbContext no es thread-safe — fuera del WhenAll)
+            var config = await configRepo.GetAsync(ct);
 
             // Cargar universo activo y datos de mercado en paralelo
             var fibrasTask = fibraRepo.GetAllActiveAsync(ct);
@@ -86,7 +91,20 @@ public static class OpportunityEndpoints
                 .Select(ToRowDto)
                 .ToList();
 
-            return Results.Ok(new OpportunityRankingResponseDto(ranked, limitedData, ToDto(weights)));
+            // Coverage
+            var fibrasWithPrice = fibras.Count(f =>
+                snapshotByFibra.TryGetValue(f.Id, out var snap) && snap.LastPrice is > 0m);
+            var lastValidPriceAt = snapshotByFibra.Values
+                .Where(s => s.LastPrice is > 0m)
+                .MaxBy(s => s.CapturedAt)?.CapturedAt;
+            var coverage = UniverseCoverageCalculator.Calculate(
+                fibras.Count, fibrasWithPrice,
+                config.UniverseDegradationThresholdPct, lastValidPriceAt);
+            var coverageDto = new UniverseCoverageDto(
+                coverage.UniverseSize, coverage.FibrasWithPrice, coverage.MissingPct,
+                coverage.DegradationThresholdPct, coverage.Status, coverage.LastValidPriceAt);
+
+            return Results.Ok(new OpportunityRankingResponseDto(ranked, limitedData, ToDto(weights), coverageDto));
         })
         .Produces<OpportunityRankingResponseDto>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized);

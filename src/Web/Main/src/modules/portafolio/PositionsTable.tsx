@@ -6,12 +6,17 @@ import { PortfolioExpandIcon, SignalBadge } from '@/modules/portafolio/SignalBad
 import { formatMoney, formatPercent, formatVolume } from '@/modules/portafolio/portfolio-format'
 import { EditableCell } from '@/modules/portafolio/EditableCell'
 import { DeletePositionDialog } from '@/modules/portafolio/DeletePositionDialog'
+import { StarButton } from '@/modules/oportunidades/StarButton'
 
 type PortfolioPositionDto = components['schemas']['PortfolioPositionDto']
 
 interface PositionsTableProps {
   positions: PortfolioPositionDto[]
   enabledColumns: string[]
+  favoriteIds: Set<string>
+  onToggleFavorite: (fibraId: string) => void
+  favoritasFirst: boolean
+  isAuthenticated: boolean
   onUpdate: (fibraId: string, titulos: number, costoPromedio: number) => Promise<void>
   onDelete: (fibraId: string) => Promise<void>
 }
@@ -102,7 +107,16 @@ function SortArrow({ dir }: { dir: SortDirection }) {
   return <span className="ml-1 text-xs text-muted-foreground">{dir === 'asc' ? '↑' : '↓'}</span>
 }
 
-export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }: PositionsTableProps) {
+export function PositionsTable({
+  positions,
+  enabledColumns,
+  favoriteIds,
+  onToggleFavorite,
+  favoritasFirst,
+  isAuthenticated,
+  onUpdate,
+  onDelete,
+}: PositionsTableProps) {
   const [sortKeys, setSortKeys] = useState<SortEntry[]>([])
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [deletingFibraId, setDeletingFibraId] = useState<string | null>(null)
@@ -114,25 +128,42 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
   )
 
   const sortedPositions = useMemo(() => {
-    if (sortKeys.length === 0) return positions
+    if (sortKeys.length === 0 && !favoritasFirst) return positions
 
-    return [...positions].sort((left, right) => {
-      for (const sort of sortKeys) {
-        const comparison = compareValues(
-          getComparableValue(left, sort.column),
-          getComparableValue(right, sort.column)
-        )
-
-        if (comparison !== 0) {
-          return sort.dir === 'asc' ? comparison : -comparison
+    return [...positions]
+      .map((position, index) => ({
+        position,
+        index,
+        isFavorite: favoriteIds.has(position.fibraId),
+      }))
+      .sort((left, right) => {
+        if (favoritasFirst) {
+          const leftFavorite = left.isFavorite ? 0 : 1
+          const rightFavorite = right.isFavorite ? 0 : 1
+          if (leftFavorite !== rightFavorite) return leftFavorite - rightFavorite
         }
-      }
 
-      return 0
-    })
-  }, [positions, sortKeys])
+        if (sortKeys.length === 0) {
+          return left.index - right.index
+        }
 
-  const totalCols = 12 + visibleOptionalColumns.length
+        for (const sort of sortKeys) {
+          const comparison = compareValues(
+            getComparableValue(left.position, sort.column),
+            getComparableValue(right.position, sort.column)
+          )
+
+          if (comparison !== 0) {
+            return sort.dir === 'asc' ? comparison : -comparison
+          }
+        }
+
+        return left.index - right.index
+      })
+      .map((entry) => entry.position)
+  }, [positions, sortKeys, favoriteIds, favoritasFirst])
+
+  const totalCols = (isAuthenticated ? 13 : 12) + visibleOptionalColumns.length
 
   async function handleDeleteConfirm() {
     if (!deletingFibraId) return
@@ -204,6 +235,7 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
             <tr className="border-b border-border/80">
               <th className="w-20 px-2 py-3 text-left font-semibold text-foreground">Señal</th>
               <th className="w-8 px-1 py-3"><span className="sr-only">Expandir</span></th>
+              {isAuthenticated && <th className="w-10 px-1 py-3"><span className="sr-only">Favorita</span></th>}
               {renderHeader('Ticker / Nombre', 'ticker')}
               {renderHeader('Títulos', 'titulos')}
               {renderHeader('Costo Promedio', 'costoPromedio')}
@@ -218,8 +250,15 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
             </tr>
           </thead>
           <tbody>
-            {sortedPositions.map((position) => {
+            {sortedPositions.map((position, idx) => {
               const isExpanded = expandedRows.has(position.fibraId)
+              const isFavorite = favoriteIds.has(position.fibraId)
+              const nextIsFavorite = idx + 1 < sortedPositions.length && favoriteIds.has(sortedPositions[idx + 1].fibraId)
+              const showSeparator =
+                favoritasFirst &&
+                isFavorite &&
+                !nextIsFavorite &&
+                sortedPositions.some((entry) => !favoriteIds.has(entry.fibraId))
 
               return (
                 <Fragment key={position.fibraId}>
@@ -235,15 +274,24 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
                         className="text-muted-foreground transition-transform hover:text-foreground"
                         onClick={() => toggleRow(position.fibraId)}
                         aria-label={isExpanded ? 'Colapsar posición' : 'Expandir posición'}
-                      >
-                        <PortfolioExpandIcon isExpanded={isExpanded} />
-                      </button>
+                    >
+                      <PortfolioExpandIcon isExpanded={isExpanded} />
+                    </button>
+                  </td>
+                  {isAuthenticated && (
+                    <td className="px-1 py-3">
+                      <StarButton
+                        fibraId={position.fibraId}
+                        isFavorite={isFavorite}
+                        onToggle={onToggleFavorite}
+                      />
                     </td>
-                    <td className="px-3 py-3 align-top">
-                      <div className="flex flex-col">
-                        <span className="font-mono font-semibold text-foreground">{position.ticker}</span>
-                        <span className="text-xs text-muted-foreground">{position.nombre}</span>
-                      </div>
+                  )}
+                  <td className="px-3 py-3 align-top">
+                    <div className="flex flex-col">
+                      <span className="font-mono font-semibold text-foreground">{position.ticker}</span>
+                      <span className="text-xs text-muted-foreground">{position.nombre}</span>
+                    </div>
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">
                       <EditableCell
@@ -319,6 +367,13 @@ export function PositionsTable({ positions, enabledColumns, onUpdate, onDelete }
                     <tr key={`${position.fibraId}-detail`}>
                       <td colSpan={totalCols} className="bg-muted/20 px-4 py-4">
                         <PositionExpandedDetail position={position} />
+                      </td>
+                    </tr>
+                  )}
+                  {showSeparator && (
+                    <tr aria-hidden="true">
+                      <td colSpan={totalCols} className="px-4 py-0">
+                        <div className="border-t-2 border-dashed border-primary/20" />
                       </td>
                     </tr>
                   )}

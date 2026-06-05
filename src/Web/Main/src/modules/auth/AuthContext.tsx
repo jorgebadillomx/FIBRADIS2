@@ -14,6 +14,7 @@ type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
 
 interface AuthContextValue {
   status: AuthStatus
+  isAuthenticated: boolean
   hasAcceptedTerms: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
@@ -118,7 +119,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ status, hasAcceptedTerms, login, logout, acceptTerms }}>
+    <AuthContext.Provider
+      value={{
+        status,
+        isAuthenticated: status === 'authenticated',
+        hasAcceptedTerms,
+        login,
+        logout,
+        acceptTerms,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

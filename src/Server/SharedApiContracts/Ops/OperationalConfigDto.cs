@@ -11,4 +11,5 @@ public sealed record OperationalConfigDto(
     string? UpdatedBy,
     bool TermsEnabled,
     string? TermsText,
-    string? ContactEmail);
+    string? ContactEmail,
+    int UniverseDegradationThresholdPct);

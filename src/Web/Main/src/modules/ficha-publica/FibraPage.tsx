@@ -5,6 +5,9 @@ import remarkGfm from 'remark-gfm'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
 import { fetchFundamentalesPublic, fetchFundamentalesAvailablePeriods } from '@/api/fundamentalesApi'
+import { useAuth } from '@/modules/auth/AuthContext'
+import { StarButton } from '@/modules/oportunidades/StarButton'
+import { useFavorites } from '@/modules/oportunidades/useFavorites'
 import type { FundamentalesData } from './sections/fundamentales'
 import { FibraNotFound } from './FibraNotFound'
 import { PrecioSection } from './sections/PrecioSection'
@@ -61,6 +64,8 @@ const SECTION_TITLES: Record<string, string> = {
 export function FibraPage() {
   const { ticker } = useParams<{ ticker: string }>()
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined)
+  const { isAuthenticated } = useAuth()
+  const { favoriteIds, toggle } = useFavorites()
 
   const { data: fibra, isLoading, isError } = useQuery({
     queryKey: ['fibra', ticker],
@@ -162,9 +167,17 @@ export function FibraPage() {
             <div className="flex items-start justify-between gap-4">
               {/* Identidad de la FIBRA */}
               <div className="min-w-0">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold tracking-tight">{fibra!.ticker}</span>
                   <span className="text-sm text-muted-foreground truncate hidden sm:block">{fibra!.fullName}</span>
+                  {isAuthenticated && fibra != null && (
+                    <StarButton
+                      fibraId={fibra.id}
+                      isFavorite={favoriteIds.has(fibra.id)}
+                      onToggle={toggle}
+                      size={22}
+                    />
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
                   <span>{fibra!.sector}</span>

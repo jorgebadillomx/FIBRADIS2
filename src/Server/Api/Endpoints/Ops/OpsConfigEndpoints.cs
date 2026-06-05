@@ -73,6 +73,7 @@ public static class OpsConfigEndpoints
                 request.TermsText,
                 request.ContactEmail,
                 actor,
+                request.UniverseDegradationThresholdPct,
                 ct);
 
             var useInMemoryHangfire = ctx.RequestServices
@@ -146,7 +147,8 @@ public static class OpsConfigEndpoints
             && request.DistributionCadenceMinutes is null
             && request.TermsEnabled is null
             && request.TermsText is null
-            && request.ContactEmail is null)
+            && request.ContactEmail is null
+            && request.UniverseDegradationThresholdPct is null)
         {
             errors["body"] = ["Se debe proporcionar al menos un campo para actualizar."];
             return errors;
@@ -183,6 +185,13 @@ public static class OpsConfigEndpoints
             errors["distributionCadenceMinutes"] = ["distributionCadenceMinutes debe ser 720 (12h) o 1440 (24h)."];
         }
 
+        if (request.UniverseDegradationThresholdPct is not null &&
+            (request.UniverseDegradationThresholdPct < 1 || request.UniverseDegradationThresholdPct > 49))
+        {
+            errors["universeDegradationThresholdPct"] =
+                ["universeDegradationThresholdPct debe estar entre 1 y 49."];
+        }
+
         return errors;
     }
 
@@ -198,7 +207,8 @@ public static class OpsConfigEndpoints
             config.UpdatedBy,
             config.TermsEnabled,
             config.TermsText,
-            config.ContactEmail);
+            config.ContactEmail,
+            config.UniverseDegradationThresholdPct);
 
     private static ConfigAuditLogDto ToDto(Domain.Ops.ConfigAuditLog entry)
         => new(

@@ -4302,6 +4302,122 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/portfolio/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserFavoritesDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/favorites/{fibraId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    fibraId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    fibraId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/opportunities": {
         parameters: {
             query?: never;
@@ -4845,6 +4961,8 @@ export interface components {
             termsEnabled: boolean;
             termsText: null | string;
             contactEmail: null | string;
+            /** Format: int32 */
+            universeDegradationThresholdPct: number | string;
         };
         OpportunityFibraRowDto: {
             /** Format: uuid */
@@ -4887,6 +5005,7 @@ export interface components {
             ranked: components["schemas"]["OpportunityFibraRowDto"][];
             limitedData: components["schemas"]["OpportunityFibraRowDto"][];
             weights: components["schemas"]["OpportunityWeightsDto"];
+            coverage: components["schemas"]["UniverseCoverageDto"];
         };
         OpportunityWeightsDto: {
             /** Format: double */
@@ -5154,6 +5273,19 @@ export interface components {
             termsText: null | string;
             contactEmail: null | string;
         };
+        UniverseCoverageDto: {
+            /** Format: int32 */
+            universeSize: number | string;
+            /** Format: int32 */
+            fibrasWithPrice: number | string;
+            /** Format: double */
+            missingPct: number | string;
+            /** Format: int32 */
+            degradationThresholdPct: number | string;
+            status: string;
+            /** Format: date-time */
+            lastValidPriceAt: null | string;
+        };
         UpdateAiModeRequest: {
             mode: null | string;
             newsModel: null | string;
@@ -5198,12 +5330,17 @@ export interface components {
             termsEnabled?: null | boolean;
             termsText?: null | string;
             contactEmail?: null | string;
+            /** Format: int32 */
+            universeDegradationThresholdPct?: null | number | string;
         };
         UpdatePaymentRequest: {
             /** Format: double */
             pago: null | number | string;
             /** Format: date-time */
             fechaPago: null | string;
+        };
+        UserFavoritesDto: {
+            fibraIds: string[];
         };
         UserSummaryDto: {
             /** Format: uuid */

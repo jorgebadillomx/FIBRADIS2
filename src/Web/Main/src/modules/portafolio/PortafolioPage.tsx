@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Star } from 'lucide-react'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { KpiCards } from '@/modules/portafolio/KpiCards'
 import { ColumnPicker } from '@/modules/portafolio/ColumnPicker'
 import { PositionsTable } from '@/modules/portafolio/PositionsTable'
 import { UploadZone } from '@/modules/portafolio/UploadZone'
+import { useFavorites } from '@/modules/oportunidades/useFavorites'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -32,6 +34,8 @@ function formatSnapshotDate(archivedAt: string | null | undefined) {
 
 export function PortafolioPage() {
   const queryClient = useQueryClient()
+  const [favoritasFirst, setFavoritasFirst] = useState(false)
+  const { favoriteIds, toggle: toggleFavorite, isAuthenticated } = useFavorites()
   const portfolioQuery = useQuery<PortfolioResponseDto>({
     queryKey: ['portfolio', 'positions'],
     queryFn: async () => {
@@ -153,6 +157,7 @@ export function PortafolioPage() {
   const portfolio = portfolioQuery.data
   const positions = portfolio?.positions ?? []
   const hasPositions = positions.length > 0
+  const favoritesCount = positions.filter((position) => favoriteIds.has(position.fibraId)).length
   const snapshot = snapshotQuery.data
   const hasSnapshot = snapshot?.hasSnapshot ?? false
   const archivedAtLabel = formatSnapshotDate(snapshot?.archivedAt)
@@ -169,6 +174,18 @@ export function PortafolioPage() {
 
         {hasPositions && (
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setFavoritasFirst((value) => !value)}
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                favoritasFirst
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-input text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Star size={14} className={favoritasFirst ? 'fill-primary text-primary' : ''} />
+              Favoritas primero
+            </button>
             <ColumnPicker
               enabledColumns={enabledColumns}
               onEnabledColumnsChange={(columns) => {
@@ -216,6 +233,18 @@ export function PortafolioPage() {
       ) : (
         <div className="space-y-6">
           <KpiCards kpis={portfolio?.kpis} />
+          {favoritesCount > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <article className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur-sm">
+                <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  <span>Favoritas ★</span>
+                </div>
+                <div className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
+                  {favoritesCount}
+                </div>
+              </article>
+            </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -230,6 +259,10 @@ export function PortafolioPage() {
             <PositionsTable
               positions={positions}
               enabledColumns={enabledColumns}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={toggleFavorite}
+              favoritasFirst={favoritasFirst}
+              isAuthenticated={isAuthenticated}
               onUpdate={(fibraId, titulos, costoPromedio) =>
                 patchMutation.mutateAsync({ fibraId, titulos, costoPromedio })
               }

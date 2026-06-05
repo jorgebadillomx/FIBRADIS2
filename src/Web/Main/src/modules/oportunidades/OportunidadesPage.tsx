@@ -1,14 +1,16 @@
 import { Fragment, useMemo, useState } from 'react'
-import { ChevronRight, BarChart3, AlertTriangle } from 'lucide-react'
+import { ChevronRight, BarChart3, AlertTriangle, Star } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
+import { PromediarTab } from '@/modules/oportunidades/PromediarTab'
+import { StarButton } from '@/modules/oportunidades/StarButton'
+import { useFavorites } from '@/modules/oportunidades/useFavorites'
 
 type OpportunityFibraRowDto = components['schemas']['OpportunityFibraRowDto']
-type OpportunityWeightsDto = components['schemas']['OpportunityWeightsDto']
 type OpportunityRankingResponseDto = components['schemas']['OpportunityRankingResponseDto']
 
-interface Weights {
+export interface Weights {
   navDiscount: number
   dividendYield: number
   ltvInverted: number
@@ -27,7 +29,7 @@ function toNum(v: null | number | string | undefined): number {
   return typeof v === 'string' ? parseFloat(v) : v
 }
 
-function calcLocalScore(row: OpportunityFibraRowDto, w: Weights): number {
+export function calcLocalScore(row: OpportunityFibraRowDto, w: Weights): number {
   let score = 0
   if (row.navDiscountScore != null) score += toNum(row.navDiscountScore) * w.navDiscount
   if (row.dividendYieldScore != null) score += toNum(row.dividendYieldScore) * w.dividendYield
@@ -108,18 +110,41 @@ function WeightSlider({
 function RankingTable({
   rows,
   weights,
+  favoriteIds,
+  onToggleFavorite,
+  favoritasFirst,
+  isAuthenticated,
   isLimited,
 }: {
   rows: OpportunityFibraRowDto[]
   weights: Weights
+  favoriteIds: Set<string>
+  onToggleFavorite: (fibraId: string) => void
+  favoritasFirst: boolean
+  isAuthenticated: boolean
   isLimited?: boolean
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const sorted = useMemo(() => {
-    return [...rows].map((r) => ({ ...r, _score: calcLocalScore(r, weights) }))
-      .sort((a, b) => b._score - a._score)
-  }, [rows, weights])
+    return [...rows]
+      .map((r, index) => ({
+        ...r,
+        _score: calcLocalScore(r, weights),
+        _index: index,
+        _isFavorite: favoriteIds.has(r.fibraId),
+      }))
+      .sort((a, b) => {
+        if (favoritasFirst) {
+          const af = a._isFavorite ? 0 : 1
+          const bf = b._isFavorite ? 0 : 1
+          if (af !== bf) return af - bf
+        }
+
+        if (b._score !== a._score) return b._score - a._score
+        return a._index - b._index
+      })
+  }, [rows, weights, favoriteIds, favoritasFirst])
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -131,12 +156,15 @@ function RankingTable({
   if (sorted.length === 0)
     return <p className="py-6 text-center text-sm text-muted-foreground">Sin FIBRAs en esta sección.</p>
 
+  const hasNonFavorites = sorted.some((row) => !favoriteIds.has(row.fibraId))
+
   return (
     <div className="overflow-x-auto rounded-lg border">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
             <th className="w-8 px-3 py-2" />
+            {isAuthenticated && <th className="w-10 px-3 py-2"><span className="sr-only">Favorita</span></th>}
             <th className="px-3 py-2 text-left">FIBRA</th>
             <th className="px-3 py-2 text-right">Score</th>
             <th className="px-3 py-2 text-right">Desc. NAV</th>
@@ -150,6 +178,9 @@ function RankingTable({
         <tbody>
           {sorted.map((row, idx) => {
             const isOpen = expanded.has(row.fibraId)
+            const isFavorite = favoriteIds.has(row.fibraId)
+            const nextIsFavorite = idx + 1 < sorted.length && favoriteIds.has(sorted[idx + 1].fibraId)
+            const showSeparator = favoritasFirst && isFavorite && !nextIsFavorite && hasNonFavorites
             return (
               <Fragment key={row.fibraId}>
                 <tr
@@ -161,6 +192,15 @@ function RankingTable({
                       className={`size-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-90' : ''}`}
                     />
                   </td>
+                  {isAuthenticated && (
+                    <td className="px-3 py-2">
+                      <StarButton
+                        fibraId={row.fibraId}
+                        isFavorite={isFavorite}
+                        onToggle={onToggleFavorite}
+                      />
+                    </td>
+                  )}
                   <td className="px-3 py-2">
                     <span className="font-medium">{row.ticker}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{row.nombre}</span>
@@ -194,7 +234,7 @@ function RankingTable({
                 </tr>
                 {isOpen && (
                   <tr className="border-b bg-blue-50/30">
-                    <td colSpan={9} className="px-6 py-4">
+                    <td colSpan={isAuthenticated ? 10 : 9} className="px-6 py-4">
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                           Contribución al score por componente (puntos)
@@ -234,6 +274,13 @@ function RankingTable({
                     </td>
                   </tr>
                 )}
+                {showSeparator && (
+                  <tr aria-hidden="true">
+                    <td colSpan={isAuthenticated ? 10 : 9} className="px-3 py-0">
+                      <div className="border-t-2 border-dashed border-primary/20" />
+                    </td>
+                  </tr>
+                )}
               </Fragment>
             )
           })}
@@ -257,7 +304,10 @@ function detectProfile(w: Weights): string {
 }
 
 export function OportunidadesPage() {
+  const [activeTab, setActiveTab] = useState<'universo' | 'promediar'>('universo')
+  const [favoritasFirst, setFavoritasFirst] = useState(false)
   const queryClient = useQueryClient()
+  const { favoriteIds, toggle: toggleFavorite, isAuthenticated } = useFavorites()
 
   const rankingQuery = useQuery<OpportunityRankingResponseDto>({
     queryKey: ['opportunities'],
@@ -332,24 +382,10 @@ export function OportunidadesPage() {
     saveWeightsMutation.mutate(effectiveWeights)
   }
 
-  if (rankingQuery.isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Cargando ranking…</p>
-      </div>
-    )
-  }
-
-  if (rankingQuery.isError) {
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <p className="text-destructive">Error al cargar el ranking de oportunidades.</p>
-      </div>
-    )
-  }
-
   const ranked = rankingQuery.data?.ranked ?? []
   const limitedData = rankingQuery.data?.limitedData ?? []
+  const coverage = rankingQuery.data?.coverage
+  const fibrasWithoutPrice = coverage ? toNum(coverage.universeSize) - toNum(coverage.fibrasWithPrice) : 0
   const currentProfile = detectProfile(effectiveWeights)
   const isDirty = localWeights !== null
 
@@ -366,101 +402,194 @@ export function OportunidadesPage() {
         </div>
       </div>
 
-      {/* Configurador de pesos */}
-      <div className="rounded-lg border bg-card p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Configurar pesos</h2>
-          <div className="flex items-center gap-2">
-            {/* Perfiles */}
-            {Object.entries(PROFILES).map(([key, p]) => (
-              <button
-                type="button"
-                key={key}
-                onClick={() => applyProfile(key)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  currentProfile === key && !isDirty
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted hover:bg-muted/80'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <WeightSlider
-            label="Descuento NAV"
-            value={effectiveWeights.navDiscount}
-            onChange={(v) => handleWeightChange('navDiscount', v)}
-          />
-          <WeightSlider
-            label="Dividend Yield"
-            value={effectiveWeights.dividendYield}
-            onChange={(v) => handleWeightChange('dividendYield', v)}
-          />
-          <WeightSlider
-            label="LTV invertido"
-            value={effectiveWeights.ltvInverted}
-            onChange={(v) => handleWeightChange('ltvInverted', v)}
-          />
-          <WeightSlider
-            label="Margen NOI"
-            value={effectiveWeights.noiMargin}
-            onChange={(v) => handleWeightChange('noiMargin', v)}
-          />
-          <WeightSlider
-            label="Precio vs AVG 52S"
-            value={effectiveWeights.pricevs52w}
-            onChange={(v) => handleWeightChange('pricevs52w', v)}
-          />
-        </div>
-
-        <div className="flex items-center justify-between pt-1">
-          <span className={`text-sm ${isValid ? 'text-muted-foreground' : 'text-destructive font-medium'}`}>
-            Suma: {weightSum}% {!isValid && '(debe ser 100%)'}
-          </span>
-          <div className="flex flex-col items-end gap-1">
-            {saveWeightsMutation.isError && (
-              <p className="text-xs text-destructive">Error al guardar. Intenta de nuevo.</p>
-            )}
-            {isDirty && (
-              <button
-                type="button"
-                onClick={handleSaveWeights}
-                disabled={!isValid || saveWeightsMutation.isPending}
-                className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              >
-                {saveWeightsMutation.isPending ? 'Guardando…' : 'Guardar configuración'}
-              </button>
-            )}
-          </div>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b">
+        {(['universo', 'promediar'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab === 'universo' ? 'Universo' : 'Promediar Posición'}
+          </button>
+        ))}
       </div>
 
-      {/* Ranking principal */}
-      <div className="space-y-3">
-        <h2 className="text-base font-semibold">
-          Ranking principal
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
-            ({ranked.length} FIBRAs · ≥3 componentes disponibles)
-          </span>
-        </h2>
-        <RankingTable rows={ranked} weights={effectiveWeights} />
-      </div>
+      {activeTab === 'universo' && (
+        <>
+          {rankingQuery.isLoading && (
+            <div className="flex h-64 items-center justify-center">
+              <p className="text-muted-foreground">Cargando ranking…</p>
+            </div>
+          )}
 
-      {/* Datos limitados */}
-      {limitedData.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
-            <AlertTriangle className="size-4 shrink-0 text-yellow-600" />
-            <p className="text-sm text-yellow-800">
-              <strong>Score referencial</strong> — datos insuficientes para el ranking principal. Las siguientes FIBRAs tienen 1 o 2 componentes calculables.
-            </p>
-          </div>
-          <RankingTable rows={limitedData} weights={effectiveWeights} isLimited />
-        </div>
+          {rankingQuery.isError && (
+            <div className="mx-auto max-w-4xl">
+              <p className="text-destructive">Error al cargar el ranking de oportunidades.</p>
+            </div>
+          )}
+
+          {!rankingQuery.isLoading && !rankingQuery.isError && (
+            <>
+              {/* Banner Universo Degradado */}
+              {coverage?.status === 'Degraded' && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  Universo degradado: {fibrasWithoutPrice} FIBRAs ({toNum(coverage.missingPct).toFixed(1)}%) sin precio disponible.
+                  {coverage.lastValidPriceAt && (
+                    <> Último dato válido:{' '}
+                      {new Date(coverage.lastValidPriceAt).toLocaleString('es-MX', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}.
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Configurador de pesos */}
+              <div className="rounded-lg border bg-card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Configurar pesos</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {Object.entries(PROFILES).map(([key, p]) => (
+                      <button
+                        type="button"
+                        key={key}
+                        onClick={() => applyProfile(key)}
+                        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                          currentProfile === key && !isDirty
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                        >
+                          {p.label}
+                        </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setFavoritasFirst((value) => !value)}
+                      className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                        favoritasFirst
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Star size={14} className={favoritasFirst ? 'fill-primary text-primary' : ''} />
+                      Favoritas primero
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <WeightSlider
+                    label="Descuento NAV"
+                    value={effectiveWeights.navDiscount}
+                    onChange={(v) => handleWeightChange('navDiscount', v)}
+                  />
+                  <WeightSlider
+                    label="Dividend Yield"
+                    value={effectiveWeights.dividendYield}
+                    onChange={(v) => handleWeightChange('dividendYield', v)}
+                  />
+                  <WeightSlider
+                    label="LTV invertido"
+                    value={effectiveWeights.ltvInverted}
+                    onChange={(v) => handleWeightChange('ltvInverted', v)}
+                  />
+                  <WeightSlider
+                    label="Margen NOI"
+                    value={effectiveWeights.noiMargin}
+                    onChange={(v) => handleWeightChange('noiMargin', v)}
+                  />
+                  <WeightSlider
+                    label="Precio vs AVG 52S"
+                    value={effectiveWeights.pricevs52w}
+                    onChange={(v) => handleWeightChange('pricevs52w', v)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className={`text-sm ${isValid ? 'text-muted-foreground' : 'text-destructive font-medium'}`}>
+                    Suma: {weightSum}% {!isValid && '(debe ser 100%)'}
+                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    {saveWeightsMutation.isError && (
+                      <p className="text-xs text-destructive">Error al guardar. Intenta de nuevo.</p>
+                    )}
+                    {isDirty && (
+                      <button
+                        type="button"
+                        onClick={handleSaveWeights}
+                        disabled={!isValid || saveWeightsMutation.isPending}
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        {saveWeightsMutation.isPending ? 'Guardando…' : 'Guardar configuración'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Ranking o mensaje de suspensión */}
+              {coverage?.status === 'Suspended' ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-5 py-8 text-center text-sm text-rose-700">
+                  Ranking no disponible — cobertura insuficiente ({toNum(coverage.missingPct).toFixed(1)}% de FIBRAs sin precio).
+                  El ranking se restaurará cuando menos del 50% de FIBRAs esté sin precio.
+                </div>
+              ) : (
+                <>
+                  {/* Ranking principal */}
+                  <div className="space-y-3">
+                    <h2 className="text-base font-semibold">
+                      Ranking principal
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        ({ranked.length} FIBRAs · ≥3 componentes disponibles)
+                      </span>
+                    </h2>
+                    <RankingTable
+                      rows={ranked}
+                      weights={effectiveWeights}
+                      favoriteIds={favoriteIds}
+                      onToggleFavorite={toggleFavorite}
+                      favoritasFirst={favoritasFirst}
+                      isAuthenticated={isAuthenticated}
+                    />
+                  </div>
+
+                  {/* Datos limitados */}
+                  {limitedData.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
+                        <AlertTriangle className="size-4 shrink-0 text-yellow-600" />
+                        <p className="text-sm text-yellow-800">
+                          <strong>Score referencial</strong> — datos insuficientes para el ranking principal. Las siguientes FIBRAs tienen 1 o 2 componentes calculables.
+                        </p>
+                      </div>
+                      <RankingTable
+                        rows={limitedData}
+                        weights={effectiveWeights}
+                        favoriteIds={favoriteIds}
+                        onToggleFavorite={toggleFavorite}
+                        favoritasFirst={favoritasFirst}
+                        isAuthenticated={isAuthenticated}
+                        isLimited
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {activeTab === 'promediar' && (
+        <PromediarTab weights={effectiveWeights} />
       )}
     </div>
   )

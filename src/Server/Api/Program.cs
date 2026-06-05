@@ -46,6 +46,7 @@ app.MapOpsConfig();
 app.MapOpsEditorial();
 app.MapFundamentalsPublic();
 app.MapPortfolio();
+app.MapFavorites();
 app.MapOpportunities();
 app.MapOpsUsers();
 app.MapAccount();

@@ -34,6 +34,7 @@ interface FormValues {
   fibraNewsMonths: number
   fundamentalsCadenceMinutes: number
   distributionCadenceMinutes: number
+  universeDegradationThresholdPct: number
 }
 
 const inputClassName =
@@ -73,6 +74,7 @@ export function ConfigPage() {
       fibraNewsMonths: 15,
       fundamentalsCadenceMinutes: 1440,
       distributionCadenceMinutes: 1440,
+      universeDegradationThresholdPct: 30,
     },
   })
 
@@ -86,6 +88,7 @@ export function ConfigPage() {
       fibraNewsMonths: Number(configQuery.data.fibraNewsMonths ?? 15),
       fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 1440),
       distributionCadenceMinutes: Number(configQuery.data.distributionCadenceMinutes ?? 1440),
+      universeDegradationThresholdPct: Number(configQuery.data.universeDegradationThresholdPct ?? 30),
     })
     setTermsEnabled(configQuery.data.termsEnabled ?? false)
     setTermsText(configQuery.data.termsText ?? DEFAULT_TERMS_TEXT)
@@ -135,6 +138,7 @@ export function ConfigPage() {
     if (dirtyFields.fibraNewsMonths) payload.fibraNewsMonths = values.fibraNewsMonths
     if (dirtyFields.fundamentalsCadenceMinutes) payload.fundamentalsCadenceMinutes = values.fundamentalsCadenceMinutes
     if (dirtyFields.distributionCadenceMinutes) payload.distributionCadenceMinutes = values.distributionCadenceMinutes
+    if (dirtyFields.universeDegradationThresholdPct) payload.universeDegradationThresholdPct = values.universeDegradationThresholdPct
 
     if (Object.keys(payload).length === 0) return
     saveMutation.mutate(payload)
@@ -254,6 +258,21 @@ export function ConfigPage() {
                     </option>
                   ))}
                 </select>
+              </Field>
+
+              <Field label="Umbral de degradación del universo (%)" error={errors.universeDegradationThresholdPct?.message} required>
+                <input
+                  {...register('universeDegradationThresholdPct', {
+                    required: 'El umbral de degradación es requerido.',
+                    min: { value: 1, message: 'Mínimo 1%.' },
+                    max: { value: 49, message: 'Máximo 49% (el umbral de suspensión es fijo en 50%).' },
+                    valueAsNumber: true,
+                  })}
+                  className={inputClassName}
+                  type="number"
+                  min={1}
+                  max={49}
+                />
               </Field>
             </div>
 
