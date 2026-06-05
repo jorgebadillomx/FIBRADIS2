@@ -22,6 +22,9 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
         builder.Property(x => x.DistributionCadenceMinutes).HasColumnName("distribution_cadence_minutes");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasMaxLength(256);
+        builder.Property(x => x.TermsEnabled).HasColumnName("terms_enabled").HasDefaultValue(false);
+        builder.Property(x => x.TermsText).HasColumnName("terms_text");
+        builder.Property(x => x.ContactEmail).HasColumnName("contact_email").HasMaxLength(256);
 
         builder.HasData(new OperationalConfig
         {
@@ -34,6 +37,8 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             DistributionCadenceMinutes = 1440,
             UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
             UpdatedBy = "system",
+            TermsEnabled = false,
+            ContactEmail = "contacto@fibradis.mx",
         });
     }
 }

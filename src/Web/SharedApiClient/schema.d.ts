@@ -136,6 +136,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/site-content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SiteContentDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/users": {
         parameters: {
             query?: never;
@@ -448,6 +483,48 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/api/v1/account/accept-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/auth/login": {
@@ -4638,6 +4715,9 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             updatedBy: null | string;
+            termsEnabled: boolean;
+            termsText: null | string;
+            contactEmail: null | string;
         };
         OpsNewsArticleDto: {
             /** Format: uuid */
@@ -4887,6 +4967,11 @@ export interface components {
         SetUserActiveRequest: {
             isActive: boolean;
         };
+        SiteContentDto: {
+            termsEnabled: boolean;
+            termsText: null | string;
+            contactEmail: null | string;
+        };
         UpdateAiModeRequest: {
             mode: null | string;
             newsModel: null | string;
@@ -4928,6 +5013,9 @@ export interface components {
             fundamentalsCadenceMinutes?: null | number | string;
             /** Format: int32 */
             distributionCadenceMinutes?: null | number | string;
+            termsEnabled?: null | boolean;
+            termsText?: null | string;
+            contactEmail?: null | string;
         };
         UpdatePaymentRequest: {
             /** Format: double */

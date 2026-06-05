@@ -12,6 +12,9 @@ public interface IOperationalConfigRepository
         int? fibraNewsMonths,
         int? fundamentalsCadenceMinutes,
         int? distributionCadenceMinutes,
+        bool? termsEnabled,
+        string? termsText,
+        string? contactEmail,
         string actor,
         CancellationToken ct = default);
 }

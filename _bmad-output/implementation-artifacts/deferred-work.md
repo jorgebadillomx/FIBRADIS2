@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review of 6-9-terminos-footer-contenido (2026-06-04)
+
+- **D1 (MEDIUM): Imposible limpiar `TermsText`/`ContactEmail` una vez guardado** — El repositorio usa `if (termsText is not null)` para decidir si actualizar; el frontend convierte string vacío a `null` con `|| null`. El resultado es que no hay forma de borrar el texto desde la UI. Requiere cambiar la semántica: usar string vacío como señal de "borrar" o agregar endpoints dedicados de clear.
+- **D2 (HIGH): Cero tests de integración para `POST /api/v1/account/accept-terms`** [`AccountEndpoints.cs`] — No existe ningún test que valide: 204 para usuario autenticado, 401 para anónimo, 401 para userId inexistente en DB, idempotencia. Agregar en próxima historia del módulo Auth.
+- **D3 (HIGH): Cero tests de integración para `GET /api/v1/site-content`** [`OpsConfigEndpoints.cs`] — No se prueba: endpoint público sin token devuelve 200, `TermsEnabled = false` oculta `TermsText` en respuesta, fila de config inexistente. Agregar en próxima historia del módulo Ops.
+- **D4 (MEDIUM): `OpsConfigEndpointTests` no resetea `TermsEnabled/TermsText/ContactEmail` en el fixture cleanup** — Si un test guarda `termsEnabled = true`, ese estado persiste para el siguiente test en la fixture compartida. Agregar los nuevos campos al método `ResetOperationalConfigAsync` del fixture.
+- **D5 (LOW): `TermsModal` sin focus trap (WCAG 2.5)** [`TermsModal.tsx`] — El modal bloquea visualmente pero no atrapa el foco del teclado. Un usuario puede tabular hacia elementos detrás del overlay. Implementar focus trap y `aria-modal="true"` al mejorar la suite de accesibilidad.
+- **D6 (LOW): `UserData` DTO no expone `HasAcceptedTerms`/`TermsAcceptedAt`** [`UserService.cs:ToData`] — Campos en DB pero invisibles por API. Si Ops necesita auditar qué usuarios aceptaron los términos (ej. ante actualización de T&C), estos campos no estarán disponibles. Extender `UserData` cuando se requiera la funcionalidad.
+- **D7 (LOW): Email cifrado en JWT claim `email` (pre-existente)** [`TokenService.cs`] — El claim `email` en el token contiene el valor cifrado de la BD, no el plaintext. Si código futuro lee `email` del JWT en el frontend, obtendrá el valor cifrado. Pre-existente; documentar en convenciones al ampliar uso de claims en cliente.
+
 ## Deferred from: code review of 5-11-amefibra-pdf-sync (2026-05-31)
 
 - **D1 (MEDIUM): `DownloadPdfAsync` materializa PDF completo en memoria** [`AmefibraDiscoveryClient.cs:DownloadPdfAsync`] — Usa `ResponseHeadersRead` pero luego `ReadAsByteArrayAsync` carga todo el contenido en `byte[]`. Con PDFs grandes o corridas concurrentes puede causar presión de memoria severa.

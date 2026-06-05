@@ -91,6 +91,25 @@
         }
       }
     },
+    "/api/v1/site-content": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteContentDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/users": {
       "get": {
         "tags": [
@@ -392,6 +411,28 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/account/accept-terms": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5528,7 +5569,10 @@
           "fundamentalsCadenceMinutes",
           "distributionCadenceMinutes",
           "updatedAt",
-          "updatedBy"
+          "updatedBy",
+          "termsEnabled",
+          "termsText",
+          "contactEmail"
         ],
         "type": "object",
         "properties": {
@@ -5585,6 +5629,21 @@
             "format": "date-time"
           },
           "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "termsEnabled": {
+            "type": "boolean"
+          },
+          "termsText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contactEmail": {
             "type": [
               "null",
               "string"
@@ -6717,6 +6776,31 @@
           }
         }
       },
+      "SiteContentDto": {
+        "required": [
+          "termsEnabled",
+          "termsText",
+          "contactEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "termsEnabled": {
+            "type": "boolean"
+          },
+          "termsText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UpdateAiModeRequest": {
         "required": [
           "mode",
@@ -6915,6 +6999,24 @@
               "string"
             ],
             "format": "int32"
+          },
+          "termsEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "termsText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -7001,6 +7103,12 @@
     },
     {
       "name": "Editorial"
+    },
+    {
+      "name": "Public"
+    },
+    {
+      "name": "Account"
     },
     {
       "name": "AI"

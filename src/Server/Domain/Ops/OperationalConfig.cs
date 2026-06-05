@@ -11,4 +11,7 @@ public class OperationalConfig
     public int DistributionCadenceMinutes { get; set; } = 1440;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? UpdatedBy { get; set; }
+    public bool TermsEnabled { get; set; }
+    public string? TermsText { get; set; }
+    public string? ContactEmail { get; set; }
 }

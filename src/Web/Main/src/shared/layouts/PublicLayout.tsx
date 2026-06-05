@@ -1,10 +1,19 @@
 import { Link, Outlet, useNavigate } from 'react-router'
 import { GlobalSearch } from '@/modules/home/GlobalSearch'
 import { useAuth } from '@/modules/auth/AuthContext'
+import { TermsModal } from '@/modules/auth/TermsModal'
+import { useSiteContent } from '@/shared/hooks/useSiteContent'
 
 export function PublicLayout() {
-  const { status, logout } = useAuth()
+  const { status, logout, hasAcceptedTerms } = useAuth()
   const navigate = useNavigate()
+  const { data: siteContent } = useSiteContent()
+
+  const showTermsModal =
+    status === 'authenticated' &&
+    !hasAcceptedTerms &&
+    siteContent?.termsEnabled === true &&
+    Boolean(siteContent.termsText)
 
   function handleLogout() {
     logout()
@@ -75,7 +84,7 @@ export function PublicLayout() {
           <span>© {new Date().getFullYear()} FIBRADIS — Solo información de referencia, no asesoría de inversión.</span>
           <a
             className="hover:text-foreground transition-colors"
-            href="mailto:contacto@fibradis.mx"
+            href={`mailto:${siteContent?.contactEmail ?? 'contacto@fibradis.mx'}`}
           >
             Contacto
           </a>
@@ -87,6 +96,8 @@ export function PublicLayout() {
           </Link>
         </div>
       </footer>
+
+      {showTermsModal ? <TermsModal termsText={siteContent!.termsText!} /> : null}
     </div>
   )
 }

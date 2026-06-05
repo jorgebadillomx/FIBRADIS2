@@ -5,15 +5,19 @@ import { loginMain, logoutMain, refreshMainSession } from './authApi'
 import {
   MAIN_AUTH_REQUIRED_EVENT,
   clearMainAccessToken,
+  getMainTokenClaims,
   getStoredMainAccessToken,
 } from './mainAuth'
+import { acceptTermsApi } from './authApi'
 
 type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
 
 interface AuthContextValue {
   status: AuthStatus
+  hasAcceptedTerms: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  acceptTerms: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -23,6 +27,7 @@ const PROACTIVE_REFRESH_MS = 4 * 60 * 60 * 1000
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<AuthStatus>('checking')
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -33,12 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return
         const isAuth = restored || Boolean(getStoredMainAccessToken())
         setStatus(isAuth ? 'authenticated' : 'anonymous')
-        if (isAuth) void queryClient.invalidateQueries()
+        if (isAuth) {
+          setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
+          void queryClient.invalidateQueries()
+        }
       } catch {
         if (!active) return
         const isAuth = Boolean(getStoredMainAccessToken())
         setStatus(isAuth ? 'authenticated' : 'anonymous')
-        if (isAuth) void queryClient.invalidateQueries()
+        if (isAuth) setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
       }
     }
 
@@ -51,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearMainAccessToken()
       queryClient.clear()
       setStatus('anonymous')
+      setHasAcceptedTerms(false)
     }
 
     window.addEventListener(MAIN_AUTH_REQUIRED_EVENT, handleAuthRequired)
@@ -69,9 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearMainAccessToken()
           queryClient.clear()
           setStatus('anonymous')
+          setHasAcceptedTerms(false)
+        } else {
+          setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
         }
       } catch {
-        // Network error — keep session; a real 401 on next API call will handle logout
+        // Network error — keep session
       }
     }, PROACTIVE_REFRESH_MS)
 
@@ -84,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(email: string, password: string) {
     await loginMain(email, password)
     setStatus('authenticated')
+    setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
     await queryClient.invalidateQueries()
   }
 
@@ -91,10 +104,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logoutMain()
     queryClient.clear()
     setStatus('anonymous')
+    setHasAcceptedTerms(false)
+  }
+
+  async function acceptTerms() {
+    await acceptTermsApi()
+    try {
+      await refreshMainSession()
+    } catch {
+      // Network error — the acceptance was persisted; keep going
+    }
+    setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? true)
   }
 
   return (
-    <AuthContext.Provider value={{ status, login, logout }}>
+    <AuthContext.Provider value={{ status, hasAcceptedTerms, login, logout, acceptTerms }}>
       {children}
     </AuthContext.Provider>
   )

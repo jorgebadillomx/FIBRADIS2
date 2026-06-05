@@ -13,6 +13,21 @@ public static class OpsConfigEndpoints
 {
     public static IEndpointRouteBuilder MapOpsConfig(this IEndpointRouteBuilder app)
     {
+        // Public endpoint — no auth required
+        app.MapGet("/api/v1/site-content", async (
+            IOperationalConfigRepository repo,
+            CancellationToken ct) =>
+        {
+            var config = await repo.GetAsync(ct);
+            return Results.Ok(new SharedApiContracts.Ops.SiteContentDto(
+                config.TermsEnabled,
+                config.TermsEnabled ? config.TermsText : null,
+                config.ContactEmail));
+        })
+        .AllowAnonymous()
+        .WithTags("Public")
+        .Produces<SharedApiContracts.Ops.SiteContentDto>(StatusCodes.Status200OK);
+
         var group = app.MapGroup("/api/v1/ops")
             .RequireAuthorization("AdminOps")
             .WithTags("Ops");
@@ -54,6 +69,9 @@ public static class OpsConfigEndpoints
                 request.FibraNewsMonths,
                 request.FundamentalsCadenceMinutes,
                 request.DistributionCadenceMinutes,
+                request.TermsEnabled,
+                request.TermsText,
+                request.ContactEmail,
                 actor,
                 ct);
 
@@ -125,7 +143,10 @@ public static class OpsConfigEndpoints
             && request.NewsCadenceMinutes is null
             && request.FibraNewsMonths is null
             && request.FundamentalsCadenceMinutes is null
-            && request.DistributionCadenceMinutes is null)
+            && request.DistributionCadenceMinutes is null
+            && request.TermsEnabled is null
+            && request.TermsText is null
+            && request.ContactEmail is null)
         {
             errors["body"] = ["Se debe proporcionar al menos un campo para actualizar."];
             return errors;
@@ -174,7 +195,10 @@ public static class OpsConfigEndpoints
             config.FundamentalsCadenceMinutes,
             config.DistributionCadenceMinutes,
             config.UpdatedAt,
-            config.UpdatedBy);
+            config.UpdatedBy,
+            config.TermsEnabled,
+            config.TermsText,
+            config.ContactEmail);
 
     private static ConfigAuditLogDto ToDto(Domain.Ops.ConfigAuditLog entry)
         => new(

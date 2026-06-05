@@ -247,4 +247,47 @@ public class UserServiceTests
         await Assert.ThrowsAsync<UserNotFoundException>(
             () => svc.UpdatePaymentAsync(Guid.NewGuid(), 100m, null));
     }
+
+    // ── AcceptTerms ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AcceptTermsAsync_SetsHasAcceptedTermsAndTimestamp()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("u@fibradis.mx", "Fuerte1!", "User");
+
+        await svc.AcceptTermsAsync(user.Id);
+
+        var stored = await db.Users.FindAsync([user.Id]);
+        Assert.True(stored!.HasAcceptedTerms);
+        Assert.NotNull(stored.TermsAcceptedAt);
+    }
+
+    [Fact]
+    public async Task AcceptTermsAsync_IsIdempotent_PreservesOriginalTimestamp()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("u@fibradis.mx", "Fuerte1!", "User");
+
+        await svc.AcceptTermsAsync(user.Id);
+        var stored = await db.Users.FindAsync([user.Id]);
+        var originalTimestamp = stored!.TermsAcceptedAt;
+
+        await svc.AcceptTermsAsync(user.Id);
+
+        stored = await db.Users.FindAsync([user.Id]);
+        Assert.Equal(originalTimestamp, stored!.TermsAcceptedAt);
+    }
+
+    [Fact]
+    public async Task AcceptTermsAsync_NonExistingUser_ThrowsUserNotFoundException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+
+        await Assert.ThrowsAsync<UserNotFoundException>(
+            () => svc.AcceptTermsAsync(Guid.NewGuid()));
+    }
 }

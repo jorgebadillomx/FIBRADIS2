@@ -18,6 +18,9 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         int? fibraNewsMonths,
         int? fundamentalsCadenceMinutes,
         int? distributionCadenceMinutes,
+        bool? termsEnabled,
+        string? termsText,
+        string? contactEmail,
         string actor,
         CancellationToken ct = default)
     {
@@ -109,10 +112,41 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
             config.DistributionCadenceMinutes = distributionCadenceMinutes.Value;
         }
 
-        if (auditEntries.Count == 0)
+        if (termsEnabled.HasValue && config.TermsEnabled != termsEnabled.Value)
         {
-            return;
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor, ChangedAt = now, FieldName = "terms_enabled",
+                PreviousValue = config.TermsEnabled.ToString().ToLowerInvariant(),
+                NewValue = termsEnabled.Value.ToString().ToLowerInvariant(),
+            });
+            config.TermsEnabled = termsEnabled.Value;
         }
+
+        if (termsText is not null && config.TermsText != termsText)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor, ChangedAt = now, FieldName = "terms_text",
+                PreviousValue = config.TermsText?.Length.ToString() ?? "null",
+                NewValue = termsText.Length.ToString(),
+            });
+            config.TermsText = termsText;
+        }
+
+        if (contactEmail is not null && config.ContactEmail != contactEmail)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor, ChangedAt = now, FieldName = "contact_email",
+                PreviousValue = config.ContactEmail ?? "null",
+                NewValue = contactEmail,
+            });
+            config.ContactEmail = contactEmail;
+        }
+
+        if (auditEntries.Count == 0)
+            return;
 
         config.UpdatedAt = now;
         config.UpdatedBy = actor;

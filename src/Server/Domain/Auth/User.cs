@@ -8,6 +8,8 @@ public class User
     public UserRole Role { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
+    public bool HasAcceptedTerms { get; set; }
+    public DateTime? TermsAcceptedAt { get; set; }
     public decimal? Pago { get; set; }
     public DateTime? FechaPago { get; set; }
 

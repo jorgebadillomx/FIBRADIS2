@@ -21,6 +21,20 @@ export function getMainAuthHeaders(): { Authorization: string } | Record<string,
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+export function getMainTokenClaims(): { hasAcceptedTerms: boolean } | null {
+  const token = getStoredMainAccessToken()
+  if (!token) return null
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return {
+      hasAcceptedTerms:
+        payload.hasAcceptedTerms === 'true' || payload.hasAcceptedTerms === true,
+    }
+  } catch {
+    return null
+  }
+}
+
 export function notifyMainAuthRequired(): void {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new Event(MAIN_AUTH_REQUIRED_EVENT))
