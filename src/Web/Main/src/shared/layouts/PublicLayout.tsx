@@ -46,9 +46,14 @@ export function PublicLayout() {
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
             <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
             {status === 'authenticated' && (
-              <Link to="/portafolio" className="hover:text-foreground transition-colors duration-150">
-                Portafolio
-              </Link>
+              <>
+                <Link to="/portafolio" className="hover:text-foreground transition-colors duration-150">
+                  Portafolio
+                </Link>
+                <Link to="/oportunidades" className="hover:text-foreground transition-colors duration-150">
+                  Oportunidades
+                </Link>
+              </>
             )}
           </nav>
           <div className="flex-1 min-w-0 flex justify-center">
