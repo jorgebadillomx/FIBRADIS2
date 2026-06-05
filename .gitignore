@@ -32,6 +32,8 @@ desktop.ini
 .dev-wt-pid
 tmp-*.log
 scripts/*.sql
+_bmad/scripts/__pycache__/
+scripts/codegen/build-output/
 
 ## Uploaded files
 src/Server/Api/wwwroot/uploads/
