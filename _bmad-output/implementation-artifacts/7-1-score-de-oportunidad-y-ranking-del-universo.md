@@ -1,6 +1,6 @@
 # Historia 7.1: Score de oportunidad y ranking del universo
 
-Status: review
+Status: done
 
 ## Story
 
@@ -189,6 +189,15 @@ para que pueda identificar las FIBRAs más atractivas según mis propios criteri
 - `src/Web/Main/src/app/routes.tsx` (modificado)
 - `src/Web/Main/src/shared/layouts/PublicLayout.tsx` (modificado)
 
+### Review Findings
+
+- [x] **Review-Patch P1** — `DefaultWeightsDto` campo estático sin referencias, eliminado (`OpportunityEndpoints.cs:16`)
+- [x] **Review-Patch P2** — `effectiveWeights` fallback `|| N` reemplazado por null-check explícito; evita mostrar 30% cuando un peso es 0 (ej. perfil Renta `pricevs52w=0`) (`OportunidadesPage.tsx:268`)
+- [x] **Review-Patch P3** — `saveWeightsMutation` sin `onError`: agregado handler + mensaje de error inline (`OportunidadesPage.tsx:294`)
+- [x] **Review-Patch P4** — `ComponentBar` ahora muestra puntos de contribución reales (`percentile × weight / 100`) en lugar de percentil bruto; encabezado actualizado a "Contribución al score por componente (puntos)" (`OportunidadesPage.tsx:64`)
+- [x] **Review-Patch P5** — Botones `<button>` sin `type="button"` en perfiles y guardar configuración (`OportunidadesPage.tsx:376,432`)
+
 ## Change Log
 
 - 2026-06-05: Implementación inicial historia 7-1 — score de oportunidad y ranking del universo
+- 2026-06-05: Code review — 5 patches aplicados (P1-P5)

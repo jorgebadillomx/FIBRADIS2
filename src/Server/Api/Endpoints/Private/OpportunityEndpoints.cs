@@ -13,8 +13,6 @@ public static class OpportunityEndpoints
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private static readonly OpportunityWeightsDto DefaultWeightsDto = ToDto(OpportunityWeights.Default);
-
     public static IEndpointRouteBuilder MapOpportunities(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/opportunities")

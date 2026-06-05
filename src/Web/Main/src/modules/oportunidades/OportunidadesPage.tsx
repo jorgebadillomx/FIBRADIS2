@@ -61,9 +61,10 @@ function ScoreBadge({ score }: { score: number }) {
   )
 }
 
-function ComponentBar({ value, label }: { value: number | null; label: string }) {
+function ComponentBar({ value, label, weight }: { value: number | null; label: string; weight: number }) {
   if (value == null) return <div className="text-xs text-muted-foreground">— Sin datos</div>
   const pct = Math.max(0, Math.min(100, value))
+  const contribution = Math.round(pct * weight) / 100
   return (
     <div className="flex items-center gap-2">
       <span className="w-28 shrink-0 text-xs text-muted-foreground">{label}</span>
@@ -73,7 +74,7 @@ function ComponentBar({ value, label }: { value: number | null; label: string })
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-8 text-right text-xs tabular-nums">{pct.toFixed(0)}</span>
+      <span className="w-14 text-right text-xs tabular-nums">{contribution.toFixed(1)} pts</span>
     </div>
   )
 }
@@ -196,27 +197,32 @@ function RankingTable({
                     <td colSpan={9} className="px-6 py-4">
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                          Desglose por componente (percentil × peso)
+                          Contribución al score por componente (puntos)
                         </p>
                         <ComponentBar
                           value={row.navDiscountScore != null ? toNum(row.navDiscountScore) : null}
                           label={`Desc. NAV (${weights.navDiscount}%)`}
+                          weight={weights.navDiscount}
                         />
                         <ComponentBar
                           value={row.dividendYieldScore != null ? toNum(row.dividendYieldScore) : null}
                           label={`Yield (${weights.dividendYield}%)`}
+                          weight={weights.dividendYield}
                         />
                         <ComponentBar
                           value={row.ltvInvertedScore != null ? toNum(row.ltvInvertedScore) : null}
                           label={`LTV inv. (${weights.ltvInverted}%)`}
+                          weight={weights.ltvInverted}
                         />
                         <ComponentBar
                           value={row.noiMarginScore != null ? toNum(row.noiMarginScore) : null}
                           label={`NOI (${weights.noiMargin}%)`}
+                          weight={weights.noiMargin}
                         />
                         <ComponentBar
                           value={row.pricevs52wScore != null ? toNum(row.pricevs52wScore) : null}
                           label={`P. vs 52S (${weights.pricevs52w}%)`}
+                          weight={weights.pricevs52w}
                         />
                         {row.navPerCbfi != null && (
                           <p className="mt-2 text-xs text-muted-foreground">
@@ -265,13 +271,13 @@ export function OportunidadesPage() {
   const serverWeights = rankingQuery.data?.weights
   const [localWeights, setLocalWeights] = useState<Weights | null>(null)
 
-  const effectiveWeights: Weights = localWeights ?? {
-    navDiscount: toNum(serverWeights?.navDiscount) || 30,
-    dividendYield: toNum(serverWeights?.dividendYield) || 30,
-    ltvInverted: toNum(serverWeights?.ltvInverted) || 20,
-    noiMargin: toNum(serverWeights?.noiMargin) || 10,
-    pricevs52w: toNum(serverWeights?.pricevs52w) || 10,
-  }
+  const effectiveWeights: Weights = localWeights ?? (serverWeights != null ? {
+    navDiscount: toNum(serverWeights.navDiscount),
+    dividendYield: toNum(serverWeights.dividendYield),
+    ltvInverted: toNum(serverWeights.ltvInverted),
+    noiMargin: toNum(serverWeights.noiMargin),
+    pricevs52w: toNum(serverWeights.pricevs52w),
+  } : { navDiscount: 30, dividendYield: 30, ltvInverted: 20, noiMargin: 10, pricevs52w: 10 })
 
   const weightSum = Object.values(effectiveWeights).reduce((a, b) => a + b, 0)
   const isValid = Math.abs(weightSum - 100) < 0.5
@@ -294,6 +300,9 @@ export function OportunidadesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['opportunities'] })
       setLocalWeights(null)
+    },
+    onError: () => {
+      // error surfaced via saveWeightsMutation.isError in JSX
     },
   })
 
@@ -365,6 +374,7 @@ export function OportunidadesPage() {
             {/* Perfiles */}
             {Object.entries(PROFILES).map(([key, p]) => (
               <button
+                type="button"
                 key={key}
                 onClick={() => applyProfile(key)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -411,15 +421,21 @@ export function OportunidadesPage() {
           <span className={`text-sm ${isValid ? 'text-muted-foreground' : 'text-destructive font-medium'}`}>
             Suma: {weightSum}% {!isValid && '(debe ser 100%)'}
           </span>
-          {isDirty && (
-            <button
-              onClick={handleSaveWeights}
-              disabled={!isValid || saveWeightsMutation.isPending}
-              className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {saveWeightsMutation.isPending ? 'Guardando…' : 'Guardar configuración'}
-            </button>
-          )}
+          <div className="flex flex-col items-end gap-1">
+            {saveWeightsMutation.isError && (
+              <p className="text-xs text-destructive">Error al guardar. Intenta de nuevo.</p>
+            )}
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleSaveWeights}
+                disabled={!isValid || saveWeightsMutation.isPending}
+                className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {saveWeightsMutation.isPending ? 'Guardando…' : 'Guardar configuración'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
