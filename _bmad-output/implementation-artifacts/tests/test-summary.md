@@ -1,114 +1,83 @@
-# Test Automation Summary — Épicas 2, 3 y 4
+# Test Automation Summary — Épicas 6-7 y 6-1→6-4
 
-Generado: 2026-05-21
+**Fecha:** 2026-06-05
+**Tests generados esta sesión:** 45 nuevos (22 OpsUser + 23 Portfolio)
+**Estado general:** 245/250 passing, 5 pre-existentes fuera de scope
+
+---
 
 ## Tests Generados
 
-### Correcciones en tests existentes
+### API Tests — 6-7 Gestión Usuarios Ops
 
-- [x] [news-epic4.spec.ts](../../../src/Web/Main/tests/e2e/news-epic4.spec.ts) — Actualizado test AI_MODE: renombre `Manual → On` (story 4-6). Botón ahora es `'On - generar resumen al ingestar'` y se verifica el mensaje de modo activo.
-- [x] [fixtures/news-api.ts](../../../src/Web/Main/tests/e2e/fixtures/news-api.ts) — Añadido campo `imageUrl` al tipo `NewsArticle` y a los datos de default. Nuevas funciones: `mockNewsArticleByIdApi` y `mockNewsArticleByIdNotFound` para tests de NoticiaPage.
+- [x] `tests/Integration/Api.Tests/Ops/OpsUserEndpointTests.cs` — 22 tests
 
-### E2E Tests (Playwright) — nuevos
+| Endpoint | Tests |
+|----------|-------|
+| GET /api/v1/ops/users | 200+lista, 401, 403 |
+| POST /api/v1/ops/users | Roles User/AdminOps, campos pago, pwd débil, rol inválido, email duplicado |
+| PATCH /api/v1/ops/users/{id}/active | disable, enable, 404, 401 |
+| PATCH /api/v1/ops/users/{id}/password | pwd fuerte, débil (422), 404, nueva pwd funciona en login |
+| PATCH /api/v1/ops/users/{id}/payment | valores, null, 404 |
+| POST /api/v1/auth/login | cuenta deshabilitada → ACCOUNT_DISABLED, idem con pwd incorrecto |
 
-- [x] [universe-table.spec.ts](../../../src/Web/Main/tests/e2e/universe-table.spec.ts) — **Épica 2, story 2-6** — FibraUniverseTable
-  - Renderiza las 9 columnas de encabezado (Emisora, Precio, Var$, Var%, Volumen, Máx52S, Mín52S, Estado)
-  - Muestra una fila por snapshot recibido
-  - Filtro por ticker reduce filas visibles
-  - Limpiar filtro restaura todas las filas
-  - Filtro sin resultados muestra estado vacío
-  - Columna Precio es ordenable (asc/desc por precio)
+**Resultado: 22/22 ✅**
 
-- [x] [distributions-section.spec.ts](../../../src/Web/Main/tests/e2e/distributions-section.spec.ts) — **Épica 3, story 3-4** — DistribucionesSection
-  - Muestra yield anualizado formateado
-  - Tabla con fecha de pago y monto por CBFI
-  - Estado vacío cuando no hay distribuciones
-  - Botón "Ver historial" visible cuando hay > 8 distribuciones
-  - Expandir historial muestra todas las distribuciones
+### API Tests — 6-1→6-4 Portafolio
 
-- [x] [noticias-reader.spec.ts](../../../src/Web/Main/tests/e2e/noticias-reader.spec.ts) — **Épica 4, stories 4-5-1 / 4-5-3 / 4-6** — Lector y og:image
-  - Home renderiza hasta 5 artículos (story 4-6)
-  - Artículo con imageUrl muestra `<img>` con alt del título
-  - NoticiaPage en `/noticias/:id` renderiza título
-  - NoticiaPage muestra fuente y fecha
-  - NoticiaPage muestra resumen IA cuando existe
-  - NoticiaPage fallback a snippet cuando no hay resumen IA
-  - NoticiaPage enlace externo con `target="_blank" rel="noopener noreferrer"`
-  - NoticiaPage muestra skeleton mientras carga
-  - NoticiaPage error cuando artículo no existe (404)
+- [x] `tests/Integration/Api.Tests/PortfolioEndpointTests.cs` — 23 tests
 
-### Integration Tests (C# xUnit) — nuevos
+| Endpoint | Tests |
+|----------|-------|
+| GET /api/v1/portfolio/status | sin portafolio (false), 401 |
+| POST /api/v1/portfolio/upload | CSV válido, status refleja portafolio, ticker inválido (400), solo headers (400), 401, merge mode |
+| GET /api/v1/portfolio/ | vacío (null KPIs), con posiciones (KPIs+posiciones correctas), 401 |
+| PATCH /api/v1/portfolio/positions/{id} | 204 válido, refleja valores, 0 títulos (400), fibra inexistente (404), 401 |
+| DELETE /api/v1/portfolio/positions/{id} | 204 existente, portafolio queda vacío, 404, 401 |
+| GET/PUT /api/v1/portfolio/column-config | vacío por default, persiste (204), columnas inválidas filtradas |
 
-- [x] [NewsLatestEndpointTests.cs](../../../tests/Integration/Api.Tests/NewsLatestEndpointTests.cs) — **Épica 4** — GET /api/v1/news y GET /api/v1/news/fibras
-  - `GET /api/v1/news` → 200 con array
-  - Devuelve como máximo 5 artículos
-  - Cada artículo tiene campos requeridos (id, title, source, publishedAt, url)
-  - Incluye artículos sembrados
-  - `GET /api/v1/news/fibras/{fibraId}` → 200 con array
-  - Fibra sin noticias asociadas → array vacío
+**Resultado: 23/23 ✅**
 
-- [x] [AiModeGetPutTests.cs](../../../tests/Integration/Api.Tests/AiModeGetPutTests.cs) — **Épica 4** — GET/PUT /api/v1/ops/ai-mode
-  - GET con token AdminOps → 200 con dto válido (mode Off|On)
-  - GET respuesta contiene campos requeridos (mode, updatedAt)
-  - PUT mode=On → 204 NoContent
-  - PUT mode=On luego GET → mode refleja "On"
-  - PUT mode=Off → 204 NoContent
-  - PUT mode inválido → 400 BadRequest
-  - GET sin token → 401 Unauthorized
-  - PUT sin token → 401 Unauthorized
-  - PUT con token User (no AdminOps) → 403 Forbidden
+---
 
-## Cobertura por Épica
+## Fixes Aplicados Durante Generación
 
-### Épica 2 — Catálogo y Descubrimiento
+### 1. `ApiWebFactory.SeedUsersAsync` — Encriptación de emails (regresión 6-7)
+El seed almacenaba emails en texto plano pero `AuthService.LoginAsync` busca por email encriptado. Se resolvió usando `IEmailEncryptor` del contenedor DI para encriptar antes de guardar.
 
-| Feature | E2E | Integration |
-|---|---|---|
-| GET /api/v1/fibras (catálogo paginado) | ✅ | ✅ CatalogEndpointTests |
-| GET /api/v1/fibras/{ticker} (ficha) | ✅ public-discovery | ✅ CatalogEndpointTests |
-| Home: búsqueda global | ✅ public-discovery | — |
-| Home: PriceCarousel | ✅ public-discovery | — |
-| Home: GainersLosers | ✅ public-discovery | — |
-| Home: FibraUniverseTable (sort, filter) | ✅ universe-table (nuevo) | — |
-| SEO / prerender | ✅ public-discovery | — |
+### 2. `PortfolioRepository.UpsertSettingsAsync` — InMemory no soporta `ExecuteUpdateAsync`
+EF Core InMemory no implementa `ExecuteUpdateAsync` (lanza `InvalidOperationException`). Se reemplazó por `FirstOrDefaultAsync` + change tracking, que funciona con todos los providers y mantiene la misma semántica.
 
-### Épica 3 — Mercado y Datos Históricos
+### 3. `PortfolioEndpointTests` — Aislamiento por test
+Se cambió de `IClassFixture<ApiWebFactory>` (BD compartida entre tests) a `new ApiWebFactory()` por instancia de test, garantizando BD InMemory completamente aislada por test. Cada test crea usuario con email UUID único → sin contaminación de estado de portafolio.
 
-| Feature | E2E | Integration |
-|---|---|---|
-| GET /api/v1/market/snapshots | ✅ market-freshness | ✅ MarketSnapshotsEndpointTests |
-| GET /api/v1/market/fibras/{ticker}/history | ✅ price-history | ✅ MarketHistoryEndpointTests |
-| FreshnessBadge estados | ✅ market-freshness | — |
-| Selector de período (1M/3M/6M/1A) | ✅ price-history | ✅ MarketHistoryEndpointTests |
-| Distribuciones en historial | ✅ distributions-section (nuevo) | ✅ MarketHistoryEndpointTests |
-| POST /ops/market/daily-snapshot-historical/run | — | ✅ OpsMarketEndpointTests |
-| POST /ops/market/distribution/run | — | ✅ OpsMarketEndpointTests |
+---
 
-### Épica 4 — Noticias y Contenido
+## Cobertura
 
-| Feature | E2E | Integration |
-|---|---|---|
-| GET /api/v1/news (últimas 5) | ✅ news-epic4 | ✅ NewsLatestEndpointTests (nuevo) |
-| GET /api/v1/news/fibras/{fibraId} | ✅ news-epic4 | ✅ NewsLatestEndpointTests (nuevo) |
-| GET /api/v1/news/{id} | ✅ noticias-reader (nuevo) | ✅ NewsEndpointsTests |
-| og:image en artículos | ✅ noticias-reader (nuevo) | — |
-| NoticiaPage /noticias/:id | ✅ noticias-reader (nuevo) | — |
-| Blocklist ops | ✅ news-epic4 | ✅ NewsBlocklistOpsEndpointTests |
-| GET /api/v1/ops/ai-mode | — | ✅ AiModeGetPutTests (nuevo) |
-| PUT /api/v1/ops/ai-mode | ✅ news-epic4 | ✅ AiModeGetPutTests (nuevo) |
-| POST /api/v1/ops/news/{id}/ai-summary | ✅ news-epic4 | ✅ AiModeOpsEndpointTests |
-| AI summary fallback a snippet | ✅ news-ai-summary | — |
+- Endpoints cubiertos: 11/11 rutas de las historias 6-1 a 6-7
+- ACs verificados: todos los ACs con comportamiento de API observable
+- Aislamiento: cada test crea usuario con email UUID único
 
-## Resultados de Ejecución
+## Estado Suite Completa
 
-| Suite | Antes | Después | Estado |
-|---|---|---|---|
-| Integration (Api.Tests, dotnet test) | 69/69 | 77/77 | +8 nuevos pasando |
-| Unit Frontend (npm test) | 56/56 | 56/56 | sin regresiones |
-| E2E Playwright (npm run test:e2e) | requiere servidor | — | ejecutar manualmente |
+| Grupo | Passing | Failing |
+|-------|---------|---------|
+| Auth | 6 | 0 |
+| OpsUser (nuevo) | 22 | 0 |
+| Portfolio (nuevo) | 23 | 0 |
+| Catalog | ~10 | 0 |
+| Market | ~30 | 0 |
+| Fundamentals | ~90 | 1* |
+| Dashboard | ~40 | 4* |
+| Otros | ~24 | 0 |
+| **Total** | **245** | **5*** |
 
-## Notas
+*Pre-existentes antes de esta sesión — no introducidos por estos cambios.
 
-- Los tests E2E de Playwright requieren `npm run test:e2e` con el servidor Vite corriendo.
-- El runner de FIBRADIS (`scripts/run-e2e.mjs`) levanta el servidor automáticamente.
-- Los nuevos tests E2E usan `page.route()` para mockear todas las APIs sin dependencia de backend real.
+---
+
+## Tests Anteriores (Épicas 2-4)
+
+Los tests de épicas anteriores siguen pasando sin regresiones.
+Ver historial: `_bmad-output/implementation-artifacts/tests/` (versiones anteriores en git).

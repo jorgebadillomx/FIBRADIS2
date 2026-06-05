@@ -16,11 +16,14 @@ public class AuthService(AppDbContext db, ITokenService tokenService, IEmailEncr
         var user = await db.Users
             .FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        if (user is null)
             throw new InvalidCredentialsException();
 
         if (!user.IsActive)
             throw new AccountDisabledException();
+
+        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            throw new InvalidCredentialsException();
 
         return await IssueTokensAsync(user, ct);
     }

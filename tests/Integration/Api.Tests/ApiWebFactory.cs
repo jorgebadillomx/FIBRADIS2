@@ -62,6 +62,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var encryptor = scope.ServiceProvider.GetRequiredService<Application.Auth.IEmailEncryptor>();
         await db.Database.EnsureCreatedAsync();
 
         if (!await db.Users.AnyAsync())
@@ -70,7 +71,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 new User
                 {
                     Id = Guid.Parse("11111111-0000-0000-0000-000000000001"),
-                    Email = "user@test.com",
+                    Email = encryptor.Encrypt("user@test.com"),
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
                     Role = UserRole.User,
                     IsActive = true,
@@ -79,7 +80,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 new User
                 {
                     Id = Guid.Parse("22222222-0000-0000-0000-000000000001"),
-                    Email = "adminops@test.com",
+                    Email = encryptor.Encrypt("adminops@test.com"),
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("ops123"),
                     Role = UserRole.AdminOps,
                     IsActive = true,
