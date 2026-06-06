@@ -54,6 +54,21 @@ public class AuthService(AppDbContext db, ITokenService tokenService, IEmailEncr
         }
     }
 
+    public async Task LogoutAsync(string rawRefreshToken, CancellationToken ct = default)
+    {
+        var candidates = await db.RefreshTokens
+            .Where(rt => rt.RevokedAt == null && rt.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync(ct);
+
+        var stored = candidates.FirstOrDefault(rt =>
+            BCrypt.Net.BCrypt.Verify(rawRefreshToken, rt.TokenHash));
+
+        if (stored is null) return;
+
+        stored.RevokedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+    }
+
     private async Task<(string, string)> IssueTokensAsync(User user, CancellationToken ct)
     {
         var rawRefresh = tokenService.GenerateRefreshToken();

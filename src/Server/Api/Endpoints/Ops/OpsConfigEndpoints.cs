@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Application.Auth;
 using Application.Ops;
 using Hangfire;
 using Infrastructure.Jobs.Fundamentals;
@@ -47,6 +48,7 @@ public static class OpsConfigEndpoints
             UpdateOperationalConfigRequest request,
             IOperationalConfigRepository repo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -57,7 +59,7 @@ public static class OpsConfigEndpoints
             }
 
             var logger = loggerFactory.CreateLogger("OpsConfigEndpoints");
-            var actor = GetActor(ctx, logger);
+            var actor = GetActor(ctx, emailEncryptor, logger);
             var currentConfig = await repo.GetAsync(ct);
             var cadenceChanged = request.NewsCadenceMinutes.HasValue
                 && currentConfig.NewsCadenceMinutes != request.NewsCadenceMinutes.Value;
@@ -219,7 +221,7 @@ public static class OpsConfigEndpoints
             entry.PreviousValue,
             entry.NewValue);
 
-    private static string GetActor(HttpContext ctx, ILogger logger)
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor, ILogger logger)
     {
         var actor = ctx.User.Identity?.Name
             ?? ctx.User.FindFirstValue(ClaimTypes.Email)
@@ -231,6 +233,6 @@ public static class OpsConfigEndpoints
             return "unknown";
         }
 
-        return actor;
+        return emailEncryptor.Decrypt(actor);
     }
 }

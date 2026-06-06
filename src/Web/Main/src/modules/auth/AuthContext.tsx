@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Network error — the acceptance was persisted; keep going
     }
-    setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? true)
+    setHasAcceptedTerms(true)
   }
 
   return (

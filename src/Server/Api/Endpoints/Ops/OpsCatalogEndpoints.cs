@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Application.Auth;
 using Application.Catalog;
 using Domain.Catalog;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,7 @@ public static class OpsCatalogEndpoints
             CreateFibraRequest request,
             IFibraRepository repo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -61,7 +63,7 @@ public static class OpsCatalogEndpoints
             }
 
             var timestamp = DateTimeOffset.UtcNow;
-            var actor = GetActor(ctx, logger);
+            var actor = GetActor(ctx, emailEncryptor, logger);
             var fibra = new Fibra
             {
                 Id = Guid.NewGuid(),
@@ -114,6 +116,7 @@ public static class OpsCatalogEndpoints
             UpdateFibraRequest request,
             IFibraRepository repo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -154,7 +157,7 @@ public static class OpsCatalogEndpoints
                 "Ops {Action} FIBRA {Ticker} by {Actor} at {Timestamp}",
                 "UPDATE",
                 fibra.Ticker,
-                GetActor(ctx, logger),
+                GetActor(ctx, emailEncryptor, logger),
                 timestamp);
 
             return Results.Ok(ToDto(fibra));
@@ -169,6 +172,7 @@ public static class OpsCatalogEndpoints
             string ticker,
             IFibraRepository repo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -188,7 +192,7 @@ public static class OpsCatalogEndpoints
                     "Ops {Action} FIBRA {Ticker} by {Actor} at {Timestamp}",
                     "DEACTIVATE",
                     fibra.Ticker,
-                    GetActor(ctx, logger),
+                    GetActor(ctx, emailEncryptor, logger),
                     DateTimeOffset.UtcNow);
             }
 
@@ -203,6 +207,7 @@ public static class OpsCatalogEndpoints
             string ticker,
             IFibraRepository repo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -222,7 +227,7 @@ public static class OpsCatalogEndpoints
                     "Ops {Action} FIBRA {Ticker} by {Actor} at {Timestamp}",
                     "ACTIVATE",
                     fibra.Ticker,
-                    GetActor(ctx, logger),
+                    GetActor(ctx, emailEncryptor, logger),
                     DateTimeOffset.UtcNow);
             }
 
@@ -382,7 +387,7 @@ public static class OpsCatalogEndpoints
         fibra.CreatedAt,
         fibra.Description);
 
-    private static string GetActor(HttpContext ctx, ILogger logger)
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor, ILogger logger)
     {
         var actor = ctx.User.Identity?.Name
             ?? ctx.User.FindFirstValue(ClaimTypes.Email)
@@ -394,6 +399,6 @@ public static class OpsCatalogEndpoints
             return "unknown";
         }
 
-        return actor;
+        return emailEncryptor.Decrypt(actor);
     }
 }

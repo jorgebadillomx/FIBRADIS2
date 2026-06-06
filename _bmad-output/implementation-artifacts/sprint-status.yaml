@@ -86,7 +86,10 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-05
+last_updated: 2026-06-06
+# story 9-1 done — code review pass (1 patch: P1 resetear campos contraseña al cerrar diálogo). 7 defers.
+# story 9-1 ready-for-dev — perfil usuario Main: Apodo + GET/PATCH /account/me + PATCH /account/password; rama story/9-1-perfil-usuario-main
+# sprint mejoras post-épicas — rama única: sprint/9-mejoras-deuda-tecnica (NO merge a main hasta completar todo el sprint)
 # story 7-2 ready-for-dev — branch story/7-2-vista-promediar creado
 # story 7-1 done — code review pass (5 patches: P1 DefaultWeightsDto dead field, P2 effectiveWeights ||0 bug, P3 saveWeightsMutation onError, P4 ComponentBar contribution pts, P5 button type attribute)
 # story 6-9 done — code review pass (7 patches: P1 refreshMainSession tras acceptTerms, P2 idempotencia AcceptTermsAsync, P3 tests AcceptTermsAsync x3, P4 validación termsText obligatorio si termsEnabled, P5 UserNotFoundException→401 en accept-terms, P6 tests repositorio TermsEnabled+ContactEmail, P7 condición redundante acceptTermsApi). 7 defers.
@@ -291,6 +294,18 @@ development_status:
   epic-8-retrospective: done
   # story 8-3 done — code review pass (5 patches: P1 isExcluded sub-rows renderScoreComponent, P2 parseCompareTickers cap MAX_COMPARE_FIBRAS, P3 duplicate GetLatestSnapshotPerFibraAsync+GetSummaryLatestAsync queries, P4 usar OpportunityWeights.Balanced, P5 meta description 117→132 chars). 5 defers.
   8-3-comparador-publico: done
+
+  # ── Épica 9: Mejoras y Deuda Técnica Post-MVP ─────────────────────────────
+  # Rama única: sprint/9-mejoras-deuda-tecnica — NO merge a main hasta completar todas las historias
+  epic-9: in-progress
+  9-1-perfil-usuario-main: done
+  9-2-tests-y-fixes-auth: backlog
+  9-3-mejoras-portafolio: backlog
+  9-4-mejoras-oportunidades: backlog
+  9-5-mejoras-fundamentales: backlog
+  9-6-ia-observabilidad-fixes: backlog
+  9-7-noticias-mejoras: backlog
+  epic-9-retrospective: optional
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
   epic-6: done

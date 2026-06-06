@@ -63,7 +63,7 @@ public class FundamentalsAutomationService(
                 totalCandidates += candidates.Count;
                 foreach (var candidate in candidates)
                 {
-                    var existingManifest = await manifestRepo.GetByPackageUrlAsync(candidate.PackageUrl, ct);
+                    var existingManifest = await manifestRepo.GetBySourceAndPackageUrlAsync(candidate.SourceName, candidate.PackageUrl, ct);
                     var manifest = existingManifest ?? new FundamentalSourceManifest
                     {
                         Id = Guid.NewGuid(),

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Application.Auth;
 using Application.Jobs;
 using Domain.Jobs;
 using Hangfire;
@@ -21,11 +22,12 @@ public static class OpsMarketEndpoints
             IBackgroundJobClient jobClient,
             IPipelineRunLogRepository runLogRepo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
             jobClient.Enqueue<NewsPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
-            await TryLogQueuedRunAsync("News", ctx, runLogRepo, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
+            await TryLogQueuedRunAsync("News", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })
         .Produces(StatusCodes.Status202Accepted)
@@ -49,11 +51,12 @@ public static class OpsMarketEndpoints
             IBackgroundJobClient jobClient,
             IPipelineRunLogRepository runLogRepo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
             jobClient.Enqueue<MarketPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
-            await TryLogQueuedRunAsync("Market", ctx, runLogRepo, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
+            await TryLogQueuedRunAsync("Market", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })
         .Produces(StatusCodes.Status202Accepted)
@@ -73,11 +76,12 @@ public static class OpsMarketEndpoints
             IBackgroundJobClient jobClient,
             IPipelineRunLogRepository runLogRepo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
             jobClient.Enqueue<DistributionPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
-            await TryLogQueuedRunAsync("Distribution", ctx, runLogRepo, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
+            await TryLogQueuedRunAsync("Distribution", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })
         .Produces(StatusCodes.Status202Accepted)
@@ -88,11 +92,12 @@ public static class OpsMarketEndpoints
             IBackgroundJobClient jobClient,
             IPipelineRunLogRepository runLogRepo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
             jobClient.Enqueue<FundamentalsPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
-            await TryLogQueuedRunAsync("Fundamentals", ctx, runLogRepo, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
+            await TryLogQueuedRunAsync("Fundamentals", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })
         .Produces(StatusCodes.Status202Accepted)
@@ -106,6 +111,7 @@ public static class OpsMarketEndpoints
         string pipeline,
         HttpContext ctx,
         IPipelineRunLogRepository runLogRepo,
+        IEmailEncryptor emailEncryptor,
         ILogger logger,
         CancellationToken ct)
     {
@@ -116,7 +122,7 @@ public static class OpsMarketEndpoints
                 Pipeline = pipeline,
                 StartedAt = DateTimeOffset.UtcNow,
                 Status = "Queued",
-                TriggeredBy = GetActor(ctx),
+                TriggeredBy = GetActor(ctx, emailEncryptor),
             }, CancellationToken.None); // no depende del ciclo de vida del request
         }
         catch (Exception ex)
@@ -125,9 +131,15 @@ public static class OpsMarketEndpoints
         }
     }
 
-    private static string GetActor(HttpContext ctx)
-        => ctx.User.Identity?.Name
-           ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-           ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-           ?? "unknown";
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor)
+    {
+        var actor = ctx.User.Identity?.Name
+            ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+            ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (actor is null)
+            return "unknown";
+
+        return emailEncryptor.Decrypt(actor);
+    }
 }

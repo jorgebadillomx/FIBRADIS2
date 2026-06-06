@@ -52,6 +52,7 @@ app.MapOpportunities();
 app.MapOpsUsers();
 app.MapAccount();
 
+
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("/ops/{**slug}", "ops/index.html");
 app.MapFallbackToFile("index.html");

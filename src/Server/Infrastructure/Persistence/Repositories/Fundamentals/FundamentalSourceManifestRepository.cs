@@ -7,9 +7,9 @@ namespace Infrastructure.Persistence.Repositories.Fundamentals;
 
 public class FundamentalSourceManifestRepository(AppDbContext db) : IFundamentalSourceManifestRepository
 {
-    public async Task<FundamentalSourceManifest?> GetByPackageUrlAsync(string packageUrl, CancellationToken ct)
+    public async Task<FundamentalSourceManifest?> GetBySourceAndPackageUrlAsync(string sourceName, string? packageUrl, CancellationToken ct)
         => await db.FundamentalSourceManifests
-            .FirstOrDefaultAsync(x => x.SourceName == "AMEFIBRA" && x.PackageUrl == packageUrl, ct);
+            .FirstOrDefaultAsync(x => x.SourceName == sourceName && x.PackageUrl == packageUrl, ct);
 
     public async Task<FundamentalSourceManifest?> GetLatestByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct)
         => await db.FundamentalSourceManifests
