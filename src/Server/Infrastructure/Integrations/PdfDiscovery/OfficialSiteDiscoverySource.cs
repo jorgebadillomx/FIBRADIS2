@@ -24,10 +24,6 @@ public class OfficialSiteDiscoverySource(HttpClient http) : IFundamentalsDiscove
                 PdfLinkSelector: "a[href$=\".pdf\"]",
                 BaseUrl: "https://ir.vesta.com.mx"),
 
-            ["FHIPO14"] = new(
-                PdfLinkSelector: "a[href*=\"wp-content/uploads/\"][href$=\".pdf\"]",
-                BaseUrl: "https://fhipo.com"),
-
             ["FCFE18"] = new(
                 PdfLinkSelector: "a[href*=\"wp-content/uploads/\"][href$=\".pdf\"]",
                 BaseUrl: "https://cfecapital.com.mx"),
