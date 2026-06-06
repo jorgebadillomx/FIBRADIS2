@@ -42,6 +42,7 @@ public static class ApiServiceExtensions
 {
     public static WebApplicationBuilder AddApiInfrastructure(this WebApplicationBuilder builder)
     {
+        builder.Services.AddMemoryCache();
         builder.Services.AddOpenApi("v1");
 
         builder.Services.AddProblemDetails(options =>

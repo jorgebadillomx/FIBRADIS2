@@ -514,8 +514,8 @@ export function OportunidadesPage() {
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                  <span className={`text-sm ${isValid ? 'text-muted-foreground' : 'text-destructive font-medium'}`}>
-                    Suma: {weightSum}% {!isValid && '(debe ser 100%)'}
+                  <span className={`text-sm ${weightSum === 100 ? 'text-muted-foreground' : weightSum < 100 ? 'font-medium text-amber-600' : 'font-medium text-destructive'}`}>
+                    {weightSum === 100 ? '✓ 100%' : weightSum < 100 ? `Faltan ${100 - weightSum}%` : `Sobran ${weightSum - 100}%`}
                   </span>
                   <div className="flex flex-col items-end gap-1">
                     {saveWeightsMutation.isError && (

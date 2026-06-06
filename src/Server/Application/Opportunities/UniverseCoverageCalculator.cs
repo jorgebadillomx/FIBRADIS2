@@ -18,6 +18,8 @@ public static class UniverseCoverageCalculator
         int degradationThresholdPct,
         DateTimeOffset? lastValidPriceAt)
     {
+        degradationThresholdPct = Math.Clamp(degradationThresholdPct, 1, 49);
+
         if (universeSize == 0)
             return new UniverseCoverage(0, 0, 0m, degradationThresholdPct, "Normal", lastValidPriceAt);
 

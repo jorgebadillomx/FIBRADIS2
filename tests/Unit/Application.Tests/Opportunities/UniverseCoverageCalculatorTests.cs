@@ -96,4 +96,20 @@ public class UniverseCoverageCalculatorTests
         Assert.Equal("Normal", result.Status);
         Assert.Equal(0m, result.MissingPct);
     }
+
+    [Fact]
+    public void Calculate_ThresholdZero_ClampedToOne_ZeroMissingIsNormal()
+    {
+        // threshold=0 sin clamp haría 0% missing >= 0% → "Degraded" (bug);
+        // con clamp a 1: 0% missing < 1% → "Normal" (correcto)
+        var result = UniverseCoverageCalculator.Calculate(
+            universeSize: 20,
+            fibrasWithPrice: 20, // 0% missing
+            degradationThresholdPct: 0,
+            lastValidPriceAt: null);
+
+        Assert.Equal("Normal", result.Status);
+        Assert.Equal(0m, result.MissingPct);
+        Assert.Equal(1, result.DegradationThresholdPct); // threshold clampeado a 1
+    }
 }

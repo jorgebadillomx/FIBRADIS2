@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: quick-dev mejoras módulo Oportunidades (2026-06-05)
+
+- **D1 (LOW): Comparador "mi portafolio vs universo"** — Mostrar qué percentil ocupa el portafolio del usuario en el universo de oportunidades (no solo FIBRAs individuales), con un score promedio ponderado por peso de posición. Requiere nuevo endpoint que cruza `portfolio.UserPositions` con el ranking calculado. Evaluar cuando el módulo Portafolio tenga suficiente tracción.
+
+- **D2 (MEDIUM): Snapshots diarios de component scores + deltas ▲/▼ en ComponentBar** — Nueva entidad `FibraScoreSnapshot` (`market.FibraScoreSnapshots`, PK compuesta `(FibraId, SnapshotDate)`), interfaz + repositorio (`GetLatestBeforeAsync`, `UpsertManyAsync`), job Hangfire diario `DailyScoreSnapshotJob` con cron `"0 6 * * *"` usando `OpportunityWeights.Default`, 5 campos delta en `OpportunityFibraRowDto` como `{ get; init; }`, carga de snapshot 7 días atrás en el endpoint, y `ComponentBar` con prop `delta?: number | null` que muestra ▲/▼ si `|delta| ≥ 0.5`. Implementar en historia dedicada del módulo Oportunidades.
+
+- **D3 (LOW): Alertas de cambio relevante de score** — Notificar al usuario cuando una FIBRA sube/baja más de N puntos en el ranking. Prerequisito: D2 (snapshots) debe estar estable primero.
+
+- **D3 (LOW): Histórico de score completo en UI** — Mostrar gráfica de tendencia de score de los últimos 30 días por FIBRA en el panel expandido. Prerequisito igual que D2.
+
 ## Deferred from: code review of 7-4-favoritos-marcar-y-destacar-fibras-en-todas-las-superficies (2026-06-05)
 
 - ~~**D1 (MEDIUM): `GetUserId` sin guarda si falta el claim `NameIdentifier`**~~ → **RESUELTO** 2026-06-05: `TryGetUserId` retorna `Guid?` en `OpportunityEndpoints`, `FavoriteEndpoints`, `PortfolioEndpoints` (16 handlers). Cada handler responde 401 si falta el claim.
