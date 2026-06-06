@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review de 9-1-perfil-usuario-main (2026-06-06)
+
+- D1: `UpdateApodoAsync` acepta `apodo = ""` (empty string) como valor válido — la validación solo se ejecuta cuando `apodo is not null`; una llamada directa a la API con `{ "apodo": "" }` almacena `""` en BD en lugar de `null`, inconsistente con el contrato implícito. Fix: `user.Apodo = string.IsNullOrEmpty(apodo) ? null : apodo` (`UserService.cs:115`).
+- D2: `GetActor` helper duplicado verbatim en 6+ clases estáticas de Ops (`AiModeEndpoints`, `AiProviderEndpoints`, `OpsFundamentalsEndpoints`, `OpsMarketEndpoints`, `OpsConfigEndpoints`, `OpsAiPromptEndpoints`, `OpsCatalogEndpoints`) — riesgo de divergencia si se corrige un bug en una copia pero no en las demás. Extraer a método de extensión `HttpContext.GetDecryptedActorEmail(IEmailEncryptor)` o clase `OpsActorHelper`.
+- D3: `EmailEncryptor.Decrypt` atrapa todas las excepciones sin loguear advertencia — si hay rotación de clave AES, el actor en el audit log queda como blob Base64 cifrado sin aviso observable en logs. Añadir `logger.LogWarning(ex, "Decrypt failed, storing raw value")` antes del return del fallback.
+- D4: `ChangeOwnPasswordAsync` acepta la misma contraseña sin rechazarla — no es requisito de AC4 pero puede sorprender a los usuarios. Añadir `if (BCrypt.Verify(newPassword, user.PasswordHash)) throw new InvalidUserDataException(...)` antes de hashear.
+- D5: Caracteres Unicode bidi/format no bloqueados en apodo (U+202E RTL override, U+200B zero-width space, etc.) — `char.IsControl` solo cubre categorías C0/C1 (código < 32). Añadir rechazo de categorías `UnicodeCategory.Format` y `UnicodeCategory.Surrogate` en `UpdateApodoAsync`.
+- D6: `fetchProfile` que retorna 401 muestra mensaje genérico "Error al cargar el perfil." en lugar de redirigir a login — inconsistente con el comportamiento de otras queries autenticadas que disparan `MAIN_AUTH_REQUIRED_EVENT`. Inspeccionar `error.status` en `authApi.ts` y llamar `notifyMainAuthRequired()` si es 401.
+- D7: Header actualiza apodo vía re-fetch en background (no optimista) — tras PATCH exitoso, `queryClient.invalidateQueries` dispara un re-fetch; hay un lag visual breve donde el header sigue mostrando el apodo anterior. Considerar `queryClient.setQueryData(PROFILE_QUERY_KEY, (old) => ({ ...old, apodo: newApodo }))` para actualización inmediata.
+
 ## Backlog: Historia 6-9 — Términos y condiciones, footer y editor de textos del sitio (2026-06-04)
 
 Deferred desde el scope de 6-7 (split multi-goal). Implementar después de 6-8.

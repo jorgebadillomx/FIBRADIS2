@@ -42,6 +42,22 @@ public static class AuthEndpoints
         .Produces<RefreshResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapPost("/logout", async (
+            IAuthService authService,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var rawToken = ctx.Request.Cookies[RefreshTokenCookie];
+            if (!string.IsNullOrEmpty(rawToken))
+                await authService.LogoutAsync(rawToken, ct);
+
+            ctx.Response.Cookies.Delete(RefreshTokenCookie);
+            return Results.NoContent();
+        })
+        .AllowAnonymous()
+        .WithTags("Auth")
+        .Produces(StatusCodes.Status204NoContent);
+
         return app;
     }
 

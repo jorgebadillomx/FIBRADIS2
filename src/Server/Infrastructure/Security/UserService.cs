@@ -86,6 +86,50 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<UserProfileData> GetProfileAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([userId], ct)
+            ?? throw new UserNotFoundException();
+
+        return new UserProfileData(
+            user.Id,
+            emailEncryptor.Decrypt(user.Email),
+            user.Role.ToString(),
+            user.Apodo);
+    }
+
+    public async Task UpdateApodoAsync(Guid userId, string? apodo, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([userId], ct)
+            ?? throw new UserNotFoundException();
+
+        if (apodo is not null)
+        {
+            if (apodo.Length > 50)
+                throw new InvalidUserDataException("El apodo no puede tener más de 50 caracteres.");
+
+            if (apodo.Any(char.IsControl))
+                throw new InvalidUserDataException("El apodo contiene caracteres no permitidos.");
+        }
+
+        user.Apodo = apodo;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task ChangeOwnPasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([userId], ct)
+            ?? throw new UserNotFoundException();
+
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+            throw new InvalidCredentialsException();
+
+        ValidateStrongPassword(newPassword);
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task<UserData> UpdatePaymentAsync(
         Guid id, decimal? pago, DateTime? fechaPago, CancellationToken ct = default)
     {

@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Application.Auth;
 using Application.Catalog;
 using Application.Fundamentals;
 using Application.Jobs;
@@ -81,6 +82,18 @@ public static partial class OpsFundamentalsEndpoints
             DeletedAt: record.DeletedAt);
     }
 
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor)
+    {
+        var actor = ctx.User.Identity?.Name
+            ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+            ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (actor is null)
+            return "unknown";
+
+        return emailEncryptor.Decrypt(actor);
+    }
+
     public static IEndpointRouteBuilder MapOpsFundamentals(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/ops/fundamentals")
@@ -91,6 +104,7 @@ public static partial class OpsFundamentalsEndpoints
             ImportFundamentalsRequest request,
             IFundamentalRepository repo,
             IFibraRepository fibraRepo,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -134,10 +148,7 @@ public static partial class OpsFundamentalsEndpoints
                 ? $"Ya existe un registro procesado para {fibra.Ticker} / {period}. Se requiere Reprocess explícito para sobreescribir."
                 : null;
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             var record = new FundamentalRecord
             {
@@ -191,6 +202,7 @@ public static partial class OpsFundamentalsEndpoints
             IConfiguration config,
             IPipelineErrorLogRepository errorLogRepo,
             ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -233,10 +245,7 @@ public static partial class OpsFundamentalsEndpoints
             var existing = await repo.GetProcessedByFibraAndPeriodAsync(fibraId, period, ct);
             var isPossibleUpdate = existing is not null;
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             var id = Guid.NewGuid();
             var basePath = config["Uploads:BasePath"] ?? "wwwroot/uploads/fundamentals";
@@ -399,6 +408,7 @@ public static partial class OpsFundamentalsEndpoints
             Guid id,
             IFundamentalRepository repo,
             IFibraRepository fibraRepo,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -406,10 +416,7 @@ public static partial class OpsFundamentalsEndpoints
             if (record is null)
                 return Results.NotFound();
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             // Soft-delete any existing processed record for the same fibra/period before confirming.
             if (record.IsPossibleUpdate)
@@ -670,6 +677,7 @@ public static partial class OpsFundamentalsEndpoints
         group.MapDelete("/{id:guid}", async (
             Guid id,
             IFundamentalRepository repo,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -677,10 +685,7 @@ public static partial class OpsFundamentalsEndpoints
             if (record is null || record.DeletedAt is not null)
                 return Results.NotFound();
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             await repo.SoftDeleteAsync(id, actor, ct);
             return Results.NoContent();

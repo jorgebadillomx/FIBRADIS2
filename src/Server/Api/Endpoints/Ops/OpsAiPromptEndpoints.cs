@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Application.Auth;
 using Application.News;
 using Infrastructure.Integrations.Ai;
 using SharedApiContracts.News;
@@ -60,6 +61,7 @@ public static class OpsAiPromptEndpoints
             string contentType,
             UpdateAiPromptRequest request,
             IAiPromptRepository repo,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -105,10 +107,7 @@ public static class OpsAiPromptEndpoints
                 });
             }
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             await repo.SetPromptAsync(contentType, request.PromptTemplate.Trim(), actor, ct);
             return Results.NoContent();
@@ -123,4 +122,16 @@ public static class OpsAiPromptEndpoints
 
     private static bool IsAllowedContentType(string contentType)
         => AllowedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
+
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor)
+    {
+        var actor = ctx.User.Identity?.Name
+            ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+            ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (actor is null)
+            return "unknown";
+
+        return emailEncryptor.Decrypt(actor);
+    }
 }

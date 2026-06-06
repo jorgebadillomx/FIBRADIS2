@@ -16,6 +16,12 @@ public interface IUserService
 
     Task ChangePasswordAsync(Guid id, string newPassword, CancellationToken ct = default);
 
+    Task<UserProfileData> GetProfileAsync(Guid userId, CancellationToken ct = default);
+
+    Task UpdateApodoAsync(Guid userId, string? apodo, CancellationToken ct = default);
+
+    Task ChangeOwnPasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default);
+
     Task<UserData> UpdatePaymentAsync(Guid id, decimal? pago, DateTime? fechaPago, CancellationToken ct = default);
 
     Task AcceptTermsAsync(Guid userId, CancellationToken ct = default);

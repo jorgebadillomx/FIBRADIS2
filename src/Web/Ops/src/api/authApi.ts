@@ -1,26 +1,14 @@
 import { createPathBasedClient } from 'openapi-fetch'
-import type { components, paths } from '@fibradis/shared-api-client'
+import type { paths } from '@fibradis/shared-api-client'
 import {
+  clearOpsAccessToken,
+  decodeTokenRole,
   getOpsApiErrorMessage,
   storeOpsAccessToken,
 } from '@/api/opsAuth'
 
 const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
-type LoginResponse = components['schemas']['LoginResponse']
-type RefreshResponse = components['schemas']['RefreshResponse']
-
-async function persistAccessToken(
-  response: LoginResponse | RefreshResponse | undefined,
-  fallback: string,
-): Promise<void> {
-  const accessToken = response?.accessToken?.trim()
-  if (!accessToken) {
-    throw new Error(fallback)
-  }
-
-  storeOpsAccessToken(accessToken)
-}
 
 export async function loginOps(email: string, password: string): Promise<void> {
   const { data, error } = await apiClient['/api/v1/auth/login'].POST({
@@ -30,7 +18,17 @@ export async function loginOps(email: string, password: string): Promise<void> {
   if (error) {
     throw new Error(getOpsApiErrorMessage(error, 'No se pudo iniciar sesión en Ops.', { signOutOn401: false }))
   }
-  await persistAccessToken(data, 'La API no devolvió access token para AdminOps.')
+
+  const accessToken = data?.accessToken?.trim()
+  if (!accessToken) {
+    throw new Error('La API no devolvió access token para AdminOps.')
+  }
+
+  if (decodeTokenRole(accessToken) !== 'AdminOps') {
+    throw new Error('Solo cuentas AdminOps pueden acceder al centro operativo.')
+  }
+
+  storeOpsAccessToken(accessToken)
 }
 
 // Deduplicates concurrent calls (e.g. React Strict Mode double-mount) so only one
@@ -59,7 +57,17 @@ export function refreshOpsSession(): Promise<boolean> {
       throw new Error(getOpsApiErrorMessage(error, 'No se pudo restaurar la sesión de Ops.', { signOutOn401: false }))
     }
 
-    await persistAccessToken(data, 'La API no devolvió access token al refrescar la sesión.')
+    const accessToken = data?.accessToken?.trim()
+    if (!accessToken) {
+      throw new Error('La API no devolvió access token al refrescar la sesión.')
+    }
+
+    if (decodeTokenRole(accessToken) !== 'AdminOps') {
+      clearOpsAccessToken()
+      return false
+    }
+
+    storeOpsAccessToken(accessToken)
     return true
   })().finally(() => {
     _refreshInFlight = null

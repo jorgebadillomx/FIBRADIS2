@@ -7,4 +7,6 @@ public interface IAuthService
 
     Task<(string AccessToken, string RefreshToken)> RefreshAsync(
         string rawRefreshToken, CancellationToken ct = default);
+
+    Task LogoutAsync(string rawRefreshToken, CancellationToken ct = default);
 }

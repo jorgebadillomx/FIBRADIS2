@@ -5,6 +5,7 @@ import { loginOps, refreshOpsSession } from '@/api/authApi'
 import {
   OPS_AUTH_REQUIRED_EVENT,
   clearOpsAccessToken,
+  decodeTokenRole,
   getStoredOpsAccessToken,
 } from '@/api/opsAuth'
 
@@ -26,16 +27,23 @@ export function OpsLoginGate({ children }: Props) {
     let active = true
 
     async function bootstrapSession() {
+      function resolveStoredToken(): boolean {
+        const token = getStoredOpsAccessToken()
+        const isAdminOps = Boolean(token) && decodeTokenRole(token!) === 'AdminOps'
+        if (token && !isAdminOps) clearOpsAccessToken()
+        return isAdminOps
+      }
+
       try {
         const restored = await refreshOpsSession()
 
         if (!active) return
-        const isAuthenticated = restored || Boolean(getStoredOpsAccessToken())
+        const isAuthenticated = restored || resolveStoredToken()
         setAuthStatus(isAuthenticated ? 'authenticated' : 'anonymous')
         if (isAuthenticated) void queryClient.invalidateQueries()
       } catch {
         if (!active) return
-        const isAuthenticated = Boolean(getStoredOpsAccessToken())
+        const isAuthenticated = resolveStoredToken()
         setAuthStatus(isAuthenticated ? 'authenticated' : 'anonymous')
         if (isAuthenticated) void queryClient.invalidateQueries()
       }

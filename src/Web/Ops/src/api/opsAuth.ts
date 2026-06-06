@@ -39,6 +39,19 @@ export function getOpsAuthHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+export function decodeTokenRole(token: string): string | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as Record<string, unknown>
+    return (
+      payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] as string ??
+      payload['role'] as string ??
+      null
+    )
+  } catch {
+    return null
+  }
+}
+
 export function assertOpsAccessToken(): void {
   if (getStoredOpsAccessToken()) return
   notifyOpsAuthRequired()

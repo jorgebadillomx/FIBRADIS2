@@ -66,29 +66,32 @@ public class ApiWebFactory : WebApplicationFactory<Program>
         var encryptor = scope.ServiceProvider.GetRequiredService<Application.Auth.IEmailEncryptor>();
         await db.Database.EnsureCreatedAsync();
 
-        if (!await db.Users.AnyAsync())
-        {
-            db.Users.AddRange(
-                new User
-                {
-                    Id = Guid.Parse("11111111-0000-0000-0000-000000000001"),
-                    Email = encryptor.Encrypt("user@test.com"),
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
-                    Role = UserRole.User,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                },
-                new User
-                {
-                    Id = Guid.Parse("22222222-0000-0000-0000-000000000001"),
-                    Email = encryptor.Encrypt("adminops@test.com"),
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("ops123"),
-                    Role = UserRole.AdminOps,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                });
-            await db.SaveChangesAsync();
-        }
+        db.RefreshTokens.RemoveRange(db.RefreshTokens);
+        db.Users.RemoveRange(db.Users);
+        await db.SaveChangesAsync();
+
+        db.Users.AddRange(
+            new User
+            {
+                Id = Guid.Parse("11111111-0000-0000-0000-000000000001"),
+                Email = encryptor.Encrypt("user@test.com"),
+                Apodo = "Usuario",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
+                Role = UserRole.User,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            },
+            new User
+            {
+                Id = Guid.Parse("22222222-0000-0000-0000-000000000001"),
+                Email = encryptor.Encrypt("adminops@test.com"),
+                Apodo = "AdminOps",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("ops123"),
+                Role = UserRole.AdminOps,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            });
+        await db.SaveChangesAsync();
     }
 
     public static readonly Guid TestNewsArticleId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");

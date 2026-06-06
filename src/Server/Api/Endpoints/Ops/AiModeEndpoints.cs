@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using Application.Auth;
 using Application.News;
 using Domain.News;
 using Infrastructure.Integrations.Articles;
@@ -40,6 +41,18 @@ public static class AiModeEndpoints
         catch { return null; }
     }
 
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor)
+    {
+        var actor = ctx.User.Identity?.Name
+            ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+            ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (actor is null)
+            return "unknown";
+
+        return emailEncryptor.Decrypt(actor);
+    }
+
     public static IEndpointRouteBuilder MapAiMode(this IEndpointRouteBuilder app)
     {
         var configGroup = app.MapGroup("/api/v1/ops/ai-mode")
@@ -66,6 +79,7 @@ public static class AiModeEndpoints
         configGroup.MapPut("/", async (
             UpdateAiModeRequest request,
             IAiModeRepository repo,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -106,10 +120,7 @@ public static class AiModeEndpoints
                 });
             }
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             await repo.UpdateConfigAsync(parsedMode, request.NewsModel?.ToLowerInvariant(), request.MinBodyTextLengthForAi, actor, ct);
             return Results.NoContent();
@@ -403,6 +414,7 @@ public static class AiProviderEndpoints
         group.MapPut("/", async (
             SetAiProviderRequest request,
             IAiProviderConfigRepository repo,
+            IEmailEncryptor emailEncryptor,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -425,10 +437,7 @@ public static class AiProviderEndpoints
                 });
             }
 
-            var actor = ctx.User.Identity?.Name
-                ?? ctx.User.FindFirstValue(ClaimTypes.Email)
-                ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? "unknown";
+            var actor = GetActor(ctx, emailEncryptor);
 
             await repo.SetProviderAsync(provider, request.ModelId, actor, ct);
             return Results.NoContent();
@@ -439,6 +448,18 @@ public static class AiProviderEndpoints
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
         return app;
+    }
+
+    private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor)
+    {
+        var actor = ctx.User.Identity?.Name
+            ?? ctx.User.FindFirstValue(ClaimTypes.Email)
+            ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (actor is null)
+            return "unknown";
+
+        return emailEncryptor.Decrypt(actor);
     }
 }
 
