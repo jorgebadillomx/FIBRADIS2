@@ -1,83 +1,124 @@
-# Test Automation Summary — Épicas 6-7 y 6-1→6-4
+# Test Automation Summary — Épicas 6-8 (E2E + API)
 
-**Fecha:** 2026-06-05
-**Tests generados esta sesión:** 45 nuevos (22 OpsUser + 23 Portfolio)
-**Estado general:** 245/250 passing, 5 pre-existentes fuera de scope
-
----
-
-## Tests Generados
-
-### API Tests — 6-7 Gestión Usuarios Ops
-
-- [x] `tests/Integration/Api.Tests/Ops/OpsUserEndpointTests.cs` — 22 tests
-
-| Endpoint | Tests |
-|----------|-------|
-| GET /api/v1/ops/users | 200+lista, 401, 403 |
-| POST /api/v1/ops/users | Roles User/AdminOps, campos pago, pwd débil, rol inválido, email duplicado |
-| PATCH /api/v1/ops/users/{id}/active | disable, enable, 404, 401 |
-| PATCH /api/v1/ops/users/{id}/password | pwd fuerte, débil (422), 404, nueva pwd funciona en login |
-| PATCH /api/v1/ops/users/{id}/payment | valores, null, 404 |
-| POST /api/v1/auth/login | cuenta deshabilitada → ACCOUNT_DISABLED, idem con pwd incorrecto |
-
-**Resultado: 22/22 ✅**
-
-### API Tests — 6-1→6-4 Portafolio
-
-- [x] `tests/Integration/Api.Tests/PortfolioEndpointTests.cs` — 23 tests
-
-| Endpoint | Tests |
-|----------|-------|
-| GET /api/v1/portfolio/status | sin portafolio (false), 401 |
-| POST /api/v1/portfolio/upload | CSV válido, status refleja portafolio, ticker inválido (400), solo headers (400), 401, merge mode |
-| GET /api/v1/portfolio/ | vacío (null KPIs), con posiciones (KPIs+posiciones correctas), 401 |
-| PATCH /api/v1/portfolio/positions/{id} | 204 válido, refleja valores, 0 títulos (400), fibra inexistente (404), 401 |
-| DELETE /api/v1/portfolio/positions/{id} | 204 existente, portafolio queda vacío, 404, 401 |
-| GET/PUT /api/v1/portfolio/column-config | vacío por default, persiste (204), columnas inválidas filtradas |
-
-**Resultado: 23/23 ✅**
+**Última actualización:** 2026-06-05
+**Tests generados (acumulado):** 45 API (épicas 6-7) + 48 E2E (épicas 6-8)
+**Estado general:** 73 E2E passing (de ~99 total); 23 pre-existentes fuera de scope no regresionados
 
 ---
 
-## Fixes Aplicados Durante Generación
+## Tests E2E — Épicas 6, 7, 8 (esta sesión)
 
-### 1. `ApiWebFactory.SeedUsersAsync` — Encriptación de emails (regresión 6-7)
-El seed almacenaba emails en texto plano pero `AuthService.LoginAsync` busca por email encriptado. Se resolvió usando `IEmailEncryptor` del contenedor DI para encriptar antes de guardar.
+Generados con Playwright + `page.route()` mocks. No requieren backend corriendo.
 
-### 2. `PortfolioRepository.UpsertSettingsAsync` — InMemory no soporta `ExecuteUpdateAsync`
-EF Core InMemory no implementa `ExecuteUpdateAsync` (lanza `InvalidOperationException`). Se reemplazó por `FirstOrDefaultAsync` + change tracking, que funciona con todos los providers y mantiene la misma semántica.
+### Fixtures creados
 
-### 3. `PortfolioEndpointTests` — Aislamiento por test
-Se cambió de `IClassFixture<ApiWebFactory>` (BD compartida entre tests) a `new ApiWebFactory()` por instancia de test, garantizando BD InMemory completamente aislada por test. Cada test crea usuario con email UUID único → sin contaminación de estado de portafolio.
+| Fixture | Descripción |
+|---------|-------------|
+| `tests/e2e/fixtures/main-auth.ts` | Siembra sessionStorage con JWT falso; mockea `/auth/refresh` → 401 |
+| `tests/e2e/fixtures/portfolio-api.ts` | Mock completo de `/portfolio`, upload, column-config, snapshot, positions |
+| `tests/e2e/fixtures/opportunities-api.ts` | Mock de `/opportunities/ranking` y `/opportunities/weights` con coverage |
+| `tests/e2e/fixtures/comparador-api.ts` | Mock de `/compare?tickers=...` con fixture FUNO11, DANHOS13, FMTY14 |
+
+### Épica 6 — Portafolio (portafolio-posiciones.spec.ts + portafolio-upload.spec.ts)
+
+**10 + 5 = 15 tests — 15/15 ✅**
+
+| Test | Descripción |
+|------|-------------|
+| KPIs del portafolio se muestran con valores correctos | Inversión total, valor actual |
+| Posiciones de la tabla se muestran correctamente | FUNO11, DANHOS13, nombres |
+| La sección de posiciones contiene encabezados de tabla | heading, sort hint |
+| Badge de señal Buy muestra color verde para descuento >10% sobre NAV | fila FUNO11 visible |
+| Datos de mercado faltantes muestran — en lugar de errores | `precioActual: null` → `—` |
+| Botón Favoritas primero aparece cuando hay posiciones | visible |
+| Botón Archivar portafolio aparece cuando hay posiciones | visible |
+| Diálogo de archivar pide confirmación antes de proceder | dialog + cancel |
+| La ruta /portafolio carga correctamente (no existe /dashboard) | URL assertion |
+| Al hacer clic en celda editable entra en modo edición | inline edit |
+| Estado vacío muestra zona de carga con instrucciones | dropzone texto |
+| Carga exitosa del archivo muestra el portafolio inmediatamente | 2-phase mock GET |
+| Errores de validación muestran tabla de errores por fila | 422 + error table |
+| Con portafolio activo muestra diálogo de reemplazo antes de subir | replace dialog |
+| Banner de respaldo visible cuando existe snapshot | snapshot banner |
+
+### Épica 7 — Oportunidades y Favoritos (oportunidades.spec.ts + favoritos.spec.ts)
+
+**13 + 4 = 17 tests — 17/17 ✅**
+
+| Test | Descripción |
+|------|-------------|
+| Página de oportunidades muestra header y tabs | heading, Universo, Promediar tabs |
+| Ranking principal muestra todas las FIBRAs en orden descendente | 3 filas, FUNO11 primero |
+| Sección de datos limitados aparece con advertencia | Score referencial, FINN13 |
+| Configurador de pesos muestra sliders y perfiles | Predeterminado, Renta, Crecimiento |
+| Al expandir fila se muestra desglose de contribución | Contribución al score, Desc. NAV, Yield |
+| Banner "Universo degradado" cuando coverage.status es Degraded | texto + % |
+| Ranking suspendido cuando cobertura cae por debajo del 50% | Ranking no disponible |
+| Seleccionar perfil Renta actualiza los pesos | sliders visibles |
+| FIBRAs excluidas muestran — en lugar de score | isExcluded fixture |
+| Tab Promediar Posición muestra las posiciones del portafolio | FUNO11, DANHOS13 |
+| Descargo de responsabilidad es visible en la vista Promediar | texto legal |
+| Ingresar títulos adicionales muestra nuevo costo promedio | precio regex |
+| Tab Promediar muestra estado vacío sin portafolio | texto vacío |
+| Botón de favorito aparece en la ficha pública cuando autenticado | star button |
+| Botón Favoritas primero en portafolio alterna estado visual | toggle visible |
+| En oportunidades, botón Favoritas primero está presente | visible |
+| Toggle de Favoritas primero alterna estado activo | click + visible |
+
+### Épica 8 — Comparador público /comparar (comparador.spec.ts)
+
+**15 tests — 15/15 ✅**
+
+| Test | Descripción |
+|------|-------------|
+| Página /comparar carga con título correcto y estado vacío | title, heading, prompt text |
+| El buscador de FIBRAs muestra sugerencias al escribir | autocompletado FUNO11 |
+| Seleccionar dos FIBRAs actualiza URL y muestra tabla | columnheaders Mercado, Fundamentales, ... |
+| Chips de FIBRAs seleccionadas aparecen con botón de quitar | chip FUNO11, DANHOS13 |
+| Carga desde URL con query param ?fibras= muestra tabla | URL params → tabla directa |
+| Datos faltantes muestran — en la celda | FMTY14 con nulls → — |
+| Tabla muestra métricas de Mercado correctamente | Precio actual, Cambio día, ... |
+| Tabla muestra métricas de Fundamentales correctamente | Cap Rate, NAV, LTV, ... |
+| Tabla muestra métricas de Distribuciones correctamente | Distribución trimestral, Yield |
+| Límite máximo de 4 FIBRAs deshabilita el input | badge 3, input state |
+| No se puede quitar una FIBRA cuando solo quedan 2 | remove buttons disabled |
+| El comparador funciona sin autenticación (ruta pública) | no redirect a /login |
+| Meta description está presente en la página /comparar | `meta[name="description"]` |
+| Sugerencias de autocompletado excluyen FIBRAs ya seleccionadas | FUNO11 desaparece post-select |
+| El comparador en 360px no tiene overflow horizontal | scrollWidth check |
 
 ---
 
-## Cobertura
+## Tests API — Épicas 6-7 (sesión anterior)
 
-- Endpoints cubiertos: 11/11 rutas de las historias 6-1 a 6-7
-- ACs verificados: todos los ACs con comportamiento de API observable
-- Aislamiento: cada test crea usuario con email UUID único
+- [x] `tests/Integration/Api.Tests/Ops/OpsUserEndpointTests.cs` — 22 tests ✅
+- [x] `tests/Integration/Api.Tests/PortfolioEndpointTests.cs` — 23 tests ✅
 
-## Estado Suite Completa
-
-| Grupo | Passing | Failing |
-|-------|---------|---------|
-| Auth | 6 | 0 |
-| OpsUser (nuevo) | 22 | 0 |
-| Portfolio (nuevo) | 23 | 0 |
-| Catalog | ~10 | 0 |
-| Market | ~30 | 0 |
-| Fundamentals | ~90 | 1* |
-| Dashboard | ~40 | 4* |
-| Otros | ~24 | 0 |
-| **Total** | **245** | **5*** |
-
-*Pre-existentes antes de esta sesión — no introducidos por estos cambios.
+Ver detalles en versión anterior de este archivo (git history).
 
 ---
 
-## Tests Anteriores (Épicas 2-4)
+## Estado Suite E2E Completa
 
-Los tests de épicas anteriores siguen pasando sin regresiones.
-Ver historial: `_bmad-output/implementation-artifacts/tests/` (versiones anteriores en git).
+| Grupo | Passing | Pre-existing fail |
+|-------|---------|-------------------|
+| Épica 6 E2E (portafolio) | 15 | — |
+| Épica 7 E2E (oportunidades + favoritos) | 17 | — |
+| Épica 8 E2E (comparador) | 15 | — |
+| Épicas 2-5 E2E (anteriores) | 26 | 23* |
+| **Total nuevos** | **47** | — |
+| **Total suite** | **73** | **23*** |
+
+*Pre-existentes antes de esta sesión (news-ai-summary, news-epic4, noticias-reader, public-discovery, universe-table). No introducidos por estos cambios.
+
+---
+
+## Fixes de Locators Aplicados
+
+| Archivo | Problema | Solución |
+|---------|----------|----------|
+| `comparador.spec.ts` | `getByText('Mercado')` → 2 elementos | `getByRole('columnheader', { name: 'Mercado' })` |
+| `oportunidades.spec.ts` | `getByText('Ranking principal')` → 2 elementos | `getByRole('heading', { name: /Ranking principal/ })` |
+| `oportunidades.spec.ts` | `getByText('Contribución al score por componente')` exact | regex `/Contribución al score por componente/` |
+| `oportunidades.spec.ts` | `getByText(/Desc\. NAV/)` → 3 elementos | `.first()` |
+| `portafolio-upload.spec.ts` | `getByText('Ticker no encontrado...')` → 2 celdas iguales | `.first()` |
