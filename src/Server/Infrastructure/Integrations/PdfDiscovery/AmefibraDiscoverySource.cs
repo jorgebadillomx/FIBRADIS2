@@ -6,6 +6,7 @@ namespace Infrastructure.Integrations.PdfDiscovery;
 public class AmefibraDiscoverySource(IAmefibraDiscoveryClient client) : IFundamentalsDiscoverySource
 {
     private List<AmefibraListingItem>? _cachedListings;
+    private readonly Dictionary<string, AmefibraPackageDetails?> _detailsCache = new(StringComparer.OrdinalIgnoreCase);
 
     public string SourceName => "AMEFIBRA";
 
@@ -24,14 +25,31 @@ public class AmefibraDiscoverySource(IAmefibraDiscoveryClient client) : IFundame
             if (!MatchesFibra(parse.FibraHint, fibra))
                 continue;
 
+            var downloadUrl = listing.DownloadUrl;
+            DateTimeOffset? publishedAt = null;
+
+            // Items de sitemap no tienen DownloadUrl directo: obtenerlo del detalle del paquete
+            if (string.IsNullOrWhiteSpace(downloadUrl))
+            {
+                if (!_detailsCache.TryGetValue(listing.PackageUrl, out var details))
+                {
+                    try { details = await client.GetPackageDetailsAsync(listing.PackageUrl, ct); }
+                    catch { details = null; }
+                    _detailsCache[listing.PackageUrl] = details;
+                }
+                if (details is null) continue;
+                downloadUrl = details.DownloadUrl;
+                publishedAt = details.SourcePublishedAt;
+            }
+
             candidates.Add(new FundamentalsDiscoveryCandidate(
                 SourceName,
                 listing.Title,
                 listing.PackageUrl,
-                listing.DownloadUrl,
+                downloadUrl,
                 parse.Period,
                 parse.ReportType,
-                null));
+                publishedAt));
         }
         return candidates;
     }

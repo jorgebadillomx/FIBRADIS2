@@ -14,7 +14,9 @@ public static partial class AmefibraTitleParser
 
         var normalized = Normalize(title);
 
-        if (normalized.Contains("reporte anual", StringComparison.Ordinal) || normalized.Contains("annual", StringComparison.Ordinal))
+        if (normalized.Contains("reporte anual", StringComparison.Ordinal)
+            || normalized.Contains("informe anual", StringComparison.Ordinal)
+            || normalized.Contains("annual", StringComparison.Ordinal))
         {
             return new AmefibraTitleParseResult(
                 ExtractFibraHint(title, normalized),
@@ -128,10 +130,14 @@ public static partial class AmefibraTitleParser
         cleaned = ShortYearRegex().Replace(cleaned, " ");
         cleaned = QuarterRegex().Replace(cleaned, " ");
         cleaned = cleaned.Replace("reporte", " ", StringComparison.Ordinal);
+        cleaned = cleaned.Replace("report", " ", StringComparison.Ordinal);
+        cleaned = cleaned.Replace("informe", " ", StringComparison.Ordinal);
         cleaned = cleaned.Replace("trimestral", " ", StringComparison.Ordinal);
         cleaned = cleaned.Replace("anual", " ", StringComparison.Ordinal);
+        cleaned = cleaned.Replace("annual", " ", StringComparison.Ordinal);
         cleaned = cleaned.Replace("bolsa de valores", " ", StringComparison.Ordinal);
         cleaned = cleaned.Replace("bmv", " ", StringComparison.Ordinal);
+        cleaned = cleaned.Replace("asg", " ", StringComparison.Ordinal);
         cleaned = WhitespaceRegex().Replace(cleaned, " ").Trim(' ', '-', '_', '/', '(', ')');
 
         if (string.IsNullOrWhiteSpace(cleaned))

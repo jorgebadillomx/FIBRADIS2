@@ -1,10 +1,11 @@
+using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Dom;
 using Application.Fundamentals;
 
 namespace Infrastructure.Integrations.PdfDiscovery;
 
-public class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscoveryClient
+public partial class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscoveryClient
 {
     private const string BaseUrl = "https://amefibra.com/reportes-de-fibras/";
     private bool _warmedUp;
@@ -23,11 +24,46 @@ public class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscoveryClient
             items.AddRange(await ParseListingItemsAsync(html));
         }
 
+        // El sitemap incluye paquetes que no aparecen en el listing paginado (ej. FIBRAs nuevas o reportes recientes)
+        var sitemapItems = await GetSitemapItemsAsync(ct);
+        var knownUrls = items.Select(x => x.PackageUrl).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        items.AddRange(sitemapItems.Where(x => !knownUrls.Contains(x.PackageUrl)));
+
         return items
             .GroupBy(x => x.PackageUrl, StringComparer.OrdinalIgnoreCase)
             .Select(x => x.First())
             .ToList();
     }
+
+    private async Task<List<AmefibraListingItem>> GetSitemapItemsAsync(CancellationToken ct)
+    {
+        const string SitemapUrl = "https://amefibra.com/wpdmpro-sitemap.xml";
+        string xml;
+        try
+        {
+            xml = await GetHtmlAsync(SitemapUrl, ct);
+        }
+        catch
+        {
+            return [];
+        }
+
+        var items = new List<AmefibraListingItem>();
+        foreach (Match m in SitemapLocRegex().Matches(xml))
+        {
+            var url = m.Groups[1].Value.Trim();
+            if (!url.Contains("/download/", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var slug = url.TrimEnd('/').Split('/').Last();
+            items.Add(new AmefibraListingItem(SlugToTitle(slug), url, null));
+        }
+        return items;
+    }
+
+    private static string SlugToTitle(string slug)
+        => string.Join(" ", slug.Split('-').Select(w =>
+            w.Length > 0 ? char.ToUpperInvariant(w[0]) + w[1..] : w));
 
     public async Task<AmefibraPackageDetails> GetPackageDetailsAsync(string packageUrl, CancellationToken ct)
     {
@@ -133,4 +169,7 @@ public class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscoveryClient
             .Cast<AmefibraListingItem>()
             .ToList();
     }
+
+    [GeneratedRegex(@"<loc><!\[CDATA\[([^\]]+)\]\]></loc>")]
+    private static partial Regex SitemapLocRegex();
 }
