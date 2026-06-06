@@ -110,6 +110,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-left">#</th>
               <th className="px-3 py-2 text-left">FIBRA</th>
               <th className="px-3 py-2 text-right">Costo prom.</th>
               <th className="px-3 py-2 text-right">Precio actual</th>
@@ -151,6 +152,9 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                   key={position.fibraId}
                   className={`border-b ${idx % 2 === 0 ? '' : 'bg-muted/10'}`}
                 >
+                  <td className="px-3 py-2 text-muted-foreground tabular-nums text-xs">
+                    #{idx + 1}
+                  </td>
                   <td className="px-3 py-2">
                     <span className="font-medium">{position.ticker}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{position.nombre}</span>

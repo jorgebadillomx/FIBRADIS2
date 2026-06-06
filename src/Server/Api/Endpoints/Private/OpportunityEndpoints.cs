@@ -6,12 +6,26 @@ using Application.Market;
 using Application.Opportunities;
 using Application.Ops;
 using Domain.Catalog;
+using Domain.Fundamentals;
+using Domain.Market;
+using Microsoft.Extensions.Caching.Memory;
 using SharedApiContracts.Opportunities;
 
 namespace Api.Endpoints.Private;
 
 public static class OpportunityEndpoints
 {
+    private const string RawDataCacheKey = "opp:raw:v1";
+
+    private sealed record RawOpportunityData(
+        IReadOnlyList<Fibra> Fibras,
+        IReadOnlyDictionary<Guid, PriceSnapshot> SnapshotByFibra,
+        IReadOnlyDictionary<Guid, FundamentalRecord> FundamentalByFibra,
+        IReadOnlyDictionary<Guid, decimal> AnnualDistByFibra,
+        IReadOnlyDictionary<Guid, decimal> Avg52wByFibra,
+        int FibrasWithPrice,
+        DateTimeOffset? LastValidPriceAt);
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public static IEndpointRouteBuilder MapOpportunities(this IEndpointRouteBuilder app)
@@ -27,6 +41,7 @@ public static class OpportunityEndpoints
             IMarketRepository marketRepo,
             IFundamentalRepository fundamentalRepo,
             IOperationalConfigRepository configRepo,
+            IMemoryCache cache,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -34,37 +49,43 @@ public static class OpportunityEndpoints
                 return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
 
             var weights = await ResolveWeightsAsync(weightsRepo, userId, ct);
-
-            // DbContext es Scoped y no thread-safe — await secuencial obligatorio
             var config = await configRepo.GetAsync(ct);
-            var fibras = await fibraRepo.GetAllActiveAsync(ct);
-            var snapshots = await marketRepo.GetLatestSnapshotPerFibraAsync(ct);
-            var fundamentals = await fundamentalRepo.GetSummaryLatestAsync(ct);
 
-            var fibraIds = fibras.Select(f => f.Id).ToList();
+            if (!cache.TryGetValue<RawOpportunityData>(RawDataCacheKey, out var raw) || raw is null)
+            {
+                // DbContext es Scoped y no thread-safe — await secuencial obligatorio
+                var fibras = await fibraRepo.GetAllActiveAsync(ct);
+                var snapshots = await marketRepo.GetLatestSnapshotPerFibraAsync(ct);
+                var fundamentals = await fundamentalRepo.GetSummaryLatestAsync(ct);
+                var fibraIds = fibras.Select(f => f.Id).ToList();
+                var distributions = await marketRepo.GetDistributionsByFibrasAsync(fibraIds, 365, ct);
+                var avg52w = await marketRepo.GetWeek52AvgByFibrasAsync(fibraIds, 365, ct);
 
-            var distributions = await marketRepo.GetDistributionsByFibrasAsync(fibraIds, 365, ct);
-            var avg52w = await marketRepo.GetWeek52AvgByFibrasAsync(fibraIds, 365, ct);
+                var snapshotByFibra = snapshots.ToDictionary(s => s.FibraId);
+                var fundamentalByFibra = fundamentals
+                    .ToDictionary(f => f.Record.FibraId, f => f.Record);
+                var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-365);
+                var annualDistByFibra = distributions
+                    .GroupBy(d => d.FibraId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Where(d => d.PaymentDate >= cutoff).Sum(d => d.AmountPerUnit));
+                var fibrasWithPrice = fibras.Count(f =>
+                    snapshotByFibra.TryGetValue(f.Id, out var snap) && snap.LastPrice is > 0m);
+                var lastValidPriceAt = snapshotByFibra.Values
+                    .Where(s => s.LastPrice is > 0m)
+                    .MaxBy(s => s.CapturedAt)?.CapturedAt;
 
-            // Diccionarios de lookup
-            var snapshotByFibra = snapshots.ToDictionary(s => s.FibraId);
-            var fundamentalByFibra = fundamentals
-                .ToDictionary(f => f.Record.FibraId, f => f.Record);
-
-            // Distribuciones anuales por fibra (suma últimos 365 días)
-            var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-365);
-            var annualDistByFibra = distributions
-                .GroupBy(d => d.FibraId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Where(d => d.PaymentDate >= cutoff).Sum(d => d.AmountPerUnit));
+                raw = new RawOpportunityData(fibras, snapshotByFibra, fundamentalByFibra, annualDistByFibra, avg52w, fibrasWithPrice, lastValidPriceAt);
+                cache.Set(RawDataCacheKey, raw, TimeSpan.FromMinutes(15));
+            }
 
             var scores = OpportunityScoreCalculator.Calculate(
-                fibras,
-                snapshotByFibra,
-                fundamentalByFibra,
-                annualDistByFibra,
-                avg52w,
+                raw.Fibras,
+                raw.SnapshotByFibra,
+                raw.FundamentalByFibra,
+                raw.AnnualDistByFibra,
+                raw.Avg52wByFibra,
                 weights);
 
             var ranked = scores
@@ -79,15 +100,9 @@ public static class OpportunityEndpoints
                 .Select(ToRowDto)
                 .ToList();
 
-            // Coverage
-            var fibrasWithPrice = fibras.Count(f =>
-                snapshotByFibra.TryGetValue(f.Id, out var snap) && snap.LastPrice is > 0m);
-            var lastValidPriceAt = snapshotByFibra.Values
-                .Where(s => s.LastPrice is > 0m)
-                .MaxBy(s => s.CapturedAt)?.CapturedAt;
             var coverage = UniverseCoverageCalculator.Calculate(
-                fibras.Count, fibrasWithPrice,
-                config.UniverseDegradationThresholdPct, lastValidPriceAt);
+                raw.Fibras.Count, raw.FibrasWithPrice,
+                config.UniverseDegradationThresholdPct, raw.LastValidPriceAt);
             var coverageDto = new UniverseCoverageDto(
                 coverage.UniverseSize, coverage.FibrasWithPrice, coverage.MissingPct,
                 coverage.DegradationThresholdPct, coverage.Status, coverage.LastValidPriceAt);

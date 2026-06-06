@@ -156,7 +156,7 @@ public static class OpportunityScoreCalculator
         if (hasPrice && fund?.NavPerCbfi is > 0m)
         {
             navPerCbfi = fund.NavPerCbfi;
-            navDiscountRaw = Math.Round((1m - price!.Value / navPerCbfi.Value) * 100m, 4);
+            navDiscountRaw = Math.Round(Math.Max(0m, (1m - price!.Value / navPerCbfi.Value) * 100m), 4);
         }
 
         decimal? dividendYieldRaw = null;
@@ -183,7 +183,7 @@ public static class OpportunityScoreCalculator
         decimal? avg52wVal = avg52w > 0m ? avg52w : null;
         if (hasPrice && avg52wVal.HasValue)
         {
-            pricevs52wRaw = Math.Round((1m - price!.Value / avg52wVal.Value) * 100m, 4);
+            pricevs52wRaw = Math.Round(Math.Max(0m, (1m - price!.Value / avg52wVal.Value) * 100m), 4);
         }
 
         var nombre = fibra.ShortName;

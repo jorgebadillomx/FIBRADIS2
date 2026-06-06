@@ -224,4 +224,46 @@ public class OpportunityScoreCalculatorTests
         // VFI en el medio → percentil 50 → score = 50 × 30 / 100 = 15
         Assert.Equal(15.00m, vfiScore.Score!.Value, precision: 1);
     }
+
+    [Fact]
+    public void Calculate_NavDiscountNegative_FlooredToZero()
+    {
+        // Precio > NAV → descuento negativo sin floor daría un valor < 0
+        var fibra = MakeFibra(FunoId, "FUNO11");
+        var snapshot = MakeSnapshot(FunoId, 35.00m); // precio 35 > NAV 30
+        var fund = MakeFundamental(FunoId, nav: 30.00m);
+
+        var scores = OpportunityScoreCalculator.Calculate(
+            [fibra],
+            new Dictionary<Guid, PriceSnapshot> { [FunoId] = snapshot },
+            new Dictionary<Guid, FundamentalRecord> { [FunoId] = fund },
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal>(),
+            OpportunityWeights.Default);
+
+        var score = scores.Single(s => s.FibraId == FunoId);
+        Assert.NotNull(score.NavDiscountScore);      // componente disponible (no null)
+        Assert.Equal(0m, score.NavDiscountPct!.Value); // valor bruto flooreado a 0
+    }
+
+    [Fact]
+    public void Calculate_Pricevs52wNegative_FlooredToZero()
+    {
+        // Precio > avg52w → valor negativo sin floor
+        var fibra = MakeFibra(FunoId, "FUNO11");
+        var snapshot = MakeSnapshot(FunoId, 12.00m); // precio 12 > avg52w 10
+        var avg52w = new Dictionary<Guid, decimal> { [FunoId] = 10.00m };
+
+        var scores = OpportunityScoreCalculator.Calculate(
+            [fibra],
+            new Dictionary<Guid, PriceSnapshot> { [FunoId] = snapshot },
+            new Dictionary<Guid, FundamentalRecord>(),
+            new Dictionary<Guid, decimal>(),
+            avg52w,
+            OpportunityWeights.Default);
+
+        var score = scores.Single(s => s.FibraId == FunoId);
+        Assert.NotNull(score.Pricevs52wScore);             // componente disponible
+        Assert.Equal(0m, score.PriceVsAvg52wPct!.Value);   // valor bruto flooreado a 0
+    }
 }

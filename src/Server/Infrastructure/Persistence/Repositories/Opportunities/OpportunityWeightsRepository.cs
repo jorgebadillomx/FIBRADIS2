@@ -30,7 +30,7 @@ public class OpportunityWeightsRepository(AppDbContext db) : IOpportunityWeights
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" } pg && pg.ConstraintName == "PK_UserOpportunityWeights")
         {
             db.Entry(weights).State = EntityState.Detached;
             var retried = await db.UserOpportunityWeights
