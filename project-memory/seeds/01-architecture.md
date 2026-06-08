@@ -2,7 +2,7 @@
 
 ## Principios Fundamentales
 
-1. SQL Server es la única fuente de verdad; cache y cliente son vistas derivadas
+1. PostgreSQL es la única fuente de verdad; cache y cliente son vistas derivadas
 2. Arquitectura de monolito modular — un solo deploy
 3. Módulos con ownership de schema — ninguno accede al schema de otro directamente
 4. Frescura, parcialidad y recuperabilidad son comportamientos de primera clase
@@ -15,8 +15,8 @@
 |---|---|
 | Runtime backend | .NET 10 LTS |
 | ORM | EF Core 10 |
-| Base de datos | SQL Server (single DB, schema-per-module) |
-| Jobs | Hangfire in-app (con SQL Server como storage) |
+| Base de datos | PostgreSQL 16 (single DB, schema-per-module) |
+| Jobs | Hangfire in-app (con PostgreSQL como storage) |
 | Auth | JWT bearer + refresh token rotado con revocación server-side |
 | SPA Main | Vite 7 + React 19.2 + TypeScript |
 | SPA Ops | Vite 7 + React 19.2 + TypeScript |

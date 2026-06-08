@@ -78,7 +78,7 @@ Estas verificaciones no las cubre el test suite — requieren browser o curl en 
 
 ## EF Core — nunca `Task.WhenAll` con el mismo DbContext
 
-El `DbContext` es Scoped (una instancia por request) y **no es thread-safe**. Ejecutar queries en paralelo sobre la misma instancia lanza `InvalidOperationException` en SQL Server real, aunque pase sin error con el proveedor InMemory usado en tests.
+El `DbContext` es Scoped (una instancia por request) y **no es thread-safe**. Ejecutar queries en paralelo sobre la misma instancia lanza `InvalidOperationException` en PostgreSQL real, aunque pase sin error con el proveedor InMemory usado en tests.
 
 ```csharp
 // MAL — causa 500 en producción, pasa en tests InMemory

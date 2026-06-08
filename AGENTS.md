@@ -79,7 +79,7 @@ Plataforma web integral de análisis de **FIBRAs inmobiliarias mexicanas**. No e
 
 | Capa | Tecnología |
 |---|---|
-| Backend | ASP.NET Core (.NET 10) + EF Core 10 + SQL Server |
+| Backend | ASP.NET Core (.NET 10) + EF Core 10 + PostgreSQL 16 |
 | Jobs | Hangfire in-app |
 | SPA Main | Vite 7 + React 19.2 + TypeScript |
 | SPA Ops | Vite 7 + React 19.2 + TypeScript |
@@ -89,13 +89,13 @@ Plataforma web integral de análisis de **FIBRAs inmobiliarias mexicanas**. No e
 ## Reglas Críticas (No Violar)
 
 1. **Módulos**: ningún módulo accede directo a la persistencia de otro módulo
-2. **SQL Server** es la única fuente de verdad; cache y cliente son vistas derivadas
+2. **PostgreSQL** es la única fuente de verdad; cache y cliente son vistas derivadas
 3. **OpenAPI** generado desde backend → `SharedApiClient` para ambos SPAs
 4. **No existe `/dashboard`** como ruta separada — está unificado en `/portafolio`
 5. Estado de datos siempre explícito: `fresh`, `stale`, `partial`, `error`, `null` — nunca inferido
 6. Toda acción manual de Ops queda auditada con actor + timestamp
 
-## Schemas SQL (propietarios de datos)
+## Schemas PostgreSQL (propietarios de datos)
 
 `catalog` | `market` | `news` | `fundamentals` | `portfolio` | `ai` | `jobs`
 

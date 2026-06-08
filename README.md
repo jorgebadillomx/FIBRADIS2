@@ -7,7 +7,7 @@ Financial Bonds & Fixed-Income Discovery System
 | Layer | Technology |
 |---|---|
 | Backend API | ASP.NET Core (.NET 10) |
-| ORM | EF Core 10 + SQL Server |
+| ORM | EF Core 10 + PostgreSQL 16 |
 | SPA Main | Vite + React 19 + TypeScript |
 | SPA Ops | Vite + React 19 + TypeScript |
 | UI | shadcn/ui + Tailwind CSS v4 |

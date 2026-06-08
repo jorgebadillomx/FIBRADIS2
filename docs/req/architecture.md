@@ -45,7 +45,7 @@ El sistema no es un CRUD convencional. Combina aplicacion web, pipelines program
 
 - Monolito modular con un solo deploy
 - Backend ASP.NET Core en capas API/Application/Domain/Infrastructure
-- PostgreSQL 16 como almacenamiento principal (migrado desde SQL Server — ver `docs/infra/oracle-postgresql.md`)
+- PostgreSQL 16 como almacenamiento principal
 - Hosting en Oracle Cloud Free Tier — Ubuntu 24.04, Nginx, systemd (migrado desde IIS compartido)
 - Hangfire in-app para jobs y scheduling
 - Dos frontends React independientes: sistema principal y `/ops/*`
@@ -89,12 +89,12 @@ Full-stack web platform based on a .NET backend plus two independent React front
 
 3. **JavaScript full-stack starters (Next.js/T3/Redwood-style)**
    - Rejected.
-   - They conflict with the explicit backend decision (`ASP.NET Core`), the hosting constraint (`IIS compartido`), and the requirement for Hangfire + SQL Server inside the .NET runtime boundary.
+   - They conflict with the explicit backend decision (`ASP.NET Core`), the hosting constraint (`IIS compartido`), and the requirement for Hangfire + PostgreSQL inside the .NET runtime boundary.
 
 ### Selected Starter: Custom Official Baseline
 
 **Rationale for Selection:**
-No single off-the-shelf starter matches the architecture already fixed by the project: modular monolith in ASP.NET Core, SQL Server, Hangfire in-app, one shared backend, and two React frontends (`main` and `ops`). The strongest option is therefore a custom baseline assembled from official, actively maintained templates instead of forcing a framework mismatch.
+No single off-the-shelf starter matches the architecture already fixed by the project: modular monolith in ASP.NET Core, PostgreSQL, Hangfire in-app, one shared backend, and two React frontends (`main` and `ops`). The strongest option is therefore a custom baseline assembled from official, actively maintained templates instead of forcing a framework mismatch.
 
 **Initialization Command:**
 
@@ -165,7 +165,7 @@ No se adoptara un starter full-stack adicional ni una plantilla SPA integrada qu
 
 **Critical Decisions (Block Implementation):**
 - Runtime baseline: .NET 10 LTS + EF Core 10
-- Data architecture: single SQL Server database with schema-per-module ownership
+- Data architecture: single PostgreSQL database with schema-per-module ownership
 - API style: REST JSON with versioned route base and OpenAPI as source of truth
 - Auth model: JWT bearer access tokens plus rotated refresh tokens with server-side revocation
 - Frontend routing/state baseline for both SPAs
@@ -188,7 +188,7 @@ No se adoptara un starter full-stack adicional ni una plantilla SPA integrada qu
 ### Data Architecture
 
 - Runtime and ORM baseline: `.NET 10 LTS` + `EF Core 10`
-- Database: single `SQL Server` database
+- Database: single `PostgreSQL` database
 - Ownership model: schema per module (`catalog`, `market`, `news`, `fundamentals`, `portfolio`, `ai`, `jobs`). Favoritos se almacena en el schema `portfolio` como preferencia del usuario; no existe schema `alerts` en MVP.
 - Persistence style:
   - aggregate-oriented writes inside module boundaries
@@ -208,7 +208,7 @@ No se adoptara un starter full-stack adicional ni una plantilla SPA integrada qu
   - market last price every 15 minutes
   - slower snapshots persisted daily
   - partial/stale/error/null states modeled explicitly, not inferred ad hoc
-- Cache entries are optimization artifacts only; SQL Server persisted state remains the sole source of truth.
+- Cache entries are optimization artifacts only; PostgreSQL persisted state remains the sole source of truth.
 - Domain and read models must preserve explicit data states such as `fresh`, `stale`, `partial`, `error`, and `null-equivalent` when applicable.
 
 ### Authentication & Security
@@ -560,7 +560,7 @@ FIBRADIS/
 │   │   │   └── Ai/
 │   │   ├── Infrastructure/
 │   │   │   ├── Persistence/
-│   │   │   │   ├── SqlServer/
+│   │   │   │   ├── PostgreSql/
 │   │   │   │   ├── Configurations/
 │   │   │   │   ├── Migrations/
 │   │   │   │   ├── Projections/

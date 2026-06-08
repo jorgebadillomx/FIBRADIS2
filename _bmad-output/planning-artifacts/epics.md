@@ -179,13 +179,13 @@ NFR-16: La plataforma debe operar bajo un despliegue unico que atienda mundo pub
 - Esta debe ser la primera historia de implementación.
 
 **Runtime y Stack:**
-- .NET 10 LTS + EF Core 10 + SQL Server
+- .NET 10 LTS + EF Core 10 + PostgreSQL 16
 - React 19.2 + Vite 7 + Node.js 20.19+
 - TanStack Query v5 + React Router 7 + React Hook Form + Zod
 - shadcn sobre configuración Vite compatible con Tailwind
 
 **Arquitectura de Datos:**
-- Base de datos única SQL Server con propiedad por esquema-módulo: `catalog`, `market`, `news`, `fundamentals`, `portfolio`, `ai`, `jobs`
+- Base de datos única PostgreSQL 16 con propiedad por esquema-módulo: `catalog`, `market`, `news`, `fundamentals`, `portfolio`, `ai`, `jobs`
 - Favoritos almacenados en esquema `portfolio`; no existe esquema `alerts`
 - Migraciones EF Core code-first, un stream para el monolito desplegable
 - IMemoryCache + output caching de ASP.NET (sin Redis en MVP)
@@ -325,7 +325,7 @@ FR-54: Épica 7 — Monitoreo cobertura universo + advertencia de ranking degrad
 El sistema está deployable, ambos SPAs corren, AdminOps puede autenticarse y el backbone técnico está operativo: auth JWT+refresh, API v1 con OpenAPI y SharedApiClient tipado, Hangfire in-app, health checks, logs estructurados con correlation IDs, single-deploy sobre IIS.
 
 **RFs cubiertos:** FR-42
-**Reqs adicionales cubiertos:** Setup inicial completo (.NET 10 + SQL Server + EF Core + Hangfire + React 19.2 + Vite 7 + shadcn), auth JWT+refresh, API v1 + OpenAPI + SharedApiClient, ambos SPAs, observabilidad mínima, pipeline CI/CD baseline
+**Reqs adicionales cubiertos:** Setup inicial completo (.NET 10 + PostgreSQL 16 + EF Core + Hangfire + React 19.2 + Vite 7 + shadcn), auth JWT+refresh, API v1 + OpenAPI + SharedApiClient, ambos SPAs, observabilidad mínima, pipeline CI/CD baseline
 **NFRs:** NFR-11, NFR-13, NFR-16
 
 ### Épica 2: Catálogo Maestro y Descubrimiento Público
@@ -373,7 +373,7 @@ El sistema está deployable, ambos SPAs corren, AdminOps puede autenticarse y el
 ### Historia 1.1: Inicialización de la solución y estructura del proyecto
 
 Como desarrollador,
-quiero la solución FIBRADIS inicializada con la estructura correcta (ASP.NET Core API, dos SPAs Vite React TS, shadcn, SQL Server con migraciones de EF Core, estructura de directorios completa),
+quiero la solución FIBRADIS inicializada con la estructura correcta (ASP.NET Core API, dos SPAs Vite React TS, shadcn, PostgreSQL con migraciones de EF Core, estructura de directorios completa),
 para que el equipo tenga una base consistente y ejecutable antes de construir cualquier funcionalidad.
 
 **Criterios de Aceptación:**
@@ -388,7 +388,7 @@ para que el equipo tenga una base consistente y ejecutable antes de construir cu
 
 **Dado que** la cadena de conexión de base de datos está configurada,
 **Cuando** ejecuto las migraciones de EF Core,
-**Entonces** el esquema inicial se crea en SQL Server sin errores y `SELECT 1` pasa correctamente.
+**Entonces** el esquema inicial se crea en PostgreSQL sin errores y `SELECT 1` pasa correctamente.
 
 **Dado que** la estructura del proyecto está en su lugar,
 **Entonces** existen los directorios: `src/Server/Api`, `src/Server/Application`, `src/Server/Domain`, `src/Server/Infrastructure`, `src/Web/Main/src/modules/`, `src/Web/Ops/src/modules/`, `tests/Unit/`, `tests/Integration/`, `tests/Contract/`.
