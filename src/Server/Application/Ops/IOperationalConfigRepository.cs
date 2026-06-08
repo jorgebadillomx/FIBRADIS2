@@ -10,7 +10,6 @@ public interface IOperationalConfigRepository
         int? avgPeriods,
         int? newsCadenceMinutes,
         int? fibraNewsMonths,
-        int? fundamentalsCadenceMinutes,
         int? distributionCadenceMinutes,
         bool? termsEnabled,
         string? termsText,

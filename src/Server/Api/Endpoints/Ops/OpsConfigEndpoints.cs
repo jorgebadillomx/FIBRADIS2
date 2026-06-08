@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Application.Auth;
 using Application.Ops;
 using Hangfire;
-using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Microsoft.Extensions.Logging;
@@ -69,7 +68,6 @@ public static class OpsConfigEndpoints
                 request.AvgPeriods,
                 request.NewsCadenceMinutes,
                 request.FibraNewsMonths,
-                request.FundamentalsCadenceMinutes,
                 request.DistributionCadenceMinutes,
                 request.TermsEnabled,
                 request.TermsText,
@@ -89,18 +87,6 @@ public static class OpsConfigEndpoints
                     NewsPipelineSchedule.HourlyJobId,
                     j => j.ExecuteAsync(CancellationToken.None),
                     NewsPipelineSchedule.GetCronExpression(request.NewsCadenceMinutes!.Value),
-                    new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
-            }
-
-            var fundamentalsCadenceChanged = request.FundamentalsCadenceMinutes.HasValue
-                && currentConfig.FundamentalsCadenceMinutes != request.FundamentalsCadenceMinutes.Value;
-            if (!useInMemoryHangfire && fundamentalsCadenceChanged)
-            {
-                var jobManager = ctx.RequestServices.GetRequiredService<IRecurringJobManager>();
-                jobManager.AddOrUpdate<FundamentalsPipelineJob>(
-                    FundamentalsPipelineSchedule.JobId,
-                    j => j.ExecuteAsync(CancellationToken.None),
-                    FundamentalsPipelineSchedule.GetCronExpression(request.FundamentalsCadenceMinutes!.Value),
                     new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
             }
 
@@ -145,7 +131,6 @@ public static class OpsConfigEndpoints
             && request.AvgPeriods is null
             && request.NewsCadenceMinutes is null
             && request.FibraNewsMonths is null
-            && request.FundamentalsCadenceMinutes is null
             && request.DistributionCadenceMinutes is null
             && request.TermsEnabled is null
             && request.TermsText is null
@@ -177,11 +162,6 @@ public static class OpsConfigEndpoints
             errors["fibraNewsMonths"] = ["fibraNewsMonths debe estar entre 1 y 36 meses."];
         }
 
-        if (request.FundamentalsCadenceMinutes is not null && request.FundamentalsCadenceMinutes is not (60 or 120 or 180 or 240 or 360 or 720 or 1440))
-        {
-            errors["fundamentalsCadenceMinutes"] = ["fundamentalsCadenceMinutes debe ser uno de: 60, 120, 180, 240, 360, 720 o 1440."];
-        }
-
         if (request.DistributionCadenceMinutes is not null && request.DistributionCadenceMinutes is not (720 or 1440))
         {
             errors["distributionCadenceMinutes"] = ["distributionCadenceMinutes debe ser 720 (12h) o 1440 (24h)."];
@@ -203,7 +183,6 @@ public static class OpsConfigEndpoints
             config.AvgPeriods,
             config.NewsCadenceMinutes,
             config.FibraNewsMonths,
-            config.FundamentalsCadenceMinutes,
             config.DistributionCadenceMinutes,
             config.UpdatedAt,
             config.UpdatedBy,

@@ -127,27 +127,10 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         DistributionPipelineSchedule.GetCronExpression(distributionCadenceMinutes),
         new RecurringJobOptions { TimeZone = mexicoTz });
 
-    var fundamentalsCadenceMinutes = 1440;
-    if (!skipStartupDbReads)
-    {
-        try
-        {
-            using var scope = app.Services.CreateScope();
-            fundamentalsCadenceMinutes = (await scope.ServiceProvider
-                .GetRequiredService<IOperationalConfigRepository>()
-                .GetAsync()).FundamentalsCadenceMinutes;
-        }
-        catch (Exception ex)
-        {
-            var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-            startupLogger.LogError(ex, "No se pudo leer FundamentalsCadenceMinutes desde BD al arranque. Usando default.");
-        }
-    }
-
     RecurringJob.AddOrUpdate<FundamentalsPipelineJob>(
         FundamentalsPipelineSchedule.JobId,
-        j => j.ExecuteAsync(CancellationToken.None),
-        FundamentalsPipelineSchedule.GetCronExpression(fundamentalsCadenceMinutes),
+        j => j.ExecuteAsync(false, CancellationToken.None),
+        FundamentalsPipelineSchedule.CronExpression,
         new RecurringJobOptions { TimeZone = mexicoTz });
 }
 

@@ -125,12 +125,7 @@ export function DashboardPage() {
                   ) : null}
 
                   <div className="mt-6 rounded-[1.5rem] border border-white/80 bg-white/84 p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <h4 className="text-sm font-semibold tracking-tight text-slate-900">Últimas 5 ejecuciones</h4>
-                      <span className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        {pipeline?.recentRuns.length ?? 0} registros
-                      </span>
-                    </div>
+                    <h4 className="text-sm font-semibold tracking-tight text-slate-900">Últimas 5 ejecuciones</h4>
 
                     {pipeline && pipeline.recentRuns.length > 0 ? (
                       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">

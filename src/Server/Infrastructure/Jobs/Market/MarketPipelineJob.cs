@@ -20,7 +20,10 @@ public class MarketPipelineJob(
     IPipelineRunLogRepository pipelineRunLogRepo,
     ILogger<MarketPipelineJob> logger)
 {
-    public async Task ExecuteAsync(CancellationToken ct = default)
+    public async Task ExecuteAsync(CancellationToken ct = default) =>
+        await ExecuteAsync(forceRun: false, ct);
+
+    public async Task ExecuteAsync(bool forceRun, CancellationToken ct = default)
     {
         var startedAt = timeService.UtcNow;
         var status = "Failed";
@@ -31,7 +34,7 @@ public class MarketPipelineJob(
         string? details = null;
         try
         {
-            if (!bmvSchedule.IsTradingHours(startedAt))
+            if (!forceRun && !bmvSchedule.IsTradingHours(startedAt))
             {
                 logger.LogDebug("Outside BMV hours, skipping market pipeline");
                 status = "Completed";

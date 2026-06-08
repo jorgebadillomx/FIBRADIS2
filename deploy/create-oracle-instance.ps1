@@ -1,5 +1,5 @@
-# Script de reintentos para crear instancia Oracle Cloud ARM
-# Corre en PowerShell — se detiene solo cuando la instancia se crea exitosamente
+﻿# Script de reintentos para crear instancia Oracle Cloud ARM
+# Corre en PowerShell - se detiene solo cuando la instancia se crea exitosamente
 # Uso: .\deploy\create-oracle-instance.ps1
 
 $Env:OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING = "True"
@@ -15,8 +15,8 @@ $delaySeconds     = 180   # 3 minutos entre intentos (evita rate limit)
 $attempt = 1
 
 Write-Host ""
-Write-Host "=== Oracle Cloud — Creando instancia ARM ===" -ForegroundColor Cyan
-Write-Host "Shape: VM.Standard.A1.Flex (1 OCPU / 6 GB RAM — escalar a 4/24 después)"
+Write-Host "=== Oracle Cloud - Creando instancia ARM ===" -ForegroundColor Cyan
+Write-Host "Shape: VM.Standard.A1.Flex (1 OCPU / 6 GB RAM - escalar a 4/24 despues)"
 Write-Host "Región: MX-MONTERREY-1 | Reintento cada $delaySeconds segundos"
 Write-Host ""
 

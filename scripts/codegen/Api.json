@@ -6203,7 +6203,6 @@
           "avgPeriods",
           "newsCadenceMinutes",
           "fibraNewsMonths",
-          "fundamentalsCadenceMinutes",
           "distributionCadenceMinutes",
           "updatedAt",
           "updatedBy",
@@ -6239,14 +6238,6 @@
             "format": "int32"
           },
           "fibraNewsMonths": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "fundamentalsCadenceMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -7947,15 +7938,6 @@
             "format": "int32"
           },
           "fibraNewsMonths": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "fundamentalsCadenceMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",

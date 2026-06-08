@@ -55,7 +55,7 @@ public static class OpsMarketEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            jobClient.Enqueue<MarketPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
+            jobClient.Enqueue<MarketPipelineJob>(j => j.ExecuteAsync(true, CancellationToken.None));
             await TryLogQueuedRunAsync("Market", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })
@@ -96,7 +96,7 @@ public static class OpsMarketEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            jobClient.Enqueue<FundamentalsPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
+            jobClient.Enqueue<FundamentalsPipelineJob>(j => j.ExecuteAsync(true, CancellationToken.None));
             await TryLogQueuedRunAsync("Fundamentals", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
             return Results.Accepted();
         })

@@ -12,8 +12,11 @@ public class FundamentalsPipelineJob(
     IPipelineRunLogRepository pipelineRunLogRepo,
     ILogger<FundamentalsPipelineJob> logger)
 {
+    public async Task ExecuteAsync(CancellationToken ct = default) =>
+        await ExecuteAsync(forceRun: false, ct);
+
     [DisableConcurrentExecution(timeoutInSeconds: 0)]
-    public async Task ExecuteAsync(CancellationToken ct = default)
+    public async Task ExecuteAsync(bool forceRun, CancellationToken ct = default)
     {
         var startedAt = DateTimeOffset.UtcNow;
         var status = "Failed";
@@ -21,6 +24,18 @@ public class FundamentalsPipelineJob(
 
         try
         {
+            if (!forceRun)
+            {
+                var lastRun = await pipelineRunLogRepo.GetLastCompletedAsync("Fundamentals", ct);
+                if (lastRun is not null && (startedAt - lastRun.CompletedAt!.Value).TotalHours < 36)
+                {
+                    logger.LogDebug(
+                        "Fundamentals pipeline skipped — last run was {Hours:F1}h ago",
+                        (startedAt - lastRun.CompletedAt!.Value).TotalHours);
+                    return;
+                }
+            }
+
             result = await automationService.ExecuteAsync(ct);
             status = "Completed";
         }

@@ -18,7 +18,6 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
         builder.Property(x => x.AvgPeriods).HasColumnName("avg_periods");
         builder.Property(x => x.NewsCadenceMinutes).HasColumnName("news_cadence_minutes");
         builder.Property(x => x.FibraNewsMonths).HasColumnName("fibra_news_months");
-        builder.Property(x => x.FundamentalsCadenceMinutes).HasColumnName("fundamentals_cadence_minutes");
         builder.Property(x => x.DistributionCadenceMinutes).HasColumnName("distribution_cadence_minutes");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasMaxLength(256);
@@ -33,7 +32,6 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             AvgPeriods = 4,
             NewsCadenceMinutes = 1440,
             FibraNewsMonths = 15,
-            FundamentalsCadenceMinutes = 1440,
             DistributionCadenceMinutes = 1440,
             UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
             UpdatedBy = "system",

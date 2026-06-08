@@ -5,7 +5,6 @@ public sealed record UpdateOperationalConfigRequest(
     int? AvgPeriods,
     int? NewsCadenceMinutes,
     int? FibraNewsMonths,
-    int? FundamentalsCadenceMinutes = null,
     int? DistributionCadenceMinutes = null,
     bool? TermsEnabled = null,
     string? TermsText = null,
