@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { FibraLogo } from '@/shared/ui/fibra-logo'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useQuery } from '@tanstack/react-query'
@@ -166,25 +167,29 @@ export function FibraPage() {
           <div className="container mx-auto px-4 pt-3 pb-0">
             <div className="flex items-start justify-between gap-4">
               {/* Identidad de la FIBRA */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold tracking-tight">{fibra!.ticker}</span>
-                  <span className="text-sm text-muted-foreground truncate hidden sm:block">{fibra!.fullName}</span>
-                  {isAuthenticated && fibra != null && (
-                    <StarButton
-                      fibraId={fibra.id}
-                      isFavorite={favoriteIds.has(fibra.id)}
-                      onToggle={toggle}
-                      size={22}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
-                  <span>{fibra!.sector}</span>
-                  <span className="text-border">·</span>
-                  <span>{fibra!.market}</span>
-                  <span className="text-border">·</span>
-                  <span>{fibra!.currency}</span>
+              <div className="flex min-w-0 items-start gap-3">
+                <FibraLogo siteUrl={fibra!.siteUrl ?? null} ticker={fibra!.ticker} size="md" />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-semibold leading-tight text-foreground truncate">{fibra!.fullName}</span>
+                    {isAuthenticated && fibra != null && (
+                      <StarButton
+                        fibraId={fibra.id}
+                        isFavorite={favoriteIds.has(fibra.id)}
+                        onToggle={toggle}
+                        size={22}
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
+                    <span className="font-playfair font-bold text-primary">{fibra!.ticker}</span>
+                    <span className="text-border">·</span>
+                    <span>{fibra!.sector}</span>
+                    <span className="text-border">·</span>
+                    <span>{fibra!.market}</span>
+                    <span className="text-border">·</span>
+                    <span>{fibra!.currency}</span>
+                  </div>
                 </div>
               </div>
               {/* Precio real con badge de frescura */}
