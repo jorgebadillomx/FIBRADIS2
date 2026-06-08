@@ -33,6 +33,7 @@ public class AmefibraDiscoverySource(IAmefibraDiscoveryClient client) : IFundame
             {
                 if (!_detailsCache.TryGetValue(listing.PackageUrl, out var details))
                 {
+                    await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(2, 5)), ct);
                     try { details = await client.GetPackageDetailsAsync(listing.PackageUrl, ct); }
                     catch { details = null; }
                     _detailsCache[listing.PackageUrl] = details;

@@ -61,8 +61,11 @@ public class FundamentalsAutomationService(
                 }
 
                 totalCandidates += candidates.Count;
+                var candidateIndex = 0;
                 foreach (var candidate in candidates)
                 {
+                    if (candidateIndex++ > 0)
+                        await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(4, 9)), ct);
                     var existingManifest = await manifestRepo.GetBySourceAndPackageUrlAsync(candidate.SourceName, candidate.PackageUrl, ct);
                     var manifest = existingManifest ?? new FundamentalSourceManifest
                     {
@@ -226,6 +229,9 @@ public class FundamentalsAutomationService(
         var http = httpClientFactory.CreateClient("FundamentalsDownloader");
         using var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
         request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36");
+        request.Headers.TryAddWithoutValidation("Accept-Language", "es-MX,es;q=0.9,en;q=0.8");
+        request.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
+        request.Headers.TryAddWithoutValidation("Referer", "https://amefibra.com/reportes-de-fibras/");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/pdf"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*", 0.8));
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);

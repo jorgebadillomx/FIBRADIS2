@@ -8,7 +8,7 @@ namespace Infrastructure.Integrations.PdfDiscovery;
 public partial class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscoveryClient
 {
     private const string BaseUrl = "https://amefibra.com/reportes-de-fibras/";
-    private bool _warmedUp;
+    private static bool _warmedUp;
 
     public async Task<IReadOnlyList<AmefibraListingItem>> GetListingItemsAsync(CancellationToken ct)
     {
@@ -20,10 +20,12 @@ public partial class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscove
 
         for (var page = 2; page <= pageCount; page++)
         {
+            await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(2, 5)), ct);
             var html = await GetHtmlAsync($"{BaseUrl}?cp={page}", ct);
             items.AddRange(await ParseListingItemsAsync(html));
         }
 
+        await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(3, 7)), ct);
         // El sitemap incluye paquetes que no aparecen en el listing paginado (ej. FIBRAs nuevas o reportes recientes)
         var sitemapItems = await GetSitemapItemsAsync(ct);
         var knownUrls = items.Select(x => x.PackageUrl).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -125,6 +127,7 @@ public partial class AmefibraDiscoveryClient(HttpClient http) : IAmefibraDiscove
         request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36");
         request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
         request.Headers.TryAddWithoutValidation("Accept-Language", "es-MX,es;q=0.9,en;q=0.8");
+        request.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
         request.Headers.Referrer = new Uri(referer);
         return request;
     }
