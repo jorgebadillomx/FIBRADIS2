@@ -195,6 +195,20 @@ public static class ApiServiceExtensions
         });
         builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
             sp.GetRequiredService<Norte19DiscoverySource>());
+        builder.Services.AddHttpClient<EconomaticaDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+            // Session cookie required: server issues PHPSESSID + eco_repor on first 302,
+            // then serves content on the redirect follow-up
+            UseCookies = true,
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<EconomaticaDiscoverySource>());
         builder.Services.AddHttpClient("FundamentalsDownloader", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);
