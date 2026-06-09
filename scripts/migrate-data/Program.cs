@@ -104,8 +104,26 @@ try
 
         // Leer datos de PostgreSQL
         var dt = new DataTable();
-        foreach (var (colName, _) in matchedCols)
-            dt.Columns.Add(colName);
+        // Declarar el tipo de cada columna explícitamente — DataTable defaultea a string si no se especifica
+        foreach (var (colName, sqlType) in matchedCols)
+        {
+            var clrType = sqlType switch
+            {
+                "uniqueidentifier"                                           => typeof(Guid),
+                "bit"                                                        => typeof(bool),
+                "int"                                                        => typeof(int),
+                "bigint"                                                     => typeof(long),
+                "smallint"                                                   => typeof(short),
+                "decimal" or "numeric" or "money" or "smallmoney"           => typeof(decimal),
+                "float"                                                      => typeof(double),
+                "real"                                                       => typeof(float),
+                "datetime" or "datetime2" or "smalldatetime" or "date"      => typeof(DateTime),
+                "datetimeoffset"                                             => typeof(DateTimeOffset),
+                _                                                            => typeof(string),
+            };
+            var col = new DataColumn(colName, clrType) { AllowDBNull = true };
+            dt.Columns.Add(col);
+        }
 
         int count = 0;
         await using var pgDataCmd = new NpgsqlCommand($"SELECT {pgSelect} FROM {schema}.\"{table}\"", pgConn);
@@ -117,8 +135,15 @@ try
             {
                 if (pgReader.IsDBNull(i)) { row[i] = DBNull.Value; continue; }
                 var value = pgReader.GetValue(i);
-                // DateOnly no es reconocido por SqlBulkCopy — convertir a DateTime
-                if (value is DateOnly dateOnly)
+                var sqlType = matchedCols[i].Type;
+                // UUID: Npgsql puede devolver string — convertir a Guid
+                if (sqlType == "uniqueidentifier" && value is string guidStr)
+                    value = Guid.Parse(guidStr);
+                // datetimeoffset: Npgsql devuelve DateTime (UTC) — convertir a DateTimeOffset
+                else if (sqlType == "datetimeoffset" && value is DateTime dtValue)
+                    value = new DateTimeOffset(dtValue, TimeSpan.Zero);
+                // date: Npgsql devuelve DateOnly — convertir a DateTime
+                else if (value is DateOnly dateOnly)
                     value = dateOnly.ToDateTime(TimeOnly.MinValue);
                 row[i] = value;
             }
