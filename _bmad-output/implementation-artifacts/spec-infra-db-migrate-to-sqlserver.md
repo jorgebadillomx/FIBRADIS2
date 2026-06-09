@@ -116,3 +116,61 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 - `dotnet ef database update --project src/Server/Infrastructure --startup-project src/Server/Api` — expected: `Done`
 - `dotnet test tests/Unit/Infrastructure.Tests` — expected: 3 passed, 0 failed
 - `dotnet run --project src/Server/Api` — expected: arranque limpio, sin `NpgsqlException` en logs
+
+## Suggested Review Order
+
+**Punto de entrada — DI/provider swap**
+
+- `UseSqlServer` hardcodeado; comment explica cómo volver a PostgreSQL en el futuro.
+  [`Program.cs:18`](../../src/Server/Api/Program.cs#L18)
+
+- Hangfire usa `UseSqlServerStorage` con schema `jobs`; `InvisibilityTimeout` removido (obsoleto).
+  [`ApiServiceExtensions.cs:233`](../../src/Server/Api/CompositionRoot/ApiServiceExtensions.cs#L233)
+
+**Paquetes**
+
+- Swap de dependencias centrales: Npgsql → SqlServer, Hangfire.PostgreSql → Hangfire.SqlServer.
+  [`Directory.Packages.props:9`](../../Directory.Packages.props#L9)
+
+- csproj Infrastructure refleja el mismo swap.
+  [`Infrastructure.csproj:11`](../../src/Server/Infrastructure/Infrastructure.csproj#L11)
+
+**Migraciones SQL Server**
+
+- `DesignTimeDbContextFactory` permite correr `dotnet ef` sin el startup project.
+  [`DesignTimeDbContextFactory.cs:1`](../../src/Server/Infrastructure/DesignTimeDbContextFactory.cs#L1)
+
+- Migración inicial SQL Server — `uniqueidentifier`, `NEWID()`, `GETUTCDATE()`, 26 tablas.
+  [`InitialSqlServer.cs:1`](../../src/Server/Infrastructure/Migrations/SqlServer/20260609035327_InitialSqlServer.cs#L1)
+
+**Configuraciones EF — funciones SQL Server**
+
+- `NEWID()` y `GETUTCDATE()` como defaults; patrón replicado en 4 archivos más.
+  [`AiCallLogConfiguration.cs:16`](../../src/Server/Infrastructure/Persistence/SqlServer/Configurations/Ai/AiCallLogConfiguration.cs#L16)
+
+**Repositorios — manejo de constraint violations**
+
+- `SqlException { Number: 2627 or 2601 }` reemplaza `PostgresException { SqlState: "23505" }`.
+  [`MarketRepository.cs:38`](../../src/Server/Infrastructure/Persistence/Repositories/Market/MarketRepository.cs#L38)
+
+- Mismo patrón en PortfolioRepository.
+  [`PortfolioRepository.cs:162`](../../src/Server/Infrastructure/Persistence/Repositories/Portfolio/PortfolioRepository.cs#L162)
+
+- Mismo patrón en OpportunityWeightsRepository.
+  [`OpportunityWeightsRepository.cs:34`](../../src/Server/Infrastructure/Persistence/Repositories/Opportunities/OpportunityWeightsRepository.cs#L34)
+
+**Script de migración de datos (PostgreSQL → SQL Server)**
+
+- Toda la migración en una `SqlTransaction`; rollback automático si falla cualquier tabla.
+  [`migrate-data/Program.cs:49`](../../scripts/migrate-data/Program.cs#L49)
+
+- `DateOnly` convertido a `DateTime` antes de `SqlBulkCopy` (patch de review).
+  [`migrate-data/Program.cs:111`](../../scripts/migrate-data/Program.cs#L111)
+
+**Periféricos — tests y config**
+
+- Test de modelo usa `UseSqlServer` apuntando a `LAPBADIS`.
+  [`CatalogModelTests.cs:71`](../../tests/Unit/Infrastructure.Tests/CatalogModelTests.cs#L71)
+
+- `DatabaseProvider: SqlServer` como key de config (documentación, no runtime switch).
+  [`appsettings.json:2`](../../src/Server/Api/appsettings.json#L2)
