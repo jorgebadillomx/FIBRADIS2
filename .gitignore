@@ -28,6 +28,9 @@ dist/
 Thumbs.db
 desktop.ini
 
+## Publish output
+publish/
+
 ## Dev scripts runtime
 .dev-wt-pid
 tmp-*.log
