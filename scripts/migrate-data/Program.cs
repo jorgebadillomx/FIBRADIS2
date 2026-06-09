@@ -1,30 +1,49 @@
 using Microsoft.Data.SqlClient;
 using Npgsql;
-using NpgsqlTypes;
+using System.Data;
 
 var sqlConnStr = "Server=LAPBADIS;Database=FIBRADIS_Dev;Integrated Security=True;TrustServerCertificate=True";
 var pgConnStr  = "Host=localhost;Port=5432;Database=fibradis_dev;Username=fibradis_app;Password=devpassword";
 
-// Orden respetando FK: primero tablas sin dependencias, luego las que las tienen
+// Orden respetando FK: tablas raíz primero, luego dependientes
 var tables = new[]
 {
-    ("ai",           "AiModeConfig"),
-    ("ai",           "AiPrompt"),
-    ("ai",           "AiProviderConfig"),
-    ("news",         "BlocklistTerm"),
-    ("ops",          "OperationalConfig"),
-    ("ops",          "EditorialPage"),
-    ("ops",          "ConfigAuditLog"),
-    ("fundamentals", "FundamentalSourceManifest"),
-    ("news",         "NewsArticle"),
-    ("market",       "PriceSnapshot"),
-    ("market",       "DailySnapshot"),
-    ("market",       "Distribution"),
-    ("fundamentals", "FundamentalRecord"),
-    ("jobs",         "PipelineRunLog"),
-    ("jobs",         "PipelineErrorLog"),
-    ("jobs",         "AiCallLog"),
-    ("news",         "NewsArticleFibra"),
+    // Auth
+    ("auth",          "User"),
+    // Catalog
+    ("catalog",       "Fibra"),
+    // AI
+    ("ai",            "AiModeConfig"),
+    ("ai",            "AiPrompt"),
+    ("ai",            "AiProviderConfig"),
+    // News (sin FK a Fibra directamente)
+    ("news",          "BlocklistTerm"),
+    ("news",          "NewsArticle"),
+    // Ops
+    ("ops",           "OperationalConfig"),
+    ("ops",           "EditorialPage"),
+    ("ops",           "ConfigAuditLog"),
+    // Fundamentals (depende de Fibra)
+    ("fundamentals",  "FundamentalSourceManifest"),
+    ("fundamentals",  "FundamentalRecord"),
+    // Market (depende de Fibra)
+    ("market",        "PriceSnapshot"),
+    ("market",        "DailySnapshot"),
+    ("market",        "Distribution"),
+    // Jobs
+    ("jobs",          "PipelineRunLog"),
+    ("jobs",          "PipelineErrorLog"),
+    ("jobs",          "AiCallLog"),
+    // News JT (depende de NewsArticle + Fibra)
+    ("news",          "NewsArticleFibra"),
+    // Auth (depende de User)
+    ("auth",          "RefreshToken"),
+    // Portfolio (depende de User + Fibra)
+    ("portfolio",     "PortfolioPositions"),
+    ("portfolio",     "PortfolioSnapshots"),
+    ("portfolio",     "UserPortfolioSettings"),
+    ("portfolio",     "UserOpportunityWeights"),
+    ("portfolio",     "UserFavorites"),
 };
 
 await using var sqlConn = new SqlConnection(sqlConnStr);
@@ -39,7 +58,7 @@ foreach (var (schema, table) in tables)
 {
     Console.Write($"Migrando {schema}.{table}... ");
 
-    // Leer metadatos de columnas desde SQL Server
+    // Leer metadatos de columnas desde SQL Server (destino)
     var colMeta = new List<(string Name, string Type)>();
     await using (var metaCmd = new SqlCommand(
         $"SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
@@ -51,9 +70,10 @@ foreach (var (schema, table) in tables)
             colMeta.Add((metaReader.GetString(0), metaReader.GetString(1)));
     }
 
-    if (colMeta.Count == 0) { Console.WriteLine("sin columnas, saltando."); continue; }
+    if (colMeta.Count == 0) { Console.WriteLine("sin columnas en SQL Server, saltando."); continue; }
 
-    // Detectar columnas que existen en PostgreSQL
+    // Detectar columnas que existen en PostgreSQL (fuente)
+    // PostgreSQL usa snake_case (ya configurado con HasColumnName en EF Core)
     var pgColsExisting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     await using (var pgMetaCmd = new NpgsqlCommand(
         $"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema}' AND table_name = '{table}'", pgConn))
@@ -61,97 +81,70 @@ foreach (var (schema, table) in tables)
         while (await pgMetaReader.ReadAsync())
             pgColsExisting.Add(pgMetaReader.GetString(0));
 
-    // Filtrar columnas que existen en ambas bases
-    var filteredCols = colMeta.Where(c => pgColsExisting.Contains(c.Name) || pgColsExisting.Contains($"\"{c.Name}\"")).ToList();
-    var skipped = colMeta.Except(filteredCols).Select(c => c.Name).ToList();
-    if (skipped.Any()) Console.Write($"[skip: {string.Join(",", skipped)}] ");
+    if (pgColsExisting.Count == 0) { Console.WriteLine("tabla no existe en PostgreSQL, saltando."); continue; }
 
-    colMeta = filteredCols;
+    // Filtrar columnas que existen en ambas bases (por nombre SQL Server, mapeando a PG snake_case)
+    var matchedCols = colMeta.Where(c => pgColsExisting.Contains(c.Name) || pgColsExisting.Contains(ToSnakeCase(c.Name))).ToList();
+    var skipped = colMeta.Except(matchedCols).Select(c => c.Name).ToList();
+    if (skipped.Any()) Console.Write($"[skip cols: {string.Join(",", skipped)}] ");
 
-    // Truncar tabla destino (CASCADE para FKs)
-    await using (var truncCmd = new NpgsqlCommand(
-        $"TRUNCATE {schema}.\"{table}\" RESTART IDENTITY CASCADE", pgConn))
-        await truncCmd.ExecuteNonQueryAsync();
+    if (matchedCols.Count == 0) { Console.WriteLine("sin columnas coincidentes."); continue; }
 
-    // Leer datos de SQL Server — solo columnas que existen en PG
-    int count = 0;
-    var sqlCols = string.Join(", ", colMeta.Select(c => $"[{c.Name}]"));
-    await using var dataCmd = new SqlCommand($"SELECT {sqlCols} FROM [{schema}].[{table}]", sqlConn);
-    await using var reader  = await dataCmd.ExecuteReaderAsync();
-
-    // Construir columnas PostgreSQL (snake_case no necesita comillas, PascalCase sí)
-    var pgCols = colMeta.Select(c =>
-        c.Name == c.Name.ToLowerInvariant() ? c.Name : $"\"{c.Name}\""
-    ).ToList();
-    var colList = string.Join(", ", pgCols);
-
-    await using var pgWriter = await pgConn.BeginBinaryImportAsync(
-        $"COPY {schema}.\"{table}\" ({colList}) FROM STDIN (FORMAT BINARY)");
-
-    while (await reader.ReadAsync())
+    // Construir SELECT desde PostgreSQL (usando el nombre snake_case de la columna PG)
+    var pgSelectCols = matchedCols.Select(c =>
     {
-        await pgWriter.StartRowAsync();
+        var pgName = pgColsExisting.Contains(c.Name) ? c.Name : ToSnakeCase(c.Name);
+        return $"\"{pgName}\"";
+    });
+    var pgSelect = string.Join(", ", pgSelectCols);
 
-        for (int i = 0; i < colMeta.Count; i++)
-        {
-            if (reader.IsDBNull(i)) { await pgWriter.WriteNullAsync(); continue; }
+    // Leer datos de PostgreSQL
+    var dt = new DataTable();
+    foreach (var (colName, _) in matchedCols)
+        dt.Columns.Add(colName);
 
-            var (_, dataType) = colMeta[i];
-            switch (dataType.ToLower())
-            {
-                case "uniqueidentifier":
-                    await pgWriter.WriteAsync(reader.GetGuid(i), NpgsqlDbType.Uuid);
-                    break;
-                case "bit":
-                    await pgWriter.WriteAsync(reader.GetBoolean(i), NpgsqlDbType.Boolean);
-                    break;
-                case "int":
-                    await pgWriter.WriteAsync(reader.GetInt32(i), NpgsqlDbType.Integer);
-                    break;
-                case "bigint":
-                    await pgWriter.WriteAsync(reader.GetInt64(i), NpgsqlDbType.Bigint);
-                    break;
-                case "smallint":
-                    await pgWriter.WriteAsync(reader.GetInt16(i), NpgsqlDbType.Smallint);
-                    break;
-                case "decimal":
-                case "numeric":
-                case "money":
-                case "smallmoney":
-                    await pgWriter.WriteAsync(reader.GetDecimal(i), NpgsqlDbType.Numeric);
-                    break;
-                case "float":
-                    await pgWriter.WriteAsync(reader.GetDouble(i), NpgsqlDbType.Double);
-                    break;
-                case "real":
-                    await pgWriter.WriteAsync((double)reader.GetFloat(i), NpgsqlDbType.Double);
-                    break;
-                case "datetime":
-                case "datetime2":
-                case "smalldatetime":
-                    var dt = reader.GetDateTime(i);
-                    await pgWriter.WriteAsync(
-                        DateTime.SpecifyKind(dt, DateTimeKind.Utc),
-                        NpgsqlDbType.TimestampTz);
-                    break;
-                case "datetimeoffset":
-                    var dto = (DateTimeOffset)reader.GetValue(i);
-                    await pgWriter.WriteAsync(dto, NpgsqlDbType.TimestampTz);
-                    break;
-                case "date":
-                    await pgWriter.WriteAsync(DateOnly.FromDateTime(reader.GetDateTime(i)), NpgsqlDbType.Date);
-                    break;
-                default:
-                    // varchar, nvarchar, text, char, nchar, xml, etc.
-                    await pgWriter.WriteAsync(reader.GetValue(i).ToString()!, NpgsqlDbType.Text);
-                    break;
-            }
-        }
+    int count = 0;
+    await using var pgDataCmd = new NpgsqlCommand($"SELECT {pgSelect} FROM {schema}.\"{table}\"", pgConn);
+    await using var pgReader = await pgDataCmd.ExecuteReaderAsync();
+    while (await pgReader.ReadAsync())
+    {
+        var row = dt.NewRow();
+        for (int i = 0; i < matchedCols.Count; i++)
+            row[i] = pgReader.IsDBNull(i) ? DBNull.Value : pgReader.GetValue(i);
+        dt.Rows.Add(row);
         count++;
     }
 
-    await pgWriter.CompleteAsync();
+    if (count == 0) { Console.WriteLine("0 registros en PostgreSQL."); continue; }
+
+    // Truncar destino SQL Server
+    await using (var truncCmd = new SqlCommand($"DELETE FROM [{schema}].[{table}]", sqlConn))
+        await truncCmd.ExecuteNonQueryAsync();
+
+    // Escribir a SQL Server con SqlBulkCopy
+    using var bulkCopy = new SqlBulkCopy(sqlConn)
+    {
+        DestinationTableName = $"[{schema}].[{table}]",
+        BulkCopyTimeout = 300,
+    };
+    foreach (DataColumn col in dt.Columns)
+        bulkCopy.ColumnMappings.Add(col.ColumnName, col.ColumnName);
+
+    await bulkCopy.WriteToServerAsync(dt);
     Console.WriteLine($"{count} registros.");
 }
 
 Console.WriteLine("\n=== Migración completada ===");
+
+static string ToSnakeCase(string name)
+{
+    if (string.IsNullOrEmpty(name)) return name;
+    var sb = new System.Text.StringBuilder();
+    for (int i = 0; i < name.Length; i++)
+    {
+        if (char.IsUpper(name[i]) && i > 0)
+            sb.Append('_');
+        sb.Append(char.ToLower(name[i]));
+    }
+    return sb.ToString();
+}

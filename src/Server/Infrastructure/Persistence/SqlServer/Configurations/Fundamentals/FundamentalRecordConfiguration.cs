@@ -14,7 +14,7 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("gen_random_uuid()")
+            .HasDefaultValueSql("NEWID()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.FibraId)
@@ -85,7 +85,7 @@ public class FundamentalRecordConfiguration : IEntityTypeConfiguration<Fundament
 
         builder.Property(x => x.CapturedAt)
             .HasColumnName("captured_at")
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("GETUTCDATE()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.ConfirmedAt)

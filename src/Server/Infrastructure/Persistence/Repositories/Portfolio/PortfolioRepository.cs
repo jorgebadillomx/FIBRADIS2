@@ -2,6 +2,7 @@ using System.Text.Json;
 using Application.Portfolio;
 using Domain.Portfolio;
 using Infrastructure.Persistence.SqlServer;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories.Portfolio;
@@ -158,7 +159,7 @@ public class PortfolioRepository(AppDbContext db) : IPortfolioRepository
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2627 or 2601 })
         {
             // Concurrent insert won the race; retry as update
             db.Entry(settings).State = EntityState.Detached;

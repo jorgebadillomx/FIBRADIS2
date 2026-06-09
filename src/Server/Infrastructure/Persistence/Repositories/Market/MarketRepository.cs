@@ -1,6 +1,7 @@
 using Application.Market;
 using Domain.Market;
 using Infrastructure.Persistence.SqlServer;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories.Market;
@@ -34,7 +35,7 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
                 await db.SaveChangesAsync(ct);
                 return true;
             }
-            catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2627 or 2601 })
             {
                 db.Entry(snapshot).State = EntityState.Detached;
                 return false;
@@ -133,7 +134,7 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             await db.SaveChangesAsync(ct);
             return true;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2627 or 2601 })
         {
             db.Entry(dist).State = EntityState.Detached;
             return false;

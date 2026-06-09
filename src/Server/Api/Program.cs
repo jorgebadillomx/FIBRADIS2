@@ -15,8 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddApiInfrastructure();
 
+// Para migrar a PostgreSQL en el futuro: agregar Npgsql.EntityFrameworkCore.PostgreSQL,
+// cambiar DatabaseProvider a "PostgreSQL" en appsettings, y usar options.UseNpgsql(connStr).
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
