@@ -24,7 +24,6 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRouting(); // explícito: debe ir después de static files para que los assets no sean interceptados por el fallback
 app.UseApiInfrastructure();
-app.UseHttpsRedirection();
 app.MapAuth();
 app.MapMe();
 app.MapOpsPing();

@@ -38,8 +38,8 @@ scripts/*.sql
 _bmad/scripts/__pycache__/
 scripts/codegen/build-output/
 
-## Uploaded files
-src/Server/Api/wwwroot/uploads/
+## Uploaded files / frontend build output
+src/Server/Api/wwwroot/
 
 ## IDE
 .idea/
