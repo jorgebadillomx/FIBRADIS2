@@ -1,0 +1,76 @@
+{
+  "data": {
+    "id": 1,
+    "attributes": {
+      "reports": [
+        {
+          "id": 46,
+          "year": "2026",
+          "quarters": [
+            {
+              "id": 123,
+              "quarter": "1T26",
+              "pdf": {
+                "data": {
+                  "id": 200,
+                  "attributes": {
+                    "name": "N19-Resultados-1T26-vf.pdf",
+                    "hash": "N19_Resultados_1_T26_vf_9a3511cd96",
+                    "ext": ".pdf",
+                    "mime": "application/pdf",
+                    "url": "https://example-s3.amazonaws.com/N19_Resultados_1_T26_vf_9a3511cd96.pdf?X-Amz-Expires=900&X-Amz-Signature=aaa111"
+                  }
+                }
+              },
+              "bwv": { "data": null },
+              "xls": { "data": null }
+            }
+          ]
+        },
+        {
+          "id": 45,
+          "year": "2025",
+          "quarters": [
+            {
+              "id": 120,
+              "quarter": "4T25",
+              "pdf": {
+                "data": {
+                  "id": 190,
+                  "attributes": {
+                    "name": "N19 Resultados 4T25 ESP vf.pdf",
+                    "hash": "N19_Resultados_4_T25_ESP_vf_abcd1234ef",
+                    "ext": ".pdf",
+                    "mime": "application/pdf",
+                    "url": "https://example-s3.amazonaws.com/N19_Resultados_4_T25_ESP_vf_abcd1234ef.pdf?X-Amz-Expires=900&X-Amz-Signature=bbb222"
+                  }
+                }
+              },
+              "bwv": {
+                "data": {
+                  "id": 191,
+                  "attributes": {
+                    "name": "HCITY 4T25.pdf",
+                    "hash": "HCITY_4_T25_xyz9876wv",
+                    "ext": ".pdf",
+                    "mime": "application/pdf",
+                    "url": "https://example-s3.amazonaws.com/HCITY_4_T25_xyz9876wv.pdf?X-Amz-Expires=900&X-Amz-Signature=ccc333"
+                  }
+                }
+              },
+              "xls": { "data": null }
+            },
+            {
+              "id": 115,
+              "quarter": "3T25",
+              "pdf": { "data": null },
+              "bwv": { "data": null },
+              "xls": { "data": null }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "meta": {}
+}

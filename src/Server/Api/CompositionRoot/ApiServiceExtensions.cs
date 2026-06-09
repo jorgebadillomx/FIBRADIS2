@@ -201,17 +201,12 @@ public static class ApiServiceExtensions
         });
         builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
             sp.GetRequiredService<FHipoWordPressApiDiscoverySource>());
-        builder.Services.AddHttpClient<BmvDiscoverySource>(client =>
+        builder.Services.AddHttpClient<Norte19DiscoverySource>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            AllowAutoRedirect = true,
-            MaxAutomaticRedirections = 5,
         });
         builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
-            sp.GetRequiredService<BmvDiscoverySource>());
+            sp.GetRequiredService<Norte19DiscoverySource>());
         builder.Services.AddHttpClient("FundamentalsDownloader", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);
