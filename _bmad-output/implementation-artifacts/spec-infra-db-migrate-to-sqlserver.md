@@ -2,7 +2,7 @@
 title: 'Migrar DB provider: PostgreSQL → SQL Server (con switch por config)'
 type: 'chore'
 created: '2026-06-08'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '1286c2c2b0bc0969bc44d1ecbb65787614a0cdae'
 ---
 
