@@ -8,6 +8,7 @@ using Application.News;
 using Application.Ops;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Hangfire.SqlServer;
 using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Articles;
 using Infrastructure.Integrations.GoogleNews;
@@ -224,18 +225,33 @@ public static class ApiServiceExtensions
         var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
         var hangfireConnStr = builder.Configuration.GetConnectionString("DefaultConnection");
 
+        var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
         if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         {
-            builder.Services.AddHangfire(config => config
-                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                .UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(hangfireConnStr), new PostgreSqlStorageOptions
+            builder.Services.AddHangfire(config =>
+            {
+                config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                      .UseSimpleAssemblyNameTypeSerializer()
+                      .UseRecommendedSerializerSettings();
+
+                if (dbProvider == "PostgreSQL")
                 {
-                    SchemaName = "jobs",
-                    InvisibilityTimeout = TimeSpan.FromMinutes(5),
-                    QueuePollInterval = TimeSpan.FromSeconds(15),
-                }));
+                    config.UsePostgreSqlStorage(o => o.UseNpgsqlConnection(hangfireConnStr), new PostgreSqlStorageOptions
+                    {
+                        SchemaName = "jobs",
+                        InvisibilityTimeout = TimeSpan.FromMinutes(5),
+                        QueuePollInterval = TimeSpan.FromSeconds(15),
+                    });
+                }
+                else
+                {
+                    config.UseSqlServerStorage(hangfireConnStr, new SqlServerStorageOptions
+                    {
+                        SchemaName = "jobs",
+                        QueuePollInterval = TimeSpan.FromSeconds(15),
+                    });
+                }
+            });
 
             builder.Services.AddHangfireServer(options =>
             {

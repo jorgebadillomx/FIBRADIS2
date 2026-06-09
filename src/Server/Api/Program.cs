@@ -15,8 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddApiInfrastructure();
 
+var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (dbProvider == "PostgreSQL")
+        options.UseNpgsql(connStr);
+    else
+        options.UseSqlServer(connStr);
+});
 
 var app = builder.Build();
 
