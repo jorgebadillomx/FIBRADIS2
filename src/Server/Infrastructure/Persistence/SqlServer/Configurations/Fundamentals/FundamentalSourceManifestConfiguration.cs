@@ -14,7 +14,7 @@ public class FundamentalSourceManifestConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("gen_random_uuid()")
+            .HasDefaultValueSql("NEWID()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.SourceName)
@@ -92,11 +92,11 @@ public class FundamentalSourceManifestConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
-            .HasDefaultValueSql("now()");
+            .HasDefaultValueSql("GETUTCDATE()");
 
         builder.Property(x => x.UpdatedAt)
             .HasColumnName("updated_at")
-            .HasDefaultValueSql("now()");
+            .HasDefaultValueSql("GETUTCDATE()");
 
         builder.HasIndex(x => new { x.SourceName, x.PackageUrl })
             .IsUnique()

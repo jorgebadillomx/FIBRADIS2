@@ -13,7 +13,7 @@ public class PipelineRunLogConfiguration : IEntityTypeConfiguration<PipelineRunL
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("gen_random_uuid()")
+            .HasDefaultValueSql("NEWID()")
             .ValueGeneratedOnAdd();
 
         builder.Property(x => x.Pipeline)
@@ -49,7 +49,7 @@ public class PipelineRunLogConfiguration : IEntityTypeConfiguration<PipelineRunL
 
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("GETUTCDATE()")
             .ValueGeneratedOnAdd();
 
         builder.HasIndex(x => new { x.Pipeline, x.StartedAt })

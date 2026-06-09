@@ -13,7 +13,7 @@ public class PipelineErrorLogConfiguration : IEntityTypeConfiguration<PipelineEr
 
         builder.Property(x => x.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("gen_random_uuid()");
+            .HasDefaultValueSql("NEWID()");
         builder.Property(x => x.Pipeline)
             .HasColumnName("pipeline")
             .HasMaxLength(50)
@@ -32,7 +32,7 @@ public class PipelineErrorLogConfiguration : IEntityTypeConfiguration<PipelineEr
             .IsRequired();
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
-            .HasDefaultValueSql("now()");
+            .HasDefaultValueSql("GETUTCDATE()");
 
         builder.HasIndex(x => new { x.Pipeline, x.CreatedAt })
             .HasDatabaseName("IX_PipelineErrorLog_Pipeline_CreatedAt");

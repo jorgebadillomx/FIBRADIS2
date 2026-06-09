@@ -7,7 +7,7 @@ using Application.Market;
 using Application.News;
 using Application.Ops;
 using Hangfire;
-using Hangfire.PostgreSql;
+using Hangfire.SqlServer;
 using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Articles;
 using Infrastructure.Integrations.GoogleNews;
@@ -230,10 +230,9 @@ public static class ApiServiceExtensions
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(hangfireConnStr), new PostgreSqlStorageOptions
+                .UseSqlServerStorage(hangfireConnStr, new SqlServerStorageOptions
                 {
                     SchemaName = "jobs",
-                    InvisibilityTimeout = TimeSpan.FromMinutes(5),
                     QueuePollInterval = TimeSpan.FromSeconds(15),
                 }));
 
