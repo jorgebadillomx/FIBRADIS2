@@ -28,6 +28,12 @@ public class OfficialSiteDiscoverySource(HttpClient http) : IFundamentalsDiscove
                 PdfLinkSelector: "a[href*=\"wp-content/uploads/\"][href$=\".pdf\"]",
                 BaseUrl: "https://cfecapital.com.mx"),
 
+            ["FHIPO14"] = new(
+                PdfLinkSelector: "a[href$=\".pdf\"]",
+                BaseUrl: "https://fhipo.com",
+                // "1-Reporte-Trimestral-*" = quarterly results; excludes BIVA filings and presentations
+                LinkFilter: href => href.Contains("Reporte-Trimestral", StringComparison.OrdinalIgnoreCase)),
+
         };
 
     public string SourceName => "official";

@@ -50,7 +50,7 @@ public class OfficialSiteDiscoverySourceTests
     }
 
     [Fact]
-    public async Task DiscoverCandidatesAsync_Fhipo_ExtractsPdfsFromWordPress()
+    public async Task DiscoverCandidatesAsync_Fhipo_ExtractsOnlyMainQuarterlyReports()
     {
         var html = await File.ReadAllTextAsync(Path.Combine(FixturesPath, "fhipo-reportes-sample.html"));
         var fibra = BuildFibra("FHIPO14", "https://fhipo.com/es/reportes-trimestrales/");
@@ -58,8 +58,12 @@ public class OfficialSiteDiscoverySourceTests
 
         var candidates = await source.DiscoverCandidatesAsync(fibra, CancellationToken.None);
 
-        Assert.Equal(3, candidates.Count);
+        // 4 quarters × "1-Reporte-Trimestral-*" only; BIVA filings and presentations excluded
+        Assert.Equal(4, candidates.Count);
         Assert.All(candidates, c => Assert.Equal("quarterly", c.ReportType));
+        Assert.All(candidates, c => Assert.Contains("Reporte-Trimestral", c.PackageUrl, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(candidates, c => c.Period == "Q1-2026");
+        Assert.Contains(candidates, c => c.Period == "Q4-2025");
     }
 
     [Fact]
