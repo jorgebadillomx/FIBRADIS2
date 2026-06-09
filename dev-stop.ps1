@@ -11,5 +11,5 @@ if (Test-Path $pidFile) {
     Write-Host "No se encontro PID de WindowsTerminal guardado."
 }
 
-Write-Host "Bajando PostgreSQL..."
-docker compose -f "$root\docker-compose.dev.yml" down
+# Write-Host "Bajando PostgreSQL..."
+# docker compose -f "$root\docker-compose.dev.yml" down

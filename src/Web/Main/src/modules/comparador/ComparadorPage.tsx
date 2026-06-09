@@ -198,12 +198,12 @@ export function ComparadorPage() {
 
   return (
     <>
-      <title>Comparador de FIBRAs — FIBRADIS</title>
+      <title>Comparador de FIBRAs — Fibras Inmobiliarias</title>
       <meta
         name="description"
         content="Compara hasta 4 FIBRAs mexicanas lado a lado: precio, fundamentales, distribuciones y score de oportunidad público. Sin registrarte."
       />
-      <meta property="og:title" content="Comparador de FIBRAs — FIBRADIS" />
+      <meta property="og:title" content="Comparador de FIBRAs — Fibras Inmobiliarias" />
       <meta
         property="og:description"
         content="Compara hasta 4 FIBRAs mexicanas lado a lado: precio, fundamentales, distribuciones y score de oportunidad público. Sin registrarte."

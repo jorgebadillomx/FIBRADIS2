@@ -4,7 +4,7 @@ import { extractHeadElements } from './prerender-utils.mjs'
 
 test('extractHeadElements extrae title, meta y link del rendered y deja cleanBody sin ellos', () => {
   const rendered =
-    '<title>FUNO11 — Fibra Uno | FIBRADIS</title>' +
+    '<title>FUNO11 — Fibra Uno | Fibras Inmobiliarias</title>' +
     '<meta name="description" content="Análisis de Fibra Uno." />' +
     '<link rel="canonical" href="https://fibradis.mx/fibras/FUNO11" />' +
     '<div class="container">contenido</div>'
@@ -67,12 +67,12 @@ test('extractHeadElements es case-insensitive para los tags', () => {
 
 test('extractHeadElements extrae el title cuando el contenido tiene caracteres especiales como —', () => {
   const rendered =
-    '<title>FIBRADIS — Plataforma de análisis de FIBRAs del mercado mexicano</title>' +
+    '<title>Fibras Inmobiliarias — Plataforma de análisis de FIBRAs del mercado mexicano</title>' +
     '<div>home</div>'
 
   const { headElements, cleanBody } = extractHeadElements(rendered)
 
   assert.equal(headElements.length, 1)
-  assert.equal(headElements[0], '<title>FIBRADIS — Plataforma de análisis de FIBRAs del mercado mexicano</title>')
+  assert.equal(headElements[0], '<title>Fibras Inmobiliarias — Plataforma de análisis de FIBRAs del mercado mexicano</title>')
   assert.equal(cleanBody, '<div>home</div>')
 })

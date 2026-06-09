@@ -5,8 +5,8 @@ import { fetchArticleById, fetchRelatedNews, type NewsKeyFigure } from '@/api/ne
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
 
-const DEFAULT_TITLE = 'FIBRADIS'
-const DEFAULT_DESCRIPTION = 'Preview de noticia de FIBRADIS.'
+const DEFAULT_TITLE = 'Fibras Inmobiliarias'
+const DEFAULT_DESCRIPTION = 'Preview de noticia de Fibras Inmobiliarias.'
 
 const IMPACT_BADGE: Record<string, string> = {
   alto: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
@@ -26,7 +26,7 @@ export function NoticiaPage() {
   const aiAnalysis = article?.aiAnalysis ?? null
   const summaryContent = aiAnalysis?.summaryMarkdown ?? article?.aiSummary ?? article?.snippet ?? null
   const displayTitle = aiAnalysis?.headline ?? article?.title
-  const pageTitle = displayTitle ? `${displayTitle} — FIBRADIS` : DEFAULT_TITLE
+  const pageTitle = displayTitle ? `${displayTitle} — Fibras Inmobiliarias` : DEFAULT_TITLE
   const pageDescription = summaryContent ? summaryContent.slice(0, 160) : DEFAULT_DESCRIPTION
 
   if (isLoading) {

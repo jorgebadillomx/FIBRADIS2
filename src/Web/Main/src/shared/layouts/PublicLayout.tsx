@@ -76,7 +76,7 @@ export function PublicLayout() {
       >
         <div className="container mx-auto flex h-14 items-center gap-6 px-4">
           <Link to="/" className="font-playfair text-xl font-bold text-primary tracking-tight shrink-0">
-            FIBRADIS
+            Fibras Inmobiliarias
           </Link>
           <nav
             aria-label="Navegación principal"
@@ -155,7 +155,7 @@ export function PublicLayout() {
 
       <footer className="border-t border-border bg-background/80 py-4 text-center text-xs text-muted-foreground">
         <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-1 px-4">
-          <span>© {new Date().getFullYear()} FIBRADIS — Solo información de referencia, no asesoría de inversión.</span>
+          <span>© {new Date().getFullYear()} Fibras Inmobiliarias — Solo información de referencia, no asesoría de inversión.</span>
           <a
             className="hover:text-foreground transition-colors"
             href={`mailto:${siteContent?.contactEmail ?? 'contacto@fibradis.mx'}`}

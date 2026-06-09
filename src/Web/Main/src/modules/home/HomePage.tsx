@@ -6,7 +6,7 @@ import { NewsSection } from './NewsSection'
 export function HomePage() {
   return (
     <>
-      <title>FIBRADIS — Plataforma de análisis de FIBRAs del mercado mexicano</title>
+      <title>Fibras Inmobiliarias — Plataforma de análisis de FIBRAs del mercado mexicano</title>
       <meta name="description" content="Descubre y analiza FIBRAs del mercado mexicano (BMV). Precios, fundamentales, distribuciones y noticias en tiempo real." />
       <link rel="canonical" href="https://fibradis.mx/" />
 

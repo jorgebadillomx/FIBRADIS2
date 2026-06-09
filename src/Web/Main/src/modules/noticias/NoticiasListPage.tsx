@@ -61,9 +61,9 @@ export function NoticiasListPage() {
 
   return (
     <>
-      <title>Noticias — FIBRADIS</title>
+      <title>Noticias — Fibras Inmobiliarias</title>
       <meta name="description" content="Explora noticias procesadas de FIBRAs mexicanas con filtros por texto y por emisora." />
-      <meta property="og:title" content="Noticias — FIBRADIS" />
+      <meta property="og:title" content="Noticias — Fibras Inmobiliarias" />
       <meta property="og:description" content="Explora noticias procesadas de FIBRAs mexicanas con filtros por texto y por emisora." />
       <meta property="og:type" content="website" />
 

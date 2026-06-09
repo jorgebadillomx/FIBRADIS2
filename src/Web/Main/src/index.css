@@ -28,7 +28,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* FIBRADIS semantic tokens */
+  /* Fibras Inmobiliarias semantic tokens */
   --color-positive: var(--positive);
   --color-positive-muted: var(--positive-muted);
   --color-negative: var(--negative);
@@ -48,7 +48,7 @@
 :root {
   --radius: 0.5rem;
 
-  /* FIBRADIS — verde bosque + gris claro */
+  /* Fibras Inmobiliarias — verde bosque + gris claro */
   --background: #F4F6F8;
   --foreground: #1E293B;
   --card: #FFFFFF;
@@ -69,19 +69,19 @@
   --input: #E2E8F0;
   --ring: #1A4A3A;
 
-  /* FIBRADIS brand — plusvalía, Fresh, subida de precio */
+  /* Fibras Inmobiliarias brand — plusvalía, Fresh, subida de precio */
   --positive: oklch(0.527 0.154 150.069);
   --positive-muted: oklch(0.527 0.154 150.069 / 0.12);
 
-  /* FIBRADIS brand — minusvalía, Crítico, bajada de precio */
+  /* Fibras Inmobiliarias brand — minusvalía, Crítico, bajada de precio */
   --negative: oklch(0.577 0.245 27.325);
   --negative-muted: oklch(0.577 0.245 27.325 / 0.12);
 
-  /* FIBRADIS brand — Stale, advertencias, datos parciales */
+  /* Fibras Inmobiliarias brand — Stale, advertencias, datos parciales */
   --warning: oklch(0.769 0.188 70.08);
   --warning-muted: oklch(0.769 0.188 70.08 / 0.14);
 
-  /* FIBRADIS brand — verde bosque para links activos y hover */
+  /* Fibras Inmobiliarias brand — verde bosque para links activos y hover */
   --brand: #1A4A3A;
   --brand-muted: #1A4A3A1a;
 

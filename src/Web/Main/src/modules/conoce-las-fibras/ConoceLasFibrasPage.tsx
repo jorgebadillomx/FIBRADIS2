@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import { fetchEditorialPages } from '@/api/editorialApi'
 import { cn } from '@/shared/lib/utils'
 
-const PAGE_TITLE = 'Conoce las FIBRAs — FIBRADIS'
+const PAGE_TITLE = 'Conoce las FIBRAs — Fibras Inmobiliarias'
 const PAGE_DESCRIPTION =
   'Guía completa sobre FIBRAs inmobiliarias mexicanas: qué son, cómo funcionan, historia, por qué invertir y su régimen fiscal.'
 

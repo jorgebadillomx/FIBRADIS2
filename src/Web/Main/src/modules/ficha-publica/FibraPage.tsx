@@ -130,12 +130,12 @@ export function FibraPage() {
   const marketData = snapshots.find(s => s.ticker === fibra?.ticker) ?? null
 
   const pageTitle = fibra
-    ? `${fibra.ticker} — ${fibra.fullName} | FIBRADIS`
-    : `${ticker?.toUpperCase() ?? 'FIBRA'} | FIBRADIS`
+    ? `${fibra.ticker} — ${fibra.fullName} | Fibras Inmobiliarias`
+    : `${ticker?.toUpperCase() ?? 'FIBRA'} | Fibras Inmobiliarias`
 
   const pageDescription = fibra
     ? `Análisis de ${fibra.fullName} (${fibra.ticker}): precio de mercado, fundamentales, distribuciones y noticias. ${fibra.sector} — ${fibra.market}.`
-    : `Perfil de FIBRA ${ticker} en FIBRADIS.`
+    : `Perfil de FIBRA ${ticker} en Fibras Inmobiliarias.`
 
   const canonicalUrl = `https://fibradis.mx/fibras/${fibra?.ticker ?? ticker}`
 
@@ -162,7 +162,7 @@ export function FibraPage() {
       <link rel="canonical" href={canonicalUrl} />
 
       <div>
-        <h1 className="sr-only">{fibra!.fullName} ({fibra!.ticker}) | FIBRADIS</h1>
+        <h1 className="sr-only">{fibra!.fullName} ({fibra!.ticker}) | Fibras Inmobiliarias</h1>
         <header className="sticky top-14 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto px-4 pt-3 pb-0">
             <div className="flex items-start justify-between gap-4">

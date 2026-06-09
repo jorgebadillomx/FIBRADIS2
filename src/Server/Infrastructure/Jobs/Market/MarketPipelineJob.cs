@@ -88,11 +88,12 @@ public class MarketPipelineJob(
                         Pipeline = "Market",
                         Timestamp = capturedAt,
                         ErrorType = batchErrorType.Length > 100 ? batchErrorType[..100] : batchErrorType,
-                        Message = ex.Message,
+                        Message = BuildExceptionChain(ex) is var batchChain && batchChain.Length > 500 ? batchChain[..500] : batchChain,
                         Context = JsonSerializer.Serialize(new
                         {
                             totalTickers = fibras.Count,
                             yahooTickers = fibras.Select(f => f.YahooTicker).ToArray(),
+                            exceptionChain = BuildExceptionChain(ex),
                         }),
                         AiContext = batchAiContext.Length > 800 ? batchAiContext[..800] : batchAiContext,
                     }, ct);
@@ -255,5 +256,17 @@ public class MarketPipelineJob(
                 logger.LogWarning(logEx, "Failed to write PipelineRunLog for Market pipeline");
             }
         }
+    }
+
+    private static string BuildExceptionChain(Exception ex)
+    {
+        var parts = new List<string>();
+        var current = ex;
+        while (current != null)
+        {
+            parts.Add($"[{current.GetType().Name}] {current.Message}");
+            current = current.InnerException;
+        }
+        return string.Join(" → ", parts);
     }
 }

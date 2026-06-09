@@ -42,9 +42,9 @@ export function FundamentalesPage() {
 
   return (
     <>
-      <title>Fundamentales — FIBRADIS</title>
+      <title>Fundamentales — Fibras Inmobiliarias</title>
       <meta name="description" content="Compara los indicadores financieros de todas las FIBRAs mexicanas en una tabla cross-FIBRA con filtros de período y emisora." />
-      <meta property="og:title" content="Fundamentales — FIBRADIS" />
+      <meta property="og:title" content="Fundamentales — Fibras Inmobiliarias" />
       <meta property="og:description" content="Compara los indicadores financieros de todas las FIBRAs mexicanas en una tabla cross-FIBRA con filtros de período y emisora." />
       <meta property="og:type" content="website" />
 
@@ -52,7 +52,7 @@ export function FundamentalesPage() {
         <div className="mb-8 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Análisis comparativo</p>
           <h1 className="font-playfair text-4xl font-bold leading-tight text-foreground md:text-5xl">
-            Fundamentales FIBRADIS
+            Fundamentales Fibras Inmobiliarias
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
             Compara los indicadores financieros de todo el universo de FIBRAs en un solo vistazo.

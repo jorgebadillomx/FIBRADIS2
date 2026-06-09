@@ -9,16 +9,16 @@ export function PrivacidadPage() {
         <section>
           <h2 className="font-semibold text-base text-foreground">1. Información de referencia, no asesoría de inversión</h2>
           <p className="mt-2">
-            La información publicada en FIBRADIS — precios, rendimientos, fundamentales, noticias y
+            La información publicada en Fibras Inmobiliarias — precios, rendimientos, fundamentales, noticias y
             cualquier otro dato — tiene carácter exclusivamente informativo y orientativo. No constituye,
             ni debe interpretarse como, asesoría financiera, recomendación de inversión, oferta de compra
             o venta de valores, ni ningún otro tipo de servicio regulado. Las decisiones de inversión que
             tome el usuario son de su exclusiva responsabilidad.
           </p>
           <p className="mt-2">
-            FIBRADIS no garantiza la exactitud, integridad o actualidad de los datos mostrados.
+            Fibras Inmobiliarias no garantiza la exactitud, integridad o actualidad de los datos mostrados.
             Los mercados financieros implican riesgos, incluida la posible pérdida total del capital
-            invertido. FIBRADIS no será responsable, bajo ninguna circunstancia, de pérdidas o daños
+            invertido. Fibras Inmobiliarias no será responsable, bajo ninguna circunstancia, de pérdidas o daños
             derivados del uso de la información contenida en este sitio.
           </p>
         </section>
@@ -75,7 +75,7 @@ export function PrivacidadPage() {
         <section>
           <h2 className="font-semibold text-base text-foreground">7. Cookies</h2>
           <p className="mt-2">
-            FIBRADIS utiliza únicamente cookies de sesión estrictamente necesarias para el
+            Fibras Inmobiliarias utiliza únicamente cookies de sesión estrictamente necesarias para el
             funcionamiento de la autenticación. No se utilizan cookies de rastreo ni de terceros.
           </p>
         </section>

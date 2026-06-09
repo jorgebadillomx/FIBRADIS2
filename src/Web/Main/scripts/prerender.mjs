@@ -68,7 +68,7 @@ for (const { url, initialData } of routesToRender) {
       const hasTitle = headElements.some(el => /^<title/i.test(el))
       if (hasTitle) {
         // Elimina el título fallback del template para dejar solo el título de la página
-        html = html.replace('<title>FIBRADIS</title>', '')
+        html = html.replace('<title>Fibras Inmobiliarias</title>', '')
       }
       html = html.replace('<!-- prerender-meta -->', () => headElements.join('\n    '))
     }

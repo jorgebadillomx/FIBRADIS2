@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
 test('Home publica permite buscar una FIBRA y navegar a su ficha', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page).toHaveTitle(/FIBRADIS/)
+  await expect(page).toHaveTitle(/Fibras Inmobiliarias/)
   await expect(page.getByRole('combobox', { name: 'Buscar FIBRA por ticker o nombre' })).toBeVisible()
   await expect(page.getByLabel('Carrusel de precios')).toBeVisible()
   await expect(page.getByLabel('Top movers')).toBeVisible()

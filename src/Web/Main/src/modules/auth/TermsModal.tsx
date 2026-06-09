@@ -25,7 +25,7 @@ export function TermsModal({ termsText }: Props) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4">
       <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]">
         <div className="px-6 pt-6 pb-4 border-b border-border">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary">FIBRADIS</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">Fibras Inmobiliarias</p>
           <h2 className="mt-1 font-playfair text-xl font-semibold tracking-tight">
             Términos de uso y aviso de privacidad
           </h2>

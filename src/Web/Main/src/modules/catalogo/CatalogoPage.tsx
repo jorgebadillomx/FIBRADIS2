@@ -52,7 +52,7 @@ export function CatalogoPage() {
 
   return (
     <>
-      <title>Catálogo de FIBRAs — FIBRADIS</title>
+      <title>Catálogo de FIBRAs — Fibras Inmobiliarias</title>
       <meta
         name="description"
         content="Explora el universo completo de FIBRAs inmobiliarias mexicanas con datos clave, sector, mercado y descripción editorial."
@@ -69,7 +69,7 @@ export function CatalogoPage() {
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
             {isLoading
               ? 'Cargando...'
-              : `${fibras.length} emisoras activas en el universo FIBRADIS.`}
+              : `${fibras.length} emisoras activas en el universo Fibras Inmobiliarias.`}
           </p>
         </div>
 

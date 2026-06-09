@@ -77,6 +77,7 @@ public class DistributionPipelineJob(
                         fibra.Ticker, fibra.YahooTicker);
                     var distErrorType = ex.GetType().Name;
                     var distAiContext = $"El pipeline de distribuciones falló al descargar o persistir el historial de dividendos de {fibra.Ticker} usando {fibra.YahooTicker}. El proceso intentaba cubrir un rango histórico desde {historyStart:yyyy-MM-dd} y el error ocurrió dentro del ciclo por FIBRA, no en un fallo global del lote. Revise disponibilidad del ticker, formato del historial o colisiones al guardar distribuciones.";
+                    var exChain = BuildExceptionChain(ex);
                     try
                     {
                         await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
@@ -84,13 +85,14 @@ public class DistributionPipelineJob(
                             Pipeline = "Distribution",
                             Timestamp = DateTimeOffset.UtcNow,
                             ErrorType = distErrorType.Length > 100 ? distErrorType[..100] : distErrorType,
-                            Message = ex.Message,
+                            Message = exChain.Length > 500 ? exChain[..500] : exChain,
                             Context = JsonSerializer.Serialize(new
                             {
                                 fibra.Id,
                                 fibra.Ticker,
                                 fibra.YahooTicker,
                                 historyStart,
+                                exceptionChain = exChain,
                             }),
                             AiContext = distAiContext.Length > 800 ? distAiContext[..800] : distAiContext,
                         }, ct);
@@ -147,5 +149,17 @@ public class DistributionPipelineJob(
                 logger.LogWarning(logEx, "Failed to write PipelineRunLog for Distribution pipeline");
             }
         }
+    }
+
+    private static string BuildExceptionChain(Exception ex)
+    {
+        var parts = new List<string>();
+        var current = ex;
+        while (current != null)
+        {
+            parts.Add($"[{current.GetType().Name}] {current.Message}");
+            current = current.InnerException;
+        }
+        return string.Join(" → ", parts);
     }
 }

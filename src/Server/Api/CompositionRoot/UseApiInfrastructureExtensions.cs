@@ -47,6 +47,7 @@ public static class UseApiInfrastructureExtensions
             {
                 Authorization = [new HangfireDashboardAuthFilter(
                     app.Services.GetRequiredService<IWebHostEnvironment>())],
+                IgnoreAntiforgeryToken = true,
             });
         }
 
