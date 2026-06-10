@@ -39,8 +39,11 @@ public class DistributionPipelineJob(
                 return;
             }
 
-            foreach (var fibra in fibras)
+            foreach (var (fibra, index) in fibras.Select((f, i) => (f, i)))
             {
+                if (index > 0)
+                    await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+
                 try
                 {
                     ct.ThrowIfCancellationRequested();

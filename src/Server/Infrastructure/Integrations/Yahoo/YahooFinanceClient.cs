@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.Logging;
 using YahooQuotesApi;
 
@@ -16,7 +17,17 @@ public class YahooFinanceClient(
         if (symbols.Count == 0)
             return [];
 
-        var snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
+        IReadOnlyDictionary<string, Snapshot?> snapshots;
+        try
+        {
+            snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
+        }
+        catch (Exception ex) when (Is429(ex))
+        {
+            logger.LogWarning("Yahoo Finance devolvió 429 en batch de precios; reintentando en 60s");
+            await Task.Delay(TimeSpan.FromSeconds(60), ct);
+            snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
+        }
 
         var results = new List<YahooQuoteResult>(snapshots.Count);
         foreach (var (symbol, snapshot) in snapshots)
@@ -98,5 +109,17 @@ public class YahooFinanceClient(
                 t.Volume))
             .OrderBy(c => c.Date)
             .ToList();
+    }
+
+    private static bool Is429(Exception ex)
+    {
+        var current = ex;
+        while (current is not null)
+        {
+            if (current is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests })
+                return true;
+            current = current.InnerException;
+        }
+        return false;
     }
 }

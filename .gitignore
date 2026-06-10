@@ -57,3 +57,4 @@ coverage/
 ## mem0 — persistent agent memory (generated, not committed)
 project-memory/chroma_db/
 project-memory/mem0.db
+deploy/release/fibradis.zip

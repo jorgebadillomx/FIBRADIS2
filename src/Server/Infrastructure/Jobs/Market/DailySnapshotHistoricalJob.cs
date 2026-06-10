@@ -26,8 +26,11 @@ public class DailySnapshotHistoricalJob(
 
         int inserted = 0, skipped = 0, errors = 0;
 
-        foreach (var fibra in fibras)
+        foreach (var (fibra, index) in fibras.Select((f, i) => (f, i)))
         {
+            if (index > 0)
+                await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+
             try
             {
                 ct.ThrowIfCancellationRequested();
