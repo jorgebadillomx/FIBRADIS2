@@ -5,6 +5,7 @@ import {
   disableFundamental,
   downloadFundamentalPdf,
   fetchFundamentalsByFibra,
+  runFundamentalsForFibra,
   uploadFundamentalPdf,
 } from '@/api/fundamentalsApi'
 import { KPI_DEFINITIONS, type KpiKey } from '@/lib/kpi-definitions'
@@ -12,10 +13,11 @@ import { EditFieldNotesDialog } from '@/modules/fundamentals/EditFieldNotesDialo
 
 interface Props {
   fibraId: string
+  ticker: string
   onEdit: (record: FundamentalRecordDto) => void
 }
 
-export function FundamentalsHistory({ fibraId, onEdit }: Props) {
+export function FundamentalsHistory({ fibraId, ticker, onEdit }: Props) {
   const queryClient = useQueryClient()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [pdfDownloadErrors, setPdfDownloadErrors] = useState<Record<string, string>>({})
@@ -29,6 +31,11 @@ export function FundamentalsHistory({ fibraId, onEdit }: Props) {
 
   const disableMutation = useMutation({
     mutationFn: disableFundamental,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] }),
+  })
+
+  const runMutation = useMutation({
+    mutationFn: runFundamentalsForFibra,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fundamentals', fibraId] }),
   })
 
@@ -57,47 +64,64 @@ export function FundamentalsHistory({ fibraId, onEdit }: Props) {
     return <p className="text-sm text-slate-400 py-4">Cargando historial…</p>
   }
 
-  if (records.length === 0) {
-    return <p className="text-sm text-slate-400 py-4">Sin registros para esta FIBRA.</p>
-  }
-
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <th className="py-2 pr-3">Período</th>
-            <th className="py-2 pr-3">Estado</th>
-            <th className="py-2 pr-3"><KpiHeader kpiKey="capRate" /></th>
-            <th className="py-2 pr-3"><KpiHeader kpiKey="navPerCbfi" /></th>
-            <th className="py-2 pr-3"><KpiHeader kpiKey="ltv" /></th>
-            <th className="py-2 pr-3"><KpiHeader kpiKey="noiMargin" /></th>
-            <th className="py-2 pr-3"><KpiHeader kpiKey="ffoMargin" /></th>
-            <th className="py-2 pr-3"><KpiHeader kpiKey="quarterlyDistribution" /></th>
-            <th className="py-2 pr-3">MD</th>
-            <th className="py-2 pr-3">Importado por</th>
-            <th className="py-2 pr-3">Fecha</th>
-            <th className="py-2">Acciones</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {records.map((r) => (
-            <HistoryRow
-              key={r.id}
-              record={r}
-              fibraId={fibraId}
-              fileInputRefs={fileInputRefs}
-              pdfDownloadError={pdfDownloadErrors[r.id]}
-              onPdfUpload={handlePdfUpload}
-              onPdfDownload={handlePdfDownload}
-              onEdit={onEdit}
-              onEditNotes={setNotesRecord}
-              onDisable={(id) => disableMutation.mutate(id)}
-              isDisabling={disableMutation.isPending && disableMutation.variables === r.id}
-            />
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Historial — {ticker || '—'}
+        </h2>
+        <button
+          type="button"
+          disabled={!ticker || runMutation.isPending}
+          onClick={() => runMutation.mutate(ticker)}
+          className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 transition"
+        >
+          {runMutation.isPending ? 'Ejecutando…' : 'Ejecutar ahora'}
+        </button>
+      </div>
+
+      {records.length === 0 ? (
+        <p className="text-sm text-slate-400 py-4">Sin registros para esta FIBRA.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="py-2 pr-3">Período</th>
+                <th className="py-2 pr-3">Estado</th>
+                <th className="py-2 pr-3"><KpiHeader kpiKey="capRate" /></th>
+                <th className="py-2 pr-3"><KpiHeader kpiKey="navPerCbfi" /></th>
+                <th className="py-2 pr-3"><KpiHeader kpiKey="ltv" /></th>
+                <th className="py-2 pr-3"><KpiHeader kpiKey="noiMargin" /></th>
+                <th className="py-2 pr-3"><KpiHeader kpiKey="ffoMargin" /></th>
+                <th className="py-2 pr-3"><KpiHeader kpiKey="quarterlyDistribution" /></th>
+                <th className="py-2 pr-3">MD</th>
+                <th className="py-2 pr-3">Importado por</th>
+                <th className="py-2 pr-3">Fecha</th>
+                <th className="py-2">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {records.map((r) => (
+                <HistoryRow
+                  key={r.id}
+                  record={r}
+                  fibraId={fibraId}
+                  fileInputRefs={fileInputRefs}
+                  pdfDownloadError={pdfDownloadErrors[r.id]}
+                  onPdfUpload={handlePdfUpload}
+                  onPdfDownload={handlePdfDownload}
+                  onEdit={onEdit}
+                  onEditNotes={setNotesRecord}
+                  onDisable={(id) => disableMutation.mutate(id)}
+                  isDisabling={disableMutation.isPending && disableMutation.variables === r.id}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <EditFieldNotesDialog
         fibraId={fibraId}
         record={notesRecord}

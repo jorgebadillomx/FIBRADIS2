@@ -63,6 +63,54 @@ public class FundamentalsAutomationServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithTickerProcessesOnlySelectedFibra()
+    {
+        await using var db = CreateDbContext();
+        var fibraFuno = SeedFibra(db, "FUNO11");
+        var fibraFmty = SeedFibra(db, "FMTY14");
+
+        var candidate = new FundamentalsDiscoveryCandidate(
+            "AMEFIBRA", "2026 Reporte T1",
+            "https://amefibra.com/download/reporte-t1/",
+            "https://amefibra.com/download/reporte-t1/report.pdf",
+            "Q1-2026", "quarterly", DateTimeOffset.Parse("2026-04-30T00:00:00Z"));
+
+        var source = new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11", "FMTY14"]);
+        var service = BuildService(db, [source], [fibraFuno, fibraFmty], pdfContent: ReadFixturePdf());
+
+        var result = await service.ExecuteAsync("FUNO11", CancellationToken.None);
+
+        Assert.Equal(1, result.FibrasScanned);
+        Assert.Single(await db.FundamentalRecords.ToListAsync());
+        var record = await db.FundamentalRecords.SingleAsync();
+        Assert.Equal(fibraFuno.Id, record.FibraId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithMissingTicker_ThrowsInvalidOperationException()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "FUNO11");
+        var service = BuildService(db, [new FakeDiscoverySource("AMEFIBRA", [], ["FUNO11"])], [fibra]);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ExecuteAsync("NOPE99", CancellationToken.None));
+
+        Assert.Equal("FIBRA 'NOPE99' no encontrada o no está activa.", ex.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInactiveTicker_ThrowsInvalidOperationException()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "INACTIVA1", state: FibraState.Inactive);
+        var service = BuildService(db, [new FakeDiscoverySource("AMEFIBRA", [], ["INACTIVA1"])], [fibra]);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ExecuteAsync("INACTIVA1", CancellationToken.None));
+
+        Assert.Equal("FIBRA 'INACTIVA1' no encontrada o no está activa.", ex.Message);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WhenPackageAlreadyExists_SkipsWithoutCreatingRecord()
     {
         await using var db = CreateDbContext();
@@ -336,7 +384,7 @@ public class FundamentalsAutomationServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options);
 
-    private static Fibra SeedFibra(AppDbContext db, string ticker, string fullName = "Test Fibra")
+    private static Fibra SeedFibra(AppDbContext db, string ticker, string fullName = "Test Fibra", FibraState state = FibraState.Active)
     {
         var fibra = new Fibra
         {
@@ -348,7 +396,7 @@ public class FundamentalsAutomationServiceTests
             Currency = "MXN",
             Market = "BMV",
             Sector = "Diversificado",
-            State = FibraState.Active,
+            State = state,
             NameVariants = [ticker],
             CreatedAt = DateTimeOffset.UtcNow,
         };

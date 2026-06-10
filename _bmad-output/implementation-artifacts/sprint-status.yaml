@@ -6,6 +6,7 @@
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
 # last_updated: 2026-06-09
+# story 9-8 done — code review pass (4 patches: D1 cadencia default 2880=cada2días, P1 migración EF fundamentals_cadence_minutes, P2 catch redundante ExecuteForFibraAsync, P3 onSuccess runMutation historial). 2 defers.
 # story 9-5 done — code review pass (2 patches: P1 Task.Delay antes de filtros ventana/dedup, P2 ArgumentException no capturada en IsPeriodInRange). 5 defers.
 # epic-8 done — retrospectiva completa (epic-8-retro-2026-06-05), D1-D4 resueltos, TS build limpio
 # story 8-3 done — code review pass (5 patches: P1 isExcluded sub-rows renderScoreComponent, P2 parseCompareTickers cap MAX_COMPARE_FIBRAS, P3 duplicate queries, P4 OpportunityWeights.Balanced, P5 meta description). 5 defers.
@@ -309,7 +310,7 @@ development_status:
   9-6-ia-observabilidad-fixes: backlog
   9-7-noticias-mejoras: backlog
   # story 9-8 creada — Run Now por FIBRA individual en FundamentalsPage, sin cadencia, solo esa fibra directo
-  9-8-fundamentales-ejecutar-por-fibra: ready-for-dev
+  9-8-fundamentales-ejecutar-por-fibra: done
   epic-9-retrospective: optional
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────

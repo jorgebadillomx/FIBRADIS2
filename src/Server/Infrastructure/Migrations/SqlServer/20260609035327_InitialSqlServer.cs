@@ -263,6 +263,7 @@ namespace Infrastructure.Migrations.SqlServer
                     avg_periods = table.Column<int>(type: "int", nullable: false),
                     news_cadence_minutes = table.Column<int>(type: "int", nullable: false),
                     fibra_news_months = table.Column<int>(type: "int", nullable: false),
+                    fundamentals_cadence_minutes = table.Column<int>(type: "int", nullable: false),
                     distribution_cadence_minutes = table.Column<int>(type: "int", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     updated_by = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -759,8 +760,8 @@ namespace Infrastructure.Migrations.SqlServer
             migrationBuilder.InsertData(
                 schema: "ops",
                 table: "OperationalConfig",
-                columns: new[] { "id", "avg_periods", "commission_factor", "contact_email", "distribution_cadence_minutes", "fibra_news_months", "news_cadence_minutes", "terms_text", "UniverseDegradationThresholdPct", "updated_at", "updated_by" },
-                values: new object[] { 1, 4, 0.006m, "contacto@fibradis.mx", 1440, 15, 1440, null, 30, new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "system" });
+                columns: new[] { "id", "avg_periods", "commission_factor", "contact_email", "distribution_cadence_minutes", "fibra_news_months", "fundamentals_cadence_minutes", "news_cadence_minutes", "terms_text", "UniverseDegradationThresholdPct", "updated_at", "updated_by" },
+                values: new object[] { 1, 4, 0.006m, "contacto@fibradis.mx", 1440, 15, 2880, 1440, null, 30, new DateTimeOffset(new DateTime(2026, 5, 24, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "system" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AiCallLog_Operation_CreatedAt",

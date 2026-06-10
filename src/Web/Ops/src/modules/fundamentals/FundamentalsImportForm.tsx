@@ -51,6 +51,7 @@ interface FormValues {
 interface Props {
   onPreview: (preview: FundamentalPreviewDto, fibraId: string, record: FundamentalRecordDto) => void
   onFibraChange?: (fibraId: string) => void
+  onFibraTickerChange?: (ticker: string) => void
   onCancel?: () => void
   initialRecord?: FundamentalRecordDto
   initialFibraId?: string
@@ -70,7 +71,7 @@ function FieldInfo({ title }: { title: string }) {
 
 type AiStep = 'idle' | 'uploading' | 'extracting' | 'done' | 'error'
 
-export function FundamentalsImportForm({ onPreview, onFibraChange, onCancel, initialRecord, initialFibraId }: Props) {
+export function FundamentalsImportForm({ onPreview, onFibraChange, onFibraTickerChange, onCancel, initialRecord, initialFibraId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [fieldNotes, setFieldNotes] = useState<Partial<Record<KpiKey, string>>>({})
@@ -99,8 +100,11 @@ export function FundamentalsImportForm({ onPreview, onFibraChange, onCancel, ini
 
   const watchedFibraId = watch('fibraId')
   useEffect(() => {
-    if (watchedFibraId) onFibraChange?.(watchedFibraId)
-  }, [watchedFibraId, onFibraChange])
+    if (!watchedFibraId) return
+    onFibraChange?.(watchedFibraId)
+    const selectedFibra = catalog.find((f) => f.id === watchedFibraId)
+    if (selectedFibra) onFibraTickerChange?.(selectedFibra.ticker)
+  }, [catalog, onFibraChange, onFibraTickerChange, watchedFibraId])
 
   useEffect(() => {
     if (!initialRecord) return

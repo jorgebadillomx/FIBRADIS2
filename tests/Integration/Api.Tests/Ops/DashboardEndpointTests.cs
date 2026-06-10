@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.Extensions.DependencyInjection;
 using SharedApiContracts.Auth;
@@ -16,6 +17,7 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     public async Task InitializeAsync()
     {
         await _factory.SeedUsersAsync();
+        await _factory.SeedCatalogAsync();
         _adminClient = _factory.CreateClient();
         _adminClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await LoginAndGetTokenAsync("adminops@test.com", "ops123"));
     }
@@ -107,6 +109,37 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     }
 
     [Fact]
+    public async Task PostFundamentalsRunByTicker_ReturnsAcceptedAndCreatesQueuedPipelineRunLogWithDetails()
+    {
+        var response = await _adminClient.PostAsync("/api/v1/ops/fundamentals/FUNO11/run", content: null);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var entry = db.PipelineRunLogs
+            .OrderByDescending(x => x.StartedAt)
+            .FirstOrDefault(x => x.Pipeline == "Fundamentals" && x.Status == "Queued" && x.Details != null);
+
+        Assert.NotNull(entry);
+        Assert.Equal("adminops@test.com", entry!.TriggeredBy);
+
+        using var doc = JsonDocument.Parse(entry.Details!);
+        Assert.Equal("FUNO11", doc.RootElement.GetProperty("fibra").GetString());
+        Assert.Equal("single-fibra", doc.RootElement.GetProperty("mode").GetString());
+    }
+
+    [Fact]
+    public async Task PostFundamentalsRunByTicker_InactiveTicker_ReturnsNotFound()
+    {
+        var response = await _adminClient.PostAsync("/api/v1/ops/fundamentals/INACTIVA1/run", content: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("FIBRA 'INACTIVA1' no encontrada o no está activa.", body);
+    }
+
+    [Fact]
     public async Task GetDashboard_WithUserRole_ReturnsForbidden()
     {
         using var client = _factory.CreateClient();
@@ -122,6 +155,7 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     [InlineData("/api/v1/ops/news-pipeline/run")]
     [InlineData("/api/v1/ops/market/distribution/run")]
     [InlineData("/api/v1/ops/market/fundamentals/run")]
+    [InlineData("/api/v1/ops/fundamentals/FUNO11/run")]
     public async Task RunEndpoints_WithoutToken_ReturnUnauthorized(string path)
     {
         using var client = _factory.CreateClient();
@@ -136,6 +170,7 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     [InlineData("/api/v1/ops/news-pipeline/run")]
     [InlineData("/api/v1/ops/market/distribution/run")]
     [InlineData("/api/v1/ops/market/fundamentals/run")]
+    [InlineData("/api/v1/ops/fundamentals/FUNO11/run")]
     public async Task RunEndpoints_WithUserRole_ReturnForbidden(string path)
     {
         using var client = _factory.CreateClient();

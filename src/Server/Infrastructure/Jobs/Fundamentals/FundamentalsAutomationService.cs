@@ -28,10 +28,21 @@ public class FundamentalsAutomationService(
     ILogger<FundamentalsAutomationService> logger) : IFundamentalsAutomationService
 {
     public async Task<FundamentalsAutomationRunResult> ExecuteAsync(CancellationToken ct)
-    {
-        var fibras = await fibraRepo.GetAllActiveAsync(ct);
-        var sources = discoverySources.ToList();
+        => await RunForFibrasAsync(await fibraRepo.GetAllActiveAsync(ct), ct);
 
+    public async Task<FundamentalsAutomationRunResult> ExecuteAsync(string ticker, CancellationToken ct)
+    {
+        var normalizedTicker = ticker.Trim();
+        var fibra = await fibraRepo.GetByTickerAsync(normalizedTicker, ct);
+        if (fibra is null || fibra.State != FibraState.Active)
+            throw new InvalidOperationException($"FIBRA '{ticker}' no encontrada o no está activa.");
+
+        return await RunForFibrasAsync([fibra], ct);
+    }
+
+    private async Task<FundamentalsAutomationRunResult> RunForFibrasAsync(IReadOnlyList<Fibra> fibras, CancellationToken ct)
+    {
+        var sources = discoverySources.ToList();
         var scannedFibraIds = new HashSet<Guid>();
         var totalCandidates = 0;
         var newReports = 0;

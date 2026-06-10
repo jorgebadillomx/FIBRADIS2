@@ -2352,6 +2352,10 @@ namespace Infrastructure.Migrations.SqlServer
                         .HasColumnType("int")
                         .HasColumnName("fibra_news_months");
 
+                    b.Property<int>("FundamentalsCadenceMinutes")
+                        .HasColumnType("int")
+                        .HasColumnName("fundamentals_cadence_minutes");
+
                     b.Property<int>("NewsCadenceMinutes")
                         .HasColumnType("int")
                         .HasColumnName("news_cadence_minutes");
@@ -2391,6 +2395,7 @@ namespace Infrastructure.Migrations.SqlServer
                             ContactEmail = "contacto@fibradis.mx",
                             DistributionCadenceMinutes = 1440,
                             FibraNewsMonths = 15,
+                            FundamentalsCadenceMinutes = 2880,
                             NewsCadenceMinutes = 1440,
                             TermsEnabled = false,
                             UniverseDegradationThresholdPct = 30,

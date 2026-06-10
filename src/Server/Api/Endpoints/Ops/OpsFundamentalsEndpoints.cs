@@ -7,10 +7,13 @@ using Application.Catalog;
 using Application.Fundamentals;
 using Application.Jobs;
 using Application.News;
+using Domain.Catalog;
 using Domain.Fundamentals;
 using Domain.Jobs;
+using Hangfire;
 using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Pdf;
+using Infrastructure.Jobs.Fundamentals;
 using Microsoft.Extensions.Logging;
 using SharedApiContracts.Fundamentals;
 
@@ -99,6 +102,40 @@ public static partial class OpsFundamentalsEndpoints
         var group = app.MapGroup("/api/v1/ops/fundamentals")
             .RequireAuthorization("AdminOps")
             .WithTags("Fundamentals");
+
+        group.MapPost("/{ticker}/run", async (
+            string ticker,
+            IBackgroundJobClient jobClient,
+            IFibraRepository fibraRepo,
+            IPipelineRunLogRepository runLogRepo,
+            ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var fibra = await fibraRepo.GetByTickerAsync(ticker, ct);
+            if (fibra is null || fibra.State != FibraState.Active)
+            {
+                return Results.Problem(
+                    $"FIBRA '{ticker}' no encontrada o no está activa.",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            jobClient.Enqueue<FundamentalsPipelineJob>(j => j.ExecuteForFibraAsync(ticker, CancellationToken.None));
+            await TryLogQueuedRunAsync(
+                "Fundamentals",
+                JsonSerializer.Serialize(new { fibra = ticker, mode = "single-fibra" }),
+                ctx,
+                runLogRepo,
+                emailEncryptor,
+                loggerFactory.CreateLogger("OpsFundamentalsEndpoints"),
+                ct);
+            return Results.Accepted();
+        })
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
 
         group.MapPost("/import", async (
             ImportFundamentalsRequest request,
@@ -819,5 +856,31 @@ public static partial class OpsFundamentalsEndpoints
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
         return app;
+    }
+
+    private static async Task TryLogQueuedRunAsync(
+        string pipeline,
+        string? details,
+        HttpContext ctx,
+        IPipelineRunLogRepository runLogRepo,
+        IEmailEncryptor emailEncryptor,
+        ILogger logger,
+        CancellationToken ct)
+    {
+        try
+        {
+            await runLogRepo.AddAsync(new PipelineRunLog
+            {
+                Pipeline = pipeline,
+                StartedAt = DateTimeOffset.UtcNow,
+                Status = "Queued",
+                TriggeredBy = GetActor(ctx, emailEncryptor),
+                Details = details,
+            }, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to write PipelineRunLog for {Pipeline} manual trigger", pipeline);
+        }
     }
 }

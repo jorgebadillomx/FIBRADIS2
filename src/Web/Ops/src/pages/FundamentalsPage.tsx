@@ -7,6 +7,7 @@ import { FundamentalsHistory } from '@/modules/fundamentals/FundamentalsHistory'
 interface State {
   editRecord: FundamentalRecordDto | null
   selectedFibraId: string | null
+  selectedFibraTicker: string | null
 }
 
 export function FundamentalsPage() {
@@ -14,6 +15,7 @@ export function FundamentalsPage() {
   const [state, setState] = useState<State>({
     editRecord: null,
     selectedFibraId: null,
+    selectedFibraTicker: null,
   })
 
   const handleDone = useCallback((_preview: FundamentalPreviewDto, fibraId: string) => {
@@ -34,7 +36,11 @@ export function FundamentalsPage() {
   }, [])
 
   const handleFibraChange = useCallback((fibraId: string) => {
-    setState((s) => s.selectedFibraId === fibraId ? s : { ...s, selectedFibraId: fibraId })
+    setState((s) => s.selectedFibraId === fibraId ? s : { ...s, selectedFibraId: fibraId, selectedFibraTicker: null })
+  }, [])
+
+  const handleFibraTickerChange = useCallback((ticker: string) => {
+    setState((s) => s.selectedFibraTicker === ticker ? s : { ...s, selectedFibraTicker: ticker })
   }, [])
 
   return (
@@ -57,6 +63,7 @@ export function FundamentalsPage() {
         <FundamentalsImportForm
           onPreview={handleDone}
           onFibraChange={handleFibraChange}
+          onFibraTickerChange={handleFibraTickerChange}
           onCancel={state.editRecord ? handleCancelEdit : undefined}
           initialRecord={state.editRecord ?? undefined}
           initialFibraId={state.selectedFibraId ?? undefined}
@@ -65,11 +72,9 @@ export function FundamentalsPage() {
 
       {state.selectedFibraId && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Historial — {state.selectedFibraId}
-          </h2>
           <FundamentalsHistory
             fibraId={state.selectedFibraId}
+            ticker={state.selectedFibraTicker ?? ''}
             onEdit={handleEdit}
           />
         </section>

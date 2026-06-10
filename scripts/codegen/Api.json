@@ -2172,6 +2172,58 @@
         }
       }
     },
+    "/api/v1/ops/fundamentals/{ticker}/run": {
+      "post": {
+        "tags": [
+          "Fundamentals"
+        ],
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/fundamentals/import": {
       "post": {
         "tags": [
@@ -6290,6 +6342,7 @@
           "avgPeriods",
           "newsCadenceMinutes",
           "fibraNewsMonths",
+          "fundamentalsCadenceMinutes",
           "distributionCadenceMinutes",
           "updatedAt",
           "updatedBy",
@@ -6325,6 +6378,14 @@
             "format": "int32"
           },
           "fibraNewsMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fundamentalsCadenceMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -8136,6 +8197,15 @@
             "format": "int32"
           },
           "fibraNewsMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fundamentalsCadenceMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",

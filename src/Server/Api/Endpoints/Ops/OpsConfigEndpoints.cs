@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Application.Auth;
 using Application.Ops;
 using Hangfire;
+using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Microsoft.Extensions.Logging;
@@ -62,6 +63,8 @@ public static class OpsConfigEndpoints
             var currentConfig = await repo.GetAsync(ct);
             var cadenceChanged = request.NewsCadenceMinutes.HasValue
                 && currentConfig.NewsCadenceMinutes != request.NewsCadenceMinutes.Value;
+            var fundamentalsCadenceChanged = request.FundamentalsCadenceMinutes.HasValue
+                && currentConfig.FundamentalsCadenceMinutes != request.FundamentalsCadenceMinutes.Value;
 
             await repo.UpdateAsync(
                 request.CommissionFactor,
@@ -73,6 +76,7 @@ public static class OpsConfigEndpoints
                 request.TermsText,
                 request.ContactEmail,
                 actor,
+                request.FundamentalsCadenceMinutes,
                 request.UniverseDegradationThresholdPct,
                 ct);
 
@@ -99,6 +103,16 @@ public static class OpsConfigEndpoints
                     DistributionPipelineSchedule.JobId,
                     j => j.ExecuteAsync(CancellationToken.None),
                     DistributionPipelineSchedule.GetCronExpression(request.DistributionCadenceMinutes!.Value),
+                    new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
+            }
+
+            if (!useInMemoryHangfire && fundamentalsCadenceChanged)
+            {
+                var jobManager = ctx.RequestServices.GetRequiredService<IRecurringJobManager>();
+                jobManager.AddOrUpdate<FundamentalsPipelineJob>(
+                    FundamentalsPipelineSchedule.JobId,
+                    j => j.ExecuteAsync(false, CancellationToken.None),
+                    FundamentalsPipelineSchedule.GetCronExpression(request.FundamentalsCadenceMinutes!.Value),
                     new RecurringJobOptions { TimeZone = MarketPipelineSchedule.GetMexicoTimeZone() });
             }
 
@@ -131,6 +145,7 @@ public static class OpsConfigEndpoints
             && request.AvgPeriods is null
             && request.NewsCadenceMinutes is null
             && request.FibraNewsMonths is null
+            && request.FundamentalsCadenceMinutes is null
             && request.DistributionCadenceMinutes is null
             && request.TermsEnabled is null
             && request.TermsText is null
@@ -162,6 +177,13 @@ public static class OpsConfigEndpoints
             errors["fibraNewsMonths"] = ["fibraNewsMonths debe estar entre 1 y 36 meses."];
         }
 
+        if (request.FundamentalsCadenceMinutes is not null &&
+            request.FundamentalsCadenceMinutes is not (60 or 120 or 180 or 240 or 360 or 720 or 1440 or 2880))
+        {
+            errors["fundamentalsCadenceMinutes"] =
+                ["fundamentalsCadenceMinutes debe ser 60, 120, 180, 240, 360, 720, 1440 o 2880."];
+        }
+
         if (request.DistributionCadenceMinutes is not null && request.DistributionCadenceMinutes is not (720 or 1440))
         {
             errors["distributionCadenceMinutes"] = ["distributionCadenceMinutes debe ser 720 (12h) o 1440 (24h)."];
@@ -183,6 +205,7 @@ public static class OpsConfigEndpoints
             config.AvgPeriods,
             config.NewsCadenceMinutes,
             config.FibraNewsMonths,
+            config.FundamentalsCadenceMinutes,
             config.DistributionCadenceMinutes,
             config.UpdatedAt,
             config.UpdatedBy,

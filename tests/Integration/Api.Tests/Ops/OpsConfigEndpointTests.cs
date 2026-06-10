@@ -45,6 +45,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
         Assert.Equal(4, body.AvgPeriods);
         Assert.Equal(1440, body.NewsCadenceMinutes);
         Assert.Equal(15, body.FibraNewsMonths);
+        Assert.Equal(2880, body.FundamentalsCadenceMinutes);
     }
 
     [Fact]
@@ -153,6 +154,31 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
     }
 
     [Fact]
+    public async Task PutConfig_WithValidFundamentalsCadence_PersistsValue()
+    {
+        var response = await _adminClient.PutAsJsonAsync(
+            "/api/v1/ops/config",
+            new UpdateOperationalConfigRequest(null, null, null, null, 720));
+        var getResponse = await _adminClient.GetAsync("/api/v1/ops/config");
+        var body = await getResponse.Content.ReadFromJsonAsync<OperationalConfigDto>();
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal(720, body!.FundamentalsCadenceMinutes);
+    }
+
+    [Fact]
+    public async Task PutConfig_WithInvalidFundamentalsCadence_Returns400()
+    {
+        var response = await _adminClient.PutAsJsonAsync(
+            "/api/v1/ops/config",
+            new UpdateOperationalConfigRequest(null, null, null, null, 999));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PutConfig_WithoutToken_Returns401()
     {
         var response = await _anonClient.PutAsJsonAsync(
@@ -237,6 +263,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
                 AvgPeriods = 4,
                 NewsCadenceMinutes = 1440,
                 FibraNewsMonths = 15,
+                FundamentalsCadenceMinutes = 2880,
                 UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
                 UpdatedBy = "system",
             });
@@ -247,6 +274,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
             config.AvgPeriods = 4;
             config.NewsCadenceMinutes = 1440;
             config.FibraNewsMonths = 15;
+            config.FundamentalsCadenceMinutes = 1440;
             config.UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero);
             config.UpdatedBy = "system";
         }

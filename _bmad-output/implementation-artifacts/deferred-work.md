@@ -391,3 +391,8 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **D11** — Logo img: flash por intento de red en cada mount; `failedLogos` no persiste en sessionStorage [PositionsTable.tsx]
 - **D12** — `/performance` acepta cualquier string como `range`; valor inválido silenciosamente devuelve 30 días [PortfolioEndpoints.cs]
 - **D13** — Fallback frontend `calcYieldPortafolio` puede divergir de las condiciones del backend cuando `kpis.yieldPortafolio` es null [KpiCards.tsx]
+
+## Deferred from: code review of 9-8-fundamentales-ejecutar-por-fibra (2026-06-09)
+
+- **D6 (LOW): `CronExpression = "0 0 * * *"` en `FundamentalsPipelineSchedule` es dead code** [`src/Server/Infrastructure/Jobs/Fundamentals/FundamentalsPipelineSchedule.cs:10`] — La constante ya no se referencia en ningún sitio tras migrar a `GetCronExpression(cadenceMinutes)`. Eliminar cuando sea conveniente.
+- **D7 (LOW): Sin `onError` en `runMutation` de `FundamentalsHistory`** [`src/Web/Ops/src/modules/fundamentals/FundamentalsHistory.tsx:37`] — Si el endpoint devuelve 404 (ticker inactivo) el error cae silenciosamente; el botón vuelve a "Ejecutar ahora" sin feedback visible al operador. Añadir toast/mensaje de error en próxima historia del módulo.

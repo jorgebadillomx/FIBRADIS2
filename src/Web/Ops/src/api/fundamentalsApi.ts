@@ -46,6 +46,17 @@ export async function fetchFundamentalsByFibra(fibraId: string): Promise<Fundame
   return data ?? []
 }
 
+export async function runFundamentalsForFibra(ticker: string): Promise<void> {
+  assertOpsAccessToken()
+
+  const { error } = await apiClient['/api/v1/ops/fundamentals/{ticker}/run'].POST({
+    headers: getOpsAuthHeaders(),
+    params: { path: { ticker } },
+  })
+
+  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar fundamentales para ${ticker}`))
+}
+
 export async function downloadFundamentalPdf(id: string): Promise<Blob> {
   assertOpsAccessToken()
 

@@ -2506,6 +2506,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/fundamentals/{ticker}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    ticker: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Accepted */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/fundamentals/import": {
         parameters: {
             query?: never;
@@ -4214,6 +4276,15 @@ export interface paths {
                         "application/json": components["schemas"]["PortfolioPerformanceResponseDto"];
                     };
                 };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
                 /** @description Unauthorized */
                 401: {
                     headers: {
@@ -5323,6 +5394,8 @@ export interface components {
             /** Format: int32 */
             fibraNewsMonths: number | string;
             /** Format: int32 */
+            fundamentalsCadenceMinutes: number | string;
+            /** Format: int32 */
             distributionCadenceMinutes: number | string;
             /** Format: date-time */
             updatedAt: string;
@@ -5718,6 +5791,8 @@ export interface components {
             newsCadenceMinutes: null | number | string;
             /** Format: int32 */
             fibraNewsMonths: null | number | string;
+            /** Format: int32 */
+            fundamentalsCadenceMinutes?: null | number | string;
             /** Format: int32 */
             distributionCadenceMinutes?: null | number | string;
             termsEnabled?: null | boolean;

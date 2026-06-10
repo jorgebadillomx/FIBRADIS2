@@ -15,6 +15,36 @@ public class FundamentalsPipelineJob(
     public async Task ExecuteAsync(CancellationToken ct = default) =>
         await ExecuteAsync(forceRun: false, ct);
 
+    public async Task ExecuteForFibraAsync(string ticker, CancellationToken ct = default)
+    {
+        var startedAt = DateTimeOffset.UtcNow;
+        var status = "Failed";
+        FundamentalsAutomationRunResult? result = null;
+        var details = JsonSerializer.Serialize(new
+        {
+            fibra = ticker,
+            mode = "single-fibra",
+        });
+
+        try
+        {
+            result = await automationService.ExecuteAsync(ticker, ct);
+            status = "Completed";
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Fundamentals pipeline failed for single fibra {Ticker}", ticker);
+            details = JsonSerializer.Serialize(new
+            {
+                fibra = ticker,
+                mode = "single-fibra",
+                error = ex.Message,
+            });
+        }
+
+        await WriteRunLogAsync(startedAt, status, result, details);
+    }
+
     [DisableConcurrentExecution(timeoutInSeconds: 0)]
     public async Task ExecuteAsync(bool forceRun, CancellationToken ct = default)
     {
@@ -41,36 +71,42 @@ public class FundamentalsPipelineJob(
         }
         finally
         {
-            try
-            {
-                await pipelineRunLogRepo.AddAsync(new PipelineRunLog
+            var details = result is null
+                ? null
+                : JsonSerializer.Serialize(new
                 {
-                    Pipeline = "Fundamentals",
-                    StartedAt = startedAt,
-                    CompletedAt = DateTimeOffset.UtcNow,
-                    Status = status,
-                    ItemsProcessed = result?.RecordsProcessed ?? 0,
-                    ErrorCount = result?.Errors ?? 0,
-                    Details = result is null
-                        ? null
-                        : JsonSerializer.Serialize(new
-                        {
-                            fibrasScanned = result.FibrasScanned,
-                            reportsDetected = result.ReportsDetected,
-                            newReports = result.NewReports,
-                            skippedReports = result.SkippedReports,
-                            possibleUpdates = result.PossibleUpdates,
-                            annualReports = result.AnnualReports,
-                            ambiguousReports = result.AmbiguousReports,
-                            errors = result.Errors,
-                            recordsProcessed = result.RecordsProcessed,
-                        }),
-                }, CancellationToken.None);
-            }
-            catch (Exception ex)
+                    fibrasScanned = result.FibrasScanned,
+                    reportsDetected = result.ReportsDetected,
+                    newReports = result.NewReports,
+                    skippedReports = result.SkippedReports,
+                    possibleUpdates = result.PossibleUpdates,
+                    annualReports = result.AnnualReports,
+                    ambiguousReports = result.AmbiguousReports,
+                    errors = result.Errors,
+                    recordsProcessed = result.RecordsProcessed,
+                });
+            await WriteRunLogAsync(startedAt, status, result, details);
+        }
+    }
+
+    private async Task WriteRunLogAsync(DateTimeOffset startedAt, string status, FundamentalsAutomationRunResult? result, string? details)
+    {
+        try
+        {
+            await pipelineRunLogRepo.AddAsync(new PipelineRunLog
             {
-                logger.LogWarning(ex, "Failed to write PipelineRunLog for Fundamentals pipeline");
-            }
+                Pipeline = "Fundamentals",
+                StartedAt = startedAt,
+                CompletedAt = DateTimeOffset.UtcNow,
+                Status = status,
+                ItemsProcessed = result?.RecordsProcessed ?? 0,
+                ErrorCount = result?.Errors ?? 0,
+                Details = details,
+            }, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to write PipelineRunLog for Fundamentals pipeline");
         }
     }
 }

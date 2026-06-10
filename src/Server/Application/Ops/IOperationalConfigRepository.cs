@@ -15,6 +15,7 @@ public interface IOperationalConfigRepository
         string? termsText,
         string? contactEmail,
         string actor,
+        int? fundamentalsCadenceMinutes = null,
         int? universeDegradationThresholdPct = null,
         CancellationToken ct = default);
 }
