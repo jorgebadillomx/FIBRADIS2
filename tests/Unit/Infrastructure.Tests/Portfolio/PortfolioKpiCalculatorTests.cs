@@ -93,10 +93,13 @@ public class PortfolioKpiCalculatorTests
         Assert.Equal(50400m, result.ValorTotal);
         Assert.Equal(3471.75m, result.PlusvaliaTotal_Mxn);
         Assert.Equal(7.397996m, result.PlusvaliaTotal_Pct);
+        Assert.Equal(3.968254m, result.YieldPortafolio);
+        Assert.Equal(166.67m, result.IngresoMensual);
         Assert.Equal(2000m, result.RentasAnualesBrutas);
         Assert.Equal(2000m, result.RentasRealesBrutas);
         Assert.Equal(4.261825m, result.PctRentasPortafolio);
         Assert.Equal(2, result.Positions.Count);
+        Assert.Equal(4.292047m, result.Positions[0].Yoc);
     }
 
     [Fact]
@@ -127,6 +130,7 @@ public class PortfolioKpiCalculatorTests
         Assert.Null(missingRow.ValorMercado);
         Assert.Null(missingRow.PlusvaliaFilaMxn);
         Assert.Null(missingRow.PlusvaliaFilaPct);
+        Assert.Null(missingRow.Yoc);
     }
 
     [Fact]
@@ -149,6 +153,7 @@ public class PortfolioKpiCalculatorTests
         Assert.Equal(3600m, result.RentasAnualesBrutas);
         Assert.Equal(3600m, result.RentasRealesBrutas);
         Assert.Equal(3600m, result.Positions[0].RentaAnual);
+        Assert.Equal(9.657106m, result.Positions[0].Yoc);
     }
 
     [Fact]
@@ -171,6 +176,7 @@ public class PortfolioKpiCalculatorTests
         Assert.Null(result.ValorTotal);
         Assert.Null(result.PlusvaliaTotal_Mxn);
         Assert.Null(result.PlusvaliaTotal_Pct);
+        Assert.Null(result.YieldPortafolio);
     }
 
     [Fact]
@@ -196,6 +202,41 @@ public class PortfolioKpiCalculatorTests
     }
 
     [Fact]
+    public void Calculate_NoRentaAnual_YocNull()
+    {
+        var posiciones = new[]
+        {
+            MakePosition(FibraUnoId, 800, 50.00m, 40000.00m),
+        };
+        var snapshots = SnapshotMap(
+            MakeSnapshot(FibraUnoId, "FUNO11", 50.00m));
+        var distributions = DistributionMap();
+        var fibras = FibraMap(MakeFibra(FibraUnoId, "FUNO11", "Fibra Uno"));
+
+        var result = PortfolioKpiCalculator.Calculate(posiciones, snapshots, distributions, fibras);
+
+        Assert.Null(result.Positions[0].Yoc);
+    }
+
+    [Fact]
+    public void Calculate_CostoTotalCero_YocNull()
+    {
+        var posiciones = new[]
+        {
+            MakePosition(FibraUnoId, 800, 50.00m, 0m),
+        };
+        var snapshots = SnapshotMap(
+            MakeSnapshot(FibraUnoId, "FUNO11", 50.00m));
+        var distributions = DistributionMap(
+            MakeDistribution(FibraUnoId, "FUNO11", 20, 1.00m));
+        var fibras = FibraMap(MakeFibra(FibraUnoId, "FUNO11", "Fibra Uno"));
+
+        var result = PortfolioKpiCalculator.Calculate(posiciones, snapshots, distributions, fibras);
+
+        Assert.Null(result.Positions[0].Yoc);
+    }
+
+    [Fact]
     public void Calculate_EmptyPositions_ReturnsEmptyResult()
     {
         var result = PortfolioKpiCalculator.Calculate(
@@ -208,5 +249,23 @@ public class PortfolioKpiCalculatorTests
         Assert.Null(result.ValorTotal);
         Assert.Empty(result.Positions);
         Assert.False(result.IsPartial);
+    }
+
+    [Fact]
+    public void Calculate_AllPricesPresent_ValorTotalCero_YieldPortafolioNull()
+    {
+        // Titulos=0 → valorTotal=0 even though price is present and no missing prices
+        var posiciones = new[]
+        {
+            MakePosition(FibraUnoId, 0, 50.00m, 0m),
+        };
+        var snapshots = SnapshotMap(
+            MakeSnapshot(FibraUnoId, "FUNO11", 50.00m));
+        var distributions = DistributionMap();
+        var fibras = FibraMap(MakeFibra(FibraUnoId, "FUNO11", "Fibra Uno"));
+
+        var result = PortfolioKpiCalculator.Calculate(posiciones, snapshots, distributions, fibras);
+
+        Assert.Null(result.YieldPortafolio);
     }
 }

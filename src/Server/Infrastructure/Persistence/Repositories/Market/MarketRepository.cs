@@ -76,6 +76,25 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<DailySnapshot>>> GetDailySnapshotsByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds, int days, CancellationToken ct = default)
+    {
+        if (fibraIds.Count == 0)
+            return new Dictionary<Guid, IReadOnlyList<DailySnapshot>>();
+
+        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-days);
+        var snapshots = await db.DailySnapshots
+            .Where(d => fibraIds.Contains(d.FibraId) && d.Date >= cutoff)
+            .OrderBy(d => d.Date)
+            .ToListAsync(ct);
+
+        return snapshots
+            .GroupBy(d => d.FibraId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<DailySnapshot>)g.ToList());
+    }
+
     public async Task<IReadOnlyList<Distribution>> GetDistributionsAsync(Guid fibraId, int? maxDays = null, CancellationToken ct = default)
     {
         var query = db.Distributions.Where(d => d.FibraId == fibraId);

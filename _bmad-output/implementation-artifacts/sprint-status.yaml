@@ -86,7 +86,9 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-06
+last_updated: 2026-06-09
+# story 9-3 done — code review pass (6 patches: P1 SPA nav links, P2 React Hooks violation PromediarTab, P3 ingresoMensual 0m guard, P4 annual cadence test, P5 dead code PortfolioEndpoints, P6 yieldPortafolio valorTotal=0 C# test). 13 defers.
+# story 9-3 ready-for-dev — mejoras portafolio: YOC, yield portafolio, ingreso mensual, score en tabla, logo, gráfica benchmarks, tab calendario, promediar+whatif, yield catálogo/ficha, búsqueda drawer móvil, benchmarks URL comparador
 # story 9-1 done — code review pass (1 patch: P1 resetear campos contraseña al cerrar diálogo). 7 defers.
 # story 9-1 ready-for-dev — perfil usuario Main: Apodo + GET/PATCH /account/me + PATCH /account/password; rama story/9-1-perfil-usuario-main
 # sprint mejoras post-épicas — rama única: sprint/9-mejoras-deuda-tecnica (NO merge a main hasta completar todo el sprint)
@@ -300,11 +302,13 @@ development_status:
   epic-9: in-progress
   9-1-perfil-usuario-main: done
   9-2-tests-y-fixes-auth: backlog
-  9-3-mejoras-portafolio: backlog
+  9-3-mejoras-portafolio: done
   9-4-mejoras-oportunidades: backlog
-  9-5-mejoras-fundamentales: backlog
+  9-5-mejoras-fundamentales: ready-for-dev
   9-6-ia-observabilidad-fixes: backlog
   9-7-noticias-mejoras: backlog
+  # story 9-8 creada — Run Now por FIBRA individual en FundamentalsPage, sin cadencia, solo esa fibra directo
+  9-8-fundamentales-ejecutar-por-fibra: ready-for-dev
   epic-9-retrospective: optional
 
   # ── Épica 6: Portafolio Unificado ─────────────────────────────────────────
@@ -326,6 +330,11 @@ development_status:
 
   # story 6-9 creada — T&C configurable desde Ops (modal bloqueante primer login), footer Main con contacto y aviso de privacidad, sección contenido del sitio en Ops
   6-9-terminos-footer-contenido: done
+
+  # ── Épica 10: Herramientas de Valor para el Inversionista ────────────────
+  epic-10: in-progress
+  10-1-calendario-eventos-corporativos: ready-for-dev
+  10-2-calculadora-isr: ready-for-dev
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done

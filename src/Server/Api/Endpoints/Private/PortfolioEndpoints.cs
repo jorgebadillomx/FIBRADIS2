@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Application.Fundamentals;
 using Application.Catalog;
 using Application.Market;
+using Application.Opportunities;
 using Application.Ops;
 using Application.Portfolio;
 using Domain.Market;
@@ -49,6 +50,68 @@ public static class PortfolioEndpoints
         .Produces<PortfolioSnapshotStatusDto>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/config", async (
+            IOperationalConfigRepository configRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
+            var config = await configRepo.GetAsync(ct);
+            return Results.Ok(new PortfolioConfigDto(config?.CommissionFactor ?? 0m));
+        })
+        .Produces<PortfolioConfigDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/performance", async (
+            string? range,
+            IPortfolioRepository portfolioRepo,
+            IFibraRepository fibraRepo,
+            IMarketRepository marketRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
+            var positions = await portfolioRepo.GetByUserIdAsync(userId, ct);
+            if (positions.Count == 0)
+                return Results.Ok(new PortfolioPerformanceResponseDto([], [], []));
+
+            var days = ResolvePerformanceDays(range);
+            if (days is null)
+                return Results.Problem("Valor de 'range' inválido. Válidos: 30d, 90d, 1y, all.", statusCode: 400);
+
+            var portfolioSeries = await BuildPerformanceSeriesAsync(positions, days.Value, marketRepo, ct);
+            var benchmarkTickers = new[] { "^MXX", "^GSPC" };
+            var benchmarkSeries = new Dictionary<string, IReadOnlyList<PortfolioPerformancePointDto>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var benchmarkTicker in benchmarkTickers)
+            {
+                var benchmark = await fibraRepo.GetByTickerAsync(benchmarkTicker, ct);
+                if (benchmark is null)
+                {
+                    benchmarkSeries[benchmarkTicker] = [];
+                    continue;
+                }
+
+                var snapshots = await marketRepo.GetDailySnapshotsAsync(benchmark.Id, days.Value, ct);
+                benchmarkSeries[benchmarkTicker] = BuildNormalizedSeries(snapshots);
+            }
+
+            benchmarkSeries.TryGetValue("^MXX", out var ipcSeries);
+            benchmarkSeries.TryGetValue("^GSPC", out var sp500Series);
+
+            return Results.Ok(new PortfolioPerformanceResponseDto(
+                portfolioSeries,
+                ipcSeries ?? [],
+                sp500Series ?? []));
+        })
+        .Produces<PortfolioPerformanceResponseDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/archive", async (
             IPortfolioRepository portfolioRepo,
             HttpContext ctx,
@@ -80,6 +143,7 @@ public static class PortfolioEndpoints
 
         group.MapGet("/", async (
             IPortfolioRepository portfolioRepo,
+            IOpportunityWeightsRepository weightsRepo,
             IMarketRepository marketRepo,
             IFibraRepository fibraRepo,
             IFundamentalRepository fundamentalRepo,
@@ -117,8 +181,23 @@ public static class PortfolioEndpoints
                 .ToDictionary(row => row.Record.FibraId, row => row.Record);
 
             var week52Avgs = await marketRepo.GetWeek52AvgByFibrasAsync(fibraIds, 365, ct);
-            var result = PortfolioKpiCalculator.Calculate(positions, snapshotByFibra, distsByFibra, fibraById);
             var utcNow = DateTimeOffset.UtcNow;
+            var annualDistCutoff = DateOnly.FromDateTime(utcNow.UtcDateTime).AddDays(-365);
+            var annualDistByFibra = distributions
+                .GroupBy(d => d.FibraId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Where(d => d.PaymentDate >= annualDistCutoff).Sum(d => d.AmountPerUnit));
+            var opportunityWeights = await OpportunityEndpoints.ResolveWeightsAsync(weightsRepo, userId, ct);
+            var opportunityScores = OpportunityScoreCalculator.Calculate(
+                fibraById.Values.ToList(),
+                snapshotByFibra,
+                fundamentalByFibra,
+                annualDistByFibra,
+                week52Avgs,
+                opportunityWeights);
+            var scoreByFibraId = opportunityScores.ToDictionary(score => score.FibraId);
+            var result = PortfolioKpiCalculator.Calculate(positions, snapshotByFibra, distsByFibra, fibraById);
             var isMarketOpen = bmvSchedule.IsTradingHours(utcNow);
 
             var positionDtos = result.Positions.Select(row =>
@@ -126,6 +205,9 @@ public static class PortfolioEndpoints
                 snapshotByFibra.TryGetValue(row.FibraId, out var snapshot);
                 fundamentalByFibra.TryGetValue(row.FibraId, out var fundamental);
                 var week52AvgFound = week52Avgs.TryGetValue(row.FibraId, out var week52Avg);
+                var opportunityScore = scoreByFibraId.TryGetValue(row.FibraId, out var opportunity)
+                    ? opportunity.Score
+                    : null;
                 var recentDists = distsByFibra.TryGetValue(row.FibraId, out var dists)
                     ? dists.Take(4)
                         .Select(d => new PortfolioDistributionDto(
@@ -147,6 +229,9 @@ public static class PortfolioEndpoints
                     PlusvaliaFilaPct: row.PlusvaliaFilaPct,
                     PlusvaliaFilaMxn: row.PlusvaliaFilaMxn,
                     RentaAnual: row.RentaAnual,
+                    Yoc: row.Yoc,
+                    OpportunityScore: opportunityScore,
+                    LogoUrl: $"/logos/{row.Ticker.ToLowerInvariant()}.png",
                     FreshnessStatus: FreshnessClassifier.Classify(snapshot, isMarketOpen, utcNow),
                     CapRate: fundamental?.CapRate,
                     NavPerCbfi: fundamental?.NavPerCbfi,
@@ -167,6 +252,8 @@ public static class PortfolioEndpoints
                 ValorTotal: result.ValorTotal,
                 PlusvaliaTotal_Pct: result.PlusvaliaTotal_Pct,
                 PlusvaliaTotal_Mxn: result.PlusvaliaTotal_Mxn,
+                YieldPortafolio: result.YieldPortafolio,
+                IngresoMensual: result.IngresoMensual,
                 RentasAnualesBrutas: result.RentasAnualesBrutas,
                 RentasRealesBrutas: result.RentasRealesBrutas,
                 PctRentasPortafolio: result.PctRentasPortafolio,
@@ -325,6 +412,75 @@ public static class PortfolioEndpoints
     private static Guid? TryGetUserId(HttpContext ctx) =>
         Guid.TryParse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
+    private static int? ResolvePerformanceDays(string? range) =>
+        range?.Trim().ToLowerInvariant() switch
+        {
+            "30d" => 30,
+            "90d" => 90,
+            "1y" => 365,
+            "all" => 3650,
+            null => 30,
+            _ => null,
+        };
+
+    private static async Task<IReadOnlyList<PortfolioPerformancePointDto>> BuildPerformanceSeriesAsync(
+        IReadOnlyList<Domain.Portfolio.PortfolioPosition> positions,
+        int days,
+        IMarketRepository marketRepo,
+        CancellationToken ct)
+    {
+        var fibraIds = positions.Select(p => p.FibraId).ToList();
+        var allSnapshots = await marketRepo.GetDailySnapshotsByFibrasAsync(fibraIds, days, ct);
+        var valuesByDate = new SortedDictionary<DateOnly, decimal>();
+
+        foreach (var position in positions)
+        {
+            if (!allSnapshots.TryGetValue(position.FibraId, out var snapshots))
+                continue;
+
+            var acquiredAt = DateOnly.FromDateTime(position.UploadedAt.UtcDateTime);
+            foreach (var snapshot in snapshots.Where(s => s.Close.HasValue && s.Date >= acquiredAt))
+            {
+                if (!valuesByDate.TryGetValue(snapshot.Date, out var current))
+                    current = 0m;
+
+                valuesByDate[snapshot.Date] = current + (snapshot.Close!.Value * position.Titulos);
+            }
+        }
+
+        return BuildNormalizedPoints(valuesByDate);
+    }
+
+    private static IReadOnlyList<PortfolioPerformancePointDto> BuildNormalizedSeries(
+        IReadOnlyList<Domain.Market.DailySnapshot> snapshots)
+    {
+        var valuesByDate = new SortedDictionary<DateOnly, decimal>();
+        foreach (var snapshot in snapshots.Where(snapshot => snapshot.Close.HasValue))
+        {
+            valuesByDate[snapshot.Date] = snapshot.Close!.Value;
+        }
+
+        return BuildNormalizedPoints(valuesByDate);
+    }
+
+    private static IReadOnlyList<PortfolioPerformancePointDto> BuildNormalizedPoints(
+        SortedDictionary<DateOnly, decimal> valuesByDate)
+    {
+        if (valuesByDate.Count == 0)
+            return [];
+
+        var entries = valuesByDate.SkipWhile(entry => entry.Value <= 0m).ToList();
+        if (entries.Count == 0)
+            return [];
+
+        var first = entries[0].Value;
+        return entries
+            .Select(entry => new PortfolioPerformancePointDto(
+                entry.Key.ToString("yyyy-MM-dd"),
+                Math.Round((entry.Value / first - 1m) * 100m, 4)))
+            .ToList();
+    }
+
     private static IReadOnlyList<string> ParseColumns(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -355,6 +511,7 @@ public static class PortfolioEndpoints
             "ffoMargin",
             "dailyChangePct",
             "week52High",
+            "yoc",
         };
 
         return columns

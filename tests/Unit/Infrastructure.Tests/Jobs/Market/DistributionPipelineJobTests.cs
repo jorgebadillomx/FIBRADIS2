@@ -269,6 +269,10 @@ internal sealed class FakeDistMarketRepository : IMarketRepository
         Guid fibraId, int days, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<DailySnapshot>>([]);
 
+    public Task<IReadOnlyDictionary<Guid, IReadOnlyList<DailySnapshot>>> GetDailySnapshotsByFibrasAsync(
+        IReadOnlyList<Guid> fibraIds, int days, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<DailySnapshot>>>(new Dictionary<Guid, IReadOnlyList<DailySnapshot>>());
+
     public Task<IReadOnlyList<Distribution>> GetDistributionsAsync(
         Guid fibraId, int? maxDays = null, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<Distribution>>([]);

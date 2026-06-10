@@ -50,13 +50,15 @@ test.describe('Épica 6 — KPIs, posiciones y badge de señal', () => {
           ...defaultPositions[0],
           precioActual: null,
           valorMercado: null,
-          plusvaliaPct: null,
-          plusvaliaAbsoluta: null,
+          plusvaliaFilaPct: null,
+          plusvaliaFilaMxn: null,
+          rentaAnual: null,
+          yoc: null,
         },
       ],
       kpis: {
         ...defaultKpis,
-        hasPartialData: true,
+        isPartial: true,
       },
     })
 

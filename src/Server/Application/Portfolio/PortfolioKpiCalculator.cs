@@ -19,6 +19,8 @@ public static class PortfolioKpiCalculator
                 ValorTotal: null,
                 PlusvaliaTotal_Pct: null,
                 PlusvaliaTotal_Mxn: null,
+                YieldPortafolio: null,
+                IngresoMensual: null,
                 RentasAnualesBrutas: 0m,
                 RentasRealesBrutas: 0m,
                 PctRentasPortafolio: 0m,
@@ -62,6 +64,12 @@ public static class PortfolioKpiCalculator
                     rentaAnual = position.Titulos * totalPerUnit;
             }
 
+            decimal? yoc = null;
+            if (rentaAnual.HasValue && position.CostoTotalCompra > 0m)
+            {
+                yoc = Math.Round(rentaAnual.Value / position.CostoTotalCompra * 100m, 6);
+            }
+
             var ticker = fibra?.Ticker ?? snapshot?.Ticker ?? position.FibraId.ToString();
             var nombre = fibra?.ShortName;
             if (string.IsNullOrWhiteSpace(nombre))
@@ -83,7 +91,8 @@ public static class PortfolioKpiCalculator
                 ValorMercado: valorMercado,
                 PlusvaliaFilaPct: plusvaliaFilaPct,
                 PlusvaliaFilaMxn: plusvaliaFilaMxn,
-                RentaAnual: rentaAnual);
+                RentaAnual: rentaAnual,
+                Yoc: yoc);
         }).ToList();
 
         var inversionTotal = positions.Sum(p => p.CostoTotalCompra);
@@ -103,12 +112,20 @@ public static class PortfolioKpiCalculator
 
         var rentasAnualesBrutas = rows.Where(r => r.RentaAnual.HasValue).Sum(r => r.RentaAnual!.Value);
         var rentasRealesBrutas = rentasAnualesBrutas;
+        decimal? yieldPortafolio = hasAnyPrice && !hasMissingPrice && valorTotal > 0m
+            ? Math.Round(rentasAnualesBrutas / valorTotal * 100m, 6)
+            : null;
+        var ingresoMensual = rentasAnualesBrutas == 0m
+            ? 0m
+            : Math.Round(rentasAnualesBrutas / 12m, 2);
 
         return new PortfolioKpiResult(
             InversionTotal: inversionTotal,
             ValorTotal: hasAnyPrice ? valorTotal : null,
             PlusvaliaTotal_Pct: plusvaliaTotalPct,
             PlusvaliaTotal_Mxn: plusvaliaTotalMxn,
+            YieldPortafolio: yieldPortafolio,
+            IngresoMensual: ingresoMensual,
             RentasAnualesBrutas: rentasAnualesBrutas,
             RentasRealesBrutas: rentasRealesBrutas,
             PctRentasPortafolio: inversionTotal == 0m

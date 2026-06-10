@@ -17,3 +17,20 @@ export function calcNuevaPlusvaliaPct(nuevoAvg: number, precioActual: number): n
 export function calcNuevoValor(titulos: number, adicionales: number, precioActual: number): number {
   return (titulos + adicionales) * precioActual
 }
+
+export function calcNewAvgCost(
+  currentTitulos: number,
+  currentAvgCost: number,
+  currentPrice: number,
+  newTitulos: number,
+  commissionFactor: number,
+): number {
+  const total = currentTitulos + newTitulos
+  if (total === 0) return 0
+
+  const raw =
+    (currentTitulos * currentAvgCost +
+      newTitulos * currentPrice * (1 + commissionFactor)) /
+    total
+  return Math.round(raw * 10_000) / 10_000
+}

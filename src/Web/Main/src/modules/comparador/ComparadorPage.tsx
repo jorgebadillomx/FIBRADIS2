@@ -7,11 +7,13 @@ import { fetchAllFibras } from '@/api/fibrasApi'
 import {
   MAX_COMPARE_FIBRAS,
   MIN_COMPARE_FIBRAS,
+  parseCompareBenchmarks,
   compareTableMinWidth,
   formatCompareNumber,
   formatComparePercent,
   formatCompareVolume,
   parseCompareTickers,
+  serializeCompareBenchmarks,
   serializeCompareTickers,
 } from './comparador-logic'
 import { fetchComparacion } from './comparadorApi'
@@ -133,8 +135,11 @@ export function ComparadorPage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
 
   const queryTickers = searchParams.get('fibras')
+  const queryBenchmarks = searchParams.get('benchmarks')
   const selectedTickers = useMemo(() => parseCompareTickers(queryTickers), [queryTickers])
+  const selectedBenchmarks = useMemo(() => parseCompareBenchmarks(queryBenchmarks), [queryBenchmarks])
   const selectedSet = useMemo(() => new Set(selectedTickers), [selectedTickers])
+  const benchmarkSet = useMemo(() => new Set(selectedBenchmarks), [selectedBenchmarks])
   const selectedCount = selectedTickers.length
 
   const { data: fibras = [], isLoading: fibrasLoading } = useQuery({
@@ -173,9 +178,14 @@ export function ComparadorPage() {
 
   const comparisonMinWidth = compareTableMinWidth(Math.max(selectedCount, 2))
 
-  function updateSelection(nextTickers: string[]) {
-    const query = serializeCompareTickers(nextTickers)
-    setSearchParams(query ? { fibras: query } : {}, { replace: true })
+  function updateSelection(nextTickers: string[], nextBenchmarks = selectedBenchmarks) {
+    const params = new URLSearchParams()
+    const fibras = serializeCompareTickers(nextTickers)
+    const benchmarks = serializeCompareBenchmarks(nextBenchmarks)
+
+    if (fibras) params.set('fibras', fibras)
+    if (benchmarks) params.set('benchmarks', benchmarks)
+    setSearchParams(params, { replace: true })
   }
 
   function addTicker(ticker: string) {
@@ -188,6 +198,13 @@ export function ComparadorPage() {
   function removeTicker(ticker: string) {
     if (selectedCount <= MIN_COMPARE_FIBRAS) return
     updateSelection(selectedTickers.filter((item) => item !== ticker))
+  }
+
+  function toggleBenchmark(benchmark: 'ipc' | 'sp500') {
+    const next = benchmarkSet.has(benchmark)
+      ? selectedBenchmarks.filter((item) => item !== benchmark)
+      : [...selectedBenchmarks, benchmark]
+    updateSelection(selectedTickers, next)
   }
 
   const selectorDisabled = selectedCount >= MAX_COMPARE_FIBRAS
@@ -331,6 +348,32 @@ export function ComparadorPage() {
                       <X className="size-3.5" />
                     </button>
                   </div>
+                )
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Benchmarks
+              </span>
+              {([
+                { key: 'ipc', label: 'IPC BMV' },
+                { key: 'sp500', label: 'S&P 500' },
+              ] as const).map((benchmark) => {
+                const active = benchmarkSet.has(benchmark.key)
+                return (
+                  <button
+                    key={benchmark.key}
+                    type="button"
+                    onClick={() => toggleBenchmark(benchmark.key)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      active
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {benchmark.label}
+                  </button>
                 )
               })}
             </div>

@@ -21,6 +21,7 @@ const COLUMN_GROUPS = [
       { key: 'ltv', label: 'LTV' },
       { key: 'noiMargin', label: 'Margen NOI' },
       { key: 'ffoMargin', label: 'Margen FFO' },
+      { key: 'yoc', label: 'YOC' },
     ],
   },
   {

@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
+import { Menu } from 'lucide-react'
 import { GlobalSearch } from '@/modules/home/GlobalSearch'
 import { useAuth } from '@/modules/auth/AuthContext'
 import { useProfile } from '@/modules/auth/useProfile'
 import { TermsModal } from '@/modules/auth/TermsModal'
 import { useSiteContent } from '@/shared/hooks/useSiteContent'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 
 function truncateEmail(email: string): string {
   const [localPart] = email.split('@')
@@ -17,6 +25,7 @@ export function PublicLayout() {
   const { data: siteContent } = useSiteContent()
   const { data: profile } = useProfile()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -51,6 +60,7 @@ export function PublicLayout() {
 
   function handleLogout() {
     setMenuOpen(false)
+    setMobileMenuOpen(false)
     logout()
     void navigate('/', { replace: true })
   }
@@ -74,16 +84,24 @@ export function PublicLayout() {
         role="banner"
         className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       >
-        <div className="container mx-auto flex h-14 items-center gap-6 px-4">
+        <div className="container mx-auto flex h-14 items-center gap-3 px-4 md:gap-6">
           <Link to="/" className="font-playfair text-xl font-bold text-primary tracking-tight shrink-0">
             Fibras Inmobiliarias
           </Link>
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+            aria-label="Abrir navegación"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="size-4" />
+          </button>
           <nav
             aria-label="Navegación principal"
             className="hidden md:flex items-center gap-5 text-sm text-muted-foreground"
           >
-            <a href="/conoce-las-fibras" className="hover:text-foreground transition-colors duration-150">Conoce las FIBRAs</a>
-            <a href="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</a>
+            <Link to="/conoce-las-fibras" className="hover:text-foreground transition-colors duration-150">Conoce las FIBRAs</Link>
+            <Link to="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</Link>
             <Link to="/comparar" className="hover:text-foreground transition-colors duration-150">Comparar</Link>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
             <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
@@ -98,7 +116,7 @@ export function PublicLayout() {
               </>
             )}
           </nav>
-          <div className="flex-1 min-w-0 flex justify-center">
+          <div className="hidden flex-1 min-w-0 justify-center md:flex">
             <GlobalSearch />
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -170,6 +188,110 @@ export function PublicLayout() {
           </Link>
         </div>
       </footer>
+
+      <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <DialogContent className="w-[min(92vw,28rem)] max-w-none">
+          <DialogHeader>
+            <DialogTitle>Navegación</DialogTitle>
+            <DialogDescription>
+              Busca una FIBRA o navega entre las superficies públicas y privadas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <GlobalSearch
+              className="max-w-none"
+              onSelect={() => setMobileMenuOpen(false)}
+            />
+
+            <nav aria-label="Navegación móvil" className="space-y-1 text-sm">
+              <Link
+                to="/conoce-las-fibras"
+                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Conoce las FIBRAs
+              </Link>
+              <Link
+                to="/catalogo"
+                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Catálogo
+              </Link>
+              <Link
+                to="/comparar"
+                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Comparar
+              </Link>
+              <Link
+                to="/noticias"
+                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Noticias
+              </Link>
+              <Link
+                to="/fundamentales"
+                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Fundamentales
+              </Link>
+              {status === 'authenticated' ? (
+                <>
+                  <Link
+                    to="/portafolio"
+                    className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Portafolio
+                  </Link>
+                  <Link
+                    to="/oportunidades"
+                    className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Oportunidades
+                  </Link>
+                </>
+              ) : null}
+            </nav>
+
+            {status === 'authenticated' ? (
+              <div className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Cuenta
+                </p>
+                <Link
+                  to="/perfil"
+                  className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Mi perfil
+                </Link>
+                <button
+                  type="button"
+                  className="block w-full rounded-lg px-3 py-2 text-left text-foreground transition-colors hover:bg-muted"
+                  onClick={handleLogout}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            ) : status === 'anonymous' ? (
+              <Link
+                to="/login"
+                className="block rounded-lg border border-border px-3 py-2 text-center text-foreground transition-colors hover:border-primary hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Iniciar sesión
+              </Link>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {showTermsModal ? <TermsModal termsText={siteContent!.termsText!} /> : null}
     </div>

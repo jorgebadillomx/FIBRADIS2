@@ -5,6 +5,8 @@ import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { KpiCards } from '@/modules/portafolio/KpiCards'
 import { ColumnPicker } from '@/modules/portafolio/ColumnPicker'
+import { PerformanceChart } from '@/modules/portafolio/PerformanceChart'
+import { PortafolioCalendario } from '@/modules/portafolio/PortafolioCalendario'
 import { PositionsTable } from '@/modules/portafolio/PositionsTable'
 import { UploadZone } from '@/modules/portafolio/UploadZone'
 import { useFavorites } from '@/modules/oportunidades/useFavorites'
@@ -35,6 +37,7 @@ function formatSnapshotDate(archivedAt: string | null | undefined) {
 export function PortafolioPage() {
   const queryClient = useQueryClient()
   const [favoritasFirst, setFavoritasFirst] = useState(false)
+  const [activeTab, setActiveTab] = useState<'posiciones' | 'calendario'>('posiciones')
   const { favoriteIds, toggle: toggleFavorite, isAuthenticated } = useFavorites()
   const portfolioQuery = useQuery<PortfolioResponseDto>({
     queryKey: ['portfolio', 'positions'],
@@ -88,7 +91,7 @@ export function PortafolioPage() {
     },
   })
 
-  const enabledColumns = columnConfigQuery.data?.columns ?? []
+  const enabledColumns = columnConfigQuery.data?.columns ?? ['yoc']
 
   const patchMutation = useMutation({
     mutationFn: async ({
@@ -174,6 +177,38 @@ export function PortafolioPage() {
 
         {hasPositions && (
           <div className="flex flex-wrap items-center gap-3">
+            <div role="tablist" aria-label="Vistas del portafolio" className="inline-flex rounded-full border border-border bg-muted/40 p-1">
+              <button
+                type="button"
+                role="tab"
+                id="tab-posiciones"
+                aria-selected={activeTab === 'posiciones' ? 'true' : 'false'}
+                tabIndex={activeTab === 'posiciones' ? 0 : -1}
+                onClick={() => setActiveTab('posiciones')}
+                className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+                  activeTab === 'posiciones'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Posiciones
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tab-calendario"
+                aria-selected={activeTab === 'calendario' ? 'true' : 'false'}
+                tabIndex={activeTab === 'calendario' ? 0 : -1}
+                onClick={() => setActiveTab('calendario')}
+                className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+                  activeTab === 'calendario'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Calendario
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setFavoritasFirst((value) => !value)}
@@ -232,48 +267,69 @@ export function PortafolioPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          <KpiCards kpis={portfolio?.kpis} />
-          {favoritesCount > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <article className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur-sm">
-                <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  <span>Favoritas ★</span>
+          {activeTab === 'posiciones' ? (
+            <div
+              role="tabpanel"
+              id="tabpanel-posiciones"
+              aria-labelledby="tab-posiciones"
+              className="space-y-6"
+            >
+              <KpiCards kpis={portfolio?.kpis} />
+              {favoritesCount > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <article className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur-sm">
+                    <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      <span>Favoritas ★</span>
+                    </div>
+                    <div className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
+                      {favoritesCount}
+                    </div>
+                  </article>
                 </div>
-                <div className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
-                  {favoritesCount}
-                </div>
-              </article>
-            </div>
-          )}
+              )}
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">Posiciones</h2>
-                <p className="text-sm text-muted-foreground">
-                  Haz clic en un encabezado para ordenar. Shift + clic agrega un segundo criterio.
+              <PerformanceChart />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Posiciones</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Haz clic en un encabezado para ordenar. Shift + clic agrega un segundo criterio.
+                    </p>
+                  </div>
+                </div>
+
+                <PositionsTable
+                  positions={positions}
+                  enabledColumns={enabledColumns}
+                  favoriteIds={favoriteIds}
+                  onToggleFavorite={toggleFavorite}
+                  favoritasFirst={favoritasFirst}
+                  isAuthenticated={isAuthenticated}
+                  onUpdate={(fibraId, titulos, costoPromedio) =>
+                    patchMutation.mutateAsync({ fibraId, titulos, costoPromedio })
+                  }
+                  onDelete={(fibraId) => deleteMutation.mutateAsync(fibraId)}
+                />
+              </div>
+
+              <UploadZone
+                currentPositionCount={positions.length}
+                onUploadSuccess={() => {}}
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+                <h2 className="text-lg font-semibold">Calendario de pagos</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Proyección de los próximos 90 días basada en las distribuciones recientes registradas.
                 </p>
               </div>
+              <PortafolioCalendario positions={positions} />
             </div>
-
-            <PositionsTable
-              positions={positions}
-              enabledColumns={enabledColumns}
-              favoriteIds={favoriteIds}
-              onToggleFavorite={toggleFavorite}
-              favoritasFirst={favoritasFirst}
-              isAuthenticated={isAuthenticated}
-              onUpdate={(fibraId, titulos, costoPromedio) =>
-                patchMutation.mutateAsync({ fibraId, titulos, costoPromedio })
-              }
-              onDelete={(fibraId) => deleteMutation.mutateAsync(fibraId)}
-            />
-          </div>
-
-          <UploadZone
-            currentPositionCount={positions.length}
-            onUploadSuccess={() => {}}
-          />
+          )}
         </div>
       )}
 

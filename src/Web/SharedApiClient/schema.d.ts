@@ -757,6 +757,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/news-pipeline/run": {
         parameters: {
             query?: never;
@@ -4110,6 +4143,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portfolio/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioConfigDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    range?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioPerformanceResponseDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolio/archive": {
         parameters: {
             query?: never;
@@ -5141,6 +5264,8 @@ export interface components {
             week52High: null | number | string;
             /** Format: double */
             week52Low: null | number | string;
+            /** Format: double */
+            annualizedYield: null | number | string;
             capturedAt: null | string;
             freshnessStatus: null | string;
         };
@@ -5197,8 +5322,6 @@ export interface components {
             newsCadenceMinutes: number | string;
             /** Format: int32 */
             fibraNewsMonths: number | string;
-            /** Format: int32 */
-            fundamentalsCadenceMinutes: number | string;
             /** Format: int32 */
             distributionCadenceMinutes: number | string;
             /** Format: date-time */
@@ -5407,6 +5530,10 @@ export interface components {
         PortfolioColumnConfigDto: {
             columns: string[];
         };
+        PortfolioConfigDto: {
+            /** Format: double */
+            commissionFactor: number | string;
+        };
         PortfolioDistributionDto: {
             paymentDate: string;
             /** Format: double */
@@ -5422,12 +5549,26 @@ export interface components {
             /** Format: double */
             plusvaliaTotal_Mxn: null | number | string;
             /** Format: double */
+            yieldPortafolio: null | number | string;
+            /** Format: double */
+            ingresoMensual: null | number | string;
+            /** Format: double */
             rentasAnualesBrutas: number | string;
             /** Format: double */
             rentasRealesBrutas: number | string;
             /** Format: double */
             pctRentasPortafolio: number | string;
             isPartial: boolean;
+        };
+        PortfolioPerformancePointDto: {
+            date: string;
+            /** Format: double */
+            valuePct: number | string;
+        };
+        PortfolioPerformanceResponseDto: {
+            portfolioSeries: components["schemas"]["PortfolioPerformancePointDto"][];
+            ipcSeries: components["schemas"]["PortfolioPerformancePointDto"][];
+            sp500Series: components["schemas"]["PortfolioPerformancePointDto"][];
         };
         PortfolioPositionDto: {
             /** Format: uuid */
@@ -5452,6 +5593,11 @@ export interface components {
             plusvaliaFilaMxn: null | number | string;
             /** Format: double */
             rentaAnual: null | number | string;
+            /** Format: double */
+            yoc: null | number | string;
+            /** Format: double */
+            opportunityScore: null | number | string;
+            logoUrl: null | string;
             freshnessStatus: null | string;
             /** Format: double */
             capRate: null | number | string;
@@ -5572,8 +5718,6 @@ export interface components {
             newsCadenceMinutes: null | number | string;
             /** Format: int32 */
             fibraNewsMonths: null | number | string;
-            /** Format: int32 */
-            fundamentalsCadenceMinutes?: null | number | string;
             /** Format: int32 */
             distributionCadenceMinutes?: null | number | string;
             termsEnabled?: null | boolean;

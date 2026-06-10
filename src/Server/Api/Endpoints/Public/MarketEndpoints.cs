@@ -22,15 +22,25 @@ public static class MarketEndpoints
         {
             var utcNow = DateTimeOffset.UtcNow;
             var isMarketOpen = bmvSchedule.IsTradingHours(utcNow);
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
             var fibras = await fibraRepo.GetAllActiveAsync(ct);
             var latestSnapshots = await marketRepo.GetLatestSnapshotPerFibraAsync(ct);
             var snapshotByFibra = latestSnapshots.ToDictionary(s => s.FibraId);
+            var distributions = await marketRepo.GetDistributionsByFibrasAsync(fibras.Select(f => f.Id).ToArray(), DistributionHistoryDays, ct);
+            var distributionsByFibra = distributions
+                .GroupBy(d => d.FibraId)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<Domain.Market.Distribution>)g.OrderByDescending(d => d.PaymentDate).ToList());
 
             var results = fibras.Select(fibra =>
             {
                 snapshotByFibra.TryGetValue(fibra.Id, out var snap);
                 var freshnessStatus = FreshnessClassifier.Classify(snap, isMarketOpen, utcNow);
+                distributionsByFibra.TryGetValue(fibra.Id, out var fibraDistributions);
+                var annualizedYield = YieldCalculator.Calculate(
+                    fibraDistributions ?? Array.Empty<Domain.Market.Distribution>(),
+                    snap?.LastPrice,
+                    today);
 
                 return new MarketSnapshotDto(
                     fibra.Id,
@@ -41,6 +51,7 @@ public static class MarketEndpoints
                     snap?.Volume,
                     snap?.Week52High,
                     snap?.Week52Low,
+                    annualizedYield,
                     snap?.CapturedAt.ToString("O"),
                     freshnessStatus);
             }).ToList();
