@@ -11,6 +11,7 @@ using Infrastructure.Integrations.Pdf;
 using Infrastructure.Integrations.PdfDiscovery;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Infrastructure.Time;
 
 namespace Infrastructure.Jobs.Fundamentals;
 
@@ -23,6 +24,7 @@ public class FundamentalsAutomationService(
     IPipelineErrorLogRepository errorLogRepo,
     IHttpClientFactory httpClientFactory,
     IConfiguration config,
+    ITimeService timeService,
     ILogger<FundamentalsAutomationService> logger) : IFundamentalsAutomationService
 {
     public async Task<FundamentalsAutomationRunResult> ExecuteAsync(CancellationToken ct)
@@ -42,6 +44,12 @@ public class FundamentalsAutomationService(
 
         foreach (var fibra in fibras)
         {
+            var latestProcessed = await fundamentalRepo.GetLatestProcessedByFibraAsync(fibra.Id, ct);
+            var processedPeriods = (await fundamentalRepo.GetProcessedPeriodsAsync(fibra.Id, ct))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var fromPeriod = FundamentalsDiscoveryPeriodHelper.ComputeFromPeriod(latestProcessed?.Period, timeService.UtcNow);
+            var currentRunPeriods = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             var applicableSources = sources
                 .Where(s => !s.SupportedTickers.Any() || s.SupportedTickers.Contains(fibra.Ticker));
 
@@ -64,8 +72,26 @@ public class FundamentalsAutomationService(
                 var candidateIndex = 0;
                 foreach (var candidate in candidates)
                 {
+                    if (candidate.Period is not null)
+                    {
+                        try
+                        {
+                            if (!FundamentalsDiscoveryPeriodHelper.IsPeriodInRange(candidate.Period, fromPeriod))
+                                continue;
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            logger.LogWarning(ex, "Candidato de {Source} con periodo no parseable descartado: '{Period}'", candidate.SourceName, candidate.Period);
+                            continue;
+                        }
+                        if (processedPeriods.Contains(candidate.Period))
+                            continue;
+                        if (currentRunPeriods.Contains(candidate.Period))
+                            continue;
+                    }
                     if (candidateIndex++ > 0)
                         await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(4, 9)), ct);
+
                     var existingManifest = await manifestRepo.GetBySourceAndPackageUrlAsync(candidate.SourceName, candidate.PackageUrl, ct);
                     var manifest = existingManifest ?? new FundamentalSourceManifest
                     {
@@ -141,6 +167,8 @@ public class FundamentalsAutomationService(
                             newReports++;
 
                         processed++;
+                        if (candidate.Period is not null)
+                            currentRunPeriods.Add(candidate.Period);
                         await manifestRepo.AddAsync(manifest, ct);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
