@@ -169,7 +169,7 @@ public static class OpportunityEndpoints
     private static Guid? TryGetUserId(HttpContext ctx) =>
         Guid.TryParse(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 
-    private static async Task<OpportunityWeights> ResolveWeightsAsync(
+    internal static async Task<OpportunityWeights> ResolveWeightsAsync(
         IOpportunityWeightsRepository repo, Guid userId, CancellationToken ct)
     {
         var stored = await repo.GetByUserIdAsync(userId, ct);

@@ -67,6 +67,7 @@ export function PositionExpandedDetail({ position }: PositionExpandedDetailProps
           <DetailStat label="Valor Mercado" value={formatMoney(position.valorMercado)} />
           <DetailStat label="Plusvalía %" value={formatPercent(position.plusvaliaFilaPct)} />
           <DetailStat label="Plusvalía $" value={formatMoney(position.plusvaliaFilaMxn)} />
+          <DetailStat label="YOC" value={formatPercent(position.yoc)} />
           <DetailStat label="% Portafolio" value={formatPercent(position.pctPortafolio)} />
         </div>
       </DetailSection>

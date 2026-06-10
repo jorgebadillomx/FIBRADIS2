@@ -3,10 +3,11 @@ import { Trash2 } from 'lucide-react'
 import type { components } from '@fibradis/shared-api-client'
 import { PositionExpandedDetail } from '@/modules/portafolio/PositionExpandedDetail'
 import { PortfolioExpandIcon, SignalBadge } from '@/modules/portafolio/SignalBadge'
-import { formatMoney, formatPercent, formatVolume } from '@/modules/portafolio/portfolio-format'
+import { formatMoney, formatPercent, formatVolume, toNumberOrNull } from '@/modules/portafolio/portfolio-format'
 import { EditableCell } from '@/modules/portafolio/EditableCell'
 import { DeletePositionDialog } from '@/modules/portafolio/DeletePositionDialog'
 import { StarButton } from '@/modules/oportunidades/StarButton'
+import { ScoreBadge } from '@/modules/portafolio/ScoreBadge'
 
 type PortfolioPositionDto = components['schemas']['PortfolioPositionDto']
 
@@ -34,6 +35,7 @@ const OPTIONAL_COLUMNS = [
   { key: 'ffoMargin', label: 'Margen FFO', sortKey: 'ffoMargin' },
   { key: 'dailyChangePct', label: 'Cambio % diario', sortKey: 'dailyChangePct' },
   { key: 'week52High', label: 'Máx. 52S', sortKey: 'week52High' },
+  { key: 'yoc', label: 'YOC', sortKey: 'yoc' },
 ] as const
 
 function formatOptionalValue(columnKey: string, value: number | string | null | undefined): string {
@@ -42,7 +44,8 @@ function formatOptionalValue(columnKey: string, value: number | string | null | 
     columnKey === 'ltv' ||
     columnKey === 'noiMargin' ||
     columnKey === 'ffoMargin' ||
-    columnKey === 'dailyChangePct'
+    columnKey === 'dailyChangePct' ||
+    columnKey === 'yoc'
   ) {
     return formatPercent(value)
   }
@@ -86,6 +89,8 @@ function getComparableValue(row: PortfolioPositionDto, column: string): Sortable
       return row.dailyChangePct
     case 'week52High':
       return row.week52High
+    case 'yoc':
+      return row.yoc
     default:
       return null
   }
@@ -121,6 +126,14 @@ export function PositionsTable({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [deletingFibraId, setDeletingFibraId] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem('portfolio_failed_logos')
+      return stored ? new Set<string>(JSON.parse(stored) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
 
   const visibleOptionalColumns = useMemo(
     () => OPTIONAL_COLUMNS.filter((column) => enabledColumns.includes(column.key)),
@@ -288,9 +301,37 @@ export function PositionsTable({
                     </td>
                   )}
                   <td className="px-3 py-3 align-top">
-                    <div className="flex flex-col">
-                      <span className="font-mono font-semibold text-foreground">{position.ticker}</span>
-                      <span className="text-xs text-muted-foreground">{position.nombre}</span>
+                    <div className="flex items-start gap-3">
+                      {failedLogos.has(position.fibraId) ? (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/60 text-[10px] font-bold text-muted-foreground">
+                          {position.ticker.slice(0, 5)}
+                        </div>
+                      ) : (
+                        <img
+                          alt={position.ticker}
+                          className="h-8 w-8 shrink-0 rounded-lg border border-border bg-background object-contain p-1"
+                          onError={() => {
+                            setFailedLogos((current) => {
+                              const next = new Set(current)
+                              next.add(position.fibraId)
+                              try {
+                                sessionStorage.setItem('portfolio_failed_logos', JSON.stringify([...next]))
+                              } catch {}
+                              return next
+                            })
+                          }}
+                          src={position.logoUrl ?? `/logos/${position.ticker.toLowerCase()}.png`}
+                        />
+                      )}
+                      <div className="min-w-0 flex flex-col">
+                        <span className="font-mono font-semibold text-foreground">{position.ticker}</span>
+                        <span className="truncate text-xs text-muted-foreground">{position.nombre}</span>
+                        {position.opportunityScore != null ? (
+                          <div className="mt-1">
+                            <ScoreBadge score={toNumberOrNull(position.opportunityScore) ?? 0} />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">

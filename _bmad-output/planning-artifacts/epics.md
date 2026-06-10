@@ -1051,3 +1051,66 @@ para que pueda acceder rápidamente a las FIBRAs que sigo más de cerca sin filt
 
 **Dado que** no tengo ningún favorito marcado,
 **Entonces** las tablas de M8 y M9 muestran todas las posiciones/FIBRAs en su orden predeterminado sin encabezado de sección "favoritos".
+
+---
+
+## Épica 10: Herramientas de Valor para el Inversionista
+
+Los visitantes y usuarios autenticados cuentan con herramientas prácticas que FIBRADIS ofrece y la competencia no tiene o tiene incompletas: un calendario consolidado de eventos corporativos (distribuciones, reportes trimestrales, asambleas, fechas fiscales) y una calculadora ISR integrada en la ficha de cada FIBRA y en una página pública de herramientas.
+
+### Historia 10.1: Calendario de eventos corporativos
+
+Como visitante o usuario,
+quiero ver en una vista mensual todos los eventos relevantes de FIBRAs (pagos de distribución, publicación de reportes trimestrales, asambleas de tenedores y fechas fiscales clave),
+para que pueda planificar mis decisiones de inversión y no perderme fechas críticas sin tener que rastrear múltiples fuentes.
+
+**Criterios de Aceptación:**
+
+**Dado que** navego a `/calendario`,
+**Cuando** carga la página,
+**Entonces** veo un encabezado con el mes actual y botones de navegación mes anterior / mes siguiente, y dentro del grid mensual aparecen los eventos del mes ordenados por fecha.
+
+**Dado que** hay distribuciones registradas en la BD para el mes actual (tabla `market.Distribution`),
+**Cuando** carga el calendario,
+**Entonces** cada distribución aparece como un chip en su fecha de pago con: ticker de la FIBRA, monto por CBFI (ej. "FUNO $0.62") y color de categoría Distribución.
+
+**Dado que** hay eventos corporativos en la BD (`market.CorporateEvent`) del tipo Reporte para el mes actual,
+**Cuando** carga el calendario,
+**Entonces** aparecen como chips en su fecha con: ticker (o "Mercado" si es general), descripción breve y color de categoría Reporte.
+
+**Dado que** hago clic en cualquier chip de evento,
+**Entonces** se muestra un tooltip o panel con los detalles completos del evento: tipo, FIBRA (si aplica), fecha, descripción y monto (si aplica).
+
+**Dado que** AdminOps crea un nuevo `CorporateEvent` desde Ops (tipo, fecha, FIBRA opcional, descripción),
+**Cuando** el visitante navega al calendario,
+**Entonces** el evento aparece en la celda correspondiente del mes sin necesidad de redespliegue.
+
+**Dado que** el mes no tiene eventos registrados,
+**Entonces** las celdas vacías muestran solo el número de día sin chips, y aparece el mensaje "Sin eventos registrados para este mes" si ningún día tiene chips.
+
+---
+
+### Historia 10.2: Calculadora ISR integrada en distribuciones y herramientas
+
+Como visitante o usuario,
+quiero una calculadora que me muestre cuánto ISR retiene mi brokerage sobre cada distribución de FIBRA y cuánto recibo neto,
+para que pueda estimar mi ingreso real después de impuestos sin necesitar conocer la legislación fiscal.
+
+**Criterios de Aceptación:**
+
+**Dado que** veo la sección de distribuciones en la ficha pública de una FIBRA (M5),
+**Cuando** la última distribución tiene monto registrado,
+**Entonces** bajo la tabla de historial aparece el bloque "Calculadora ISR" con los campos: Distribución por CBFI (pre-llenado con el último valor), Tus CBFIs (vacío, opcional) y la tasa ISR fija (28% — no editable, con nota explicativa).
+
+**Dado que** ingreso "500" en el campo Tus CBFIs con una distribución de $0.62 por CBFI,
+**Entonces** la calculadora muestra en tiempo real: Distribución bruta $310.00, ISR retenido (28%) $86.80, Distribución neta $223.20.
+
+**Dado que** no ingreso nada en el campo Tus CBFIs (lo dejo vacío o en 0),
+**Entonces** la calculadora muestra solo los valores por unidad: Bruto $0.62, ISR $0.174, Neto $0.446.
+
+**Dado que** navego a `/herramientas`,
+**Cuando** carga la página,
+**Entonces** veo la sección "Calculadora Yield" (con precio y distribución trimestrales como inputs) y "Calculadora ISR" (con distribución bruta y número de CBFIs como inputs), ambas funcionales y públicas.
+
+**Dado que** la distribución por CBFI no está disponible para una FIBRA (null en la API),
+**Entonces** la calculadora ISR en la ficha muestra un estado de "Sin datos de distribución disponibles" sin romper el layout.

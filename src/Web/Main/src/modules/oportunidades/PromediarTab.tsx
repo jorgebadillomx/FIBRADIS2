@@ -1,12 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { type Weights, calcLocalScore } from '@/modules/oportunidades/OportunidadesPage'
-import { calcNuevoAvg, calcNuevaPlusvaliaPct, calcNuevoValor } from '@/modules/oportunidades/simulador-logic'
+import {
+  calcNewAvgCost,
+  calcNuevoAvg,
+  calcNuevaPlusvaliaPct,
+  calcNuevoValor,
+} from '@/modules/oportunidades/simulador-logic'
+import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
 
 type PortfolioPositionDto = components['schemas']['PortfolioPositionDto']
 type PortfolioResponseDto = components['schemas']['PortfolioResponseDto']
+type PortfolioConfigDto = components['schemas']['PortfolioConfigDto']
 type OpportunityFibraRowDto = components['schemas']['OpportunityFibraRowDto']
 type OpportunityRankingResponseDto = components['schemas']['OpportunityRankingResponseDto']
 
@@ -42,6 +49,8 @@ interface PromediarRow {
 
 export function PromediarTab({ weights }: { weights: Weights }) {
   const [adicionales, setAdicionales] = useState<Record<string, string>>({})
+  const [whatIfFibraId, setWhatIfFibraId] = useState<string>('')
+  const [whatIfTitulos, setWhatIfTitulos] = useState<string>('')
 
   const portfolioQuery = useQuery<PortfolioResponseDto>({
     queryKey: ['portfolio', 'positions'],
@@ -62,6 +71,44 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     staleTime: Infinity,
   })
 
+  const configQuery = useQuery<PortfolioConfigDto | null>({
+    queryKey: ['portfolio', 'config'],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/api/v1/portfolio/config', {})
+      if (error || !data) return null
+      return data
+    },
+    staleTime: Infinity,
+    retry: false,
+  })
+
+  // All hooks must be called before any conditional return
+  const positions = portfolioQuery.data?.positions ?? []
+  const ranked = rankingQuery.data?.ranked ?? []
+  const limitedData = rankingQuery.data?.limitedData ?? []
+  const allOpportunityRows = [...ranked, ...limitedData]
+  const rowByFibraId = new Map(allOpportunityRows.map((r) => [r.fibraId, r]))
+
+  const promediarRows: PromediarRow[] = useMemo(() => (
+    positions
+      .map((pos) => ({
+        position: pos,
+        opportunityRow: rowByFibraId.get(pos.fibraId) ?? null,
+      }))
+      .sort((a, b) => {
+        const scoreA = a.opportunityRow ? calcLocalScore(a.opportunityRow, weights) : -1
+        const scoreB = b.opportunityRow ? calcLocalScore(b.opportunityRow, weights) : -1
+        return scoreB - scoreA
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [positions, weights])
+
+  useEffect(() => {
+    if (!whatIfFibraId && promediarRows[0]) {
+      setWhatIfFibraId(promediarRows[0].position.fibraId)
+    }
+  }, [promediarRows, whatIfFibraId])
+
   if (portfolioQuery.isLoading || rankingQuery.isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -78,8 +125,6 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     return <p className="text-destructive">Error al cargar el ranking de oportunidades.</p>
   }
 
-  const positions = portfolioQuery.data?.positions ?? []
-
   if (positions.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -88,21 +133,39 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     )
   }
 
-  const ranked = rankingQuery.data?.ranked ?? []
-  const limitedData = rankingQuery.data?.limitedData ?? []
-  const allOpportunityRows = [...ranked, ...limitedData]
-  const rowByFibraId = new Map(allOpportunityRows.map((r) => [r.fibraId, r]))
+  const selectedWhatIfRow = promediarRows.find((row) => row.position.fibraId === whatIfFibraId) ?? promediarRows[0] ?? null
+  const commissionFactor = toNum(configQuery.data?.commissionFactor) ?? 0
+  const additionalWhatIfTitles = parseInt(whatIfTitulos, 10)
+  const currentTitulos = selectedWhatIfRow ? toNum(selectedWhatIfRow.position.titulos) : null
+  const currentAvgCost = selectedWhatIfRow ? toNum(selectedWhatIfRow.position.costoPromedio) : null
+  const currentPrice = selectedWhatIfRow ? toNum(selectedWhatIfRow.position.precioActual) : null
+  const portfolioValue = toNum(portfolioQuery.data?.kpis?.valorTotal)
+  const canSimulateWhatIf =
+    selectedWhatIfRow != null &&
+    Number.isInteger(additionalWhatIfTitles) &&
+    additionalWhatIfTitles > 0 &&
+    currentTitulos != null &&
+    currentAvgCost != null &&
+    currentPrice != null
 
-  const promediarRows: PromediarRow[] = positions
-    .map((pos) => ({
-      position: pos,
-      opportunityRow: rowByFibraId.get(pos.fibraId) ?? null,
-    }))
-    .sort((a, b) => {
-      const scoreA = a.opportunityRow ? calcLocalScore(a.opportunityRow, weights) : -1
-      const scoreB = b.opportunityRow ? calcLocalScore(b.opportunityRow, weights) : -1
-      return scoreB - scoreA
-    })
+  const newAvgCost = canSimulateWhatIf
+    ? calcNewAvgCost(
+        currentTitulos!,
+        currentAvgCost!,
+        currentPrice!,
+        additionalWhatIfTitles,
+        commissionFactor,
+      )
+    : null
+  const deltaVsPricePct =
+    newAvgCost != null && currentPrice != null && currentPrice > 0
+      ? ((newAvgCost - currentPrice) / currentPrice) * 100
+      : null
+  const newPortfolioPct =
+    canSimulateWhatIf && portfolioValue != null && portfolioValue > 0
+      ? (((currentTitulos! + additionalWhatIfTitles) * currentPrice!) /
+          (portfolioValue + additionalWhatIfTitles * currentPrice!)) * 100
+      : null
 
   return (
     <div className="space-y-4">
@@ -206,9 +269,111 @@ export function PromediarTab({ weights }: { weights: Weights }) {
         </table>
       </div>
 
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+              ¿Qué pasaría si...?
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Simulación con comisión de compra
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              La comisión configurada en Ops se aplica al costo de las nuevas adquisiciones.
+            </p>
+          </div>
+
+          <div className="text-sm text-muted-foreground">
+            Comisión aplicada: <span className="font-medium text-foreground">{formatPercent(commissionFactor * 100)}</span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)]">
+          <div className="space-y-3 rounded-xl border border-border/70 bg-background p-4">
+            <label className="space-y-1.5">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                FIBRA
+              </span>
+              <select
+                value={whatIfFibraId}
+                onChange={(e) => setWhatIfFibraId(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
+              >
+                {promediarRows.map(({ position }) => (
+                  <option key={position.fibraId} value={position.fibraId}>
+                    {position.ticker} - {position.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Títulos a comprar
+              </span>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={whatIfTitulos}
+                onChange={(e) => setWhatIfTitulos(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
+                placeholder="0"
+              />
+            </label>
+
+            <p className="text-xs text-muted-foreground">
+              El cálculo usa el promedio actual, el precio de mercado y la comisión de compra para recalcular tu costo promedio.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MetricCard title="Nuevo costo promedio" value={formatMoney(newAvgCost)} />
+            <MetricCard
+              title="Delta vs precio actual"
+              value={formatPercent(deltaVsPricePct)}
+              toneClassName={
+                deltaVsPricePct == null
+                  ? 'text-foreground'
+                  : deltaVsPricePct > 0
+                    ? 'text-red-600'
+                    : deltaVsPricePct < 0
+                      ? 'text-green-600'
+                      : 'text-foreground'
+              }
+            />
+            <MetricCard
+              title="Nuevo % portafolio"
+              value={formatPercent(newPortfolioPct)}
+            />
+          </div>
+        </div>
+      </section>
+
       <p className="mt-3 text-xs text-muted-foreground text-center">
         Este simulador es informativo. No constituye una recomendación de compra o venta.
       </p>
     </div>
+  )
+}
+
+function MetricCard({
+  title,
+  value,
+  toneClassName = 'text-foreground',
+}: {
+  title: string
+  value: string
+  toneClassName?: string
+}) {
+  return (
+    <article className="rounded-xl border border-border/70 bg-background p-4 shadow-sm">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        {title}
+      </div>
+      <div className={`mt-2 text-2xl font-semibold tracking-tight tabular-nums ${toneClassName}`}>
+        {value}
+      </div>
+    </article>
   )
 }

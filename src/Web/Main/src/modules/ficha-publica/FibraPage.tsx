@@ -144,6 +144,7 @@ export function FibraPage() {
   if (fibra === null) return <FibraNotFound ticker={ticker!} />
 
   const marketPrice = toNum(marketData?.lastPrice)
+  const annualizedYield = toNum(marketData?.annualizedYield)
   const hasMarketPrice = marketPrice != null && marketData?.freshnessStatus != null
 
   const sectionLabels = [
@@ -199,6 +200,11 @@ export function FibraPage() {
                     <span className="text-2xl font-semibold tabular-nums">
                       {marketPrice!.toFixed(2)}
                     </span>
+                    {annualizedYield != null ? (
+                      <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-violet-700">
+                        {annualizedYield.toFixed(1)}%
+                      </span>
+                    ) : null}
                     <FreshnessBadge
                       status={marketData!.freshnessStatus as FreshnessStatus}
                       lastUpdated={marketData!.capturedAt ? formatRelativeTime(marketData!.capturedAt) : undefined}

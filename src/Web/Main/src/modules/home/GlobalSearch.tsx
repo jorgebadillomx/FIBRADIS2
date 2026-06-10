@@ -6,8 +6,14 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/shared/ui/popover'
 import { Input } from '@/shared/ui/input'
 import { fetchAllFibras } from '@/api/fibrasApi'
 import { filterFibrasByQuery } from './global-search'
+import { cn } from '@/shared/lib/utils'
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+  onSelect?: (ticker: string) => void
+  className?: string
+}
+
+export function GlobalSearch({ onSelect, className }: GlobalSearchProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
@@ -24,6 +30,7 @@ export function GlobalSearch() {
   function handleSelect(ticker: string) {
     setOpen(false)
     setQuery('')
+    onSelect?.(ticker)
     navigate(`/fibras/${encodeURIComponent(ticker)}`)
   }
 
@@ -46,7 +53,7 @@ export function GlobalSearch() {
             setOpen(val.length >= 1)
           }}
           onFocus={() => { if (query.length >= 1) setOpen(true) }}
-          className="w-full max-w-[16rem] lg:max-w-[24rem] h-9"
+          className={cn('h-9 w-full max-w-[16rem] lg:max-w-[24rem]', className)}
         />
       </PopoverAnchor>
       <PopoverContent

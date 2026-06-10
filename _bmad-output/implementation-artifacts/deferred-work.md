@@ -367,3 +367,19 @@ Items diferidos durante code reviews. Cada sección tiene la historia origen y l
 - **D3 (LOW): `DesignTimeDbContextFactory` apunta a servidor específico LAPBADIS** [`src/Server/Infrastructure/DesignTimeDbContextFactory.cs:12`] — Bloquea `dotnet ef migrations add` en cualquier otra máquina. Leer de `appsettings.Development.json` o variable de entorno `EF_CONNECTION_STRING` en próxima iteración de onboarding del equipo.
 - **D4 (LOW): Hangfire `InvisibilityTimeout` implícito de 30 min vs. 5 min previos de PostgreSQL** [`src/Server/Api/CompositionRoot/ApiServiceExtensions.cs`] — El campo `InvisibilityTimeout` fue removido por obsoleto en `Hangfire.SqlServer 1.8.23`. El valor por defecto subió de ~5 min a 30 min. Sin impacto funcional para los jobs actuales (todos terminan en <2 min), pero documentado por si se agregan jobs de larga duración.
 - **D5 (LOW): Script de migración de datos carga tablas completas en DataTable** [`scripts/migrate-data/Program.cs`] — Para volúmenes grandes (>100k filas en `market.PriceSnapshot`, `fundamentals.FundamentalRecord`) puede presionar memoria. Optimizar pasando `NpgsqlDataReader` directamente a `SqlBulkCopy.WriteToServerAsync(IDataReader)` si la migración se vuelve lenta en producción.
+
+## Deferred from: code review of 9-3-mejoras-portafolio (2026-06-09)
+
+- **D1** — Serie de performance no filtra por fecha de adquisición de posición (posiciones contribuyen a todo el historial histórico) — MVP simplification documentada en Dev Notes [PortfolioEndpoints.cs]
+- **D2** — N+1 queries en `BuildPerformanceSeriesAsync`: 1 query por posición — escala mal en portafolios grandes [PortfolioEndpoints.cs]
+- **D3** — `BuildNormalizedPoints` retorna `[]` cuando el primer valor del período es 0 sin mensaje al usuario [PortfolioEndpoints.cs]
+- **D4** — `detectCadence` clasifica por conteo de distribuciones en el año, no por intervalo real entre pagos — puede proyectar fechas incorrectas [portfolio-calendar.ts]
+- **D5** — `annualDistCutoff` usa `DateTime.UtcNow` — inconsistencia si `PaymentDate` se almacena en hora México [PortfolioEndpoints.cs]
+- **D6** — `calcNewAvgCost` usa floating-point JS — rounding errors en display; `formatMoney` mitiga el impacto visible [simulador-logic.ts]
+- **D7** — AC-9 especificaba usar `Tabs` de shadcn/ui; se implementaron custom `<button>` sin ARIA tablist/tabpanel [PortafolioPage.tsx]
+- **D8** — `enabledColumns` vacío → `['yoc']`: puede sobreescribir configuración explícita de usuario sin columnas opcionales [PortafolioPage.tsx]
+- **D9** — `addSeries` en PerformanceChart sin guard contra `undefined` en el parámetro `series` [PerformanceChart.tsx]
+- **D10** — `PortafolioCalendario` recalcula `projectNextPayments` sin `useMemo`, pasa `new Date()` en cada render [PortafolioCalendario.tsx]
+- **D11** — Logo img: flash por intento de red en cada mount; `failedLogos` no persiste en sessionStorage [PositionsTable.tsx]
+- **D12** — `/performance` acepta cualquier string como `range`; valor inválido silenciosamente devuelve 30 días [PortfolioEndpoints.cs]
+- **D13** — Fallback frontend `calcYieldPortafolio` puede divergir de las condiciones del backend cuando `kpis.yieldPortafolio` es null [KpiCards.tsx]

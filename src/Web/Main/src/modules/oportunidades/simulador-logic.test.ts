@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  calcNewAvgCost,
   calcNuevoAvg,
   calcNuevaPlusvaliaPct,
   calcNuevoValor,
@@ -50,4 +51,19 @@ test('calcNuevoAvg — denominador cero retorna 0 sin lanzar excepción', () => 
 test('calcNuevaPlusvaliaPct — nuevoAvg cero retorna 0 sin lanzar excepción', () => {
   const result = calcNuevaPlusvaliaPct(0, 100)
   assert.equal(result, 0)
+})
+
+test('calcNewAvgCost — aplica comisión sobre las nuevas adquisiciones', () => {
+  const result = calcNewAvgCost(1000, 110, 100, 500, 0.01)
+  assert.ok(Math.abs(result - 107) < 0.0001)
+})
+
+test('calcNewAvgCost — comisión cero coincide con el promedio ponderado normal', () => {
+  const result = calcNewAvgCost(1000, 110, 100, 500, 0)
+  assert.ok(Math.abs(result - 106.6666666667) < 0.0001)
+})
+
+test('calcNewAvgCost — títulos nuevos cero retorna el promedio actual', () => {
+  const result = calcNewAvgCost(1000, 110, 100, 0, 0.01)
+  assert.equal(result, 110)
 })

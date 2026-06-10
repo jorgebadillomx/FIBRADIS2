@@ -5,6 +5,8 @@ public sealed record PortfolioKpisDto(
     decimal? ValorTotal,
     decimal? PlusvaliaTotal_Pct,
     decimal? PlusvaliaTotal_Mxn,
+    decimal? YieldPortafolio,
+    decimal? IngresoMensual,
     decimal RentasAnualesBrutas,
     decimal RentasRealesBrutas,
     decimal PctRentasPortafolio,
@@ -29,6 +31,9 @@ public sealed record PortfolioPositionDto(
     decimal? PlusvaliaFilaPct,
     decimal? PlusvaliaFilaMxn,
     decimal? RentaAnual,
+    decimal? Yoc,
+    decimal? OpportunityScore,
+    string? LogoUrl,
     string? FreshnessStatus,
     decimal? CapRate,
     decimal? NavPerCbfi,
@@ -51,6 +56,21 @@ public sealed record PortfolioResponseDto(
 
 public sealed record PortfolioColumnConfigDto(
     IReadOnlyList<string> Columns
+);
+
+public sealed record PortfolioConfigDto(
+    decimal CommissionFactor
+);
+
+public sealed record PortfolioPerformancePointDto(
+    string Date,
+    decimal ValuePct
+);
+
+public sealed record PortfolioPerformanceResponseDto(
+    IReadOnlyList<PortfolioPerformancePointDto> PortfolioSeries,
+    IReadOnlyList<PortfolioPerformancePointDto> IpcSeries,
+    IReadOnlyList<PortfolioPerformancePointDto> Sp500Series
 );
 
 public sealed record PortfolioPositionPatchDto(

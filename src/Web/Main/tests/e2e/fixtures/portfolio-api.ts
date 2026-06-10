@@ -1,64 +1,14 @@
 import type { Page, Route } from '@playwright/test'
+import type { components } from '@fibradis/shared-api-client'
 
-type PortfolioPositionDto = {
-  fibraId: string
-  ticker: string
-  nombre: string
-  titulos: number
-  costoPromedio: string
-  costoTotalCompra: string
-  precioActual: string | null
-  valorMercado: string | null
-  plusvaliaPct: string | null
-  plusvaliaAbsoluta: string | null
-  rentaAnualBruta: string | null
-  rentaRealBruta: string | null
-  pctPortafolio: string | null
-  signal: 'Buy' | 'Hold' | 'Sell' | null
-  navPerCbfi: string | null
-  capRate: string | null
-  ltv: string | null
-  noiMargin: string | null
-  ffoMargin: string | null
-  periodo: string | null
-  distribucionTrimestral: string | null
-  yieldCalculadoPct: string | null
-  avg52w: string | null
-  high52w: string | null
-  low52w: string | null
-  dailyChangePct: string | null
-  volume: number | null
-}
-
-type PortfolioKpisDto = {
-  inversionTotal: string
-  valorTotal: string
-  plusvaliaPct: string
-  plusvaliaAbsoluta: string
-  rentasAnualesBrutas: string
-  rentasRealesBrutas: string
-  pctRentasPortafolio: string
-  hasPartialData: boolean
-}
-
-type PortfolioResponseDto = {
-  positions: PortfolioPositionDto[]
-  kpis: PortfolioKpisDto | null
-}
-
-type PortfolioSnapshotStatusDto = {
-  hasSnapshot: boolean
-  archivedAt: string | null
-}
-
-type PortfolioUploadResponseDto = {
-  positionCount: number
-  duplicateDetected: boolean
-}
-
-type PortfolioColumnConfigDto = {
-  columns: string[]
-}
+type PortfolioPositionDto = components['schemas']['PortfolioPositionDto']
+type PortfolioKpisDto = components['schemas']['PortfolioKpisDto']
+type PortfolioResponseDto = components['schemas']['PortfolioResponseDto']
+type PortfolioSnapshotStatusDto = components['schemas']['PortfolioSnapshotStatusDto']
+type PortfolioUploadResponseDto = components['schemas']['PortfolioUploadResponseDto']
+type PortfolioColumnConfigDto = components['schemas']['PortfolioColumnConfigDto']
+type PortfolioConfigDto = components['schemas']['PortfolioConfigDto']
+type PortfolioPerformanceResponseDto = components['schemas']['PortfolioPerformanceResponseDto']
 
 export const PORTFOLIO_FIBRA_ID = '11111111-1111-1111-1111-111111111111'
 export const PORTFOLIO_FIBRA_ID_2 = '22222222-2222-2222-2222-222222222222'
@@ -69,70 +19,110 @@ export const defaultPositions: PortfolioPositionDto[] = [
     ticker: 'FUNO11',
     nombre: 'Fibra Uno',
     titulos: 1000,
-    costoPromedio: '47.00',
-    costoTotalCompra: '47282.00',
-    precioActual: '52.50',
-    valorMercado: '52500.00',
-    plusvaliaPct: '11.09',
-    plusvaliaAbsoluta: '5218.00',
-    rentaAnualBruta: '1536.00',
-    rentaRealBruta: '1536.00',
-    pctPortafolio: '55.20',
-    signal: 'Buy',
-    navPerCbfi: '120.00',
-    capRate: '7.5',
-    ltv: '42.0',
-    noiMargin: '68.0',
-    ffoMargin: '55.0',
-    periodo: 'Q3 2025',
-    distribucionTrimestral: '0.384',
-    yieldCalculadoPct: '4.63',
-    avg52w: '49.50',
-    high52w: '55.20',
-    low52w: '44.10',
-    dailyChangePct: '0.62',
+    costoPromedio: 47,
+    costoTotalCompra: 47282,
+    pctPortafolio: 55.2,
+    precioActual: 52.5,
+    valorMercado: 52500,
+    plusvaliaFilaPct: 11.09,
+    plusvaliaFilaMxn: 5218,
+    rentaAnual: 1600,
+    yoc: 3.383952,
+    opportunityScore: 72,
+    logoUrl: null,
+    freshnessStatus: 'fresh',
+    capRate: 7.5,
+    navPerCbfi: 120,
+    ltv: 42,
+    noiMargin: 68,
+    ffoMargin: 55,
+    dailyChangePct: 0.62,
+    week52High: 55.2,
     volume: 1234567,
+    week52Low: 44.1,
+    week52Avg: 49.5,
+    fundamentalsPeriod: 'Q3 2025',
+    recentDistributions: [
+      { paymentDate: '2026-05-15', amountPerUnit: 0.4 },
+      { paymentDate: '2026-02-15', amountPerUnit: 0.4 },
+      { paymentDate: '2025-11-15', amountPerUnit: 0.4 },
+      { paymentDate: '2025-08-15', amountPerUnit: 0.4 },
+    ],
   },
   {
     fibraId: PORTFOLIO_FIBRA_ID_2,
     ticker: 'DANHOS13',
     nombre: 'Fibra Danhos',
     titulos: 500,
-    costoPromedio: '38.50',
-    costoTotalCompra: '19365.00',
-    precioActual: '41.00',
-    valorMercado: '20500.00',
-    plusvaliaPct: '5.85',
-    plusvaliaAbsoluta: '1135.00',
-    rentaAnualBruta: '700.00',
-    rentaRealBruta: '700.00',
-    pctPortafolio: '44.80',
-    signal: 'Hold',
-    navPerCbfi: '105.00',
-    capRate: '6.8',
-    ltv: '35.0',
-    noiMargin: '72.0',
-    ffoMargin: '60.0',
-    periodo: 'Q2 2025',
-    distribucionTrimestral: '0.35',
-    yieldCalculadoPct: '3.54',
-    avg52w: '39.20',
-    high52w: '43.80',
-    low52w: '36.50',
-    dailyChangePct: '-0.24',
+    costoPromedio: 38.5,
+    costoTotalCompra: 19365,
+    pctPortafolio: 44.8,
+    precioActual: 41,
+    valorMercado: 20500,
+    plusvaliaFilaPct: 5.85,
+    plusvaliaFilaMxn: 1135,
+    rentaAnual: 700,
+    yoc: 3.614769,
+    opportunityScore: 58,
+    logoUrl: null,
+    freshnessStatus: 'fresh',
+    capRate: 6.8,
+    navPerCbfi: 105,
+    ltv: 35,
+    noiMargin: 72,
+    ffoMargin: 60,
+    dailyChangePct: -0.24,
+    week52High: 43.8,
     volume: 456789,
+    week52Low: 36.5,
+    week52Avg: 39.2,
+    fundamentalsPeriod: 'Q2 2025',
+    recentDistributions: [
+      { paymentDate: '2026-01-15', amountPerUnit: 0.35 },
+      { paymentDate: '2025-07-15', amountPerUnit: 0.35 },
+    ],
   },
 ]
 
 export const defaultKpis: PortfolioKpisDto = {
-  inversionTotal: '66647.00',
-  valorTotal: '73000.00',
-  plusvaliaPct: '9.53',
-  plusvaliaAbsoluta: '6353.00',
-  rentasAnualesBrutas: '2236.00',
-  rentasRealesBrutas: '2236.00',
-  pctRentasPortafolio: '3.06',
-  hasPartialData: false,
+  inversionTotal: 66647,
+  valorTotal: 73000,
+  plusvaliaTotal_Pct: 9.53,
+  plusvaliaTotal_Mxn: 6353,
+  yieldPortafolio: 3.063014,
+  ingresoMensual: 166.67,
+  rentasAnualesBrutas: 2236,
+  rentasRealesBrutas: 2236,
+  pctRentasPortafolio: 3.06,
+  isPartial: false,
+}
+
+const defaultConfig: PortfolioConfigDto = {
+  commissionFactor: 0.005,
+}
+
+const defaultPerformance: PortfolioPerformanceResponseDto = {
+  portfolioSeries: [
+    { date: '2026-05-31', valuePct: 0 },
+    { date: '2026-06-01', valuePct: 0.8 },
+    { date: '2026-06-02', valuePct: 1.2 },
+    { date: '2026-06-03', valuePct: 0.7 },
+    { date: '2026-06-04', valuePct: 1.5 },
+  ],
+  ipcSeries: [
+    { date: '2026-05-31', valuePct: 0 },
+    { date: '2026-06-01', valuePct: 0.3 },
+    { date: '2026-06-02', valuePct: 0.6 },
+    { date: '2026-06-03', valuePct: 0.9 },
+    { date: '2026-06-04', valuePct: 0.7 },
+  ],
+  sp500Series: [
+    { date: '2026-05-31', valuePct: 0 },
+    { date: '2026-06-01', valuePct: 0.4 },
+    { date: '2026-06-02', valuePct: 0.8 },
+    { date: '2026-06-03', valuePct: 1.4 },
+    { date: '2026-06-04', valuePct: 2.1 },
+  ],
 }
 
 function fulfillJson(route: Route, status: number, body: unknown) {
@@ -150,12 +140,13 @@ export interface PortfolioApiOptions {
   uploadResponse?: Partial<PortfolioUploadResponseDto>
   uploadErrors?: Array<{ rowNumber: number; ticker: string; message: string }>
   snapshot?: PortfolioSnapshotStatusDto
+  config?: Partial<PortfolioConfigDto> | null
+  performance?: PortfolioPerformanceResponseDto | null
 }
 
 export async function mockPortfolioApi(page: Page, options: PortfolioApiOptions = {}) {
   const positions = options.empty ? [] : (options.positions ?? defaultPositions)
   const kpis = options.empty ? null : (options.kpis ?? defaultKpis)
-
   const portfolio: PortfolioResponseDto = { positions, kpis }
 
   await page.route('**/api/v1/portfolio', async (route) => {
@@ -168,6 +159,19 @@ export async function mockPortfolioApi(page: Page, options: PortfolioApiOptions 
   await page.route('**/api/v1/portfolio/column-config', (route) => {
     const config: PortfolioColumnConfigDto = { columns: [] }
     return fulfillJson(route, 200, config)
+  })
+
+  await page.route('**/api/v1/portfolio/config', (route) => {
+    const config: PortfolioConfigDto = {
+      ...defaultConfig,
+      ...(options.config ?? {}),
+    }
+    return fulfillJson(route, 200, config)
+  })
+
+  await page.route('**/api/v1/portfolio/performance**', (route) => {
+    const performance = options.performance ?? defaultPerformance
+    return fulfillJson(route, 200, performance)
   })
 
   await page.route('**/api/v1/portfolio/snapshot', (route) => {

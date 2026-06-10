@@ -5,6 +5,8 @@ public sealed record PortfolioKpiResult(
     decimal? ValorTotal,
     decimal? PlusvaliaTotal_Pct,
     decimal? PlusvaliaTotal_Mxn,
+    decimal? YieldPortafolio,
+    decimal? IngresoMensual,
     decimal RentasAnualesBrutas,
     decimal RentasRealesBrutas,
     decimal PctRentasPortafolio,
@@ -23,4 +25,5 @@ public sealed record PortfolioPositionRow(
     decimal? ValorMercado,
     decimal? PlusvaliaFilaPct,
     decimal? PlusvaliaFilaMxn,
-    decimal? RentaAnual);
+    decimal? RentaAnual,
+    decimal? Yoc);

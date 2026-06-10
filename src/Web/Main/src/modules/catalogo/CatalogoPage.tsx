@@ -161,6 +161,7 @@ interface FibraCardProps {
     dailyChange: number | string | null
     week52High: number | string | null
     week52Low: number | string | null
+    annualizedYield: number | string | null
   } | null
 }
 
@@ -170,6 +171,7 @@ function FibraCard({ fibra, snapshot }: FibraCardProps) {
   const change = toNum(snapshot?.dailyChange)
   const high52 = toNum(snapshot?.week52High)
   const low52 = toNum(snapshot?.week52Low)
+  const annualizedYield = toNum(snapshot?.annualizedYield)
   const isPositive = changePct != null && changePct >= 0
 
   return (
@@ -183,12 +185,21 @@ function FibraCard({ fibra, snapshot }: FibraCardProps) {
         <div className="flex items-start gap-3">
           <FibraLogo siteUrl={fibra.siteUrl} ticker={fibra.ticker} />
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="line-clamp-2 text-lg font-semibold leading-snug text-foreground">
-              {fibra.fullName}
-            </p>
-            <p className="mt-1 font-playfair text-sm font-bold text-primary">
-              {fibra.ticker}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-lg font-semibold leading-snug text-foreground">
+                  {fibra.fullName}
+                </p>
+                <p className="mt-1 font-playfair text-sm font-bold text-primary">
+                  {fibra.ticker}
+                </p>
+              </div>
+              {annualizedYield != null ? (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-violet-700">
+                  {annualizedYield.toFixed(1)}%
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 

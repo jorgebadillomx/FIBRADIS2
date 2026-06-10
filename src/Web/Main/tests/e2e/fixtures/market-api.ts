@@ -11,6 +11,7 @@ type MarketSnapshot = {
   volume: number | null
   week52High: number | null
   week52Low: number | null
+  annualizedYield: number | null
   capturedAt: string | null
   freshnessStatus: FreshnessStatus | null
 }
@@ -39,6 +40,7 @@ function buildSnapshot(
     volume: hasData ? 1_234_567 : null,
     week52High: hasData ? 28.1 : null,
     week52Low: hasData ? 20.8 : null,
+    annualizedYield: hasData ? 0.0463 : null,
     capturedAt: hasData ? new Date().toISOString() : null,
     freshnessStatus,
   }
