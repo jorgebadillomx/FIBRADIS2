@@ -35,8 +35,12 @@ scripts/*.sql
 _bmad/scripts/__pycache__/
 scripts/codegen/build-output/
 
-## Uploaded files
-src/Server/Api/wwwroot/uploads/
+## Publish / deploy artifacts
+publish/
+
+## wwwroot — frontend build output (Vite), excepto uploads que son runtime
+src/Server/Api/wwwroot/*
+!src/Server/Api/wwwroot/uploads/
 
 ## IDE
 .idea/
