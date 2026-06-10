@@ -57,13 +57,15 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
 
     public async Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default)
     {
-        var latestByFibra = db.PriceSnapshots
+        var latestProcessedByFibra = db.PriceSnapshots
+            .Where(p => p.Status == MarketDataStatus.Processed)
             .GroupBy(p => p.FibraId)
             .Select(g => new { FibraId = g.Key, MaxDate = g.Max(p => p.CapturedAt) });
 
         return await db.PriceSnapshots
-            .Where(p => latestByFibra
-                .Any(l => l.FibraId == p.FibraId && l.MaxDate == p.CapturedAt))
+            .Where(p => p.Status == MarketDataStatus.Processed
+                     && latestProcessedByFibra
+                            .Any(l => l.FibraId == p.FibraId && l.MaxDate == p.CapturedAt))
             .ToListAsync(ct);
     }
 

@@ -195,17 +195,20 @@ public class MarketPipelineJob(
                 }
             }
 
-            var retentionCutoff = DateOnly.FromDateTime(timeService.UtcNow.UtcDateTime).AddDays(-1);
-            try
+            if (!batchFailed && processed > 0)
             {
-                await marketRepo.DeleteOldPriceSnapshotsAsync(retentionCutoff, ct);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.LogWarning(
-                    ex,
-                    "Failed to delete old price snapshots before cutoff {Cutoff}",
-                    retentionCutoff);
+                var retentionCutoff = DateOnly.FromDateTime(timeService.UtcNow.UtcDateTime).AddDays(-1);
+                try
+                {
+                    await marketRepo.DeleteOldPriceSnapshotsAsync(retentionCutoff, ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Failed to delete old price snapshots before cutoff {Cutoff}",
+                        retentionCutoff);
+                }
             }
 
             logger.LogInformation(
