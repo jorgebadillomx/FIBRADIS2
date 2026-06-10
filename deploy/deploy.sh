@@ -6,18 +6,18 @@ set -e
 echo "=== Construyendo imagen Docker ==="
 cd ~/FIBRADIS
 git pull
-docker build -t fibradis:prod .
+docker build -t ghcr.io/jorgebadillomx/fibradis:prod .
 
 echo "=== Aplicando migraciones ==="
-# Corre las migraciones contra la BD de producción usando las variables del .env
 source /opt/projects/fibradis/.env
 docker run --rm \
   --network fibradis_internal \
-  -e "ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}" \
+  -e "DatabaseProvider=SqlServer" \
+  -e "ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=${MSSQL_DB};User Id=${MSSQL_USER};Password=${MSSQL_PASSWORD};Encrypt=True;TrustServerCertificate=True;" \
   -e "Hangfire__UseInMemoryStorage=true" \
   -e "ASPNETCORE_ENVIRONMENT=Production" \
   -e "Jwt__Secret=${JWT_SECRET}" \
-  fibradis:prod \
+  ghcr.io/jorgebadillomx/fibradis:prod \
   dotnet ef database update --project src/Server/Infrastructure --startup-project src/Server/Api || true
 
 echo "=== Levantando servicios ==="

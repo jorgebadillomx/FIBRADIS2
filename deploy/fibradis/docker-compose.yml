@@ -1,4 +1,4 @@
-# FIBRADIS — stack de producción en jbadillo-server
+# FIBRADIS — stack de producción
 # Requiere que Traefik esté corriendo (deploy/traefik/)
 # y la red traefik_public creada.
 #
@@ -11,11 +11,12 @@ services:
     image: ghcr.io/jorgebadillomx/fibradis:prod
     restart: always
     depends_on:
-      postgres:
+      sqlserver:
         condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - DatabaseProvider=SqlServer
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=${MSSQL_DB};User Id=${MSSQL_USER};Password=${MSSQL_PASSWORD};Encrypt=True;TrustServerCertificate=True;
       - Jwt__Secret=${JWT_SECRET}
       - Jwt__Issuer=fibradis
       - Jwt__Audience=fibradis-client
@@ -32,25 +33,25 @@ services:
       - "traefik.http.routers.fibradis.tls.certresolver=letsencrypt"
       - "traefik.http.services.fibradis.loadbalancer.server.port=8080"
 
-  postgres:
-    image: postgres:16-alpine
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
     restart: always
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
+      - MSSQL_PID=Express
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - sqldata:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -C -b"]
+      interval: 10s
       timeout: 5s
       retries: 10
     networks:
       - internal
 
 volumes:
-  pgdata:
+  sqldata:
 
 networks:
   traefik_public:
