@@ -7,6 +7,7 @@ using Domain.Jobs;
 using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Persistence.Repositories.Fundamentals;
 using Infrastructure.Persistence.SqlServer;
+using Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -17,6 +18,8 @@ namespace Infrastructure.Tests.Jobs.Fundamentals;
 
 public class FundamentalsAutomationServiceTests
 {
+    private static readonly DateTimeOffset _utcNow = new(2026, 6, 9, 12, 0, 0, TimeSpan.Zero);
+
     [Fact]
     public async Task ExecuteAsync_WhenNoCandidates_ReturnsZeroCountsAndNoRecords()
     {
@@ -97,60 +100,6 @@ public class FundamentalsAutomationServiceTests
         Assert.Empty(db.FundamentalRecords);
     }
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSamePeriodHasDifferentPackage_CreatesPossibleUpdateAndSoftDeletesPreviousProcessed()
-    {
-        await using var db = CreateDbContext();
-        var fibra = SeedFibra(db, "FUNO11");
-        var oldRecordId = Guid.NewGuid();
-        db.FundamentalRecords.Add(new FundamentalRecord
-        {
-            Id = oldRecordId,
-            FibraId = fibra.Id,
-            Period = "Q4-2022",
-            Status = "processed",
-            ProcessingMode = "manual",
-            CapturedAt = DateTimeOffset.UtcNow.AddDays(-2),
-            ConfirmedAt = DateTimeOffset.UtcNow.AddDays(-2),
-        });
-        db.FundamentalSourceManifests.Add(new FundamentalSourceManifest
-        {
-            Id = Guid.NewGuid(),
-            SourceName = "AMEFIBRA",
-            FibraId = fibra.Id,
-            SourceTitle = "2022 Reporte T4 FUNO",
-            Period = "Q4-2022",
-            ReportType = "quarterly",
-            DiscoveryStatus = "eligible",
-            PackageUrl = "https://amefibra.com/download/funo-q4-2022-v1/",
-            FirstSeenAt = DateTimeOffset.UtcNow.AddDays(-2),
-            LastSeenAt = DateTimeOffset.UtcNow.AddDays(-2),
-            LastDecision = "new",
-            LastProcessedRecordId = oldRecordId,
-            CreatedAt = DateTimeOffset.UtcNow.AddDays(-2),
-            UpdatedAt = DateTimeOffset.UtcNow.AddDays(-2),
-        });
-        await db.SaveChangesAsync();
-
-        var candidate = new FundamentalsDiscoveryCandidate(
-            "AMEFIBRA", "2022 Reporte T4 FUNO v2",
-            "https://amefibra.com/download/funo-q4-2022-v2/",
-            "https://amefibra.com/download/funo-q4-2022-v2/report.pdf",
-            "Q4-2022", "quarterly", null);
-        var source = new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11"]);
-        var service = BuildService(db, [source], [fibra], pdfContent: ReadFixturePdf());
-
-        var result = await service.ExecuteAsync(CancellationToken.None);
-
-        Assert.Equal(1, result.RecordsProcessed);
-        Assert.Equal(2, await db.FundamentalRecords.CountAsync());
-        var records = await db.FundamentalRecords.OrderBy(x => x.CapturedAt).ToListAsync();
-        Assert.NotNull(records[0].DeletedAt);
-        Assert.Equal("processed", records[1].Status);
-        Assert.True(records[1].IsPossibleUpdate);
-        Assert.Equal(1, result.PossibleUpdates);
-    }
-
     // T7.5 — multi-source tests
 
     [Fact]
@@ -177,7 +126,7 @@ public class FundamentalsAutomationServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_SameFibraAndPeriodFromTwoSources_SecondMarkedPossibleUpdate()
+    public async Task ExecuteAsync_SameFibraAndPeriodFromTwoSources_SecondSkippedByCurrentRunDedup()
     {
         await using var db = CreateDbContext();
         var fibra = SeedFibra(db, "FHIPO14");
@@ -195,8 +144,10 @@ public class FundamentalsAutomationServiceTests
         var result = await service.ExecuteAsync(CancellationToken.None);
 
         Assert.Equal(1, result.NewReports);
-        Assert.Equal(1, result.PossibleUpdates);
-        Assert.Equal(2, result.RecordsProcessed);
+        Assert.Equal(0, result.PossibleUpdates);
+        Assert.Equal(1, result.RecordsProcessed);
+        Assert.Equal(1, await db.FundamentalSourceManifests.CountAsync());
+        Assert.Equal(1, await db.FundamentalRecords.CountAsync());
     }
 
     [Fact]
@@ -234,11 +185,137 @@ public class FundamentalsAutomationServiceTests
         Assert.Empty(await db.FundamentalSourceManifests.ToListAsync());
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenCandidatePeriodIsBeforeWindow_SkipsBeforeManifest()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "FUNO11");
+        db.FundamentalRecords.Add(new FundamentalRecord
+        {
+            Id = Guid.NewGuid(),
+            FibraId = fibra.Id,
+            Period = "Q3-2025",
+            Status = "processed",
+            ProcessingMode = "manual",
+            CapturedAt = _utcNow.AddDays(-3),
+            ConfirmedAt = _utcNow.AddDays(-3),
+        });
+        await db.SaveChangesAsync();
+
+        var candidate = new FundamentalsDiscoveryCandidate(
+            "AMEFIBRA", "2025 T3 FUNO",
+            "https://amefibra.com/download/funo-q3-2025/",
+            "https://amefibra.com/download/funo-q3-2025/report.pdf",
+            "Q3-2025", "quarterly", null);
+
+        var service = new FundamentalsAutomationService(
+            [new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11"])],
+            new FakeFundamentalsFibraRepository([fibra]),
+            new FundamentalRepository(db),
+            new ThrowingManifestRepository(),
+            new FakeKpiExtractorService(),
+            new FakePipelineErrorLogRepository(),
+            new ThrowingPdfHttpClientFactory(),
+            new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Uploads:BasePath"] = Path.Combine(Path.GetTempPath(), $"fibradis-tests-{Guid.NewGuid():N}")
+            }).Build(),
+            new FakeTimeService(_utcNow),
+            NullLogger<FundamentalsAutomationService>.Instance);
+
+        var result = await service.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(1, result.ReportsDetected);
+        Assert.Equal(0, result.RecordsProcessed);
+        Assert.Equal(0, result.NewReports);
+        Assert.Equal(0, result.SkippedReports);
+        Assert.Empty(await db.FundamentalSourceManifests.ToListAsync());
+        Assert.Equal(1, await db.FundamentalRecords.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCandidatePeriodAlreadyExistsInProcessedPeriods_SkipsBeforeManifest()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "FUNO11");
+
+        var candidate = new FundamentalsDiscoveryCandidate(
+            "AMEFIBRA", "2025 T4 FUNO",
+            "https://amefibra.com/download/funo-q4-2025/",
+            "https://amefibra.com/download/funo-q4-2025/report.pdf",
+            "Q4-2025", "quarterly", null);
+
+        var service = new FundamentalsAutomationService(
+            [new FakeDiscoverySource("AMEFIBRA", [candidate], ["FUNO11"])],
+            new FakeFundamentalsFibraRepository([fibra]),
+            new FakeFundamentalRepository(latestProcessedPeriod: "Q2-2025", processedPeriods: ["Q4-2025"]),
+            new ThrowingManifestRepository(),
+            new FakeKpiExtractorService(),
+            new FakePipelineErrorLogRepository(),
+            new ThrowingPdfHttpClientFactory(),
+            new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Uploads:BasePath"] = Path.Combine(Path.GetTempPath(), $"fibradis-tests-{Guid.NewGuid():N}")
+            }).Build(),
+            new FakeTimeService(_utcNow),
+            NullLogger<FundamentalsAutomationService>.Instance);
+
+        var result = await service.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(1, result.ReportsDetected);
+        Assert.Equal(0, result.RecordsProcessed);
+        Assert.Equal(0, result.NewReports);
+        Assert.Equal(0, result.SkippedReports);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenSource1HasOldPeriodsAndSource2HasNewPeriod_Source1SkippedSource2Processed()
+    {
+        await using var db = CreateDbContext();
+        var fibra = SeedFibra(db, "VESTA15");
+        db.FundamentalRecords.Add(new FundamentalRecord
+        {
+            Id = Guid.NewGuid(),
+            FibraId = fibra.Id,
+            Period = "Q3-2025",
+            Status = "processed",
+            ProcessingMode = "manual",
+            CapturedAt = _utcNow.AddDays(-30),
+            ConfirmedAt = _utcNow.AddDays(-30),
+        });
+        await db.SaveChangesAsync();
+
+        // Source1: tres candidatos anteriores a la ventana (fromPeriod = Q4-2025)
+        var source1 = new FakeDiscoverySource("Economatica",
+        [
+            new("Economatica", "VESTA15 Q1-2025", "https://eco.com/q1-2025", "https://eco.com/q1-2025.pdf", "Q1-2025", "quarterly", null),
+            new("Economatica", "VESTA15 Q2-2025", "https://eco.com/q2-2025", "https://eco.com/q2-2025.pdf", "Q2-2025", "quarterly", null),
+            new("Economatica", "VESTA15 Q3-2025", "https://eco.com/q3-2025", "https://eco.com/q3-2025.pdf", "Q3-2025", "quarterly", null),
+        ], ["VESTA15"]);
+
+        // Source2: candidato dentro de la ventana — fallback implícito
+        var source2 = new FakeDiscoverySource("OfficialSite",
+        [
+            new("OfficialSite", "VESTA15 Q4-2025", "https://vesta.com/q4-2025", "https://vesta.com/q4-2025.pdf", "Q4-2025", "quarterly", null),
+        ], ["VESTA15"]);
+
+        var service = BuildService(db, [source1, source2], [fibra], pdfContent: ReadFixturePdf());
+
+        var result = await service.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(4, result.ReportsDetected); // 3 eco + 1 official
+        Assert.Equal(1, result.NewReports);
+        Assert.Equal(1, result.RecordsProcessed);
+        Assert.Equal(2, await db.FundamentalRecords.CountAsync()); // 1 pre-existing + 1 new
+        Assert.Equal(0, result.PossibleUpdates);
+    }
+
     private static FundamentalsAutomationService BuildService(
         AppDbContext db,
         IEnumerable<IFundamentalsDiscoverySource> sources,
         IReadOnlyList<Fibra> fibras,
-        byte[]? pdfContent = null)
+        byte[]? pdfContent = null,
+        FakeTimeService? time = null)
         => new(
             sources,
             new FakeFundamentalsFibraRepository(fibras),
@@ -251,6 +328,7 @@ public class FundamentalsAutomationServiceTests
             {
                 ["Uploads:BasePath"] = Path.Combine(Path.GetTempPath(), $"fibradis-tests-{Guid.NewGuid():N}")
             }).Build(),
+            time ?? new FakeTimeService(_utcNow),
             NullLogger<FundamentalsAutomationService>.Instance);
 
     private static AppDbContext CreateDbContext()
@@ -357,4 +435,106 @@ internal sealed class FakePipelineErrorLogRepository : IPipelineErrorLogReposito
 
     public Task<(IReadOnlyList<PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
         => Task.FromResult<(IReadOnlyList<PipelineErrorLog>, int)>((Entries, Entries.Count));
+}
+
+internal sealed class FakeTimeService(DateTimeOffset utcNow) : ITimeService
+{
+    public DateTimeOffset UtcNow => utcNow;
+}
+
+internal sealed class FakeFundamentalRepository(
+    string? latestProcessedPeriod = null,
+    IReadOnlyList<string>? processedPeriods = null) : IFundamentalRepository
+{
+    public List<FundamentalRecord> AddedRecords { get; } = [];
+
+    public Task<FundamentalRecord?> GetByIdAsync(Guid id, CancellationToken ct)
+        => Task.FromResult<FundamentalRecord?>(null);
+
+    public Task<FundamentalRecord?> GetProcessedByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct)
+        => Task.FromResult<FundamentalRecord?>(null);
+
+    public Task<FundamentalRecord?> GetLatestProcessedByFibraAsync(Guid fibraId, CancellationToken ct)
+        => Task.FromResult<FundamentalRecord?>(latestProcessedPeriod is null
+            ? null
+            : new FundamentalRecord
+            {
+                FibraId = fibraId,
+                Period = latestProcessedPeriod,
+                Status = "processed",
+            });
+
+    public Task<IReadOnlyList<string>> GetProcessedPeriodsAsync(Guid fibraId, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<string>>(processedPeriods ?? []);
+
+    public Task<IReadOnlyList<FundamentalRecord>> GetByFibraAsync(Guid fibraId, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<FundamentalRecord>>([]);
+
+    public Task AddAsync(FundamentalRecord record, CancellationToken ct)
+    {
+        AddedRecords.Add(record);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateStatusAsync(Guid id, string status, string? confirmedBy, DateTimeOffset? confirmedAt, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task UpdatePdfReferenceAsync(Guid id, string pdfReference, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task UpdateMarkdownContentAsync(Guid id, string markdownContent, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task UpdateKpiExtractionAsync(Guid id, KpiExtractionResult result, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task UpdateKpisManualAsync(Guid id, decimal? capRate, decimal? navPerCbfi, decimal? ltv, decimal? noiMargin, decimal? ffoMargin, decimal? quarterlyDistribution, string? summary, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct)
+        => Task.CompletedTask;
+
+    public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
+
+    public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
+
+    public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryForRecentPeriodsAsync(int count, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
+
+    public Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<string>>([]);
+}
+
+internal sealed class ThrowingManifestRepository : IFundamentalSourceManifestRepository
+{
+    private static InvalidOperationException UnexpectedCall()
+        => new("Manifest repository should not be called for skipped candidates.");
+
+    public Task<FundamentalSourceManifest?> GetBySourceAndPackageUrlAsync(string sourceName, string? packageUrl, CancellationToken ct)
+        => throw UnexpectedCall();
+
+    public Task<FundamentalSourceManifest?> GetLatestByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct)
+        => throw UnexpectedCall();
+
+    public Task AddAsync(FundamentalSourceManifest manifest, CancellationToken ct)
+        => throw UnexpectedCall();
+
+    public Task UpdateAsync(FundamentalSourceManifest manifest, CancellationToken ct)
+        => throw UnexpectedCall();
+}
+
+internal sealed class ThrowingPdfHttpClientFactory : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) => new(new ThrowingPdfHandler());
+
+    private sealed class ThrowingPdfHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => throw new InvalidOperationException("PDF downloader should not be called for skipped candidates.");
+    }
 }

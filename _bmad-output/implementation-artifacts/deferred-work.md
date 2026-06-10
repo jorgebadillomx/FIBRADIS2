@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 9-5-mejoras-fundamentales (2026-06-09)
+
+- **D1 (LOW): Dos llamadas DB por FIBRA en `FundamentalsAutomationService`** — `GetLatestProcessedByFibraAsync` y `GetProcessedPeriodsAsync` son dos round-trips donde el period del primero está implícito en la lista del segundo. Podría derivarse `latestProcessed` haciendo `ComparePeriods` sobre `processedPeriods` usando el helper, eliminando una query. Impacto bajo dado que solo hay ~19 FIBRAs activas.
+- **D2 (LOW): Magic number `-20` en `ComputeFromPeriod`** [`FundamentalsDiscoveryPeriodHelper.cs:34`] — Los 5 años hacia atrás (20 trimestres) están hardcodeados sin constante nombrada. Extraer a `private const int DefaultLookbackQuarters = 20` cuando se toque el helper de nuevo.
+- **D3 (LOW): Aserción `db.FundamentalSourceManifests.CountAsync()` vacuamente verdadera en test** [`FundamentalsAutomationServiceTests.cs`] — El test `WhenCandidatePeriodAlreadyExistsInProcessedPeriods` aserta sobre el mismo `db` que el `ThrowingManifestRepository` ignora; el count siempre es 0 independientemente del comportamiento. La protección real es `ThrowingManifestRepository`; la aserción es ruido. Eliminar en próxima limpieza de tests.
+- **D4 (LOW): Sin test para AC4 fallback implícito entre fuentes** — No existe test donde Fuente1 retorna candidatos anteriores a la ventana y Fuente2 retorna candidatos válidos para la misma FIBRA, verificando que Fuente2 procesa normalmente. Agregar en próxima historia del módulo Fundamentals.
+- **D5 (LOW): `ComputeFromPeriod` no tiene test con string vacío `""`** [`FundamentalsDiscoveryPeriodHelperTests.cs`] — El test `StartsFiveYearsBack` solo cubre `null`. `IsNullOrWhiteSpace` también acepta `""` y `"   "`; agregar casos InlineData si se extiende la suite del helper.
+
 ## Deferred from: quick-dev mejoras módulo Oportunidades (2026-06-05)
 
 - **D1 (LOW): Comparador "mi portafolio vs universo"** — Mostrar qué percentil ocupa el portafolio del usuario en el universo de oportunidades (no solo FIBRAs individuales), con un score promedio ponderado por peso de posición. Requiere nuevo endpoint que cruza `portfolio.UserPositions` con el ranking calculado. Evaluar cuando el módulo Portafolio tenga suficiente tracción.

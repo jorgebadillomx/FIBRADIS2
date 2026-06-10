@@ -5,7 +5,8 @@
 # story 6-7 done — code review pass (4 patches: P1 EmailEncryptor key base64-decode vs SHA256-hash, P2 AuthService login order null→disabled→pwd, P3 password inputs type=password, P4 generateStrongPassword crypto.getRandomValues+Fisher-Yates). 4 defers (D1 ChangePasswordAsync no revoca tokens, D2 SetUserActiveAsync sin guard último AdminOps, D3 toggleActiveMutation sin onError, D4 PaymentCell sin onError). 25/25 unit tests verdes
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
-# last_updated: 2026-06-05
+# last_updated: 2026-06-09
+# story 9-5 done — code review pass (2 patches: P1 Task.Delay antes de filtros ventana/dedup, P2 ArgumentException no capturada en IsPeriodInRange). 5 defers.
 # epic-8 done — retrospectiva completa (epic-8-retro-2026-06-05), D1-D4 resueltos, TS build limpio
 # story 8-3 done — code review pass (5 patches: P1 isExcluded sub-rows renderScoreComponent, P2 parseCompareTickers cap MAX_COMPARE_FIBRAS, P3 duplicate queries, P4 OpportunityWeights.Balanced, P5 meta description). 5 defers.
 # story 7-4 ready-for-dev — branch story/7-4-favoritos creado; favoritos con PK compuesta portfolio.UserFavorites, 3 endpoints REST, hook useFavorites optimistic, StarButton en M5/M8/M9
@@ -86,7 +87,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-06
+last_updated: 2026-06-09
 # story 9-1 done — code review pass (1 patch: P1 resetear campos contraseña al cerrar diálogo). 7 defers.
 # story 9-1 ready-for-dev — perfil usuario Main: Apodo + GET/PATCH /account/me + PATCH /account/password; rama story/9-1-perfil-usuario-main
 # sprint mejoras post-épicas — rama única: sprint/9-mejoras-deuda-tecnica (NO merge a main hasta completar todo el sprint)
@@ -302,7 +303,7 @@ development_status:
   9-2-tests-y-fixes-auth: backlog
   9-3-mejoras-portafolio: backlog
   9-4-mejoras-oportunidades: backlog
-  9-5-mejoras-fundamentales: backlog
+  9-5-mejoras-fundamentales: done
   9-6-ia-observabilidad-fixes: backlog
   9-7-noticias-mejoras: backlog
   epic-9-retrospective: optional
