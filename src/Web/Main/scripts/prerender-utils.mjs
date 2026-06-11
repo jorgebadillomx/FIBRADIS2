@@ -1,4 +1,21 @@
 /**
+ * Réplica de buildFibraSlug de src/shared/lib/fibra-slug.ts (este script corre con
+ * node puro y no puede importar .ts). DEBE producir el mismo slug que el TS y que
+ * FibraSlug.Build en C# — si divergen, el prerender genera rutas que el middleware
+ * 301 redirige y se pierde el beneficio del HTML estático.
+ */
+export function buildFibraSlug(fullName, ticker) {
+  const namePart = fullName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  const tickerPart = ticker.toLowerCase()
+  return namePart ? `${namePart}-${tickerPart}` : tickerPart
+}
+
+/**
  * Extrae <title>, <meta name="description">, <link rel="canonical"> del HTML
  * renderizado por React (no del template completo), evitando tocar el <head> del template.
  * Retorna los elementos extraídos y el cuerpo limpio listo para inyectar en <div id="root">.

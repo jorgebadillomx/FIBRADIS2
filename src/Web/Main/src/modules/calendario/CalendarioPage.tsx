@@ -4,9 +4,11 @@ import type { MarketCalendarEvent } from '@/api/calendarApi'
 import { useCalendarEvents } from './useCalendarEvents'
 import { CalendarGrid } from './CalendarGrid'
 import { EventChip } from './EventChip'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 
 export function CalendarioPage() {
   const [monthOffset, setMonthOffset] = useState(0)
+  const { slugFor } = useFibraSlugMap()
 
   const monthAnchor = useMemo(() => {
     const now = new Date()
@@ -180,7 +182,7 @@ export function CalendarioPage() {
                         </div>
                         <Link
                           className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition hover:border-primary hover:text-primary"
-                          to={`/fibras/${event.ticker}`}
+                          to={`/fibras/${slugFor(event.ticker)}`}
                         >
                           Ver ficha
                         </Link>

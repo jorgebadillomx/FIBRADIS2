@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchFundamentalesSummary, fetchAllFundamentalesPeriods } from '@/api/fundamentalesApi'
 import { formatFundamentalValue } from '@/modules/ficha-publica/sections/fundamentales'
 import { KPI_DEFINITIONS } from '@/shared/lib/kpi-definitions'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 import type { FundamentalesSummaryItemDto } from '@/api/fundamentalesApi'
 
 export function FundamentalesPage() {
@@ -141,11 +142,12 @@ export function FundamentalesPage() {
 }
 
 function FundamentalesRow({ row }: { row: FundamentalesSummaryItemDto }) {
+  const { slugFor } = useFibraSlugMap()
   return (
     <tr className="hover:bg-muted/40 transition-colors">
       <td className="px-4 py-3">
         <Link
-          to={`/fibras/${row.ticker}`}
+          to={`/fibras/${slugFor(row.ticker)}`}
           className="group flex flex-col gap-0.5"
         >
           <span className="font-mono font-semibold text-primary group-hover:underline">{row.ticker}</span>

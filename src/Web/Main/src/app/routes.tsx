@@ -28,7 +28,7 @@ export const routes: RouteObject[] = [
       { path: '/comparar', element: <ComparadorPage /> },
       { path: '/herramientas', element: <HerramientasPage /> },
       { path: '/calculadora', element: <CalculadoraPage /> },
-      { path: '/fibras/:ticker', element: <FibraPage /> },
+      { path: '/fibras/:slug', element: <FibraPage /> },
       { path: '/noticias', element: <NoticiasListPage /> },
       { path: '/calendario', element: <CalendarioPage /> },
       { path: '/conoce-las-fibras', element: <ConoceLasFibrasPage /> },

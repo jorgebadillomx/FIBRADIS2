@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { extractHeadElements } from './prerender-utils.mjs'
+import { buildFibraSlug, extractHeadElements } from './prerender-utils.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '..')
@@ -48,7 +48,9 @@ const routesToRender = [
   { url: '/comparar', initialData: {} },
   { url: '/herramientas', initialData: {} },
   ...FIBRAS_SEED.map(f => ({
-    url: `/fibras/${f.ticker}`,
+    // URL slug (11.3); el queryKey de initialData sigue por ticker — FibraPage
+    // extrae el ticker en mayúsculas del último segmento del slug
+    url: `/fibras/${buildFibraSlug(f.fullName, f.ticker)}`,
     initialData: {
       [JSON.stringify(['fibra', f.ticker])]: { id: `seed-${f.ticker.toLowerCase()}`, ...f },
     },

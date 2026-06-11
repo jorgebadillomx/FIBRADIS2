@@ -4,6 +4,7 @@ import { fetchMarketSnapshots } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
 import { FreshnessBadge, type FreshnessStatus } from '@/shared/ui/freshness-badge'
 import { formatVolume } from './movers-logic'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 import {
   filterSnapshots,
   sortSnapshots,
@@ -32,6 +33,7 @@ export function FibraUniverseTable() {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
+  const { slugFor } = useFibraSlugMap()
 
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -154,7 +156,7 @@ export function FibraUniverseTable() {
             return (
               <a
                 key={snap.ticker}
-                href={`/fibras/${snap.ticker}`}
+                href={`/fibras/${slugFor(snap.ticker)}`}
                 className="px-4 py-3 grid grid-cols-[1fr_auto_auto_auto_auto_6rem_auto_auto_auto] gap-3 items-center hover:bg-muted/30 transition-colors"
               >
                 {/* Emisora */}

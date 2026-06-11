@@ -4,6 +4,7 @@ import { fetchMarketSnapshots, fetchAllFibras } from '@/api/fibrasApi'
 import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
 import { FreshnessBadge } from '@/shared/ui/freshness-badge'
 import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 
 const CARD_WIDTH = 144 + 12 // w-36 (144px) + gap-3 (12px)
 const AUTO_SCROLL_MS = 3000
@@ -23,6 +24,7 @@ export function PriceCarousel() {
   })
 
   const fibraByTicker = Object.fromEntries(fibras.map(f => [f.ticker, f]))
+  const { slugFor } = useFibraSlugMap()
   const scrollRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -102,7 +104,7 @@ export function PriceCarousel() {
           return (
             <a
               key={snap.ticker}
-              href={`/fibras/${snap.ticker}`}
+              href={`/fibras/${slugFor(snap.ticker)}`}
               className="shrink-0 rounded-lg border border-border bg-surface-elevated px-3 py-2 w-36 flex items-center justify-between gap-2 hover:border-brand/50 transition-colors"
             >
               <div className="min-w-0">

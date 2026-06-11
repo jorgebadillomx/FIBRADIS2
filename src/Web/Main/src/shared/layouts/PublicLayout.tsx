@@ -101,7 +101,7 @@ export function PublicLayout() {
             className="hidden md:flex items-center gap-5 text-sm text-muted-foreground"
           >
             <Link to="/conoce-las-fibras" className="hover:text-foreground transition-colors duration-150">Conoce las FIBRAs</Link>
-            <Link to="/catalogo" className="hover:text-foreground transition-colors duration-150">Catálogo</Link>
+            <Link to="/catalogo" className="hover:text-foreground transition-colors duration-150">Fibras</Link>
             <Link to="/comparar" className="hover:text-foreground transition-colors duration-150">Comparar</Link>
             <Link to="/herramientas" className="hover:text-foreground transition-colors duration-150">Herramientas</Link>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
@@ -219,7 +219,7 @@ export function PublicLayout() {
                 className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Catálogo
+                Fibras
               </Link>
               <Link
                 to="/comparar"

@@ -28,6 +28,8 @@ var app = builder.Build();
 app.UseMiddleware<WwwToNonWwwMiddleware>();
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
+// El 301 a la URL slug canónica debe resolverse ANTES de servir HTML (SpaMetadataMiddleware)
+app.UseMiddleware<FibraSlugRedirectMiddleware>();
 app.UseMiddleware<SpaMetadataMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -59,6 +61,7 @@ app.MapFavorites();
 app.MapOpportunities();
 app.MapOpsUsers();
 app.MapAccount();
+app.MapSeo();
 
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());

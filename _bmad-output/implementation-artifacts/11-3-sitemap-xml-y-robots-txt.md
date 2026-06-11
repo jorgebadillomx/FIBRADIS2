@@ -1,6 +1,6 @@
 # Historia 11.3: Sitemap XML, robots.txt y URLs slug para fichas de FIBRA
 
-Status: ready-for-dev
+Status: review
 
 ## Historia
 
@@ -86,29 +86,29 @@ Entonces las páginas estáticas se generan en `dist/fibras/{slug}/index.html` (
 
 ## Tareas / Subtareas
 
-- [ ] Task 1: Crear `SeoEndpoints.cs`
-  - [ ] Crear `src/Server/Api/Endpoints/Public/SeoEndpoints.cs`
-  - [ ] Definir clase estática `SeoEndpoints` con método de extensión `MapSeo(this IEndpointRouteBuilder app)`
-  - [ ] Dentro de `MapSeo`, registrar:
+- [x] Task 1: Crear `SeoEndpoints.cs`
+  - [x] Crear `src/Server/Api/Endpoints/Public/SeoEndpoints.cs`
+  - [x] Definir clase estática `SeoEndpoints` con método de extensión `MapSeo(this IEndpointRouteBuilder app)`
+  - [x] Dentro de `MapSeo`, registrar:
     - `app.MapGet("/sitemap.xml", ...)`
     - `app.MapGet("/robots.txt", ...)`
-  - [ ] Ambos endpoints con `.AllowAnonymous()`
-  - [ ] Ambos endpoints sin autenticación ni autorización
+  - [x] Ambos endpoints con `.AllowAnonymous()`
+  - [x] Ambos endpoints sin autenticación ni autorización
 
-- [ ] Task 2: Implementar endpoint `/sitemap.xml`
-  - [ ] El handler recibe `IFibraRepository fibraRepo, IConfiguration config, CancellationToken ct`
-  - [ ] Leer `App:BaseUrl` de `config` (fallback: `"https://fibrasinmobiliarias.com"`)
-  - [ ] Definir lista de rutas estáticas con su prioridad y changefreq (ver CA-4)
-  - [ ] Llamar `await fibraRepo.GetAllActiveAsync(ct)` para obtener FIBRAs activas
-  - [ ] Para cada fibra, la URL es `{baseUrl}/fibras/{FibraSlug.Build(fibra.FullName, fibra.Ticker)}` (helper de Task 9)
-  - [ ] Construir XML usando `System.Text` / string builder o `XmlWriter` (ver spec en Dev Notes)
-  - [ ] Retornar `Results.Content(xmlContent, "application/xml; charset=utf-8")`
+- [x] Task 2: Implementar endpoint `/sitemap.xml`
+  - [x] El handler recibe `IFibraRepository fibraRepo, IConfiguration config, CancellationToken ct`
+  - [x] Leer `App:BaseUrl` de `config` (fallback: `"https://fibrasinmobiliarias.com"`)
+  - [x] Definir lista de rutas estáticas con su prioridad y changefreq (ver CA-4)
+  - [x] Llamar `await fibraRepo.GetAllActiveAsync(ct)` para obtener FIBRAs activas
+  - [x] Para cada fibra, la URL es `{baseUrl}/fibras/{FibraSlug.Build(fibra.FullName, fibra.Ticker)}` (helper de Task 9)
+  - [x] Construir XML usando `System.Text` / string builder o `XmlWriter` (ver spec en Dev Notes)
+  - [x] Retornar `Results.Content(xmlContent, "application/xml; charset=utf-8")`
 
-- [ ] Task 3: Implementar endpoint `/robots.txt`
-  - [ ] El handler recibe `IConfiguration config`
-  - [ ] Leer `App:BaseUrl` de `config`
-  - [ ] Retornar `Results.Content(robotsContent, "text/plain; charset=utf-8")`
-  - [ ] Formato exacto (respetando newlines Unix):
+- [x] Task 3: Implementar endpoint `/robots.txt`
+  - [x] El handler recibe `IConfiguration config`
+  - [x] Leer `App:BaseUrl` de `config`
+  - [x] Retornar `Results.Content(robotsContent, "text/plain; charset=utf-8")`
+  - [x] Formato exacto (respetando newlines Unix):
     ```
     User-agent: *
     Allow: /
@@ -119,60 +119,60 @@ Entonces las páginas estáticas se generan en `dist/fibras/{slug}/index.html` (
     Sitemap: {baseUrl}/sitemap.xml
     ```
 
-- [ ] Task 4: Registrar endpoints en `Program.cs`
-  - [ ] Agregar `using Api.Endpoints.Public;` si no está presente
-  - [ ] Agregar `app.MapSeo();` junto al resto de `app.MapXxx()` calls
-  - [ ] Agregar `app.MapFallback("/sitemap.xml", ...)` NO — el endpoint se registra directamente, no necesita fallback
+- [x] Task 4: Registrar endpoints en `Program.cs`
+  - [x] Agregar `using Api.Endpoints.Public;` si no está presente
+  - [x] Agregar `app.MapSeo();` junto al resto de `app.MapXxx()` calls
+  - [x] Agregar `app.MapFallback("/sitemap.xml", ...)` NO — el endpoint se registra directamente, no necesita fallback
 
-- [ ] Task 5: Unit tests para generación del XML
-  - [ ] Archivo: agregar tests al proyecto unit test existente (Infrastructure.Tests o Api.Tests)
-  - [ ] `SitemapContainsCalculadora_WithPriority09()` — verifica que `/calculadora` tiene priority 0.9
-  - [ ] `SitemapContainsAllStaticRoutes()` — verifica que `/`, `/catalogo`, etc. están presentes
-  - [ ] `SitemapContainsFibraSlugUrls()` — verifica que fibras activas se incluyen como `/fibras/{slug}` (ej. `fibra-uno-funo11`) y NO como `/fibras/{ticker}`
-  - [ ] `RobotsTxtContainsDisallowOps()` — verifica que `/ops/` está en Disallow
-  - [ ] `RobotsTxtContainsSitemapUrl()` — verifica que incluye la URL del sitemap
+- [x] Task 5: Unit tests para generación del XML
+  - [x] Archivo: agregar tests al proyecto unit test existente (Infrastructure.Tests o Api.Tests)
+  - [x] `SitemapContainsCalculadora_WithPriority09()` — verifica que `/calculadora` tiene priority 0.9
+  - [x] `SitemapContainsAllStaticRoutes()` — verifica que `/`, `/catalogo`, etc. están presentes
+  - [x] `SitemapContainsFibraSlugUrls()` — verifica que fibras activas se incluyen como `/fibras/{slug}` (ej. `fibra-uno-funo11`) y NO como `/fibras/{ticker}`
+  - [x] `RobotsTxtContainsDisallowOps()` — verifica que `/ops/` está en Disallow
+  - [x] `RobotsTxtContainsSitemapUrl()` — verifica que incluye la URL del sitemap
 
-- [ ] Task 6: Integration test para los endpoints (opcional pero recomendado)
-  - [ ] En `tests/Integration/Api.Tests/` agregar test que hace GET `/sitemap.xml` y verifica Content-Type y status 200
-  - [ ] Test para GET `/robots.txt` con mismo patrón
+- [x] Task 6: Integration test para los endpoints (opcional pero recomendado)
+  - [x] En `tests/Integration/Api.Tests/` agregar test que hace GET `/sitemap.xml` y verifica Content-Type y status 200
+  - [x] Test para GET `/robots.txt` con mismo patrón
 
-- [ ] Task 7: Renombrar menú "Catálogo" → "Fibras" en `PublicLayout.tsx`
-  - [ ] En `src/Web/Main/src/shared/layouts/PublicLayout.tsx`, cambiar el label en la **nav de escritorio** (línea ~104):
+- [x] Task 7: Renombrar menú "Catálogo" → "Fibras" en `PublicLayout.tsx`
+  - [x] En `src/Web/Main/src/shared/layouts/PublicLayout.tsx`, cambiar el label en la **nav de escritorio** (línea ~104):
     ```tsx
     // ANTES
     <Link to="/catalogo" ...>Catálogo</Link>
     // DESPUÉS
     <Link to="/catalogo" ...>Fibras</Link>
     ```
-  - [ ] Cambiar el mismo label en la **nav móvil** (Dialog, línea ~219):
+  - [x] Cambiar el mismo label en la **nav móvil** (Dialog, línea ~219):
     ```tsx
     // ANTES
     <Link to="/catalogo" ...>Catálogo</Link>
     // DESPUÉS
     <Link to="/catalogo" ...>Fibras</Link>
     ```
-  - [ ] La ruta `/catalogo` y el componente `CatalogoPage` NO cambian — solo el texto visible en el menú
-  - [ ] Ejecutar `npm run build --workspace=src/Web/Main` y verificar 0 errores TypeScript
+  - [x] La ruta `/catalogo` y el componente `CatalogoPage` NO cambian — solo el texto visible en el menú
+  - [x] Ejecutar `npm run build --workspace=src/Web/Main` y verificar 0 errores TypeScript
 
-- [ ] Task 8: Verificación backend
-  - [ ] `dotnet build FIBRADIS.slnx` — 0 errores
-  - [ ] Ejecutar el servidor en dev y hacer `curl http://localhost:5000/sitemap.xml`
-  - [ ] Verificar que el XML es válido (puede copiarse a https://www.xml-sitemaps.com/validate-xml-sitemap.html para verificación manual)
+- [x] Task 8: Verificación backend
+  - [x] `dotnet build FIBRADIS.slnx` — 0 errores
+  - [x] Ejecutar el servidor en dev y hacer `curl http://localhost:5000/sitemap.xml`
+  - [x] Verificar que el XML es válido (puede copiarse a https://www.xml-sitemaps.com/validate-xml-sitemap.html para verificación manual)
 
-- [ ] Task 9: Backend — helper `FibraSlug` (CA: 3, 9)
-  - [ ] Crear `src/Server/Application/Catalog/FibraSlug.cs` con método estático `Build(string fullName, string ticker)` (ver Dev Notes §Formato del slug)
-  - [ ] Unit tests en `tests/Unit/Application.Tests/Catalog/FibraSlugTests.cs`:
+- [x] Task 9: Backend — helper `FibraSlug` (CA: 3, 9)
+  - [x] Crear `src/Server/Application/Catalog/FibraSlug.cs` con método estático `Build(string fullName, string ticker)` (ver Dev Notes §Formato del slug)
+  - [x] Unit tests en `tests/Unit/Application.Tests/Catalog/FibraSlugTests.cs`:
     - `Build_BasicName_ReturnsKebabWithTickerSuffix` — ("Fibra Uno", "FUNO11") → `"fibra-uno-funo11"`
     - `Build_NameWithAccents_NormalizesAccents` — tildes/ñ eliminadas
     - `Build_NameWithSpecialChars_StripsNonAlphanumeric`
     - `Build_EmptyName_ReturnsTickerOnly` — ("", "FUNO11") → `"funo11"`
 
-- [ ] Task 10: Backend — `FibraSlugRedirectMiddleware` 301 (CA: 9)
-  - [ ] Crear `src/Server/Api/Middleware/FibraSlugRedirectMiddleware.cs` (ver Dev Notes §Middleware de redirección 301)
-  - [ ] Constructor: `(RequestDelegate next, IServiceScopeFactory scopeFactory)` — `IFibraRepository` es Scoped, el middleware es Singleton
-  - [ ] Lógica: solo GET, solo paths `/fibras/{algo}` sin extensión; extraer ticker del último segmento del slug; si la fibra existe y el path actual ≠ slug canónico → `Results`/301 con `Location` al canónico; si no existe o ya es canónico → pass-through
-  - [ ] Registrar en `Program.cs` DESPUÉS de `WwwToNonWwwMiddleware` y ANTES de `SpaMetadataMiddleware` (11.2)
-  - [ ] Unit tests en `tests/Unit/Infrastructure.Tests/Middleware/FibraSlugRedirectMiddlewareTests.cs`:
+- [x] Task 10: Backend — `FibraSlugRedirectMiddleware` 301 (CA: 9)
+  - [x] Crear `src/Server/Api/Middleware/FibraSlugRedirectMiddleware.cs` (ver Dev Notes §Middleware de redirección 301)
+  - [x] Constructor: `(RequestDelegate next, IServiceScopeFactory scopeFactory)` — `IFibraRepository` es Scoped, el middleware es Singleton
+  - [x] Lógica: solo GET, solo paths `/fibras/{algo}` sin extensión; extraer ticker del último segmento del slug; si la fibra existe y el path actual ≠ slug canónico → `Results`/301 con `Location` al canónico; si no existe o ya es canónico → pass-through
+  - [x] Registrar en `Program.cs` DESPUÉS de `WwwToNonWwwMiddleware` y ANTES de `SpaMetadataMiddleware` (11.2)
+  - [x] Unit tests en `tests/Unit/Infrastructure.Tests/Middleware/FibraSlugRedirectMiddlewareTests.cs`:
     - `InvokeAsync_BareTicker_Redirects301ToSlug`
     - `InvokeAsync_LowercaseTicker_Redirects301ToSlug`
     - `InvokeAsync_CanonicalSlug_PassesThrough`
@@ -180,33 +180,33 @@ Entonces las páginas estáticas se generan en `dist/fibras/{slug}/index.html` (
     - `InvokeAsync_UnknownTicker_PassesThrough` (la SPA muestra FibraNotFound)
     - `InvokeAsync_AssetOrApiPath_PassesThrough`
 
-- [ ] Task 11: Frontend — util `fibra-slug.ts` (CA: 8, 10, 11)
-  - [ ] Crear `src/Web/Main/src/shared/lib/fibra-slug.ts` con `buildFibraSlug(fullName, ticker)` y `extractTickerFromSlug(param)` (ver Dev Notes §Helper TypeScript)
-  - [ ] Unit tests (vitest) `fibra-slug.test.ts`: build básico, acentos, extracción desde slug completo, extracción desde ticker pelado (sin guiones), param vacío
+- [x] Task 11: Frontend — util `fibra-slug.ts` (CA: 8, 10, 11)
+  - [x] Crear `src/Web/Main/src/shared/lib/fibra-slug.ts` con `buildFibraSlug(fullName, ticker)` y `extractTickerFromSlug(param)` (ver Dev Notes §Helper TypeScript)
+  - [x] Unit tests (vitest) `fibra-slug.test.ts`: build básico, acentos, extracción desde slug completo, extracción desde ticker pelado (sin guiones), param vacío
 
-- [ ] Task 12: Frontend — ruta y `FibraPage` (CA: 8, 10)
-  - [ ] En `src/Web/Main/src/app/routes.tsx` cambiar `{ path: '/fibras/:ticker', ... }` → `{ path: '/fibras/:slug', ... }`
-  - [ ] En `FibraPage.tsx`: leer `slug` de `useParams`, derivar `ticker = extractTickerFromSlug(slug)` (uppercase) y conservar TODAS las queries existentes por ticker (queryKeys `['fibra', ticker]`, `['fibra-history', ticker, ...]`, etc. NO cambian)
-  - [ ] Al cargar la fibra: si `slug !== buildFibraSlug(fibra.fullName, fibra.ticker)` → `navigate('/fibras/' + slugCanonico, { replace: true })`
-  - [ ] Corregir `canonicalUrl` (línea ~148): `https://fibrasinmobiliarias.com/fibras/${slugCanonico}` (hoy usa dominio viejo `fibradis.mx` y ticker)
-  - [ ] `FibraNotFound` recibe el ticker extraído
+- [x] Task 12: Frontend — ruta y `FibraPage` (CA: 8, 10)
+  - [x] En `src/Web/Main/src/app/routes.tsx` cambiar `{ path: '/fibras/:ticker', ... }` → `{ path: '/fibras/:slug', ... }`
+  - [x] En `FibraPage.tsx`: leer `slug` de `useParams`, derivar `ticker = extractTickerFromSlug(slug)` (uppercase) y conservar TODAS las queries existentes por ticker (queryKeys `['fibra', ticker]`, `['fibra-history', ticker, ...]`, etc. NO cambian)
+  - [x] Al cargar la fibra: si `slug !== buildFibraSlug(fibra.fullName, fibra.ticker)` → `navigate('/fibras/' + slugCanonico, { replace: true })`
+  - [x] Corregir `canonicalUrl` (línea ~148): `https://fibrasinmobiliarias.com/fibras/${slugCanonico}` (hoy usa dominio viejo `fibradis.mx` y ticker)
+  - [x] `FibraNotFound` recibe el ticker extraído
 
-- [ ] Task 13: Frontend — links internos a slug (CA: 11)
-  - [ ] Crear hook `src/Web/Main/src/shared/hooks/useFibraSlugMap.ts`: `useQuery` sobre `fetchAllFibras()` (reusar queryKey del catálogo para dedupe) → expone `slugFor(ticker): string` con fallback `ticker.toLowerCase()` mientras carga
-  - [ ] Actualizar los 9 puntos que generan links `/fibras/${ticker}`:
+- [x] Task 13: Frontend — links internos a slug (CA: 11)
+  - [x] Crear hook `src/Web/Main/src/shared/hooks/useFibraSlugMap.ts`: `useQuery` sobre `fetchAllFibras()` (reusar queryKey del catálogo para dedupe) → expone `slugFor(ticker): string` con fallback `ticker.toLowerCase()` mientras carga
+  - [x] Actualizar los 9 puntos que generan links `/fibras/${ticker}`:
     - `CatalogoPage.tsx:180` — tiene `fibra.fullName` directo → `buildFibraSlug` sin hook
     - `FundamentalesPage.tsx:148`, `NoticiaPage.tsx:116` (conserva `#noticias`), `CalendarioPage.tsx:182`, `PriceCarousel.tsx:105`, `GainersLosers.tsx:59,87`, `FibraUniverseTable.tsx:157`, `GlobalSearch.tsx:34` — usar `useFibraSlugMap`
-  - [ ] `npm run build --workspace=src/Web/Main` — 0 errores TypeScript
+  - [x] `npm run build --workspace=src/Web/Main` — 0 errores TypeScript
 
-- [ ] Task 14: Prerender con slugs (CA: 12)
-  - [ ] En `src/Web/Main/scripts/prerender.mjs`: cambiar `url: \`/fibras/${f.ticker}\`` por la URL slug construida desde `f.fullName` + `f.ticker` (replicar la lógica de `buildFibraSlug` o importarla); el queryKey de `initialData` sigue siendo `['fibra', f.ticker]` (el ticker extraído en `FibraPage` queda en mayúsculas)
-  - [ ] Actualizar `prerender-utils.test.mjs:9` (canonical de ejemplo con slug y dominio `fibrasinmobiliarias.com`)
+- [x] Task 14: Prerender con slugs (CA: 12)
+  - [x] En `src/Web/Main/scripts/prerender.mjs`: cambiar `url: \`/fibras/${f.ticker}\`` por la URL slug construida desde `f.fullName` + `f.ticker` (replicar la lógica de `buildFibraSlug` o importarla); el queryKey de `initialData` sigue siendo `['fibra', f.ticker]` (el ticker extraído en `FibraPage` queda en mayúsculas)
+  - [x] Actualizar `prerender-utils.test.mjs:9` (canonical de ejemplo con slug y dominio `fibrasinmobiliarias.com`)
 
-- [ ] Task 15: Verificación final del cambio de ruta
-  - [ ] `dotnet test tests/Unit/` — todos verdes incluyendo los nuevos
-  - [ ] `npm test --workspace=src/Web/Main` — todos verdes
-  - [ ] Manual: navegar a `/fibras/FUNO11` → URL cambia a `/fibras/fibra-uno-funo11` y la ficha carga; `curl -I http://localhost:5000/fibras/FUNO11` → 301 con Location slug
-  - [ ] E2E: los specs existentes usan `page.goto('/fibras/FUNO11')` — siguen funcionando vía canonicalización client-side; si algún spec assertea la URL, actualizarlo
+- [x] Task 15: Verificación final del cambio de ruta
+  - [x] `dotnet test tests/Unit/` — todos verdes incluyendo los nuevos
+  - [x] `npm test --workspace=src/Web/Main` — todos verdes
+  - [x] Manual: navegar a `/fibras/FUNO11` → URL cambia a `/fibras/fibra-uno-funo11` y la ficha carga; `curl -I http://localhost:5000/fibras/FUNO11` → 301 con Location slug
+  - [x] E2E: los specs existentes usan `page.goto('/fibras/FUNO11')` — siguen funcionando vía canonicalización client-side; si algún spec assertea la URL, actualizarlo
 
 ## Dev Notes
 
@@ -391,16 +391,71 @@ Si la historia 11-2 ya agregó `App:BaseUrl` a `appsettings.json`, este Task 1 e
 
 ## Dev Agent Record
 
-_(A completar durante la implementación)_
-
 ### Archivos Creados/Modificados
-- (pendiente)
+
+**Backend — nuevos:**
+- `src/Server/Application/Catalog/FibraSlug.cs` — helper `Build(fullName, ticker)` (slug canónico)
+- `src/Server/Api/Endpoints/Public/SeoEndpoints.cs` — `/sitemap.xml` + `/robots.txt` con builders públicos testeables
+- `src/Server/Api/Middleware/FibraSlugRedirectMiddleware.cs` — 301 a URL slug canónica
+
+**Backend — modificados:**
+- `src/Server/Api/Program.cs` — `app.MapSeo()` + `UseMiddleware<FibraSlugRedirectMiddleware>()` (después de WwwToNonWww, antes de SpaMetadata)
+- `scripts/codegen/Api.json` — artefacto codegen OpenAPI regenerado (incluye los 2 endpoints nuevos)
+
+**Frontend — nuevos:**
+- `src/Web/Main/src/shared/lib/fibra-slug.ts` — `buildFibraSlug` + `extractTickerFromSlug`
+- `src/Web/Main/src/shared/hooks/useFibraSlugMap.ts` — ticker→slug desde catálogo cacheado (queryKey `['fibras','all']`)
+
+**Frontend — modificados:**
+- `src/Web/Main/src/app/routes.tsx` — `/fibras/:ticker` → `/fibras/:slug`
+- `src/Web/Main/src/modules/ficha-publica/FibraPage.tsx` — ticker desde slug, canonicalización `navigate replace`, canonical URL slug + dominio correcto
+- `src/Web/Main/src/modules/catalogo/CatalogoPage.tsx` — link con `buildFibraSlug` directo (tiene fullName)
+- `src/Web/Main/src/modules/fundamentales/FundamentalesPage.tsx`, `src/Web/Main/src/modules/noticia/NoticiaPage.tsx` (conserva `#noticias`), `src/Web/Main/src/modules/calendario/CalendarioPage.tsx`, `src/Web/Main/src/modules/home/PriceCarousel.tsx`, `src/Web/Main/src/modules/home/GainersLosers.tsx` (2 links), `src/Web/Main/src/modules/home/FibraUniverseTable.tsx`, `src/Web/Main/src/modules/home/GlobalSearch.tsx` — links vía `useFibraSlugMap`
+- `src/Web/Main/src/shared/layouts/PublicLayout.tsx` — menú "Catálogo" → "Fibras" (desktop + móvil)
+- `src/Web/Main/scripts/prerender.mjs` — rutas `/fibras/{slug}`; queryKey de initialData sigue por ticker
+- `src/Web/Main/scripts/prerender-utils.mjs` — réplica `buildFibraSlug` (node puro no importa .ts)
+- `src/Web/Main/scripts/prerender-utils.test.mjs` — canonical de ejemplo con slug + dominio correcto; tests de paridad
+- `src/Web/Main/package.json` — `fibra-slug.test.ts` agregado al script `test`
+- `src/Web/Main/tests/e2e/public-discovery.spec.ts` — assert de URL actualizado al slug canónico
+
+**Tests — nuevos:**
+- `tests/Unit/Application.Tests/Catalog/FibraSlugTests.cs`
+- `tests/Unit/Infrastructure.Tests/Endpoints/SeoEndpointsTests.cs`
+- `tests/Unit/Infrastructure.Tests/Middleware/FibraSlugRedirectMiddlewareTests.cs`
+- `tests/Integration/Api.Tests/SeoEndpointTests.cs`
+- `src/Web/Main/src/shared/lib/fibra-slug.test.ts`
 
 ### Decisiones Tomadas
-- (pendiente)
+
+1. **Paridad de slugify C# ↔ TS sobre puntuación**: el spec de `SlugGenerator` (11.4) hace espacios→guión + strip de no-alfanuméricos, lo que produce `"S.A."` → `sa`; el TS de esta historia (`[^a-z0-9]+` → `-`) produce `s-a`. Como el requisito duro es paridad exacta (si divergen hay loop de redirecciones), `FibraSlug.Slugify` usa la semántica del TS: runs de no-alfanuméricos colapsan a UN guión. Ambos lados tienen el mismo test de paridad (tabla del catálogo + caso de puntuación). **Nota para 11.4**: al implementar `SlugGenerator`, extraer la normalización común y conservar esta semántica.
+2. **Middleware acepta GET y HEAD**: la verificación de T15 usa `curl -I` (HEAD) y los validadores SEO usan HEAD; mismo 301 que GET (consistente con SpaMetadataMiddleware). Test unitario agregado.
+3. **`GetByTickerAsync` reutilizado sin filtro de estado** (instrucción de Dev Notes: no agregar método nuevo): una fibra Inactive también redirige a su slug — consistente con `GET /api/v1/fibras/{ticker}` que la sirve.
+4. **Builders de sitemap/robots públicos** (`BuildSitemapXml`/`BuildRobotsTxt`): no hay `InternalsVisibleTo` en Api; al ser funciones puras estáticas se exponen públicas para test directo.
+5. **`useFibraSlugMap` con queryKey `['fibras','all']`** (el que usan CatalogoPage/GlobalSearch/NoticiasListPage) y staleTime 5 min — dedupe total, cero fetches extra.
+6. **Hallazgo pre-existente (no introducido)**: `public-discovery.spec.ts` tests "buscar y navegar" y "360px" fallan también en main sin estos cambios (el label "Top movers" ya no existe tras la reorganización de Home y el combobox no es visible a 360px). Verificado con stash. Candidato a tarea `[Deuda]` en la próxima historia de Main.
 
 ### Tests Ejecutados
-- (pendiente)
+
+```
+dotnet test tests/Unit/Domain.Tests           →   8/8   verdes
+dotnet test tests/Unit/Application.Tests      →  92/92  verdes (incluye 9 FibraSlugTests)
+dotnet test tests/Unit/Infrastructure.Tests   → 400/400 verdes (incluye 8 SeoEndpointsTests + 15 FibraSlugRedirectMiddlewareTests)
+dotnet test tests/Integration/Api.Tests       → 277/277 verdes (incluye 5 SeoEndpointTests)
+npm test --workspace=src/Web/Main             → 115/115 verdes (incluye 9 fibra-slug + 7 prerender-utils)
+npx playwright test public-discovery market-freshness → 9 passed, 2 failed PRE-EXISTENTES (fallan igual en main, ver Decisión 6)
+```
+
+**Verificación manual (servidor dev, puerto 5265):**
+- `GET /sitemap.xml` → 200 `application/xml; charset=utf-8`, XML válido (XDocument), 27 URLs (8 estáticas + 19 fibras slug), BaseUrl de appsettings (CA-7 ✓)
+- `GET /robots.txt` → 200 `text/plain; charset=utf-8` con Disallows y referencia al sitemap
+- `GET/HEAD /fibras/FUNO11` y `/fibras/funo11` → 301 `Location: /fibras/fibra-uno-funo11`
+- `GET /fibras/nombre-viejo-funo11` → 301 al canónico; `GET /fibras/fibra-uno-funo11` → 200 pass-through
+- Query string preservado en el 301 (`?utm_source=x`)
+- `dotnet build FIBRADIS.slnx` y `npm run build --workspace=src/Web/Main` → 0 errores
+
+### Change Log
+
+- 2026-06-11 — Historia 11.3 implementada completa: sitemap.xml + robots.txt dinámicos, helper FibraSlug (C#/TS con paridad testeada), FibraSlugRedirectMiddleware 301, ruta SPA `/fibras/:slug` con canonicalización client-side, 9 puntos de links internos migrados a slug, prerender con slugs, menú "Catálogo"→"Fibras". Status → review.
 
 ## Senior Developer Review (AI)
 
