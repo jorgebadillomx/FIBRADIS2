@@ -341,9 +341,11 @@ development_status:
   6-9-terminos-footer-contenido: done
 
   # ── Épica 10: Herramientas de Valor para el Inversionista ────────────────
-  epic-10: in-progress
+  # epic-10 done — 2/2 historias completadas; retro 2026-06-11: 3 action items aplicados en convenciones (gate artefactos, tests exactos Dev Notes, gate EF migrations)
+  epic-10: done
   10-1-calendario-eventos-corporativos: done
   10-2-calculadora-isr: done
+  epic-10-retrospective: done
 
   # ── Épica 11: SEO Foundation — Correcciones técnicas críticas ────────────
   # epic-11 done — 4 historias completadas (11-1 canonical, 11-2 SpaMetadata, 11-3 sitemap+robots, 11-4 slugs noticias), todas mergeadas a main

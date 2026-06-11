@@ -26,6 +26,10 @@ Estas reglas se aplican en TODA historia y code review. Son no negociables.
 3. Ejecutar `npm run build --workspace=src/Web/Main` antes de marcar Task 6 completa
 4. Actualizar `sprint-status.yaml`: `in-progress` al empezar, `review` al terminar
 5. Actualizar File List y Change Log en el story file antes de marcar `review`
+6. **Gate de artefactos antes de review**: verificar que cada archivo listado en "Archivos a crear (NEW)" del story file existe físicamente en su ruta exacta. Si alguno falta → la story NO puede ir a `review`. Una task `[x]` con código inline en otro archivo NO cuenta como completada.
+7. **Gate de migraciones EF**: en stories con migración EF, ejecutar `dotnet ef migrations list --project src/Server/Infrastructure --startup-project src/Server/Api` y confirmar que la nueva migración aparece en la lista antes de declarar `review`. Build verde + InMemory tests verdes NO garantizan que la migración existe.
+
+Origen: retro Épica 10 — 10-1 llegó a review con 9 BLOCKERs por archivos frontend marcados `[x]` pero inline en otro componente, y migración EF ausente.
 
 ## Flujo obligatorio de code-review
 
@@ -230,6 +234,26 @@ Cuando un hallazgo de code review no bloquea el cierre de la historia pero repre
 3. **No marcarlo como resuelto** en sprint-status.yaml hasta que el código esté corregido.
 
 Este proceso evita que los findings de calidad media queden enterrados en Dev Agent Records sin visibilidad en el tracker.
+
+## Testing — Tests con valores exactos en Dev Notes para funciones de cálculo o parsing
+
+Toda historia que introduzca funciones de cálculo numérico o parsers de texto debe incluir en Dev Notes los casos de test con **valores numéricos exactos** antes de implementar. El formato mínimo es el bloque de código `it(...)` con inputs y expected outputs concretos.
+
+```typescript
+// Ejemplo correcto (Épica 10 — 10-2 calcIsr):
+it('calcula con desglose: dist=0.62, taxable=0.40, 500 units', () => {
+  const r = calcIsr(0.62, 500, 0.40);
+  expect(r.taxableGross).toBeCloseTo(200);
+  expect(r.isr).toBeCloseTo(60);
+  expect(r.net).toBeCloseTo(250);
+});
+```
+
+Esto obliga al agente a verificar contra casos concretos del spec, no contra intuición. Historias que aplican este patrón salen con 0 BLOCKERs en review; las que no lo aplican acumulan BLOCKERs de tipo "resultado incorrecto".
+
+Origen: retro Épica 10 — 10-2 (0 BLOCKERs) vs 10-1 (9 BLOCKERs). La diferencia fue que Dev Notes de 10-2 incluían los tests exactos.
+
+---
 
 ## Testing — Funciones de Cálculo Financiero
 
