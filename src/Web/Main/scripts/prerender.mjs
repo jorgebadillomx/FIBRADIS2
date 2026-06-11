@@ -40,6 +40,7 @@ const FIBRAS_SEED = [
 const routesToRender = [
   { url: '/', initialData: {} },
   { url: '/comparar', initialData: {} },
+  { url: '/herramientas', initialData: {} },
   ...FIBRAS_SEED.map(f => ({
     url: `/fibras/${f.ticker}`,
     initialData: {

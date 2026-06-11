@@ -70,6 +70,8 @@ public class MarketHistoryEndpointTests(ApiWebFactory factory)
             Assert.True(d.TryGetProperty("date", out _));
             Assert.True(d.TryGetProperty("amountPerUnit", out var amount));
             Assert.True(amount.GetDecimal() > 0);
+            Assert.True(d.TryGetProperty("taxableAmountPerUnit", out _));
+            Assert.True(d.TryGetProperty("capitalReturnAmountPerUnit", out _));
         }
     }
 

@@ -14,6 +14,7 @@ public class DistributionPipelineJob(
     IFibraRepository fibraRepo,
     IYahooFinanceClient yahooClient,
     IMarketRepository marketRepo,
+    IMasDividendosImporterService masDividendosImporter,
     IPipelineErrorLogRepository pipelineErrorLogRepo,
     IPipelineRunLogRepository pipelineRunLogRepo,
     ILogger<DistributionPipelineJob> logger)
@@ -26,16 +27,27 @@ public class DistributionPipelineJob(
         var inserted = 0;
         var skipped = 0;
         var errors = 0;
+        var masDividendosUpdated = 0;
+        var masDividendosSkipped = 0;
+        var masDividendosUnmatched = 0;
         string? details = null;
         try
         {
-            var historyStart = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-5));
+            var distributionCount = await marketRepo.GetDistributionCountAsync(ct);
+            var isInitialLoad = distributionCount == 0;
+            var historyStart = isInitialLoad
+                ? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1))
+                : new DateOnly(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var historyEnd = new DateOnly(
+                DateTime.UtcNow.Year,
+                DateTime.UtcNow.Month,
+                DateTime.DaysInMonth(DateTime.UtcNow.Year, DateTime.UtcNow.Month));
             var fibras = await fibraRepo.GetAllActiveAsync(ct);
             if (fibras.Count == 0)
             {
                 logger.LogDebug("No active fibras found, skipping distribution pipeline");
                 status = "Completed";
-                details = JsonSerializer.Serialize(new { processed = inserted, errors });
+                details = JsonSerializer.Serialize(new { processed = inserted, errors, masDividendosUpdated, masDividendosSkipped, masDividendosUnmatched });
                 return;
             }
 
@@ -108,15 +120,41 @@ public class DistributionPipelineJob(
                 }
             }
 
+            try
+            {
+                var importResult = await masDividendosImporter.ImportAsync(fibras, ct);
+                masDividendosUpdated += importResult.Updated;
+                masDividendosSkipped += importResult.Skipped;
+                masDividendosUnmatched += importResult.Unmatched;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "MasDividendos import failed during distribution pipeline");
+                errors++;
+            }
+
             logger.LogInformation(
-                "Distribution pipeline complete — inserted: {Inserted}, skipped: {Skipped}, errors: {Errors}",
-                inserted, skipped, errors);
+                "Distribution pipeline complete — inserted: {Inserted}, skipped: {Skipped}, masdividendos updated: {MasUpdated}, masdividendos skipped: {MasSkipped}, unmatched: {MasUnmatched}, errors: {Errors}",
+                inserted, skipped, masDividendosUpdated, masDividendosSkipped, masDividendosUnmatched, errors);
 
             status = "Completed";
             details = JsonSerializer.Serialize(new
             {
                 processed = inserted,
                 errors,
+                masDividendos = new
+                {
+                    updated = masDividendosUpdated,
+                    skipped = masDividendosSkipped,
+                    unmatched = masDividendosUnmatched,
+                },
+                initialLoad = distributionCount == 0,
+                historyStart = historyStart.ToString("yyyy-MM-dd"),
+                historyEnd = historyEnd.ToString("yyyy-MM-dd"),
             });
         }
         catch (OperationCanceledException)
@@ -129,6 +167,12 @@ public class DistributionPipelineJob(
             {
                 processed = inserted,
                 errors,
+                masDividendos = new
+                {
+                    updated = masDividendosUpdated,
+                    skipped = masDividendosSkipped,
+                    unmatched = masDividendosUnmatched,
+                },
             });
             throw;
         }

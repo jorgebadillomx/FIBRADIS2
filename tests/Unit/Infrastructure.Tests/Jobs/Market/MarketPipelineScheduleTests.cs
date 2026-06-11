@@ -22,4 +22,11 @@ public class MarketPipelineScheduleTests
                 Assert.Equal("0,15,30,45 9-15 * * 1-5", session.CronExpression);
             });
     }
+
+    [Fact]
+    public void DistributionSchedule_UsesDailyUtcEightAm()
+    {
+        Assert.Equal("distribution-pipeline", MarketPipelineSchedule.DistributionJobId);
+        Assert.Equal("0 8 * * *", MarketPipelineSchedule.DistributionCronExpression);
+    }
 }

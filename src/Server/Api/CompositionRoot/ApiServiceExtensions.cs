@@ -12,6 +12,7 @@ using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Articles;
 using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.OgImage;
+using Infrastructure.Integrations.MasDividendos;
 using Infrastructure.Integrations.PdfDiscovery;
 using Infrastructure.Integrations.Yahoo;
 using YahooQuotesApi;
@@ -79,6 +80,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IFibraRepository, FibraRepository>();
         builder.Services.AddScoped<IMarketRepository, MarketRepository>();
+        builder.Services.AddScoped<IMasDividendosImporterService, MasDividendosImporterService>();
         builder.Services.AddScoped<MarketPipelineJob>();
         builder.Services.AddScoped<DailySnapshotHistoricalJob>();
         builder.Services.AddScoped<NewsPipelineJob>();
@@ -111,6 +113,12 @@ public static class ApiServiceExtensions
                         new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc)))
                     .Build()));
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
+        builder.Services.AddHttpClient<IMasDividendosClient, MasDividendosClient>(client =>
+        {
+            client.BaseAddress = new Uri("https://app.masdividendos.mx/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://app.masdividendos.mx/");
+        });
         builder.Services.AddScoped<DistributionPipelineJob>();
         builder.Services.AddScoped<IAiProviderConfigRepository, AiProviderConfigRepository>();
         builder.Services.AddTransient<AiCapturingHandler>();

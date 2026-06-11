@@ -3,6 +3,7 @@ import { cn } from '@/shared/lib/utils'
 
 const navigationItems = [
   { label: 'Dashboard', to: '/dashboard', description: 'Estado de pipelines, errores y disparos manuales.' },
+  { label: 'Distribuciones', to: '/distribuciones', description: 'Calendario de pagos, ex derechos y edición manual.' },
   { label: 'Catálogo', to: '/catalog', description: 'Agregar, editar y desactivar FIBRAs del universo.' },
   { label: 'AI Config', to: '/ai-config', description: 'Modo, proveedor y disparos manuales.' },
   { label: 'Contenido Editorial', to: '/editorial', description: 'Editar textos educativos de la sección Conoce las FIBRAs.' },

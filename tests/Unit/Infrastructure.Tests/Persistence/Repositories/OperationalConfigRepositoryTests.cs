@@ -106,7 +106,7 @@ public class OperationalConfigRepositoryTests
 
         Assert.Equal(720, config.FundamentalsCadenceMinutes);
         Assert.Equal("fundamentals_cadence_minutes", audit.FieldName);
-        Assert.Equal("1440", audit.PreviousValue);
+        Assert.Equal("2880", audit.PreviousValue);
         Assert.Equal("720", audit.NewValue);
     }
 

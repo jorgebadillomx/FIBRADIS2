@@ -15,7 +15,11 @@ public class DistributionConfiguration : IEntityTypeConfiguration<Distribution>
         builder.Property(d => d.FibraId).HasColumnName("fibra_id").IsRequired();
         builder.Property(d => d.Ticker).HasMaxLength(20).IsRequired().HasColumnName("ticker");
         builder.Property(d => d.PaymentDate).HasColumnName("payment_date").IsRequired();
+        builder.Property(d => d.ExDividendDate).HasColumnName("ex_dividend_date");
         builder.Property(d => d.AmountPerUnit).HasColumnName("amount_per_unit").HasColumnType("decimal(18,6)").IsRequired();
+        builder.Property(d => d.TaxableAmount).HasColumnName("taxable_amount").HasColumnType("decimal(18,6)");
+        builder.Property(d => d.CapitalReturnAmount).HasColumnName("capital_return_amount").HasColumnType("decimal(18,6)");
+        builder.Property(d => d.AvisoUrl).HasColumnName("aviso_url").HasMaxLength(500);
         builder.Property(d => d.Currency).HasMaxLength(10).IsRequired().HasColumnName("currency");
         builder.Property(d => d.Source).HasMaxLength(50).IsRequired().HasColumnName("source");
         builder.Property(d => d.CapturedAt).HasColumnName("captured_at").IsRequired();

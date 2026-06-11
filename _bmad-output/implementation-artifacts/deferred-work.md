@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 10-1-calendario-eventos-corporativos (2026-06-10)
+
+- **W1 (LOW): Retry HTTP en MasDividendosClient** — Sin reintentos en 4xx/5xx; el pipeline falla la importación de desglose silenciosamente. Considerar Polly retry policy en historia posterior de observabilidad.
+- **W2 (LOW): `DateOnly.Parse` en OrderBy hot loop** — `GET /api/v1/market/events` re-parsea cada fecha en el OrderBy. Sorting por string ISO-8601 daría mismo resultado con mejor rendimiento. Bajo impacto en volumen actual (~19 FIBRAs × 12 meses).
+- **W3 (LOW): Distribuciones de FIBRAs desactivadas invisibles en Ops** — La vista admin filtra por FIBRAs activas; si se desactiva una FIBRA, sus distribuciones históricas desaparecen del admin. Revisar si se quiere un flag `showInactive` en el endpoint.
+- **W4 (LOW): Race condition `distributionCount == 0` no atómica** — Doble ejecución simultánea (manual + scheduled) podría lanzar backfill duplicado. SQL constraint previene inserts duplicados. Hangfire no ejecuta concurrentemente el mismo recurring job salvo trigger manual.
+- **W5 (LOW): `UpsertDistributionAsync` retorna `false` para "actualizado" y "ya existe sin cambio"** — El contador `inserted` en `DistributionPipelineJob` sigue siendo correcto, pero no hay contador de `updated`. Agregar telemetría diferenciada en revisión futura.
+- **W6 (LOW): `DateTime.UtcNow` múltiples llamadas en `DistributionPipelineJob`** — Si las llamadas cruzan medianoche, historyStart y historyEnd pueden ser de meses distintos. Riesgo mínimo; capturar `DateTime.UtcNow` una vez al inicio del método.
+- **W7 (LOW): `DateOnly.Parse` sin try-catch en endpoint `/events`** — Lanzaría `FormatException` si algún `CalendarEventDto.Date` tuviera formato inválido. Datos vienen de BD interna, riesgo bajo. Agregar guard en revisión futura.
+- **W8 (LOW): Concurrencia `UpsertDistributionAsync` con InMemory provider** — Sin constraint SQL en InMemory; duplicados posibles en tests. En SQL Server la `DbUpdateException` se captura correctamente. Deuda de tests.
+
 ## Deferred from: code review of 9-5-mejoras-fundamentales (2026-06-09)
 
 - **D1 (LOW): Dos llamadas DB por FIBRA en `FundamentalsAutomationService`** — `GetLatestProcessedByFibraAsync` y `GetProcessedPeriodsAsync` son dos round-trips donde el period del primero está implícito en la lista del segundo. Podría derivarse `latestProcessed` haciendo `ComparePeriods` sobre `processedPeriods` usando el helper, eliminando una query. Impacto bajo dado que solo hay ~19 FIBRAs activas.

@@ -108,6 +108,17 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
         return await query.OrderByDescending(d => d.PaymentDate).ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Distribution>> GetDistributionsByRangeAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken ct = default)
+        => await db.Distributions
+            .Where(d => (d.PaymentDate >= from && d.PaymentDate <= to)
+                     || (d.ExDividendDate >= from && d.ExDividendDate <= to))
+            .OrderBy(d => d.PaymentDate)
+            .ThenBy(d => d.Ticker)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<Distribution>> GetDistributionsByFibrasAsync(
         IReadOnlyList<Guid> fibraIds,
         int days,
@@ -149,6 +160,10 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
 
     public async Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default)
     {
+        var updated = await UpdateDistributionAmountAsync(dist.FibraId, dist.PaymentDate, dist.AmountPerUnit, ct);
+        if (updated)
+            return false;
+
         try
         {
             db.Distributions.Add(dist);
@@ -160,5 +175,110 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             db.Entry(dist).State = EntityState.Detached;
             return false;
         }
+    }
+
+    public async Task<int> GetDistributionCountAsync(CancellationToken ct = default)
+        => await db.Distributions.CountAsync(ct);
+
+    public async Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default)
+        => await db.Distributions.FirstOrDefaultAsync(d => d.Id == id, ct);
+
+    public async Task<bool> UpdateDistributionAmountAsync(
+        Guid fibraId,
+        DateOnly paymentDate,
+        decimal amount,
+        CancellationToken ct = default)
+    {
+        var existing = await db.Distributions
+            .FirstOrDefaultAsync(d => d.FibraId == fibraId && d.PaymentDate == paymentDate, ct);
+
+        if (existing is null)
+            return false;
+
+        if (existing.AmountPerUnit != amount)
+        {
+            existing.AmountPerUnit = amount;
+            await db.SaveChangesAsync(ct);
+        }
+
+        return true;
+    }
+
+    public async Task<bool> UpdateDistributionBreakdownAsync(
+        Guid fibraId,
+        DateOnly paymentDate,
+        DateOnly? exDate,
+        decimal? taxable,
+        decimal? capital,
+        string? avisoUrl,
+        CancellationToken ct = default)
+    {
+        var existing = await db.Distributions
+            .FirstOrDefaultAsync(d => d.FibraId == fibraId && d.PaymentDate == paymentDate, ct);
+
+        if (existing is null)
+            return false;
+
+        var changed = false;
+
+        if (existing.ExDividendDate is null && exDate.HasValue)
+        {
+            existing.ExDividendDate = exDate;
+            changed = true;
+        }
+        else if (exDate.HasValue && existing.ExDividendDate != exDate)
+        {
+            existing.ExDividendDate = exDate;
+            changed = true;
+        }
+
+        if (existing.TaxableAmount is null && taxable.HasValue)
+        {
+            existing.TaxableAmount = taxable;
+            changed = true;
+        }
+        else if (taxable.HasValue && existing.TaxableAmount.HasValue
+                 && Math.Abs(existing.TaxableAmount.Value - taxable.Value) > 0.000001m)
+        {
+            existing.TaxableAmount = taxable;
+            changed = true;
+        }
+
+        if (existing.CapitalReturnAmount is null && capital.HasValue)
+        {
+            existing.CapitalReturnAmount = capital;
+            changed = true;
+        }
+        else if (capital.HasValue && existing.CapitalReturnAmount.HasValue
+                 && Math.Abs(existing.CapitalReturnAmount.Value - capital.Value) > 0.000001m)
+        {
+            existing.CapitalReturnAmount = capital;
+            changed = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(existing.AvisoUrl) && !string.IsNullOrWhiteSpace(avisoUrl))
+        {
+            existing.AvisoUrl = avisoUrl.Trim();
+            changed = true;
+        }
+
+        if (changed)
+            await db.SaveChangesAsync(ct);
+
+        return true;
+    }
+
+    public async Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default)
+        => await db.SaveChangesAsync(ct);
+
+    public async Task<bool> DeleteDistributionAsync(Guid id, CancellationToken ct = default)
+    {
+        var existing = await db.Distributions.FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (existing is null)
+            return false;
+
+        db.Distributions.Remove(existing);
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 }

@@ -1,6 +1,6 @@
 # Story 10.2: Calculadora ISR Integrada en Distribuciones y Herramientas
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -34,17 +34,17 @@ Esta historia requiere que la **Historia 10.1 esté completada** antes de implem
 
 ## Tasks / Subtasks
 
-- [ ] T0 — Backend: exponer campos fiscales en `DistributionPointDto` (requiere Historia 10.1 en BD)
-  - [ ] T0.1 — En `SharedApiContracts`, agregar a `DistributionPointDto`:
+- [x] T0 — Backend: exponer campos fiscales en `DistributionPointDto` (requiere Historia 10.1 en BD)
+  - [x] T0.1 — En `SharedApiContracts`, agregar a `DistributionPointDto`:
     ```csharp
     public decimal? TaxableAmountPerUnit { get; init; }
     public decimal? CapitalReturnAmountPerUnit { get; init; }
     ```
-  - [ ] T0.2 — En el endpoint `GET /api/v1/market/fibras/{ticker}/history`, mapear desde `Distribution.TaxableAmount` y `Distribution.CapitalReturnAmount` al DTO
-  - [ ] T0.3 — Regenerar el cliente TypeScript (`npm run codegen:api`) y verificar que aparecen los nuevos campos opcionales en `schema.d.ts`
+  - [x] T0.2 — En el endpoint `GET /api/v1/market/fibras/{ticker}/history`, mapear desde `Distribution.TaxableAmount` y `Distribution.CapitalReturnAmount` al DTO
+  - [x] T0.3 — Regenerar el cliente TypeScript (`npm run codegen:api`) y verificar que aparecen los nuevos campos opcionales en `schema.d.ts`
 
-- [ ] T1 — Función pura de cálculo ISR (AC: 2, 3, 4)
-  - [ ] T1.1 — Crear `src/Web/Main/src/modules/herramientas/isrCalculator.ts` con:
+- [x] T1 — Función pura de cálculo ISR (AC: 2, 3, 4)
+  - [x] T1.1 — Crear `src/Web/Main/src/modules/herramientas/isrCalculator.ts` con:
 
     ```typescript
     export const ISR_RATE = 0.30;
@@ -74,15 +74,15 @@ Esta historia requiere que la **Historia 10.1 esté completada** antes de implem
     }
     ```
 
-  - [ ] T1.2 — Unit tests en `isrCalculator.test.ts`:
+  - [x] T1.2 — Unit tests en `isrCalculator.test.ts`:
     - Con desglose: dist=0.62, taxable=0.40, units=500 → taxableGross=200, isr=60, capitalReturn=110, net=250, isEstimate=false
     - Sin desglose: dist=0.62, units=500 → taxableGross=310, isr=93, capitalReturn=0, net=217, isEstimate=true
     - Units=0 → safeUnits=1 (valores por unidad)
     - taxablePerUnit > distPerUnit → capitalBase=0 (Math.max protege de negativo)
     - dist=0 → todos cero, sin error
 
-- [ ] T2 — Componente `IsrCalculatorWidget.tsx` en ficha de FIBRA (AC: 1, 2, 3, 4, 6)
-  - [ ] T2.1 — Crear `src/Web/Main/src/modules/ficha-publica/IsrCalculatorWidget.tsx`
+- [x] T2 — Componente `IsrCalculatorWidget.tsx` en ficha de FIBRA (AC: 1, 2, 3, 4, 6)
+  - [x] T2.1 — Crear `src/Web/Main/src/modules/ficha-publica/IsrCalculatorWidget.tsx`
     - Props:
 
       ```typescript
@@ -96,34 +96,34 @@ Esta historia requiere que la **Historia 10.1 esté completada** antes de implem
     - State local: `distPerUnit` (inicializado a `lastDistribution ?? ''`), `units` (string, vacío por defecto)
     - Cálculo `useMemo` sobre `calcIsr(distPerUnit, units, taxableAmountPerUnit)`
     - Si `lastDistribution` es null/undefined → mostrar empty state del AC6
-  - [ ] T2.2 — UI: card con título "Calculadora ISR". Dos inputs (paso 0.0001 y 1). Tabla de resultados:
+  - [x] T2.2 — UI: card con título "Calculadora ISR". Dos inputs (paso 0.0001 y 1). Tabla de resultados:
     - Si `isEstimate=false`: fila "Resultado Fiscal (bruto)" + fila "ISR retenido (30%)" + fila "Reembolso de Capital *" + fila negrita "Distribución neta". Nota al pie: "* Reembolso de capital no sujeto a retención. Reduce tu costo base fiscal para la venta futura de CBFIs."
     - Si `isEstimate=true`: banner amarillo de advertencia (AC3), y tabla con: fila "Distribución bruta (est.)" + fila "ISR estimado (30%)" + fila "Neto estimado". Sin fila de reembolso de capital.
-  - [ ] T2.3 — Nota informativa fija debajo de los resultados: "Tasa de retención provisional del 30% sobre resultado fiscal para personas físicas residentes en México (LISR Art. 188). No considera deducciones adicionales ni regímenes especiales."
-  - [ ] T2.4 — Integrar en `FibraPage.tsx`, pasando desde la última distribución de `distributions[0]`: `amountPerUnit`, `taxableAmountPerUnit` y `capitalReturnAmountPerUnit`
+  - [x] T2.3 — Nota informativa fija debajo de los resultados: "Tasa de retención provisional del 30% sobre resultado fiscal para personas físicas residentes en México (LISR Art. 188). No considera deducciones adicionales ni regímenes especiales."
+  - [x] T2.4 — Integrar en `FibraPage.tsx`, pasando desde la última distribución de `distributions[0]`: `amountPerUnit`, `taxableAmountPerUnit` y `capitalReturnAmountPerUnit`
 
-- [ ] T3 — Página `/herramientas` (AC: 5, 7)
-  - [ ] T3.1 — Crear módulo `src/Web/Main/src/modules/herramientas/` con `HerramientasPage.tsx`
-  - [ ] T3.2 — Sección "Calculadora Yield": inputs Precio actual (MXN) y Distribución trimestral (MXN), output Yield anualizado %. Lógica: `yield = (dist * 4) / precio`. Mostrar `—` si precio = 0.
-  - [ ] T3.3 — Sección "Calculadora ISR": standalone sin pre-fill, siempre en modo estimado (`taxablePerUnit=undefined`). Muestra banner de advertencia del AC3 de forma permanente con texto: "La calculadora asume que el 100% es resultado fiscal. Para un cálculo exacto, ingresa el desglose fiscal de tu brokerage."
-  - [ ] T3.4 — Registrar ruta `/herramientas` en `App.tsx` (pública)
-  - [ ] T3.5 — Agregar enlace "Herramientas" al nav principal
+- [x] T3 — Página `/herramientas` (AC: 5, 7)
+  - [x] T3.1 — Crear módulo `src/Web/Main/src/modules/herramientas/` con `HerramientasPage.tsx`
+  - [x] T3.2 — Sección "Calculadora Yield": inputs Precio actual (MXN) y Distribución trimestral (MXN), output Yield anualizado %. Lógica: `yield = (dist * 4) / precio`. Mostrar `—` si precio = 0.
+  - [x] T3.3 — Sección "Calculadora ISR": standalone sin pre-fill, siempre en modo estimado (`taxablePerUnit=undefined`). Muestra banner de advertencia del AC3 de forma permanente con texto: "La calculadora asume que el 100% es resultado fiscal. Para un cálculo exacto, ingresa el desglose fiscal de tu brokerage."
+  - [x] T3.4 — Registrar ruta `/herramientas` en `App.tsx` (pública)
+  - [x] T3.5 — Agregar enlace "Herramientas" al nav principal
 
-- [ ] T4 — SEO y meta tags para `/herramientas` (AC: 7)
-  - [ ] T4.1 — `<title>Herramientas para Inversores en FIBRAs — FIBRADIS</title>`
-  - [ ] T4.2 — `<meta name="description">` 120-160 chars con mención de calculadora ISR y yield
-  - [ ] T4.3 — Tags OG básicos
-  - [ ] T4.4 — Verificar ruta responde 200 en hit directo (prerender)
+- [x] T4 — SEO y meta tags para `/herramientas` (AC: 7)
+  - [x] T4.1 — `<title>Herramientas para Inversores en FIBRAs — FIBRADIS</title>`
+  - [x] T4.2 — `<meta name="description">` 120-160 chars con mención de calculadora ISR y yield
+  - [x] T4.3 — Tags OG básicos
+  - [x] T4.4 — Verificar ruta responde 200 en hit directo (prerender)
 
-- [ ] T5 — Unit tests adicionales (AC: 2, 3, 5)
-  - [ ] T5.1 — Test `calcYield`: yield=null cuando precio=0; yield correcto con valores típicos
-  - [ ] T5.2 — Test `calcIsr` casos límite: dist negativa → bruto 0; taxablePerUnit > distPerUnit → capitalReturn=0; units negativas → safeUnits=1
+- [x] T5 — Unit tests adicionales (AC: 2, 3, 5)
+  - [x] T5.1 — Test `calcYield`: yield=null cuando precio=0; yield correcto con valores típicos
+  - [x] T5.2 — Test `calcIsr` casos límite: dist negativa → bruto 0; taxablePerUnit > distPerUnit → capitalReturn=0; units negativas → safeUnits=1
 
-- [ ] T6 — Build final y validación
-  - [ ] T6.1 — `npm run build --workspace=src/Web/Main` sin errores TypeScript
-  - [ ] T6.2 — Verificar que la ficha de una FIBRA con desglose fiscal disponible muestra la tabla completa (resultado fiscal + reembolso + ISR + neto)
-  - [ ] T6.3 — Verificar que la ficha de una FIBRA SIN desglose muestra el banner amarillo y la tabla estimada
-  - [ ] T6.4 — Verificar `/herramientas` en browser: ambas calculadoras funcionan, sin flash de contenido
+- [x] T6 — Build final y validación
+  - [x] T6.1 — `npm run build --workspace=src/Web/Main` sin errores TypeScript
+  - [x] T6.2 — Verificar que la ficha de una FIBRA con desglose fiscal disponible muestra la tabla completa (resultado fiscal + reembolso + ISR + neto)
+  - [x] T6.3 — Verificar que la ficha de una FIBRA SIN desglose muestra el banner amarillo y la tabla estimada
+  - [x] T6.4 — Verificar `/herramientas` en browser: ambas calculadoras funcionan, sin flash de contenido
 
 ## Dev Notes
 
@@ -310,6 +310,67 @@ claude-sonnet-4-6 (bmad-create-story + revisión legal)
 
 ### Debug Log References
 
+- `npm run codegen:api`
+- `npm run build --workspace=src/Web/Main`
+- `npm test --workspace=src/Web/Main`
+- `dotnet test tests/Integration/Api.Tests/Api.Tests.csproj --filter "FullyQualifiedName~MarketHistoryEndpointTests"`
+- `Playwright` against `http://127.0.0.1:4173/herramientas` confirmed `200`, the SEO title/description, and both calculator cards in the rendered DOM.
+
 ### Completion Notes List
 
+- Expuse `taxableAmountPerUnit` y `capitalReturnAmountPerUnit` end-to-end desde el dominio hasta `DistributionPointDto`, endpoint de historial y `schema.d.ts`.
+- Implementé `calcIsr` y `calcYield` con tests unitarios para desgloses exactos, modo estimado y bordes numéricos.
+- Añadí `IsrCalculatorWidget` en la ficha pública, la página `/herramientas`, la ruta pública y el enlace del nav.
+- Dejé SEO para `/herramientas` con `title`, `description` y OG tags, y agregué la ruta al prerender estático.
+- Validé con build frontend, tests del SPA, tests de integración del endpoint y verificación de navegador para `/herramientas`.
+
+### Change Log
+
+- 2026-06-10: Backend, cliente OpenAPI y frontend actualizados para la calculadora ISR integrada, página pública `/herramientas`, SEO y validaciones.
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/10-2-calculadora-isr.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `scripts/codegen/Api.json`
+- `src/Server/Api/Endpoints/Public/MarketEndpoints.cs`
+- `src/Server/SharedApiContracts/Market/FibraHistoryDto.cs`
+- `src/Web/Main/package.json`
+- `src/Web/Main/scripts/prerender.mjs`
+- `src/Web/Main/src/app/routes.tsx`
+- `src/Web/Main/src/modules/ficha-publica/FibraPage.tsx`
+- `src/Web/Main/src/modules/ficha-publica/IsrCalculatorWidget.tsx`
+- `src/Web/Main/src/modules/herramientas/HerramientasPage.tsx`
+- `src/Web/Main/src/modules/herramientas/isrCalculator.ts`
+- `src/Web/Main/src/modules/herramientas/isrCalculator.test.ts`
+- `src/Web/Main/src/modules/herramientas/yieldCalculator.ts`
+- `src/Web/Main/src/modules/herramientas/yieldCalculator.test.ts`
+- `src/Web/Main/src/shared/layouts/PublicLayout.tsx`
+- `src/Web/SharedApiClient/schema.d.ts`
+- `tests/Integration/Api.Tests/MarketHistoryEndpointTests.cs`
+
+## Senior Developer Review (AI)
+
+### Review Findings — 2026-06-10
+
+**Resultado:** 0 `decision-needed` · 10 `patch` · 4 `defer` · 9 descartados
+
+#### Patches
+
+- [x] `patch` **P1 MEDIUM — `taxableBase` cap no documentado (desviación de spec):** `isrCalculator.ts:34` usa `Math.min(safeDist, Math.max(0, taxableValue))`, que limita la base fiscal al monto distribuido. La spec dice usar `taxablePerUnit` sin límite. El test `calcIsr(0.40, 500, 0.62)` aserta `taxableGross=200` (con límite), no 310 (spec). El comportamiento es más conservador y correcto para retención real (no se puede retener más de lo distribuido), pero la divergencia con la spec y el test que la confirma deben documentarse con un comentario `// Cap: ISR no puede exceder la distribución recibida`. No cambiar la lógica.
+- [x] `patch` **P2 MEDIUM — `calcYield` devuelve porcentaje sin documentar:** `yieldCalculator.ts:1` devuelve 0–100 (e.g. 2.48) pero la spec define fracción (0.0248). Internamente consistente con `formatPercent`, pero ningún comentario advierte al caller. Añadir JSDoc: `/** Devuelve el rendimiento anualizado en porcentaje (0–100), e.g. 2.48 para 2.48%. */`
+- [x] `patch` **P3 MEDIUM — `calcYield(0, precio)` muestra "0.00%" en lugar de "—":** Cuando el campo distribución está vacío, `parseInput('')=0`, `calcYield(0,100)=0`, y el widget muestra "0.00%" como si el dato fuera conocido. Fix: retornar `null` cuando `safeDist <= 0` en `yieldCalculator.ts:4`. Actualizar test correspondiente.
+- [x] `patch` **P4 MEDIUM — Fila "bruta" en modo estimado suma `capitalReturn` (addend siempre 0):** `IsrCalculatorWidget.tsx:128` muestra `formatMoney(result.taxableGross + result.capitalReturn)`. En modo estimado `capitalReturn` es siempre 0, por lo que la suma es redundante pero frágil ante un cambio futuro en `calcIsr`. Fix: usar `result.taxableGross` directamente en la rama de estimado.
+- [x] `patch` **P5 MEDIUM — `ISR_RATE` no se usa en las etiquetas de la UI:** La tasa "30%" está hardcodeada como string en badges y filas de tabla en `IsrCalculatorWidget.tsx` y `HerramientasPage.tsx`. Si la tasa cambia, las etiquetas se desincronizarán. Fix: derivar con `${(ISR_RATE * 100).toFixed(0)}%` importando la constante.
+- [x] `patch` **P6 LOW — `og:url` ausente en `HerramientasPage.tsx`:** T4.3 requiere OG básico; falta `og:url`. Fix: añadir `<meta property="og:url" content="https://fibradis.mx/herramientas" />`.
+- [x] `patch` **P7 LOW — `parseInput` duplicada:** Función idéntica en `IsrCalculatorWidget.tsx:18` y `HerramientasPage.tsx:6`. Fix: exportar desde `isrCalculator.ts` o un util compartido e importar en ambos componentes.
+- [x] `patch` **P8 LOW — `reportedTaxablePerUnit` código muerto en modo estimado:** `IsrCalculatorWidget.tsx:53-64` calcula `reportedTaxablePerUnit` y `reportedCapitalReturnPerUnit` incluso cuando `result.isEstimate=true`, pero el bloque que los usa está protegido por `{!result.isEstimate ? ... }`. Fix: mover el cálculo dentro de la rama de no-estimado o eliminar el fallback innecesario.
+- [x] `patch` **P9 LOW — El campo `units` acepta valores fraccionarios:** `step="1"` en el `<input type="number">` no impide tipear "1.5"; `normalizeUnits(1.5)=1.5` produce totales con fracciones de CBFI. Fix: aplicar `Math.floor(Math.max(value, 1))` en `normalizeUnits` en `isrCalculator.ts:18`.
+- [x] `patch` **P10 LOW — Sin indicador "por CBFI" cuando unidades=0 (AC4):** Cuando el campo unidades está vacío, `safeUnits=1` y los resultados son por unidad, pero no hay etiqueta que lo indique al usuario. Fix: mostrar "(por CBFI)" en el encabezado de resultados del widget cuando `parseInput(units) === 0`.
+
+#### Deferred
+
+- [x] `defer` W1: Multiplicador trimestral fijo (×4) en `calcYield` — la spec documenta explícitamente esta suposición. `yieldCalculator.ts` — pre-existente, aceptable.
+- [x] `defer` W2: Inicialización de `distPerUnit` desde prop — anti-patrón React, pero seguro en uso actual porque el widget se desmonta al cambiar de ticker (history→undefined). `IsrCalculatorWidget.tsx:35` — pre-existente, sin riesgo inmediato.
+- [x] `defer` W3: `taxableAmountPerUnit=0` en modo desglose muestra ISR=$0 sin banner — comportamiento correcto para FIBRAs con 100% retorno de capital (null=sin desglose, 0=resultado fiscal cero). Contrato de la API. `isrCalculator.ts:29`.
+- [x] `defer` W4: Inconsistencia de nombres `CalendarEventDto.TaxableAmount` vs `DistributionPointDto.TaxableAmountPerUnit` — problema cross-story introducido en 10-1, fuera del alcance de esta historia. `FibraHistoryDto.cs`.
