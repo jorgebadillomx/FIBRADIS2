@@ -1,13 +1,44 @@
-import { Link, useParams } from 'react-router'
+import { useEffect } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
-import { fetchArticleById, fetchRelatedNews, type NewsKeyFigure } from '@/api/newsApi'
+import { fetchArticleById, fetchArticleBySlug, fetchRelatedNews, type NewsKeyFigure } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 
 const DEFAULT_TITLE = 'Fibras Inmobiliarias'
-const DEFAULT_DESCRIPTION = 'Preview de noticia de Fibras Inmobiliarias.'
+const BASE_URL = 'https://fibrasinmobiliarias.com'
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Espejo de NewsMetadataMiddleware.BuildDescription (SSR) — la hidratación no debe cambiar la description
+const BRAND_DESCRIPTION_SUFFIX =
+  ' — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.'
+const MAX_DESCRIPTION_LENGTH = 160
+const MIN_DESCRIPTION_LENGTH = 120
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`#>]+/g, '')
+    .replace(/\s+/g, ' ')
+}
+
+function truncateWithEllipsis(text: string): string {
+  let cut = MAX_DESCRIPTION_LENGTH - 3
+  const code = text.charCodeAt(cut - 1)
+  // No partir un surrogate pair (emoji) en el corte
+  if (code >= 0xd800 && code <= 0xdbff) cut--
+  return text.slice(0, cut) + '...'
+}
+
+function buildDescription(raw: string | null | undefined): string {
+  const text = stripMarkdown(raw ?? '').trim()
+  if (text.length > MAX_DESCRIPTION_LENGTH) return truncateWithEllipsis(text)
+  if (text.length >= MIN_DESCRIPTION_LENGTH) return text
+  const padded = text.length > 0 ? text + BRAND_DESCRIPTION_SUFFIX : BRAND_DESCRIPTION_SUFFIX.replace(/^[\s—]+/, '')
+  return padded.length > MAX_DESCRIPTION_LENGTH ? truncateWithEllipsis(padded) : padded
+}
 
 const IMPACT_BADGE: Record<string, string> = {
   alto: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
@@ -16,20 +47,30 @@ const IMPACT_BADGE: Record<string, string> = {
 }
 
 export function NoticiaPage() {
-  const { id } = useParams<{ id: string }>()
+  const { slug: rawParam } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
   const { slugFor } = useFibraSlugMap()
+  const isGuid = GUID_REGEX.test(rawParam ?? '')
   const { data: article, isLoading, isError } = useQuery({
-    queryKey: ['news', 'article', id],
-    queryFn: () => fetchArticleById(id!),
-    enabled: !!id,
+    queryKey: ['news', 'article', rawParam],
+    queryFn: () => (isGuid ? fetchArticleById(rawParam!) : fetchArticleBySlug(rawParam!)),
+    enabled: !!rawParam,
     staleTime: 10 * 60_000,
   })
+
+  // Redirect GUID → slug (backward compat para links antiguos)
+  useEffect(() => {
+    if (isGuid && article?.slug && !isLoading) {
+      navigate(`/noticias/${article.slug}`, { replace: true })
+    }
+  }, [isGuid, article?.slug, isLoading, navigate])
 
   const aiAnalysis = article?.aiAnalysis ?? null
   const summaryContent = aiAnalysis?.summaryMarkdown ?? article?.aiSummary ?? article?.snippet ?? null
   const displayTitle = aiAnalysis?.headline ?? article?.title
-  const pageTitle = displayTitle ? `${displayTitle} — Fibras Inmobiliarias` : DEFAULT_TITLE
-  const pageDescription = summaryContent ? summaryContent.slice(0, 160) : DEFAULT_DESCRIPTION
+  // Mismo formato que NewsMetadataMiddleware (SSR) — la hidratación no debe cambiar el title
+  const pageTitle = displayTitle ? `${displayTitle} — Noticias | FIBRADIS` : DEFAULT_TITLE
+  const pageDescription = buildDescription(summaryContent)
 
   if (isLoading) {
     return (
@@ -72,11 +113,18 @@ export function NoticiaPage() {
   }
 
   const safeExternalUrl = getSafeExternalUrl(article.url)
+  const canonicalUrl = `${BASE_URL}/noticias/${article.slug ?? article.id}`
 
   return (
     <>
       <title>{pageTitle}</title>
       <meta name="description" content={pageDescription} />
+      <link rel="canonical" href={canonicalUrl} />
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={pageDescription} />
+      <meta property="og:type" content="article" />
+      <meta property="og:url" content={canonicalUrl} />
+      {article.imageUrl ? <meta property="og:image" content={article.imageUrl} /> : null}
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
@@ -239,7 +287,7 @@ function RelatedNews({ articleId }: { articleId: string }) {
       <div className="divide-y divide-border">
         {articles.map(related => (
           <article key={related.id} className="px-4 py-3">
-            <Link to={`/noticias/${related.id}`} className="block">
+            <Link to={`/noticias/${related.slug ?? related.id}`} className="block">
               <div className="hover:text-brand transition-colors">
                 <h3 className="text-sm font-medium leading-5">{related.title}</h3>
               </div>

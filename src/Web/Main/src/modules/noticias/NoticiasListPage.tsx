@@ -171,7 +171,7 @@ export function NoticiasListPage() {
 
                 return (
                   <article key={article.id} className="group overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-sm transition-colors hover:border-primary/35">
-                    <Link to={`/noticias/${article.id}`} className="block h-full">
+                    <Link to={`/noticias/${article.slug ?? article.id}`} className="block h-full">
                       {false && imageUrl ? (
                         <div className="aspect-video overflow-hidden bg-muted">
                           <img

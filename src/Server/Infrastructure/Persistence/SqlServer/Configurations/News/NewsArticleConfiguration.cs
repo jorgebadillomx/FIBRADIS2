@@ -14,6 +14,7 @@ public class NewsArticleConfiguration : IEntityTypeConfiguration<NewsArticle>
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.Title).HasColumnName("title").HasMaxLength(512).IsRequired();
         builder.Property(x => x.TitleNormalized).HasColumnName("title_normalized").HasMaxLength(512).IsRequired();
+        builder.Property(x => x.Slug).HasColumnName("slug").HasMaxLength(256);
         builder.Property(x => x.Source).HasColumnName("source").HasMaxLength(256).IsRequired();
         builder.Property(x => x.PublishedAt).HasColumnName("published_at").IsRequired();
         builder.Property(x => x.Url).HasColumnName("url").HasMaxLength(1024).IsRequired();
@@ -30,6 +31,11 @@ public class NewsArticleConfiguration : IEntityTypeConfiguration<NewsArticle>
         builder.HasIndex(x => x.Url)
             .IsUnique()
             .HasDatabaseName("IX_NewsArticle_Url");
+
+        builder.HasIndex(x => x.Slug)
+            .IsUnique()
+            .HasFilter("[slug] IS NOT NULL")  // SQL Server: filtered unique index
+            .HasDatabaseName("IX_NewsArticle_Slug");
 
         builder.HasIndex(x => new { x.TitleNormalized, x.CapturedAt })
             .HasDatabaseName("IX_NewsArticle_TitleNormalized_CapturedAt");

@@ -30,6 +30,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 // El 301 a la URL slug canónica debe resolverse ANTES de servir HTML (SpaMetadataMiddleware)
 app.UseMiddleware<FibraSlugRedirectMiddleware>();
+// /noticias/{slug|guid} dinámico — antes que SpaMetadataMiddleware (que cubre /noticias listado)
+app.UseMiddleware<NewsMetadataMiddleware>();
 app.UseMiddleware<SpaMetadataMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -62,6 +64,7 @@ app.MapOpportunities();
 app.MapOpsUsers();
 app.MapAccount();
 app.MapSeo();
+app.MapOpsNewsManagement();
 
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());

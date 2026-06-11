@@ -2281,6 +2281,38 @@
         }
       }
     },
+    "/api/v1/news/{slug}": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsArticleDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/v1/fibras": {
       "get": {
         "tags": [
@@ -4580,6 +4612,45 @@
           }
         }
       }
+    },
+    "/api/v1/ops/news/backfill-slugs": {
+      "post": {
+        "tags": [
+          "OpsNewsManagement"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillSlugsResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4784,6 +4855,22 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "BackfillSlugsResultDto": {
+        "required": [
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -6789,6 +6876,12 @@
             "items": {
               "$ref": "#/components/schemas/LinkedFibraDto"
             }
+          },
+          "slug": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8921,6 +9014,9 @@
     },
     {
       "name": "Opportunities"
+    },
+    {
+      "name": "OpsNewsManagement"
     }
   ]
 }

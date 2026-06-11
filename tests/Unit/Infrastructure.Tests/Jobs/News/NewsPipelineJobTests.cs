@@ -390,6 +390,21 @@ internal sealed class FakeNewsRepository : INewsRepository
 
     public Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
         => Task.CompletedTask;
+
+    public Task<NewsArticle?> GetBySlugAsync(string slug, CancellationToken ct = default)
+        => Task.FromResult(SavedArticles.FirstOrDefault(article => article.Slug == slug));
+
+    public Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default)
+        => Task.FromResult(SlugGenerator.Generate(title));
+
+    public Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
+
+    public Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<(string, DateTimeOffset)>>([]);
 }
 
 internal sealed class FakeNewsBlocklistRepository(IReadOnlyList<string> terms) : IBlocklistRepository

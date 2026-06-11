@@ -1,12 +1,15 @@
+using System.Globalization;
 using System.Security;
 using System.Text;
 using Application.Catalog;
+using Application.News;
 
 namespace Api.Endpoints.Public;
 
 public static class SeoEndpoints
 {
     private const string DefaultBaseUrl = "https://fibrasinmobiliarias.com";
+    private const int MaxNewsInSitemap = 500;
 
     // Prioridades según valor SEO de cada ruta (ver Dev Notes 11.3):
     // Home 1.0, /calculadora 0.9 (quick win GSC), contenido principal 0.8,
@@ -31,13 +34,17 @@ public static class SeoEndpoints
     {
         app.MapMethods("/sitemap.xml", GetAndHead, async (
             IFibraRepository fibraRepo,
+            INewsRepository newsRepo,
             IConfiguration config,
             CancellationToken ct) =>
         {
+            // secuencial: ambos repos comparten el mismo DbContext Scoped (no thread-safe)
             var fibras = await fibraRepo.GetAllActiveAsync(ct);
+            var newsArticles = await newsRepo.GetArticlesForSitemapAsync(MaxNewsInSitemap, ct);
             var xml = BuildSitemapXml(
                 GetBaseUrl(config),
-                fibras.Select(f => (f.FullName, f.Ticker)));
+                fibras.Select(f => (f.FullName, f.Ticker)),
+                newsArticles);
             return Results.Content(xml, "application/xml; charset=utf-8");
         })
         .AllowAnonymous()
@@ -58,7 +65,8 @@ public static class SeoEndpoints
 
     public static string BuildSitemapXml(
         string baseUrl,
-        IEnumerable<(string FullName, string Ticker)> activeFibras)
+        IEnumerable<(string FullName, string Ticker)> activeFibras,
+        IEnumerable<(string Slug, DateTimeOffset PublishedAt)>? newsArticles = null)
     {
         var sb = new StringBuilder();
         sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -70,6 +78,10 @@ public static class SeoEndpoints
         foreach (var (fullName, ticker) in activeFibras)
             AppendUrlEntry(sb, $"{baseUrl}/fibras/{FibraSlug.Build(fullName, ticker)}", "0.8", "weekly");
 
+        foreach (var (slug, publishedAt) in newsArticles ?? [])
+            // InvariantCulture: con cultura de calendario no gregoriano "yyyy" emitiría un año inválido
+            AppendUrlEntry(sb, $"{baseUrl}/noticias/{slug}", "0.6", "daily", publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+
         sb.Append("</urlset>\n");
         return sb.ToString();
     }
@@ -79,10 +91,12 @@ public static class SeoEndpoints
 
     // Orden según el XSD de sitemaps.org: loc, lastmod, changefreq, priority.
     // <loc> con entity-escaping: App:BaseUrl viene de config sin validar (un '&' rompería el XML)
-    private static void AppendUrlEntry(StringBuilder sb, string loc, string priority, string changefreq)
+    private static void AppendUrlEntry(StringBuilder sb, string loc, string priority, string changefreq, string? lastmod = null)
     {
         sb.Append("  <url>\n");
         sb.Append($"    <loc>{SecurityElement.Escape(loc)}</loc>\n");
+        if (lastmod is not null)
+            sb.Append($"    <lastmod>{lastmod}</lastmod>\n");
         sb.Append($"    <changefreq>{changefreq}</changefreq>\n");
         sb.Append($"    <priority>{priority}</priority>\n");
         sb.Append("  </url>\n");

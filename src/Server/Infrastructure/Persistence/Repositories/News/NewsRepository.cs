@@ -34,6 +34,8 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     public async Task AddWithLinksAsync(NewsArticle article, IEnumerable<Guid> fibraIds, CancellationToken ct = default)
     {
+        article.Slug ??= await GenerateUniqueSlugAsync(article.Title, ct: ct);
+
         db.NewsArticles.Add(article);
 
         foreach (var fibraId in fibraIds.Distinct())
@@ -45,8 +47,25 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             });
         }
 
-        await db.SaveChangesAsync(ct);
+        // La unicidad del slug se decide con check-then-insert: una ingesta concurrente con el
+        // mismo título puede ganar la carrera y violar IX_NewsArticle_Slug. Sin retry el artículo
+        // completo se pierde (NewsPipelineJob trata la excepción como fallo de guardado).
+        for (var retry = 0; ; retry++)
+        {
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return;
+            }
+            catch (DbUpdateException ex) when (retry < 3 && IsSlugUniqueViolation(ex))
+            {
+                article.Slug = await GenerateUniqueSlugAsync(article.Title, article.Id, ct);
+            }
+        }
     }
+
+    private static bool IsSlugUniqueViolation(DbUpdateException ex)
+        => ex.InnerException?.Message.Contains("IX_NewsArticle_Slug", StringComparison.OrdinalIgnoreCase) == true;
 
     public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.NewsArticles.FindAsync([id], ct).AsTask();
@@ -265,5 +284,68 @@ public class NewsRepository(AppDbContext db) : INewsRepository
         await db.NewsArticles
             .Where(n => n.Id == id && n.DeletedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(n => n.DeletedAt, now), ct);
+    }
+
+    public async Task<NewsArticle?> GetBySlugAsync(string slug, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            return null;
+
+        return await db.NewsArticles
+            .FirstOrDefaultAsync(n => n.Slug == slug && n.DeletedAt == null, ct);
+    }
+
+    // Literales bajo /api/v1/news y /noticias que un slug no debe ocupar: la ruta literal
+    // ganaría sobre /{slug} y el artículo quedaría inalcanzable (o devolvería otro contenido)
+    private static readonly string[] ReservedSlugs = ["paged", "fibras", "related"];
+
+    public async Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default)
+    {
+        var baseSlug = SlugGenerator.Generate(title);
+        var candidate = baseSlug;
+
+        // <= 51: la última iteración verifica el candidato "-50" generado en la anterior
+        for (var attempt = 2; attempt <= 51; attempt++)
+        {
+            var exists = !IsRouteSafe(candidate) || await db.NewsArticles.AnyAsync(
+                n => n.Slug == candidate && (excludeId == null || n.Id != excludeId), ct);
+            if (!exists) return candidate;
+
+            // Recortar base si está muy cerca del límite antes de agregar sufijo
+            var trimmedBase = baseSlug.Length > 190 ? baseSlug[..190] : baseSlug;
+            candidate = $"{trimmedBase}-{attempt}";
+        }
+
+        // Fallback último recurso (no debería ocurrir en práctica)
+        var guidCandidate = $"{baseSlug[..Math.Min(baseSlug.Length, 160)]}-{Guid.NewGuid():N}";
+        return guidCandidate.Length > 200 ? guidCandidate[..200] : guidCandidate;
+    }
+
+    // Un slug GUID-parseable lo capturaría la ruta /{id:guid} (constraint > sin constraint)
+    private static bool IsRouteSafe(string candidate)
+        => !ReservedSlugs.Contains(candidate) && !Guid.TryParse(candidate, out _);
+
+    public async Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default)
+        => await db.NewsArticles
+            .Where(n => n.Slug == null && n.DeletedAt == null)
+            .Take(batchSize)
+            .ToListAsync(ct);
+
+    public async Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default)
+    {
+        await db.NewsArticles
+            .Where(n => n.Id == id)
+            .ExecuteUpdateAsync(s => s.SetProperty(n => n.Slug, slug), ct);
+    }
+
+    public async Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
+    {
+        var rows = await db.NewsArticles
+            .Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null)
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(limit)
+            .Select(n => new { n.Slug, n.PublishedAt })
+            .ToListAsync(ct);
+        return rows.Select(r => (r.Slug!, r.PublishedAt)).ToList();
     }
 }
