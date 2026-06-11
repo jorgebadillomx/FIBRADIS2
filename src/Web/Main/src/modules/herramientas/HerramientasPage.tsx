@@ -39,19 +39,8 @@ export function HerramientasPage() {
 
   return (
     <>
-      <title>Herramientas para Inversores en FIBRAs — FIBRADIS</title>
-      <meta
-        name="description"
-        content="Calculadoras públicas para estimar yield anualizado e ISR de distribuciones de FIBRAs con cifras claras en MXN y resultados fáciles de leer."
-      />
-      <meta property="og:title" content="Herramientas para Inversores en FIBRAs — FIBRADIS" />
-      <meta
-        property="og:description"
-        content="Calculadoras públicas para estimar yield anualizado e ISR de distribuciones de FIBRAs con cifras claras en MXN y resultados fáciles de leer."
-      />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content="https://fibradis.mx/herramientas" />
-
+      {/* title/meta/canonical/og los inyecta SpaMetadataMiddleware (SpaMetadataProvider, ruta /herramientas) —
+          el og:url con dominio fibradis.mx (deuda 10-2) se resolvió moviendo la metadata al servidor */}
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Herramientas públicas</p>

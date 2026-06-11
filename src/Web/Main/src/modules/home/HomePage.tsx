@@ -8,7 +8,8 @@ export function HomePage() {
     <>
       <title>Fibras Inmobiliarias — Plataforma de análisis de FIBRAs del mercado mexicano</title>
       <meta name="description" content="Descubre y analiza FIBRAs del mercado mexicano (BMV). Precios, fundamentales, distribuciones y noticias en tiempo real." />
-      <link rel="canonical" href="https://fibradis.mx/" />
+      {/* canonical lo inyecta SpaMetadataMiddleware con el dominio configurado (App:BaseUrl);
+          el client-side apuntaba al dominio incorrecto fibradis.mx — retirado en code review 11-2 */}
 
       {/* Hero editorial */}
       <section className="border-b border-border py-10">

@@ -10,6 +10,7 @@ import { ConoceLasFibrasPage } from '@/modules/conoce-las-fibras/ConoceLasFibras
 import { CatalogoPage } from '@/modules/catalogo/CatalogoPage'
 import { ComparadorPage } from '@/modules/comparador/ComparadorPage'
 import { HerramientasPage } from '@/modules/herramientas/HerramientasPage'
+import { CalculadoraPage } from '@/modules/calculadora/CalculadoraPage'
 import { PortafolioPage } from '@/modules/portafolio/PortafolioPage'
 import { OportunidadesPage } from '@/modules/oportunidades/OportunidadesPage'
 import { LoginPage } from '@/modules/auth/LoginPage'
@@ -26,6 +27,7 @@ export const routes: RouteObject[] = [
       { path: '/catalogo', element: <CatalogoPage /> },
       { path: '/comparar', element: <ComparadorPage /> },
       { path: '/herramientas', element: <HerramientasPage /> },
+      { path: '/calculadora', element: <CalculadoraPage /> },
       { path: '/fibras/:ticker', element: <FibraPage /> },
       { path: '/noticias', element: <NoticiasListPage /> },
       { path: '/calendario', element: <CalendarioPage /> },

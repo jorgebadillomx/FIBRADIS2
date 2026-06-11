@@ -28,6 +28,7 @@ var app = builder.Build();
 app.UseMiddleware<WwwToNonWwwMiddleware>();
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
+app.UseMiddleware<SpaMetadataMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRouting(); // explícito: debe ir después de static files para que los assets no sean interceptados por el fallback

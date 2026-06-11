@@ -1,3 +1,9 @@
+// LEGACY (decisión code review 11-2, 2026-06-11): el mecanismo canónico de metadata SEO
+// en producción es SpaMetadataMiddleware (server-side, src/Server/Api/Middleware/).
+// El deploy usa `npm run build` — NO usar `build:full`: este script consume el comentario
+// <!-- prerender-meta --> del que depende el middleware y generaría HTML por ruta que
+// el middleware cortocircuitaría. Mantener solo como referencia hasta retirarlo.
+//
 // Genera HTML estático para rutas públicas conocidas.
 // Requiere: dist/ (del `vite build`) y dist-server/ (del `vite build --ssr`)
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'

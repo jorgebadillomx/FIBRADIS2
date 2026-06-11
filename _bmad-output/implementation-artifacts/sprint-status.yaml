@@ -6,6 +6,9 @@
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
 # last_updated: 2026-06-11
+# story 11-2 done — code review pass (6 patches middleware: guard prerender-meta, GET/HEAD, HTML-encoding+escape JSON-LD, Cache-Control no-cache, BaseUrl fail-fast, catch IOException; /herramientas al provider resolviendo deuda 10-2 og:url fibradis.mx; meta client-side retirada de Calculadora/Herramientas + canonicals incorrectos de Home/Calendario; FibraPage canonical corregido; prerender.mjs LEGACY). 5 defers + huérfana /calculadora diferida (funcionalidad posterior). 377/377 + 272/272 + 105/105 verdes
+# story 11-2 review — SpaMetadataMiddleware inyecta title/description/canonical/og/JSON-LD server-side en 8 rutas públicas (sustituye title estático, extensión CA-3 aprobada); static shell /calculadora literal (badge próximamente, decisión usuario); App:BaseUrl configurable; 45 tests nuevos, 834 tests verdes (unit+integration+frontend)
+# story 11-4 creada — slug URLs + metadata SSR dinámica para /noticias/:slug, OpsNewsManagement backfill, NewsMetadataMiddleware independiente de 11.2
 # story 11-1 done — code review pass (1 patch: UseHttpsRedirection condicional en !IsDevelopment). 1 defer (Response.HasStarted guard). 272/272 integration tests verdes.
 # story 9-8 done — code review pass (4 patches: D1 cadencia default 2880=cada2días, P1 migración EF fundamentals_cadence_minutes, P2 catch redundante ExecuteForFibraAsync, P3 onSuccess runMutation historial). 2 defers.
 # story 9-5 done — code review pass (2 patches: P1 Task.Delay antes de filtros ventana/dedup, P2 ArgumentException no capturada en IsPeriodInRange). 5 defers.
@@ -344,8 +347,11 @@ development_status:
   # ── Épica 11: SEO Foundation — Correcciones técnicas críticas ────────────
   epic-11: in-progress
   11-1-canonical-y-redireccion-www-https: done
-  11-2-spa-metadata-injection: backlog
-  11-3-sitemap-xml-y-robots-txt: backlog
+  11-2-spa-metadata-injection: done
+  # story 11-3 ampliada y ready-for-dev — sitemap+robots + migración ruta /fibras/:ticker → /fibras/:nombre-fibra-ticker (slug FullName+ticker, 301 server-side, canonicalización cliente, 9 link sites, prerender)
+  11-3-sitemap-xml-y-robots-txt: ready-for-dev
+  # story 11-4 creada — slug URLs + metadata SSR dinámica para /noticias/:slug, OpsNewsManagement backfill, NewsMetadataMiddleware
+  11-4-slug-urls-noticias: ready-for-dev
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done

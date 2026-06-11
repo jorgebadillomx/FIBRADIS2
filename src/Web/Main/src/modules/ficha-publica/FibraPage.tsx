@@ -145,7 +145,8 @@ export function FibraPage() {
     ? `Análisis de ${fibra.fullName} (${fibra.ticker}): precio de mercado, fundamentales, distribuciones y noticias. ${fibra.sector} — ${fibra.market}.`
     : `Perfil de FIBRA ${ticker} en Fibras Inmobiliarias.`
 
-  const canonicalUrl = `https://fibradis.mx/fibras/${fibra?.ticker ?? ticker}`
+  // dominio canónico per historias 11-1/11-2 (antes apuntaba al incorrecto fibradis.mx)
+  const canonicalUrl = `https://fibrasinmobiliarias.com/fibras/${fibra?.ticker ?? ticker}`
 
   if (isLoading) return <FibraPageSkeleton />
   if (isError) return <FibraErrorState />

@@ -1,5 +1,6 @@
 using Api.Authentication;
 using Api.HealthChecks;
+using Api.Seo;
 using Application.Auth;
 using Application.Catalog;
 using Application.Jobs;
@@ -73,6 +74,8 @@ public static class ApiServiceExtensions
 
         builder.AddFibradisAuthentication();
         builder.AddFibradisAuthorization();
+
+        builder.Services.AddSingleton<ISpaMetadataProvider, SpaMetadataProvider>();
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
         builder.Services.AddSingleton<IEmailEncryptor, EmailEncryptor>();
