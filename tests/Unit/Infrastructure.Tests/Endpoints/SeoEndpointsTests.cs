@@ -12,6 +12,12 @@ public class SeoEndpointsTests
         ("Fibra Macquarie", "FIBRAMQ12"),
     ];
 
+    private static readonly (string Slug, DateTimeOffset PublishedAt)[] SampleNews =
+    [
+        ("funo11-reporta-resultados-del-2t25", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+        ("danhos13-anuncia-distribucion", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
+    ];
+
     [Fact]
     public void SitemapContainsCalculadora_WithPriority09()
     {
@@ -67,14 +73,48 @@ public class SeoEndpointsTests
     {
         // El XSD de sitemaps.org define la secuencia loc, lastmod, changefreq, priority —
         // un validador estricto rechaza priority antes de changefreq (CA-1)
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
         var doc = System.Xml.Linq.XDocument.Parse(xml);
 
         foreach (var url in doc.Root!.Elements())
         {
             var names = url.Elements().Select(e => e.Name.LocalName).ToArray();
-            Assert.Equal(["loc", "changefreq", "priority"], names);
+            // las entradas de noticias incluyen lastmod (PublishedAt); el resto no
+            if (names.Length == 4)
+                Assert.Equal(["loc", "lastmod", "changefreq", "priority"], names);
+            else
+                Assert.Equal(["loc", "changefreq", "priority"], names);
         }
+    }
+
+    [Fact]
+    public void SitemapContainsNewsSlugUrls_WithPriority06DailyAndLastmod()
+    {
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
+
+        Assert.Contains(
+            "<loc>https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25</loc>\n    <lastmod>2026-06-10</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.6</priority>",
+            xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias/danhos13-anuncia-distribucion</loc>", xml);
+    }
+
+    [Fact]
+    public void SitemapWithNews_IsValidXml_WithExpectedUrlCount()
+    {
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
+
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+        // 9 rutas estáticas + 2 fibras + 2 noticias
+        Assert.Equal(13, doc.Root!.Elements().Count());
+    }
+
+    [Fact]
+    public void SitemapWithoutNews_KeepsBackwardCompatibleShape()
+    {
+        // llamada sin noticias (firma previa) — no debe emitir entradas /noticias/{slug}
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
+
+        Assert.DoesNotContain("/noticias/", xml);
     }
 
     [Fact]

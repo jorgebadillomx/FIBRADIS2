@@ -32,7 +32,7 @@ export const routes: RouteObject[] = [
       { path: '/noticias', element: <NoticiasListPage /> },
       { path: '/calendario', element: <CalendarioPage /> },
       { path: '/conoce-las-fibras', element: <ConoceLasFibrasPage /> },
-      { path: '/noticias/:id', element: <NoticiaPage /> },
+      { path: '/noticias/:slug', element: <NoticiaPage /> },
       { path: '/fundamentales', element: <FundamentalesPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/privacidad', element: <PrivacidadPage /> },

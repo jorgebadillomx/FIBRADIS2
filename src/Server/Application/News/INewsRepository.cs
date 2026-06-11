@@ -21,4 +21,9 @@ public interface INewsRepository
     Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default);
     Task<IReadOnlyList<(Guid Id, string Url)>> GetNullBodyTextArticlesAsync(int maxArticles, int daysBack, CancellationToken ct = default);
     Task SoftDeleteAsync(Guid id, CancellationToken ct = default);
+    Task<NewsArticle?> GetBySlugAsync(string slug, CancellationToken ct = default);
+    Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default);
+    Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default);
+    Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default);
+    Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default);
 }

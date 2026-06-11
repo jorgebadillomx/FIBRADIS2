@@ -84,12 +84,29 @@ public static class NewsEndpoints
         .AllowAnonymous()
         .Produces<IReadOnlyList<NewsArticleDto>>(StatusCodes.Status200OK);
 
+        // Sin constraint: captura todo lo que no sea GUID ni literal (/paged, /fibras).
+        // ASP.NET Core prioriza literal > constraint > sin constraint — no hay ambigüedad.
+        group.MapGet("/{slug}", async (
+            string slug,
+            INewsRepository newsRepo,
+            CancellationToken ct) =>
+        {
+            var article = await newsRepo.GetBySlugAsync(slug, ct);
+            if (article is null) return Results.NotFound();
+            var fibras = await newsRepo.GetLinkedFibrasAsync(article.Id, ct);
+            return Results.Ok(ToDtoWithFibras(article, fibras));
+        })
+        .AllowAnonymous()
+        .Produces<NewsArticleDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
         return app;
     }
 
     private static NewsArticleDto ToDto(NewsArticle article)
         => new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url,
-            article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson));
+            article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson),
+            Slug: article.Slug);
 
     private static NewsArticleDto ToDtoWithTickerNames(
         NewsArticle article,
@@ -109,7 +126,8 @@ public static class NewsEndpoints
             article.ImageUrl,
             article.AiSummary,
             MapAnalysis(article.AiAnalysisJson),
-            linkedFibras);
+            linkedFibras,
+            article.Slug);
     }
 
     private static NewsArticleDto ToDtoWithFibras(NewsArticle article, IReadOnlyList<(Guid Id, string Ticker)> fibras)
@@ -118,7 +136,8 @@ public static class NewsEndpoints
             ? fibras.Select(f => new LinkedFibraDto(f.Id, f.Ticker)).ToList()
             : null;
         return new(article.Id, article.Title, article.Source, article.PublishedAt, article.Url,
-            article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson), linked);
+            article.Snippet, article.ImageUrl, article.AiSummary, MapAnalysis(article.AiAnalysisJson), linked,
+            article.Slug);
     }
 
     private static NewsAiAnalysisDto? MapAnalysis(string? json)

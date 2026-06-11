@@ -10,7 +10,8 @@ public sealed record NewsArticleDto(
     string? ImageUrl,
     string? AiSummary,
     NewsAiAnalysisDto? AiAnalysis,
-    IReadOnlyList<LinkedFibraDto>? LinkedFibras = null
+    IReadOnlyList<LinkedFibraDto>? LinkedFibras = null,
+    string? Slug = null
 );
 
 public sealed record LinkedFibraDto(Guid Id, string Ticker);

@@ -1,6 +1,6 @@
 # Historia 11.4: Slug URLs y Metadata Dinámica para Noticias
 
-Status: ready-for-dev
+Status: done
 
 ## Historia
 
@@ -74,9 +74,9 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
 
 ### Tarea 1 — Dominio: `SlugGenerator` + columna `Slug` en `NewsArticle` (AC: 1, 9)
 
-- [ ] T1.1 Crear `src/Server/Application/News/SlugGenerator.cs` (ver Dev Notes §Algoritmo slug)
-- [ ] T1.2 Agregar propiedad `public string? Slug { get; set; }` a `src/Server/Domain/News/NewsArticle.cs`
-- [ ] T1.3 Actualizar `src/Server/Infrastructure/Persistence/SqlServer/Configurations/News/NewsArticleConfiguration.cs`:
+- [x] T1.1 Crear `src/Server/Application/News/SlugGenerator.cs` (ver Dev Notes §Algoritmo slug)
+- [x] T1.2 Agregar propiedad `public string? Slug { get; set; }` a `src/Server/Domain/News/NewsArticle.cs`
+- [x] T1.3 Actualizar `src/Server/Infrastructure/Persistence/SqlServer/Configurations/News/NewsArticleConfiguration.cs`:
   ```csharp
   builder.Property(x => x.Slug).HasColumnName("slug").HasMaxLength(256);
   builder.HasIndex(x => x.Slug)
@@ -84,14 +84,14 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
       .HasFilter("[slug] IS NOT NULL")  // SQL Server: filtered unique index
       .HasDatabaseName("IX_NewsArticle_Slug");
   ```
-- [ ] T1.4 Crear migración EF Core:
+- [x] T1.4 Crear migración EF Core:
   ```bash
   dotnet ef migrations add AddNewsArticleSlug \
     --project src/Server/Infrastructure \
     --startup-project src/Server/Api
   ```
   Si los DLLs están bloqueados, agregar `--configuration Release` (convención del proyecto).
-- [ ] T1.5 Ejecutar migración en BD local:
+- [x] T1.5 Ejecutar migración en BD local:
   ```bash
   dotnet ef database update \
     --project src/Server/Infrastructure \
@@ -100,7 +100,7 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
 
 ### Tarea 2 — Repositorio: métodos de slug (AC: 1, 2, 9, 10)
 
-- [ ] T2.1 Agregar a `INewsRepository`:
+- [x] T2.1 Agregar a `INewsRepository`:
   ```csharp
   Task<NewsArticle?> GetBySlugAsync(string slug, CancellationToken ct = default);
   Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default);
@@ -108,17 +108,17 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
   Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default);
   Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default);
   ```
-- [ ] T2.2 Implementar en `NewsRepository.cs`:
+- [x] T2.2 Implementar en `NewsRepository.cs`:
   - `GetBySlugAsync`: `db.NewsArticles.FirstOrDefaultAsync(n => n.Slug == slug && n.DeletedAt == null, ct)`
   - `GenerateUniqueSlugAsync`: genera base slug con `SlugGenerator.Generate(title)`, luego en loop verifica unicidad (ver Dev Notes §Unicidad)
   - `GetArticlesWithoutSlugAsync`: `db.NewsArticles.Where(n => n.Slug == null && n.DeletedAt == null).Take(batchSize).ToListAsync(ct)`
   - `UpdateSlugAsync`: `ExecuteUpdateAsync` por ID
   - `GetArticlesForSitemapAsync`: `db.NewsArticles.Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null).OrderByDescending(n => n.PublishedAt).Take(limit).Select(n => new { n.Slug!, n.PublishedAt }).ToListAsync(ct)` (proyección anónima → tuple)
-- [ ] T2.3 Modificar `AddWithLinksAsync` para auto-generar slug antes de `db.SaveChangesAsync`:
+- [x] T2.3 Modificar `AddWithLinksAsync` para auto-generar slug antes de `db.SaveChangesAsync`:
   ```csharp
   article.Slug = await GenerateUniqueSlugAsync(article.Title, ct: ct);
   ```
-- [ ] T2.4 Unit tests en nuevo archivo `tests/Unit/Infrastructure.Tests/Persistence/Repositories/NewsRepositorySlugTests.cs`:
+- [x] T2.4 Unit tests en nuevo archivo `tests/Unit/Infrastructure.Tests/Persistence/Repositories/NewsRepositorySlugTests.cs`:
   - `GetBySlugAsync_HappyPath_ReturnsArticle`
   - `GetBySlugAsync_SlugNotFound_ReturnsNull`
   - `GetBySlugAsync_DeletedArticle_ReturnsNull`
@@ -127,7 +127,7 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
 
 ### Tarea 3 — DTO + Backend endpoints (AC: 2, 3, 9)
 
-- [ ] T3.1 Actualizar `src/Server/SharedApiContracts/News/NewsArticleDto.cs`:
+- [x] T3.1 Actualizar `src/Server/SharedApiContracts/News/NewsArticleDto.cs`:
   ```csharp
   public sealed record NewsArticleDto(
       Guid Id,
@@ -143,8 +143,8 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
       string? Slug = null   // NUEVO — último parámetro opcional para retro-compat
   );
   ```
-- [ ] T3.2 Actualizar todos los `ToDto` / `ToDtoWithFibras` / `ToDtoWithTickerNames` en `NewsEndpoints.cs` para incluir `article.Slug`.
-- [ ] T3.3 Agregar endpoint por slug en `NewsEndpoints.cs` (ANTES del endpoint `{id:guid}/related` y DESPUÉS de `/paged`):
+- [x] T3.2 Actualizar todos los `ToDto` / `ToDtoWithFibras` / `ToDtoWithTickerNames` en `NewsEndpoints.cs` para incluir `article.Slug`.
+- [x] T3.3 Agregar endpoint por slug en `NewsEndpoints.cs` (ANTES del endpoint `{id:guid}/related` y DESPUÉS de `/paged`):
   ```csharp
   group.MapGet("/{slug}", async (
       string slug,
@@ -161,7 +161,7 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
   .Produces(StatusCodes.Status404NotFound);
   ```
   **NOTA**: ASP.NET Core resuelve `/{id:guid}` (con constraint) ANTES que `/{slug}` (sin constraint). Los paths literales (`/paged`, `/fibras/`, etc.) tienen prioridad sobre ambos. No hay ambigüedad de routing.
-- [ ] T3.4 Crear `src/Server/Api/Endpoints/Ops/OpsNewsManagementEndpoints.cs` con endpoint de backfill:
+- [x] T3.4 Crear `src/Server/Api/Endpoints/Ops/OpsNewsManagementEndpoints.cs` con endpoint de backfill:
   ```csharp
   public static IEndpointRouteBuilder MapOpsNewsManagement(this IEndpointRouteBuilder app)
   {
@@ -193,13 +193,13 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
       return app;
   }
   ```
-- [ ] T3.5 Registrar en `Program.cs`: agregar `app.MapOpsNewsManagement();` junto al resto de `app.MapXxx()`.
-- [ ] T3.6 Verificar build: `dotnet build FIBRADIS.slnx` — 0 errores.
+- [x] T3.5 Registrar en `Program.cs`: agregar `app.MapOpsNewsManagement();` junto al resto de `app.MapXxx()`.
+- [x] T3.6 Verificar build: `dotnet build FIBRADIS.slnx` — 0 errores.
 
 ### Tarea 4 — Frontend: cliente API + routing (AC: 4, 5)
 
-- [ ] T4.1 Regenerar cliente API tipado: `npm run codegen:api` desde raíz del repo.
-- [ ] T4.2 Agregar `fetchArticleBySlug` en `src/Web/Main/src/api/newsApi.ts`:
+- [x] T4.1 Regenerar cliente API tipado: `npm run codegen:api` desde raíz del repo.
+- [x] T4.2 Agregar `fetchArticleBySlug` en `src/Web/Main/src/api/newsApi.ts`:
   ```typescript
   export async function fetchArticleBySlug(slug: string) {
     const apiClient = getApiClient()
@@ -211,29 +211,29 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
     return data ?? null
   }
   ```
-- [ ] T4.3 Actualizar `src/Web/Main/src/app/routes.tsx`: cambiar param de `:id` a `:slug` en la ruta de detalle:
+- [x] T4.3 Actualizar `src/Web/Main/src/app/routes.tsx`: cambiar param de `:id` a `:slug` en la ruta de detalle:
   ```tsx
   { path: '/noticias/:slug', element: <NoticiaPage /> },
   ```
-- [ ] T4.4 Reescribir `src/Web/Main/src/modules/noticia/NoticiaPage.tsx` para usar slug (ver Dev Notes §NoticiaPage):
+- [x] T4.4 Reescribir `src/Web/Main/src/modules/noticia/NoticiaPage.tsx` para usar slug (ver Dev Notes §NoticiaPage):
   - Leer `slug` de `useParams<{ slug: string }>()`
   - Si es GUID: `fetchArticleById(slug)`, después del load hacer `navigate('/noticias/' + article.slug, { replace: true })` si `article.slug` existe
   - Si no es GUID: `fetchArticleBySlug(slug)`
   - Emitir `<link rel="canonical" href="/noticias/{article.slug ?? article.id}">` en el render
   - Emitir `<meta property="og:type" content="article">`, `og:url`, `og:image` si `article.imageUrl`
-- [ ] T4.5 Actualizar links en los 4 archivos que usan `article.id`:
+- [x] T4.5 Actualizar links en los 4 archivos que usan `article.id`:
   - `NoticiasListPage.tsx:174` → `to={\`/noticias/${article.slug ?? article.id}\`}`
   - `NoticiaPage.tsx:240` (RelatedNews) → `to={\`/noticias/${related.slug ?? related.id}\`}`
   - `NoticiasSection.tsx:50` → `to={\`/noticias/${article.slug ?? article.id}\`}`
   - `NewsSection.tsx:62` → `to={\`/noticias/${article.slug ?? article.id}\`}`
-- [ ] T4.6 Ejecutar build TypeScript: `npm run build --workspace=src/Web/Main` — 0 errores.
+- [x] T4.6 Ejecutar build TypeScript: `npm run build --workspace=src/Web/Main` — 0 errores.
 
 ### Tarea 5 — NewsMetadataMiddleware (CA: 6, 7, 8)
 
-- [ ] T5.1 Crear `src/Server/Api/Middleware/NewsMetadataMiddleware.cs` (ver Dev Notes §NewsMetadataMiddleware).
+- [x] T5.1 Crear `src/Server/Api/Middleware/NewsMetadataMiddleware.cs` (ver Dev Notes §NewsMetadataMiddleware).
   Constructor: `(RequestDelegate next, IWebHostEnvironment env, IConfiguration config, IServiceScopeFactory scopeFactory)`
   - `scopeFactory` es necesario porque `INewsRepository` es Scoped y el middleware es Singleton.
-- [ ] T5.2 En `InvokeAsync`:
+- [x] T5.2 En `InvokeAsync`:
   1. Si path tiene extensión (`.js`, `.css`, etc.) → pass-through
   2. Si path empieza con `/api/`, `/ops/`, `/hangfire/` → pass-through
   3. Si path NO empieza con `/noticias/` → pass-through
@@ -248,7 +248,7 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
   12. Reemplazar `<!-- prerender-meta -->` (convención de 11.2)
   13. `context.Response.StatusCode = 200; context.Response.ContentType = "text/html; charset=utf-8";`
   14. Escribir HTML modificado y `return`
-- [ ] T5.3 Registrar en `Program.cs` DESPUÉS de `WwwToNonWwwMiddleware` y ANTES de `UseDefaultFiles`:
+- [x] T5.3 Registrar en `Program.cs` DESPUÉS de `WwwToNonWwwMiddleware` y ANTES de `UseDefaultFiles`:
   ```csharp
   app.UseMiddleware<WwwToNonWwwMiddleware>();
   app.UseMiddleware<NewsMetadataMiddleware>();   // <-- aquí
@@ -257,7 +257,7 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
       app.UseHttpsRedirection();
   app.UseDefaultFiles();
   ```
-- [ ] T5.4 Unit tests en `tests/Unit/Infrastructure.Tests/Middleware/NewsMetadataMiddlewareTests.cs`:
+- [x] T5.4 Unit tests en `tests/Unit/Infrastructure.Tests/Middleware/NewsMetadataMiddlewareTests.cs`:
   - `InvokeAsync_NewsSlugPath_InjectsMetadata` — verifica que `<!-- prerender-meta -->` se reemplaza con el bloque
   - `InvokeAsync_AssetPath_PassesThrough` — path `.js` no modifica response
   - `InvokeAsync_SlugNotFound_PassesThrough` — artículo no existe, no lanza excepción
@@ -265,7 +265,7 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
 
 ### Tarea 6 — SlugGenerator unit tests (CA: 11)
 
-- [ ] T6.1 Crear `tests/Unit/Application.Tests/News/SlugGeneratorTests.cs`:
+- [x] T6.1 Crear `tests/Unit/Application.Tests/News/SlugGeneratorTests.cs`:
   - `Generate_BasicTitle_ReturnsKebabCase`
   - `Generate_TitleWithTildes_NormalizesAccents` — "FUNO11 noticias: ó, é, á, ñ" → "funo11-noticias-o-e-a-n"
   - `Generate_TitleWithSpecialChars_StripsNonAlphanumeric` — "FIBRA $MXBPO! — 2Q25" → "fibra-mxbpo-2q25"
@@ -274,8 +274,41 @@ Entonces el repositorio expone `GetArticlesForSitemapAsync` y el sitemap incluye
 
 ### Tarea 7 — Verificación final
 
-- [ ] T7.1 `dotnet test tests/Unit/` — todos pasan, incluyendo los nuevos
-- [ ] T7.2 Verificar en browser: navegar a `/noticias/` → cards con slugs; click → URL cambia a slug; F5 → recarga correctamente con metadata SSR en curl
+- [x] T7.1 `dotnet test tests/Unit/` — todos pasan, incluyendo los nuevos
+- [x] T7.2 Verificar en browser: navegar a `/noticias/` → cards con slugs; click → URL cambia a slug; F5 → recarga correctamente con metadata SSR en curl
+
+### Review Findings
+
+**Decision needed:**
+
+- [x] [Review][Decision] Soft-404: slug inexistente o artículo borrado responde 200 con shell SPA — RESUELTO (usuario, 2026-06-11): servir el shell SPA con status 404 cuando el path es `/noticias/{identifier}` y el artículo no resuelve → convertido en P14.
+
+**Patches:**
+
+- [x] [Review][Patch] P14 (Media) Soft-404: cuando `/noticias/{identifier}` (2 segmentos) no resuelve a un artículo vivo, servir el shell SPA con status 404 en lugar de pass-through 200 — extensión aprobada de T5.2 paso 9 [src/Server/Api/Middleware/NewsMetadataMiddleware.cs]
+
+- [x] [Review][Patch] P1 (Alta) Carrera check-then-insert en unicidad de slug: colisión concurrente (pipelines paralelos o backfill+pipeline) viola `IX_NewsArticle_Slug` y el artículo completo se pierde (`NewsPipelineJob` traga la excepción) — retry con regeneración ante `DbUpdateException` [src/Server/Infrastructure/Persistence/Repositories/News/NewsRepository.cs]
+- [x] [Review][Patch] P2 (Media) `EscapeJson` artesanal no escapa tab/control chars U+0000–U+001F/U+2028, y `baseUrl` se interpola crudo → JSON-LD inválido que Google descarta — usar serialización JSON real [src/Server/Api/Middleware/NewsMetadataMiddleware.cs:221]
+- [x] [Review][Patch] P3 (Media) `og:title` del middleware emite el headline pelado ≠ `<title>` con sufijo ≠ cliente (`pageTitle`) — viola checklist SSR/SEO "og:title mismo texto que title" [src/Server/Api/Middleware/NewsMetadataMiddleware.cs]
+- [x] [Review][Patch] P4 (Media) Cadena de fallback de description difiere server (`SummaryMarkdown ?? Snippet`, omite `AiSummary`) vs cliente (`summaryMarkdown ?? aiSummary ?? snippet`), y reglas de truncado distintas — alinear [NewsMetadataMiddleware.cs + src/Web/Main/src/modules/noticia/NoticiaPage.tsx]
+- [x] [Review][Patch] P5 (Media) Backfill: un fallo a mitad pierde el `count` acumulado y un artículo que falla reintenta infinito (el `do/while` relee el mismo batch) — try/catch por artículo + skip + respuesta parcial [src/Server/Api/Endpoints/Ops/OpsNewsManagementEndpoints.cs]
+- [x] [Review][Patch] P6 (Media) Slugs que colisionan con literales de ruta (`paged`, `fibras`, `related`) o GUID-parseables quedan inalcanzables o devuelven contenido equivocado con 200 — tratarlos como colisión en `GenerateUniqueSlugAsync` [NewsRepository.cs]
+- [x] [Review][Patch] P7 (Baja) CA-6: description queda en ~58 chars (solo sufijo de marca) cuando el artículo no tiene snippet ni summary — garantizar piso 120 con fallback genérico [NewsMetadataMiddleware.cs]
+- [x] [Review][Patch] P8 (Baja) Truncado por índice de char parte surrogate pairs (emoji) en el corte 157 → `�` en SERPs / JSON-LD inválido — guard `char.IsHighSurrogate` [NewsMetadataMiddleware.cs]
+- [x] [Review][Patch] P9 (Baja) Markdown crudo (`**`, `[]()`, `#`) fluye a meta description y JSON-LD — strip básico de sintaxis [NewsMetadataMiddleware.cs + NoticiaPage.tsx]
+- [x] [Review][Patch] P10 (Baja) `lastmod` del sitemap sin `CultureInfo.InvariantCulture` — año Hijri con cultura `ar-SA` [src/Server/Api/Endpoints/Public/SeoEndpoints.cs:245]
+- [x] [Review][Patch] P11 (Baja) Off-by-one en loop de unicidad: el candidato `-50` se genera pero nunca se verifica, salta directo al fallback GUID [NewsRepository.cs]
+- [x] [Review][Patch] P12 (Baja) Catch de lectura de `index.html` solo cubre `IOException`; `UnauthorizedAccessException` (deploy/ACL) → 500 [NewsMetadataMiddleware.cs]
+- [x] [Review][Patch] P13 (Baja) `identifier` sin límite de longitud viaja directo al `WHERE` de SQL (path de 8KB = query por request de bot) — guard de longitud > 256 → pass-through [NewsMetadataMiddleware.cs]
+
+**Deferred:**
+
+- [x] [Review][Defer] GUID legacy responde 200+canonical en vez de 301 server-side — CA-5 prescribe redirect client-side; consolidar con el patrón `FibraSlugRedirectMiddleware` en historia futura — deferred, decisión de spec
+- [x] [Review][Defer] `BASE_URL` hardcodeado client-side en NoticiaPage [NoticiaPage.tsx:12] — mismo patrón pre-existente que FibraPage.tsx:165 (11.3 done); centralizar en config en historia futura — deferred, pre-existing
+- [x] [Review][Defer] Sin caché de `index.html` ni del lookup BD por request — consistente con `SpaMetadataMiddleware` (11.2); optimización futura (P13 mitiga el vector de carga) — deferred, pre-existing
+- [x] [Review][Defer] Tests InMemory no ejercitan índice único filtrado, colación CI de SQL Server ni `ExecuteUpdateAsync` — limitación documentada del toolchain de tests — deferred, pre-existing
+- [x] [Review][Defer] `GetBySlugAsync` no filtra `Status` (artículos Pending/Failed accesibles por URL adivinable) — paridad con `GetByIdAsync` pre-existente (`FindAsync` sin filtros) — deferred, pre-existing
+- [x] [Review][Defer] Metas duplicadas tras hidratación (bloque SSR estático + tags de React 19) — inherente al enfoque 11.x en todas las páginas públicas; mitigado al alinear contenidos (P3/P4) — deferred, pre-existing
 
 ---
 
@@ -549,12 +582,68 @@ dotnet ef migrations add AddNewsArticleSlug \
 
 ### Agent Model Used
 
-_pending_
+claude-fable-5 (Claude Code)
 
 ### Debug Log References
 
+- Primer intento de `POST /backfill-slugs` en dev devolvió 500 por timeout SQL (Error -2): los Hangfire jobs arrancaron con backlog al levantar la API y saturaron LAPBADIS. No es bug del endpoint — se re-verificó con `Hangfire__UseInMemoryStorage=true` y respondió 200 en ambas pasadas.
+
 ### Completion Notes List
+
+- **T1**: `SlugGenerator` implementado según §Algoritmo slug del story (espacios→guión + strip de no-alfanuméricos), con `GeneratedRegex` (idioma del proyecto, como `FibraSlug`). La semántica difiere deliberadamente de `FibraSlug` ("S.A."→"sa" vs "s-a"): el antipatrón de paridad de 11.3 NO aplica aquí porque el slug de noticias se genera SOLO en backend y el frontend lo consume verbatim del DTO — no hay regeneración client-side ni riesgo de loop 301. Migración `20260611161638_AddNewsArticleSlug` aplicada en BD local (columna `slug` nvarchar(256) + índice único filtrado `IX_NewsArticle_Slug`).
+- **T2**: 5 métodos nuevos en `INewsRepository`/`NewsRepository`. `GetBySlugAsync` con guard de null/vacío (sin él, `n.Slug == null` matchearía artículos sin slug). `AddWithLinksAsync` usa `??=` para no pisar slugs ya asignados. Fakes de tests actualizados (`FakeNewsRepository`, `InMemoryNewsRepository`). `UpdateSlugAsync` (ExecuteUpdateAsync) no se unit-testea con InMemory porque el provider no lo soporta — verificado en vivo vía backfill.
+- **T3**: endpoint `GET /api/v1/news/{slug}` sin constraint (prioridad literal > constraint > sin constraint — sin ambigüedad). Backfill retorna `BackfillSlugsResultDto(int Count)` tipado en lugar de `new { count }` anónimo del spec — mejora el contrato OpenAPI/codegen (mismo criterio que patch P8 del review 11.3). JSON serializa como `{"count":N}` igual que CA-9.
+- **T4**: `NoticiaPage` con routing dual GUID/slug + redirect `replace` GUID→slug. El `<title>` client-side se alineó al formato del middleware (`{headline} — Noticias | FIBRADIS`) para que la hidratación no cambie la metadata SSR (checklist SSR/SEO: og:title == title).
+- **T5**: `NewsMetadataMiddleware` replica las convenciones endurecidas en el review de 11.2: solo GET/HEAD, guard de `<!-- prerender-meta -->`, sustitución del `<title>` estático (evita títulos duplicados), `HtmlEncoder(UnicodeRanges.All)`, escape `<` en JSON-LD, `Cache-Control: no-cache`, fail-fast de `App:BaseUrl`, catch de `IOException`. Registrado antes de `SpaMetadataMiddleware` (que cubre `/noticias` listado — CA-7). Filtra soft-deleted también en la rama GUID (`GetByIdAsync` no filtra `DeletedAt`).
+- **CA-10**: como 11.3 ya está en `done`, la integración del sitemap se hizo directamente: `BuildSitemapXml` acepta parámetro opcional de noticias (retro-compatible) y emite `lastmod` (PublishedAt yyyy-MM-dd) + `changefreq daily` + `priority 0.6`, respetando la secuencia XSD loc→lastmod→changefreq→priority.
+- **Security checklist (§Dev Notes)**: ✅ TOCTOU backfill verificado idempotente en vivo (2a pasada `count:0`); ✅ política `AdminOps` confirmada en `AddAuthorizationExtensions.cs` y 401 sin token verificado; ✅ sin divisiones; ✅ XSS: HTML-encoding + EscapeJson + `<` cubiertos por tests (`InvokeAsync_EncodesHtml_AndEscapesJsonLd`).
+- **Tests**: 47 nuevos (7 SlugGenerator + 14 NewsRepositorySlug + 20 NewsMetadataMiddleware + 6 SeoEndpoints nuevos/ajustados). Suites completas: 550/550 unit (100 Application + 8 Domain + 442 Infrastructure), 282/282 integration, 116/116 frontend. Comandos: `dotnet test tests/Unit/{Application,Domain,Infrastructure}.Tests`, `dotnet test tests/Integration/Api.Tests`, `npm test --workspace=src/Web/Main`.
+- **Verificación en vivo (curl, API dev)**: CA-1 backfill 1992 slugs, 0 duplicados en BD; CA-2 200 por slug + 404 inexistente; CA-3 200 por GUID; CA-5 canonical desde URL GUID apunta al slug; CA-6 title/canonical/og:type=article/description=160 chars/JSON-LD NewsArticle inyectados sin JS; CA-7 listado servido por SpaMetadataMiddleware; CA-8 assets `text/javascript` y API `application/json` intactos; CA-10 sitemap con 500 noticias (cap), XML válido, 528 URLs totales.
 
 ### File List
 
-_Al completar, listar todos los archivos creados/modificados._
+**Nuevos:**
+- src/Server/Application/News/SlugGenerator.cs
+- src/Server/Api/Middleware/NewsMetadataMiddleware.cs
+- src/Server/Api/Endpoints/Ops/OpsNewsManagementEndpoints.cs
+- src/Server/SharedApiContracts/News/BackfillSlugsResultDto.cs
+- src/Server/Infrastructure/Migrations/SqlServer/20260611161638_AddNewsArticleSlug.cs
+- src/Server/Infrastructure/Migrations/SqlServer/20260611161638_AddNewsArticleSlug.Designer.cs
+- tests/Unit/Application.Tests/News/SlugGeneratorTests.cs
+- tests/Unit/Infrastructure.Tests/Persistence/Repositories/NewsRepositorySlugTests.cs
+- tests/Unit/Infrastructure.Tests/Middleware/NewsMetadataMiddlewareTests.cs
+
+**Modificados:**
+- src/Server/Domain/News/NewsArticle.cs
+- src/Server/Infrastructure/Persistence/SqlServer/Configurations/News/NewsArticleConfiguration.cs
+- src/Server/Infrastructure/Migrations/SqlServer/AppDbContextModelSnapshot.cs
+- src/Server/Application/News/INewsRepository.cs
+- src/Server/Infrastructure/Persistence/Repositories/News/NewsRepository.cs
+- src/Server/SharedApiContracts/News/NewsArticleDto.cs
+- src/Server/Api/Endpoints/Public/NewsEndpoints.cs
+- src/Server/Api/Endpoints/Public/SeoEndpoints.cs
+- src/Server/Api/Program.cs
+- src/Web/Main/src/api/newsApi.ts
+- src/Web/Main/src/app/routes.tsx
+- src/Web/Main/src/modules/noticia/NoticiaPage.tsx
+- src/Web/Main/src/modules/noticias/NoticiasListPage.tsx
+- src/Web/Main/src/modules/home/NewsSection.tsx
+- src/Web/Main/src/modules/ficha-publica/sections/NoticiasSection.tsx
+- tests/Unit/Infrastructure.Tests/Endpoints/SeoEndpointsTests.cs
+- tests/Unit/Infrastructure.Tests/Jobs/News/NewsPipelineJobTests.cs
+- tests/Integration/Api.Tests/AiModeOpsEndpointTests.cs
+
+**Regenerados (codegen):**
+- scripts/codegen/Api.json
+- src/Web/SharedApiClient/schema.d.ts
+
+## Senior Developer Review (AI)
+
+- 2026-06-11 — Review adversarial (Blind Hunter + Edge Case Hunter + Acceptance Auditor). Veredicto: 11/11 CAs CUMPLEN (3 con desviación justificada). 1 decisión resuelta (soft-404 → P14 aprobado por Jorge), 14 patches aplicados, 6 defers documentados en deferred-work.md, 6 hallazgos descartados como ruido.
+- Patches aplicados: P1 retry ante colisión de slug concurrente en `AddWithLinksAsync` (DbUpdateException + regeneración, 3 intentos); P2 JSON-LD vía `JsonSerializer` con `JavaScriptEncoder` (sustituye `EscapeJson` artesanal que dejaba pasar control chars); P3 og:title = `<title>` completo; P4 cadena de fallback de description alineada server/client (`summaryMarkdown ?? aiSummary ?? snippet`) y reglas de truncado espejo en `NoticiaPage.buildDescription`; P5 backfill resiliente (try/catch por artículo, skip de fallidos sin loop infinito, conteo parcial + logging); P6 slugs reservados (`paged`/`fibras`/`related`) y GUID-parseables tratados como colisión; P7 piso 120 chars de description con sufijo de marca extendido; P8 truncado seguro de surrogate pairs; P9 strip de Markdown en descriptions; P10 `lastmod` con `InvariantCulture`; P11 off-by-one del loop de unicidad (candidato -50 ahora se verifica); P12 catch de `UnauthorizedAccessException` en lectura de index.html; P13 guard de longitud ≤256 del identifier antes de consultar BD; P14 soft-404: shell SPA con status 404 para `/noticias/{x}` no resoluble (decisión aprobada, sustituye pass-through 200 de T5.2 paso 9).
+- Tests del review: 7 nuevos backend (3 middleware: piso description, strip markdown, identifier largo→404; 4 repo: literales reservados + GUID-shaped) y 2 actualizados a comportamiento 404. Suites: 557/557 unit (100 App + 8 Domain + 449 Infra), 282/282 integration, 116/116 frontend, builds backend y frontend 0 errores.
+
+## Change Log
+
+- 2026-06-11 — Code review: 14 patches aplicados (ver Senior Developer Review), 6 defers a deferred-work.md. Suites completas verdes. Status → done.
+- 2026-06-11 — Historia 11.4 implementada completa: columna `Slug` + migración EF, `SlugGenerator`, 5 métodos de repositorio, endpoint público por slug, backfill Ops idempotente, frontend con routing dual y links por slug, `NewsMetadataMiddleware` (SSR dinámico), noticias en sitemap (integración directa con 11.3 ya en done). 47 tests nuevos; 550 unit + 282 integration + 116 frontend verdes. Status → review.

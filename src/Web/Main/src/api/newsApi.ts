@@ -66,3 +66,20 @@ export async function fetchArticleById(id: string) {
 
   return data ?? null
 }
+
+export async function fetchArticleBySlug(slug: string) {
+  const apiClient = getApiClient()
+  const { data, error, response } = await apiClient.GET('/api/v1/news/{slug}', {
+    params: { path: { slug } },
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (error) {
+    throw new Error(`Error al obtener artículo: ${JSON.stringify(error)}`)
+  }
+
+  return data ?? null
+}

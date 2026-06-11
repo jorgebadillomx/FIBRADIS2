@@ -503,6 +503,21 @@ public class AiModeOpsEndpointTests
 
         public Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
             => Task.CompletedTask;
+
+        public Task<NewsArticle?> GetBySlugAsync(string slug, CancellationToken ct = default)
+            => Task.FromResult(slug == Article.Slug ? Article : null);
+
+        public Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default)
+            => Task.FromResult(SlugGenerator.Generate(title));
+
+        public Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
+
+        public Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<(string, DateTimeOffset)>>([]);
     }
 
     private sealed class AiProviderApiWebFactory(IAiProviderConfigRepository providerRepo) : ApiWebFactory

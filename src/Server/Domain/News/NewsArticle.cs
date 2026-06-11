@@ -5,6 +5,7 @@ public class NewsArticle
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = string.Empty;
     public string TitleNormalized { get; set; } = string.Empty;
+    public string? Slug { get; set; }
     public string Source { get; set; } = string.Empty;
     public DateTimeOffset PublishedAt { get; set; }
     public string Url { get; set; } = string.Empty;

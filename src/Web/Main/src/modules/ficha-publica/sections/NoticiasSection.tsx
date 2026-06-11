@@ -47,7 +47,7 @@ export function NoticiasSection({ fibraId, fibra }: NoticiasSectionProps) {
 
         return (
           <article key={article.id} className="px-4 py-3">
-            <Link to={`/noticias/${article.id}`} className="block">
+            <Link to={`/noticias/${article.slug ?? article.id}`} className="block">
               {false && getArticleImageUrl(article, fibra) ? (
                 <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
                   <img
