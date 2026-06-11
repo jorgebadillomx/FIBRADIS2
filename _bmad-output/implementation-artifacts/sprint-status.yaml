@@ -5,7 +5,8 @@
 # story 6-7 done — code review pass (4 patches: P1 EmailEncryptor key base64-decode vs SHA256-hash, P2 AuthService login order null→disabled→pwd, P3 password inputs type=password, P4 generateStrongPassword crypto.getRandomValues+Fisher-Yates). 4 defers (D1 ChangePasswordAsync no revoca tokens, D2 SetUserActiveAsync sin guard último AdminOps, D3 toggleActiveMutation sin onError, D4 PaymentCell sin onError). 25/25 unit tests verdes
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
-# last_updated: 2026-06-10
+# last_updated: 2026-06-11
+# story 11-1 done — code review pass (1 patch: UseHttpsRedirection condicional en !IsDevelopment). 1 defer (Response.HasStarted guard). 272/272 integration tests verdes.
 # story 9-8 done — code review pass (4 patches: D1 cadencia default 2880=cada2días, P1 migración EF fundamentals_cadence_minutes, P2 catch redundante ExecuteForFibraAsync, P3 onSuccess runMutation historial). 2 defers.
 # story 9-5 done — code review pass (2 patches: P1 Task.Delay antes de filtros ventana/dedup, P2 ArgumentException no capturada en IsPeriodInRange). 5 defers.
 # epic-8 done — retrospectiva completa (epic-8-retro-2026-06-05), D1-D4 resueltos, TS build limpio
@@ -342,7 +343,7 @@ development_status:
 
   # ── Épica 11: SEO Foundation — Correcciones técnicas críticas ────────────
   epic-11: in-progress
-  11-1-canonical-y-redireccion-www-https: in-progress
+  11-1-canonical-y-redireccion-www-https: done
   11-2-spa-metadata-injection: backlog
   11-3-sitemap-xml-y-robots-txt: backlog
 
