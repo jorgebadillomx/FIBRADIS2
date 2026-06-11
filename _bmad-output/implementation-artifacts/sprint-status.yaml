@@ -345,7 +345,8 @@ development_status:
   10-2-calculadora-isr: done
 
   # ── Épica 11: SEO Foundation — Correcciones técnicas críticas ────────────
-  epic-11: in-progress
+  # epic-11 done — 4 historias completadas (11-1 canonical, 11-2 SpaMetadata, 11-3 sitemap+robots, 11-4 slugs noticias), todas mergeadas a main
+  epic-11: done
   11-1-canonical-y-redireccion-www-https: done
   11-2-spa-metadata-injection: done
   # story 11-3 review — sitemap.xml dinámico (8 estáticas + fibras activas slug) + robots.txt + FibraSlug C#/TS paridad + FibraSlugRedirectMiddleware 301 + ruta /fibras/:slug con canonicalización + 9 link sites + prerender slugs + menú "Fibras". 777 backend + 115 frontend tests verdes
