@@ -1,6 +1,5 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
+using Application.Catalog;
 
 namespace Application.News;
 
@@ -15,17 +14,7 @@ public static partial class SlugGenerator
     {
         if (string.IsNullOrWhiteSpace(text)) return "noticia";
 
-        // Descomponer Unicode para separar letra base de marcas de acento y descartarlas
-        var normalized = text.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(normalized.Length);
-        foreach (var ch in normalized)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark)
-                continue;
-            sb.Append(ch);
-        }
-
-        var clean = sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
+        var clean = SlugHelper.NormalizeText(text);
 
         clean = clean.Replace(' ', '-');
         clean = InvalidChars().Replace(clean, "");

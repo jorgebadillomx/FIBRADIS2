@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Application.Catalog;
@@ -29,16 +27,7 @@ public static partial class FibraSlug
         if (string.IsNullOrWhiteSpace(text))
             return string.Empty;
 
-        var normalized = text.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(normalized.Length);
-        foreach (var ch in normalized)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark)
-                continue;
-            sb.Append(ch);
-        }
-
-        var clean = sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
+        var clean = SlugHelper.NormalizeText(text);
         return NonAlphanumericRuns().Replace(clean, "-").Trim('-');
     }
 
