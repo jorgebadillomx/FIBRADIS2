@@ -4,7 +4,7 @@ import { FibraLogo } from '@/shared/ui/fibra-logo'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useQuery } from '@tanstack/react-query'
-import { fetchFibraByTicker, fetchMarketSnapshots } from '@/api/fibrasApi'
+import { fetchFibraByTicker, fetchFibraHistory, fetchMarketSnapshots } from '@/api/fibrasApi'
 import { fetchFundamentalesPublic, fetchFundamentalesAvailablePeriods } from '@/api/fundamentalesApi'
 import { useAuth } from '@/modules/auth/AuthContext'
 import { StarButton } from '@/modules/oportunidades/StarButton'
@@ -17,6 +17,7 @@ import { FundamentalesSection } from './sections/FundamentalesSection'
 import { DistribucionesSection } from './sections/DistribucionesSection'
 import { NoticiasSection } from './sections/NoticiasSection'
 import { ReportesSection } from './sections/ReportesSection'
+import { IsrCalculatorWidget } from './IsrCalculatorWidget'
 import { FreshnessBadge } from '@/shared/ui/freshness-badge'
 import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
 import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
@@ -79,6 +80,13 @@ export function FibraPage() {
     queryFn: fetchMarketSnapshots,
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
+  })
+
+  const { data: history } = useQuery({
+    queryKey: ['fibra-history', ticker, '1y'],
+    queryFn: () => fetchFibraHistory(ticker!, '1y'),
+    staleTime: 60 * 60_000,
+    enabled: !!ticker,
   })
 
   const { data: availablePeriods = [], isFetched: periodsFetched } = useQuery({
@@ -288,6 +296,13 @@ export function FibraPage() {
           <section id="distribuciones" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.distribuciones} />
             <DistribucionesSection ticker={fibra!.ticker} />
+            {history ? (
+              <IsrCalculatorWidget
+                lastDistribution={toNum(history.distributions[0]?.amountPerUnit)}
+                taxableAmountPerUnit={toNum(history.distributions[0]?.taxableAmountPerUnit)}
+                capitalReturnAmountPerUnit={toNum(history.distributions[0]?.capitalReturnAmountPerUnit)}
+              />
+            ) : null}
           </section>
 
           <section id="noticias" className="scroll-mt-32 space-y-4">

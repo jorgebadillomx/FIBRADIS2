@@ -5,9 +5,11 @@ import { FibraPage } from '@/modules/ficha-publica/FibraPage'
 import { NoticiaPage } from '@/modules/noticia/NoticiaPage'
 import { NoticiasListPage } from '@/modules/noticias/NoticiasListPage'
 import { FundamentalesPage } from '@/modules/fundamentales/FundamentalesPage'
+import { CalendarioPage } from '@/modules/calendario/CalendarioPage'
 import { ConoceLasFibrasPage } from '@/modules/conoce-las-fibras/ConoceLasFibrasPage'
 import { CatalogoPage } from '@/modules/catalogo/CatalogoPage'
 import { ComparadorPage } from '@/modules/comparador/ComparadorPage'
+import { HerramientasPage } from '@/modules/herramientas/HerramientasPage'
 import { PortafolioPage } from '@/modules/portafolio/PortafolioPage'
 import { OportunidadesPage } from '@/modules/oportunidades/OportunidadesPage'
 import { LoginPage } from '@/modules/auth/LoginPage'
@@ -23,8 +25,10 @@ export const routes: RouteObject[] = [
       { path: '/', element: <HomePage /> },
       { path: '/catalogo', element: <CatalogoPage /> },
       { path: '/comparar', element: <ComparadorPage /> },
+      { path: '/herramientas', element: <HerramientasPage /> },
       { path: '/fibras/:ticker', element: <FibraPage /> },
       { path: '/noticias', element: <NoticiasListPage /> },
+      { path: '/calendario', element: <CalendarioPage /> },
       { path: '/conoce-las-fibras', element: <ConoceLasFibrasPage /> },
       { path: '/noticias/:id', element: <NoticiaPage /> },
       { path: '/fundamentales', element: <FundamentalesPage /> },

@@ -5,7 +5,7 @@
 # story 6-7 done — code review pass (4 patches: P1 EmailEncryptor key base64-decode vs SHA256-hash, P2 AuthService login order null→disabled→pwd, P3 password inputs type=password, P4 generateStrongPassword crypto.getRandomValues+Fisher-Yates). 4 defers (D1 ChangePasswordAsync no revoca tokens, D2 SetUserActiveAsync sin guard último AdminOps, D3 toggleActiveMutation sin onError, D4 PaymentCell sin onError). 25/25 unit tests verdes
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
-# last_updated: 2026-06-09
+# last_updated: 2026-06-10
 # story 9-8 done — code review pass (4 patches: D1 cadencia default 2880=cada2días, P1 migración EF fundamentals_cadence_minutes, P2 catch redundante ExecuteForFibraAsync, P3 onSuccess runMutation historial). 2 defers.
 # story 9-5 done — code review pass (2 patches: P1 Task.Delay antes de filtros ventana/dedup, P2 ArgumentException no capturada en IsPeriodInRange). 5 defers.
 # epic-8 done — retrospectiva completa (epic-8-retro-2026-06-05), D1-D4 resueltos, TS build limpio
@@ -88,7 +88,9 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-09
+last_updated: 2026-06-11
+# story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
+# epic-11 creada — SEO Foundation: 3 historias (11-1 canonical+redirect, 11-2 SpaMetadataMiddleware+calculadora, 11-3 sitemap+robots). Derivadas del audit SEO junio 2026 (score 41/100, canonical mismatch, /calculadora no indexada).
 # story 9-3 done — code review pass (6 patches: P1 SPA nav links, P2 React Hooks violation PromediarTab, P3 ingresoMensual 0m guard, P4 annual cadence test, P5 dead code PortfolioEndpoints, P6 yieldPortafolio valorTotal=0 C# test). 13 defers.
 # story 9-3 ready-for-dev — mejoras portafolio: YOC, yield portafolio, ingreso mensual, score en tabla, logo, gráfica benchmarks, tab calendario, promediar+whatif, yield catálogo/ficha, búsqueda drawer móvil, benchmarks URL comparador
 # story 9-1 done — code review pass (1 patch: P1 resetear campos contraseña al cerrar diálogo). 7 defers.
@@ -335,8 +337,14 @@ development_status:
 
   # ── Épica 10: Herramientas de Valor para el Inversionista ────────────────
   epic-10: in-progress
-  10-1-calendario-eventos-corporativos: ready-for-dev
-  10-2-calculadora-isr: ready-for-dev
+  10-1-calendario-eventos-corporativos: done
+  10-2-calculadora-isr: done
+
+  # ── Épica 11: SEO Foundation — Correcciones técnicas críticas ────────────
+  epic-11: in-progress
+  11-1-canonical-y-redireccion-www-https: in-progress
+  11-2-spa-metadata-injection: backlog
+  11-3-sitemap-xml-y-robots-txt: backlog
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done

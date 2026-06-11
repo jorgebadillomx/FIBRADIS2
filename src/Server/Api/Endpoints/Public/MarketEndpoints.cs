@@ -92,7 +92,11 @@ public static class MarketEndpoints
             var dto = new FibraHistoryDto(
                 fibra.Ticker,
                 snapshots.Select(s => new DailyPricePointDto(s.Date.ToString("yyyy-MM-dd"), s.Close)).ToList(),
-                distributions.Take(MaxDistributionsInResponse).Select(d => new DistributionPointDto(d.PaymentDate.ToString("yyyy-MM-dd"), d.AmountPerUnit)).ToList(),
+                distributions.Take(MaxDistributionsInResponse).Select(d => new DistributionPointDto(
+                    d.PaymentDate.ToString("yyyy-MM-dd"),
+                    d.AmountPerUnit,
+                    d.TaxableAmount,
+                    d.CapitalReturnAmount)).ToList(),
                 annualizedYield
             );
 
@@ -102,6 +106,76 @@ public static class MarketEndpoints
         .Produces<FibraHistoryDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
+        group.MapGet("/events", async (
+            [FromQuery] DateOnly? from,
+            [FromQuery] DateOnly? to,
+            IFibraRepository fibraRepo,
+            IMarketRepository marketRepo,
+            CancellationToken ct) =>
+        {
+            var (rangeFrom, rangeTo) = ResolveRange(from, to);
+            var fibras = await fibraRepo.GetAllActiveAsync(ct);
+            var fibraById = fibras.ToDictionary(f => f.Id);
+            var distributions = await marketRepo.GetDistributionsByRangeAsync(rangeFrom, rangeTo, ct);
+            var events = new List<CalendarEventDto>(distributions.Count * 2);
+
+            foreach (var dist in distributions)
+            {
+                if (!fibraById.TryGetValue(dist.FibraId, out var fibra))
+                    continue;
+
+                if (dist.PaymentDate >= rangeFrom && dist.PaymentDate <= rangeTo)
+                {
+                    events.Add(new CalendarEventDto(
+                        "Pago",
+                        fibra.Ticker,
+                        fibra.FullName,
+                        dist.PaymentDate.ToString("yyyy-MM-dd"),
+                        dist.AmountPerUnit,
+                        dist.TaxableAmount,
+                        dist.CapitalReturnAmount,
+                        dist.AvisoUrl));
+                }
+
+                if (dist.ExDividendDate is DateOnly exDate && exDate >= rangeFrom && exDate <= rangeTo)
+                {
+                    events.Add(new CalendarEventDto(
+                        "ExDerecho",
+                        fibra.Ticker,
+                        fibra.FullName,
+                        exDate.ToString("yyyy-MM-dd"),
+                        dist.AmountPerUnit,
+                        dist.TaxableAmount,
+                        dist.CapitalReturnAmount,
+                        dist.AvisoUrl));
+                }
+            }
+
+            var ordered = events
+                .OrderBy(e => e.Date)
+                .ThenBy(e => e.EventType)
+                .ThenBy(e => e.Ticker)
+                .ToList();
+
+            return Results.Ok(ordered);
+        })
+        .AllowAnonymous()
+        .Produces<IReadOnlyList<CalendarEventDto>>(StatusCodes.Status200OK);
+
         return app;
+    }
+
+    private const int MaxRangeDays = 366;
+
+    private static (DateOnly From, DateOnly To) ResolveRange(DateOnly? from, DateOnly? to)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var start = from ?? new DateOnly(today.Year, today.Month, 1);
+        var end = to ?? new DateOnly(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        if (start > end)
+            (start, end) = (end, start);
+        if ((end.DayNumber - start.DayNumber) > MaxRangeDays)
+            end = start.AddDays(MaxRangeDays);
+        return (start, end);
     }
 }

@@ -285,9 +285,40 @@ internal sealed class FakeHistoricalMarketRepository : IMarketRepository
         CancellationToken ct = default)
         => Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
 
+    public Task<int> GetDistributionCountAsync(CancellationToken ct = default)
+        => Task.FromResult(0);
+
+    public Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult<Distribution?>(null);
+
+    public Task<IReadOnlyList<Distribution>> GetDistributionsByRangeAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<Distribution>>([]);
+
     public Task AddDistributionAsync(Distribution dist, CancellationToken ct = default)
         => Task.CompletedTask;
 
     public Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default)
         => Task.FromResult(true);
+
+    public Task<bool> UpdateDistributionAmountAsync(Guid fibraId, DateOnly paymentDate, decimal amount, CancellationToken ct = default)
+        => Task.FromResult(false);
+
+    public Task<bool> UpdateDistributionBreakdownAsync(
+        Guid fibraId,
+        DateOnly paymentDate,
+        DateOnly? exDate,
+        decimal? taxable,
+        decimal? capital,
+        string? avisoUrl,
+        CancellationToken ct = default)
+        => Task.FromResult(false);
+
+    public Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public Task<bool> DeleteDistributionAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(false);
 }

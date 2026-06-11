@@ -19,4 +19,18 @@ public interface IMarketRepository
         IReadOnlyList<Guid> fibraIds, int days = 365, CancellationToken ct = default);
     Task AddDistributionAsync(Distribution dist, CancellationToken ct = default);
     Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default);
+    Task<int> GetDistributionCountAsync(CancellationToken ct = default);
+    Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<Distribution>> GetDistributionsByRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default);
+    Task<bool> UpdateDistributionAmountAsync(Guid fibraId, DateOnly paymentDate, decimal amount, CancellationToken ct = default);
+    Task<bool> UpdateDistributionBreakdownAsync(
+        Guid fibraId,
+        DateOnly paymentDate,
+        DateOnly? exDate,
+        decimal? taxable,
+        decimal? capital,
+        string? avisoUrl,
+        CancellationToken ct = default);
+    Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default);
+    Task<bool> DeleteDistributionAsync(Guid id, CancellationToken ct = default);
 }

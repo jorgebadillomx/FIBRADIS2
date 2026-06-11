@@ -1003,6 +1003,15 @@ namespace Infrastructure.Migrations.SqlServer
                         .HasColumnType("decimal(18,6)")
                         .HasColumnName("amount_per_unit");
 
+                    b.Property<string>("AvisoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("aviso_url");
+
+                    b.Property<decimal?>("CapitalReturnAmount")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("capital_return_amount");
+
                     b.Property<DateTimeOffset>("CapturedAt")
                         .HasColumnType("datetimeoffset")
                         .HasColumnName("captured_at");
@@ -1012,6 +1021,10 @@ namespace Infrastructure.Migrations.SqlServer
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("currency");
+
+                    b.Property<DateOnly?>("ExDividendDate")
+                        .HasColumnType("date")
+                        .HasColumnName("ex_dividend_date");
 
                     b.Property<Guid>("FibraId")
                         .HasColumnType("uniqueidentifier")
@@ -1026,6 +1039,10 @@ namespace Infrastructure.Migrations.SqlServer
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("source");
+
+                    b.Property<decimal?>("TaxableAmount")
+                        .HasColumnType("decimal(18,6)")
+                        .HasColumnName("taxable_amount");
 
                     b.Property<string>("Ticker")
                         .IsRequired()

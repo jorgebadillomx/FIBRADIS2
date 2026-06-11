@@ -10,6 +10,7 @@ import { BlocklistPage } from '@/pages/BlocklistPage'
 import { CatalogPage } from '@/pages/CatalogPage'
 import { ConfigPage } from '@/pages/ConfigPage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { DistributionsPage } from '@/pages/DistributionsPage'
 import { EditorialPage } from '@/pages/EditorialPage'
 import { FundamentalsPage } from '@/pages/FundamentalsPage'
 import { NewsBodyPage } from '@/pages/NewsBodyPage'
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate replace to="/ai-config" /> },
       { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'distribuciones', element: <DistributionsPage /> },
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'ai-config', element: <AiConfigPage /> },
       { path: 'editorial', element: <EditorialPage /> },

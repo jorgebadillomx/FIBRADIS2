@@ -274,7 +274,7 @@ public class OpsConfigEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
             config.AvgPeriods = 4;
             config.NewsCadenceMinutes = 1440;
             config.FibraNewsMonths = 15;
-            config.FundamentalsCadenceMinutes = 1440;
+            config.FundamentalsCadenceMinutes = 2880;
             config.UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero);
             config.UpdatedBy = "system";
         }

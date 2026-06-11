@@ -14,5 +14,18 @@ public record DailyPricePointDto(
 
 public record DistributionPointDto(
     string Date,
-    decimal AmountPerUnit
+    decimal AmountPerUnit,
+    decimal? TaxableAmountPerUnit,
+    decimal? CapitalReturnAmountPerUnit
+);
+
+public record CalendarEventDto(
+    string EventType,
+    string Ticker,
+    string Empresa,
+    string Date,
+    decimal AmountPerUnit,
+    decimal? TaxableAmount,
+    decimal? CapitalReturnAmount,
+    string? AvisoUrl
 );
