@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: code review of 11-1-canonical-y-redireccion-www-https (2026-06-11)
+
+- **W1 (LOW): `Response.HasStarted` guard ausente en `WwwToNonWwwMiddleware`** — Si en el futuro se inserta un middleware antes de `WwwToNonWwwMiddleware` que ya haya iniciado la respuesta, `context.Response.StatusCode = 301` lanzaría `InvalidOperationException`. Actualmente ningún middleware precede al `WwwToNonWwwMiddleware` en el pipeline. Agregar `if (context.Response.HasStarted) { await next(context); return; }` al inicio de `InvokeAsync` cuando se toque el middleware de nuevo.
+
 ## Deferred from: code review of 10-1-calendario-eventos-corporativos (2026-06-10)
 
 - **W1 (LOW): Retry HTTP en MasDividendosClient** — Sin reintentos en 4xx/5xx; el pipeline falla la importación de desglose silenciosamente. Considerar Polly retry policy en historia posterior de observabilidad.
