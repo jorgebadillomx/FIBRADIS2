@@ -46,6 +46,7 @@ Si `dotnet ef migrations add` falla porque el proceso de la API tiene los DLLs b
 
 1. **Opción preferida**: detener el proceso de la API antes de ejecutar el comando.
 2. **Alternativa**: agregar `--configuration Release` al comando:
+
    ```bash
    dotnet ef migrations add NombreMigracion --project src/Server/Infrastructure --startup-project src/Server/Api --configuration Release
    ```
@@ -79,6 +80,40 @@ Antes de marcar `done`, verificar:
 - [ ] `npm run build` pasa con 0 errores TypeScript y 0 advertencias
 
 Estas verificaciones no las cubre el test suite — requieren browser o curl en dev server.
+
+## Middleware de Metadata SEO (server-side)
+
+Aplica a `SpaMetadataMiddleware`, `NewsMetadataMiddleware`, y cualquier middleware futuro que inyecte metadata en el HTML del SPA.
+
+### Reglas de contenido (no negociables)
+
+- **Description**: piso 120 chars, techo 160 chars. Cada middleware debe tener su propio test `Descriptions_AreBetween120And160Chars` en su clase de test correspondiente — no es un test compartido.
+- **Strip de Markdown**: las descriptions que vienen de contenido generado (AI, RSS, etc.) deben pasar por strip de Markdown antes de inyectarse. Asteriscos, almohadillas y backticks rompen el meta tag.
+- **og:title == title**: el valor de `og:title` debe ser exactamente igual al `<title>` completo. Si divergen después de hidratación de React, Google puede indexar el título incorrecto.
+- **Canonical con dominio de `App:BaseUrl`**: nunca hardcodear el dominio en el provider. El canonical usa `configuration["App:BaseUrl"].TrimEnd('/')`. Si `App:BaseUrl` es null o vacío al construir el pipeline → lanzar `InvalidOperationException` (fail-fast). El `TrimEnd('/')` es obligatorio — entornos Azure/IIS pueden incluir trailing slash en la variable de config.
+
+### Reglas de implementación del middleware
+
+- **Solo GET/HEAD**: solo interceptar GET y HEAD. POST/PUT/DELETE pasan directamente a `_next`.
+- **Guard de `<!-- prerender-meta -->`**: si el HTML no contiene el comentario, hacer pass-through sin modificar. El comentario puede faltar si el frontend se buildó sin él.
+- **Guard de longitud de identificador**: validar que el identificador de ruta (slug o id) no supere 256 chars antes de consultar el repositorio. Si lo supera → 404 inmediato sin hit a base de datos.
+- **Soft-404 obligatorio**: cuando el recurso no existe (slug desconocido, artículo con `DeletedAt != null`, o identificador demasiado largo), escribir el SPA shell con `context.Response.StatusCode = 404` y hacer return. **Nunca** llamar `await _next(context)` en este caso — `MapFallbackToFile` devuelve 200 para cualquier path y oculta el 404.
+- **HTML encoding para meta tags**: usar `HtmlEncoder.Create(UnicodeRanges.All)` para atributos de meta tags (`content=`, `property=`, `href=`) — deja pasar acentos y em-dash nativos, escapa `<`, `>`, `"`. **No usar** este encoder para el bloque JSON-LD.
+- **JSON-LD encoding**: usar `JsonSerializer` con `JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) }`. No usar `.Replace("<", "\\u003c")` manual sobre strings ya serializados — no cubre caracteres de control de RSS/AI. No usar `HtmlEncoder` para JSON-LD (produce entidades HTML dentro de `<script>`, que son JSON inválido).
+- **Cache-Control**: agregar `Cache-Control: no-cache` en la respuesta inyectada.
+- **Sustitución del `<title>` estático**: cuando hay metadata, eliminar el `<title>` del shell antes de inyectar el nuevo para que el DOM resultante tenga exactamente uno. Usar `[GeneratedRegex("<title>.*?</title>", RegexOptions.Singleline)]` con `.Replace(html, string.Empty, count: 1)`. El flag `Singleline` es necesario — Vite puede emitir el `<title>` con salto de línea en su interior.
+
+### Coordinación SEO ↔ auth
+
+Cuando una ruta cambia de pública a privada (por ejemplo, `/herramientas` pasa a requerir auth):
+
+1. El guard de ruta en el frontend
+2. La eliminación de la entrada en `SpaMetadataProvider` (`src/Server/Api/Seo/SpaMetadataProvider.cs`)
+3. La remoción de la URL del `sitemap.xml`
+
+deben ir en el **mismo deploy**. Si se activa el auth guard sin retirar la ruta del sitemap, Google la crawlea con 401, la marca como no indexable y la elimina del índice — forzando un ciclo de re-crawl innecesario y degradando el coverage report en GSC.
+
+Origen: retro Épica 11 — las reglas de encoding, longitud y og:title se redescubrieron como patches en review de 11-2 y luego en 11-4 (`NewsMetadataMiddleware`). Son transversales al patrón, no específicas de cada historia.
 
 ## EF Core — nunca `Task.WhenAll` con el mismo DbContext
 
@@ -194,6 +229,7 @@ Dos patrones que enmascaran bugs de lógica:
 Si el endpoint filtra por fecha/período, sembrar datos en múltiples puntos temporales. Con un solo registro, todos los períodos devuelven el mismo resultado y un mapeo incorrecto (`"6m" => 90` en vez de 180) pasa invisible.
 
 Patrón recomendado para endpoints con filtro temporal:
+
 ```csharp
 // Cubrir todos los rangos relevantes: dentro y fuera de cada período
 var offsets = new[] { 5, 20, 50, 110, 220, 400 }; // días atrás
@@ -203,6 +239,7 @@ foreach (var d in offsets)
 
 **2. Assertions solo de status code**
 Verificar `200 OK` y estructura JSON no es suficiente. Los tests deben validar **contenido semántico**:
+
 - El período `"1m"` devuelve menos filas que `"1y"`
 - Las fechas retornadas caen dentro del rango esperado
 - Períodos distintos producen resultados distintos
