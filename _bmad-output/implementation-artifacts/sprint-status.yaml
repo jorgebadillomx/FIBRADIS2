@@ -307,14 +307,15 @@ development_status:
 
   # ── Épica 9: Mejoras y Deuda Técnica Post-MVP ─────────────────────────────
   # Rama única: sprint/9-mejoras-deuda-tecnica — NO merge a main hasta completar todas las historias
-  epic-9: in-progress
+  # epic-9 done — 9-1/9-3/9-4/9-5/9-7/9-8 done; 9-6 done (cleanup IAiSummaryService stack, refactor/cleanup-ai-dead-code); 9-2 cancelled por decisión
+  epic-9: done
   9-1-perfil-usuario-main: done
-  9-2-tests-y-fixes-auth: backlog
+  9-2-tests-y-fixes-auth: cancelled
   9-3-mejoras-portafolio: done
-  9-4-mejoras-oportunidades: backlog
+  9-4-mejoras-oportunidades: done
   9-5-mejoras-fundamentales: done
-  9-6-ia-observabilidad-fixes: backlog
-  9-7-noticias-mejoras: backlog
+  9-6-ia-observabilidad-fixes: done
+  9-7-noticias-mejoras: done
   # story 9-8 creada — Run Now por FIBRA individual en FundamentalsPage, sin cadencia, solo esa fibra directo
   9-8-fundamentales-ejecutar-por-fibra: done
   epic-9-retrospective: optional
