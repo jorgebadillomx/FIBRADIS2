@@ -18,7 +18,7 @@ public class SeoEndpointsTests
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
 
         Assert.Contains(
-            "<loc>https://fibrasinmobiliarias.com/calculadora</loc>\n    <priority>0.9</priority>\n    <changefreq>daily</changefreq>",
+            "<loc>https://fibrasinmobiliarias.com/calculadora</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>",
             xml);
     }
 
@@ -27,14 +27,15 @@ public class SeoEndpointsTests
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, []);
 
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/</loc>\n    <priority>1.0</priority>\n    <changefreq>daily</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/catalogo</loc>\n    <priority>0.8</priority>\n    <changefreq>weekly</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/comparar</loc>\n    <priority>0.7</priority>\n    <changefreq>weekly</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias</loc>\n    <priority>0.7</priority>\n    <changefreq>daily</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>\n    <priority>0.6</priority>\n    <changefreq>monthly</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calendario</loc>\n    <priority>0.7</priority>\n    <changefreq>weekly</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fundamentales</loc>\n    <priority>0.7</priority>\n    <changefreq>weekly</changefreq>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>\n    <priority>0.9</priority>\n    <changefreq>daily</changefreq>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/catalogo</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/comparar</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calendario</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fundamentales</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/herramientas</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>", xml);
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class SeoEndpointsTests
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
 
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11</loc>\n    <priority>0.8</priority>\n    <changefreq>weekly</changefreq>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-macquarie-fibramq12</loc>", xml);
         // las URLs viejas por ticker NO se incluyen (CA-3)
         Assert.DoesNotContain("/fibras/FUNO11", xml);
@@ -57,8 +58,34 @@ public class SeoEndpointsTests
         var doc = System.Xml.Linq.XDocument.Parse(xml); // lanza si el XML está mal formado
         Assert.Equal("urlset", doc.Root!.Name.LocalName);
         Assert.Equal("http://www.sitemaps.org/schemas/sitemap/0.9", doc.Root.Name.NamespaceName);
-        // 8 rutas estáticas + 2 fibras
-        Assert.Equal(10, doc.Root.Elements().Count());
+        // 9 rutas estáticas + 2 fibras
+        Assert.Equal(11, doc.Root.Elements().Count());
+    }
+
+    [Fact]
+    public void SitemapElementsFollowXsdSequence_ChangefreqBeforePriority()
+    {
+        // El XSD de sitemaps.org define la secuencia loc, lastmod, changefreq, priority —
+        // un validador estricto rechaza priority antes de changefreq (CA-1)
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+
+        foreach (var url in doc.Root!.Elements())
+        {
+            var names = url.Elements().Select(e => e.Name.LocalName).ToArray();
+            Assert.Equal(["loc", "changefreq", "priority"], names);
+        }
+    }
+
+    [Fact]
+    public void SitemapEscapesXmlSpecialCharsInLoc()
+    {
+        // App:BaseUrl viene de config sin validar — un '&' debe quedar escapado, no romper el XML
+        var xml = SeoEndpoints.BuildSitemapXml("https://example.com/x?a=1&b=2", SampleFibras);
+
+        Assert.Contains("&amp;", xml);
+        var doc = System.Xml.Linq.XDocument.Parse(xml); // lanza si quedó un '&' crudo
+        Assert.Contains(doc.Root!.Elements(), u => u.Elements().First().Value.Contains("a=1&b=2"));
     }
 
     [Fact]

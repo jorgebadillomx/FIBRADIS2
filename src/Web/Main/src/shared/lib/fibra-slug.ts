@@ -5,7 +5,10 @@
 export function buildFibraSlug(fullName: string, ticker: string): string {
   const namePart = fullName
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    // \p{Mn} = toda marca combinante (Nonspacing_Mark) \u2014 misma clase que elimina
+    // FibraSlug.Slugify en C# (UnicodeCategory.NonSpacingMark); el rango [\u0300-\u036f]
+    // dejaba fuera marcas como U+0483 y romp\u00eda la paridad (slug divergente = loop 301)
+    .replace(/\p{Mn}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')

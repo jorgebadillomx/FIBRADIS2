@@ -94,6 +94,21 @@ public class CatalogOpsEndpointTests(ApiWebFactory factory) : IClassFixture<ApiW
         Assert.True(errors.EnumerateObject().Any());
     }
 
+    [Theory]
+    [InlineData("ABC-12")] // guión rompe la extracción del ticker en URLs slug (11.3)
+    [InlineData("AB&C1")] // '&' produciría XML inválido en el sitemap
+    [InlineData("ABC.12")] // '.' hace que el middleware 301 lo descarte como asset
+    public async Task PostCatalog_WithNonAlphanumericTicker_Returns400BadRequest(string ticker)
+    {
+        var response = await _adminClient.PostAsJsonAsync("/api/v1/ops/catalog", CreateRequest(ticker));
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(doc.RootElement.TryGetProperty("errors", out var errors));
+        Assert.True(errors.TryGetProperty("ticker", out _));
+    }
+
     [Fact]
     public async Task PostCatalog_WithoutToken_Returns401()
     {

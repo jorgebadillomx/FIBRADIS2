@@ -16,6 +16,7 @@ public class FibraSlugTests
     [InlineData("Fibra Macquarie", "FIBRAMQ12", "fibra-macquarie-fibramq12")]
     [InlineData("Fibra Hotel City Express", "HCITY17", "fibra-hotel-city-express-hcity17")]
     [InlineData("CFE Fibra E", "FCFE18", "cfe-fibra-e-fcfe18")]
+    [InlineData("Fibra҃uno", "FUNO11", "fibrauno-funo11")] // Mn fuera de U+0300-036F — paridad con \p{Mn} del TS/mjs
     public void Build_CatalogExamples_MatchExpectedSlugs(string fullName, string ticker, string expected)
     {
         Assert.Equal(expected, FibraSlug.Build(fullName, ticker));

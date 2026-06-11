@@ -70,6 +70,8 @@ test('buildFibraSlug coincide con los ejemplos del catálogo (paridad TS/C#)', (
   assert.equal(buildFibraSlug('Fibra Macquarie', 'FIBRAMQ12'), 'fibra-macquarie-fibramq12')
   assert.equal(buildFibraSlug('Fibra Hotel City Express', 'HCITY17'), 'fibra-hotel-city-express-hcity17')
   assert.equal(buildFibraSlug('CFE Fibra E', 'FCFE18'), 'cfe-fibra-e-fcfe18')
+  // marca combinante fuera de U+0300-036F — paridad con UnicodeCategory.NonSpacingMark de C#
+  assert.equal(buildFibraSlug('Fibra҃uno', 'FUNO11'), 'fibrauno-funo11')
 })
 
 test('extractHeadElements extrae el title cuando el contenido tiene caracteres especiales como —', () => {

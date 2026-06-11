@@ -1,3 +1,4 @@
+using System.Security;
 using System.Text;
 using Application.Catalog;
 
@@ -19,12 +20,16 @@ public static class SeoEndpoints
         ("/conoce-las-fibras", "0.6", "monthly"),
         ("/calendario", "0.7", "weekly"),
         ("/fundamentales", "0.7", "weekly"),
+        ("/herramientas", "0.7", "weekly"),
         ("/calculadora", "0.9", "daily"),
     ];
 
+    // GET y HEAD: los validadores SEO y curl -I usan HEAD — MapGet solo responde GET (405)
+    private static readonly string[] GetAndHead = [HttpMethods.Get, HttpMethods.Head];
+
     public static IEndpointRouteBuilder MapSeo(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/sitemap.xml", async (
+        app.MapMethods("/sitemap.xml", GetAndHead, async (
             IFibraRepository fibraRepo,
             IConfiguration config,
             CancellationToken ct) =>
@@ -35,11 +40,13 @@ public static class SeoEndpoints
                 fibras.Select(f => (f.FullName, f.Ticker)));
             return Results.Content(xml, "application/xml; charset=utf-8");
         })
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .ExcludeFromDescription(); // infraestructura SEO — fuera del contrato OpenAPI/codegen
 
-        app.MapGet("/robots.txt", (IConfiguration config) =>
+        app.MapMethods("/robots.txt", GetAndHead, (IConfiguration config) =>
             Results.Content(BuildRobotsTxt(GetBaseUrl(config)), "text/plain; charset=utf-8"))
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .ExcludeFromDescription();
 
         return app;
     }
@@ -70,12 +77,14 @@ public static class SeoEndpoints
     public static string BuildRobotsTxt(string baseUrl) =>
         $"User-agent: *\nAllow: /\nDisallow: /ops/\nDisallow: /api/\nDisallow: /hangfire/\n\nSitemap: {baseUrl}/sitemap.xml\n";
 
+    // Orden según el XSD de sitemaps.org: loc, lastmod, changefreq, priority.
+    // <loc> con entity-escaping: App:BaseUrl viene de config sin validar (un '&' rompería el XML)
     private static void AppendUrlEntry(StringBuilder sb, string loc, string priority, string changefreq)
     {
         sb.Append("  <url>\n");
-        sb.Append($"    <loc>{loc}</loc>\n");
-        sb.Append($"    <priority>{priority}</priority>\n");
+        sb.Append($"    <loc>{SecurityElement.Escape(loc)}</loc>\n");
         sb.Append($"    <changefreq>{changefreq}</changefreq>\n");
+        sb.Append($"    <priority>{priority}</priority>\n");
         sb.Append("  </url>\n");
     }
 }

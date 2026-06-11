@@ -1,6 +1,6 @@
 # Historia 11.3: Sitemap XML, robots.txt y URLs slug para fichas de FIBRA
 
-Status: review
+Status: done
 
 ## Historia
 
@@ -207,6 +207,23 @@ Entonces las páginas estáticas se generan en `dist/fibras/{slug}/index.html` (
   - [x] `npm test --workspace=src/Web/Main` — todos verdes
   - [x] Manual: navegar a `/fibras/FUNO11` → URL cambia a `/fibras/fibra-uno-funo11` y la ficha carga; `curl -I http://localhost:5000/fibras/FUNO11` → 301 con Location slug
   - [x] E2E: los specs existentes usan `page.goto('/fibras/FUNO11')` — siguen funcionando vía canonicalización client-side; si algún spec assertea la URL, actualizarlo
+
+### Review Findings
+
+- [x] [Review][Decision→Patch] Sitemap omite `/herramientas` — **resuelto (Jorge, 2026-06-11): incluirla con 0.7 weekly**. Agregada a `StaticRoutes` + tests actualizados (9 rutas estáticas)
+- [x] [Review][Decision→Patch] Invariante "tickers alfanuméricos sin guiones" sin enforcement — **resuelto (Jorge, 2026-06-11): validar en Ops**. `ValidateCreateRequest` rechaza con 400 tickers con caracteres no alfanuméricos (`char.IsAsciiLetterOrDigit`) + 3 casos de integración
+- [x] [Review][Patch] (Alta) Slug terminado en guión crasheaba FibraPage: `extractTickerFromSlug('fibra-uno-')` → `''` → query `enabled:false` → render con `fibra!` undefined → TypeError. Guard `if (!ticker) return <FibraNotFound/>` [src/Web/Main/src/modules/ficha-publica/FibraPage.tsx:165]
+- [x] [Review][Patch] (Media) Orden de elementos violaba el XSD de sitemaps.org (`<priority>` antes de `<changefreq>`) — CA-1 exige XML válido según el schema. Orden corregido + test `SitemapElementsFollowXsdSequence` [src/Server/Api/Endpoints/Public/SeoEndpoints.cs]
+- [x] [Review][Patch] (Media) `<loc>` se interpolaba sin escaping XML — ahora `SecurityElement.Escape` + test con BaseUrl conteniendo `&` [src/Server/Api/Endpoints/Public/SeoEndpoints.cs]
+- [x] [Review][Patch] (Media) HEAD a `/sitemap.xml` y `/robots.txt` devolvía 405 — `MapMethods` GET+HEAD + tests de integración [src/Server/Api/Endpoints/Public/SeoEndpoints.cs]
+- [x] [Review][Patch] (Media) La canonicalización client-side descartaba query string y hash (`#noticias`, UTM) — `navigate` ahora conserva `location.search + location.hash` [src/Web/Main/src/modules/ficha-publica/FibraPage.tsx]
+- [x] [Review][Patch] (Media) Paridad slugify para marcas combinantes fuera de U+0300–036F — TS/mjs ahora usan `\p{Mn}` (misma clase que `UnicodeCategory.NonSpacingMark` en C#) + caso de paridad U+0483 en las tres suites [src/Web/Main/src/shared/lib/fibra-slug.ts, scripts/prerender-utils.mjs, FibraSlugTests.cs]
+- [x] [Review][Patch] (Baja) Trailing slash y prefijo con mayúsculas escapaban el 301 — regex `^/fibras/([^/]+)/?$` con `IgnoreCase` (comparación canónica sigue Ordinal) + 3 tests de variantes [src/Server/Api/Middleware/FibraSlugRedirectMiddleware.cs:18]
+- [x] [Review][Patch] (Baja) `/sitemap.xml` y `/robots.txt` se filtraban al contrato OpenAPI/codegen — `ExcludeFromDescription()` + `Api.json` y `schema.d.ts` regenerados [src/Server/Api/Endpoints/Public/SeoEndpoints.cs]
+- [x] [Review][Patch] (Baja) `useFibraSlugMap()` invocado por fila — hoisteado a `FundamentalesPage`, el slug baja por prop [src/Web/Main/src/modules/fundamentales/FundamentalesPage.tsx]
+- [x] [Review][Defer] Query a BD por cada GET/HEAD de `/fibras/*` y `/sitemap.xml` sin caché [src/Server/Api/Middleware/FibraSlugRedirectMiddleware.cs:61] — deferred, ya previsto en Dev Notes (IMemoryCache ticker→slug como deferred work)
+- [x] [Review][Defer] Prerender legacy: drift `FIBRAS_SEED`↔BD, 301 append-slash de `UseDefaultFiles` si algún día se usa `build:full`, y fichas `/fibras/*` sin metadata server-side (`SpaMetadataProvider` no las cubre) [src/Web/Main/scripts/prerender.mjs:22] — deferred, pre-existing: el deploy usa `npm run build` (prerender no se despliega); candidato a historia de metadata server-side para fichas
+- [x] [Review][Defer] Triple implementación del slugify (C#/TS/mjs): consolidar mjs importando el `.ts` (node ya usa `--experimental-strip-types` en tests) cuando se decida el destino del prerender legacy [src/Web/Main/scripts/prerender-utils.mjs:1] — deferred, refactor sin impacto en producción
 
 ## Dev Notes
 
@@ -456,7 +473,17 @@ npx playwright test public-discovery market-freshness → 9 passed, 2 failed PRE
 ### Change Log
 
 - 2026-06-11 — Historia 11.3 implementada completa: sitemap.xml + robots.txt dinámicos, helper FibraSlug (C#/TS con paridad testeada), FibraSlugRedirectMiddleware 301, ruta SPA `/fibras/:slug` con canonicalización client-side, 9 puntos de links internos migrados a slug, prerender con slugs, menú "Catálogo"→"Fibras". Status → review.
+- 2026-06-11 — Code review: 11 patches aplicados (ver Review Findings), 3 defers a deferred-work.md, 10 hallazgos descartados como ruido. Suites: 93/93 Application + 405/405 Infrastructure + 282/282 integración + 116/116 frontend. Builds 0 errores. Status → done.
 
 ## Senior Developer Review (AI)
 
-_(A completar durante el code review)_
+**Fecha:** 2026-06-11 · **Reviewer:** Claude (bmad-code-review, 3 capas adversariales: Blind Hunter, Edge Case Hunter, Acceptance Auditor)
+
+**Veredicto:** los 12 CAs cumplen (verificado por el Acceptance Auditor contra el código, no contra el Dev Record). 11 patches aplicados en la misma sesión, 2 de ellos derivados de decisiones de Jorge (`/herramientas` al sitemap; validación de charset de ticker en Ops). Detalle y evidencia en "Review Findings" arriba.
+
+**Lo más relevante:**
+- **Alta:** crash de `FibraPage` con slug terminado en guión (ticker extraído vacío → render con `fibra!` undefined). Corregido con guard.
+- CA-1 estaba violado silenciosamente: el XML emitía `<priority>` antes de `<changefreq>` (orden inválido según el XSD de sitemaps.org) y los unit tests blindaban el orden incorrecto.
+- La paridad slugify C#↔TS (anti-patrón ya conocido de mem0) estaba resuelta para puntuación pero no para marcas combinantes fuera de U+0300–036F; unificada con `\p{Mn}`.
+
+**Action Items (defers):** 3 en `deferred-work.md` bajo "code review of 11-3-sitemap-xml-y-robots-txt (2026-06-11)" — caché del lookup ticker→slug, destino del prerender legacy (drift seed/BD + append-slash de UseDefaultFiles + fichas sin metadata server-side), consolidación de la triple implementación del slugify.

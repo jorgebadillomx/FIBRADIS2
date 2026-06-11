@@ -57,6 +57,19 @@ public class FibraSlugRedirectMiddlewareTests
         Assert.Equal("/fibras/fibra-uno-funo11", context.Response.Headers.Location.ToString());
     }
 
+    [Theory]
+    [InlineData("/fibras/fibra-uno-funo11/")] // trailing slash
+    [InlineData("/Fibras/fibra-uno-funo11")] // prefijo con mayúsculas (react-router lo renderiza 200)
+    [InlineData("/fibras/FUNO11/")] // ticker pelado con trailing slash
+    public async Task InvokeAsync_NonCanonicalVariants_Redirect301ToCanonical(string path)
+    {
+        var (context, nextCalled) = await InvokeAsync(path);
+
+        Assert.False(nextCalled.Value);
+        Assert.Equal(StatusCodes.Status301MovedPermanently, context.Response.StatusCode);
+        Assert.Equal("/fibras/fibra-uno-funo11", context.Response.Headers.Location.ToString());
+    }
+
     [Fact]
     public async Task InvokeAsync_UnknownTicker_PassesThrough()
     {

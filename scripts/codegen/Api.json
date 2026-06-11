@@ -555,30 +555,6 @@
         }
       }
     },
-    "/sitemap.xml": {
-      "get": {
-        "tags": [
-          "Api"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/robots.txt": {
-      "get": {
-        "tags": [
-          "Api"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -8918,9 +8894,6 @@
     },
     {
       "name": "Account"
-    },
-    {
-      "name": "Api"
     },
     {
       "name": "AI"

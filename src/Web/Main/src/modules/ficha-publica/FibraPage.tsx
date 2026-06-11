@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -70,6 +70,7 @@ export function FibraPage() {
   // lo que mantiene compatible el initialData del prerender
   const ticker = slug ? extractTickerFromSlug(slug) : undefined
   const navigate = useNavigate()
+  const location = useLocation()
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined)
   const { isAuthenticated } = useAuth()
   const { favoriteIds, toggle } = useFavorites()
@@ -147,9 +148,10 @@ export function FibraPage() {
   const slugCanonico = fibra ? buildFibraSlug(fibra.fullName, fibra.ticker) : undefined
   useEffect(() => {
     if (slugCanonico && slug !== slugCanonico) {
-      navigate(`/fibras/${slugCanonico}`, { replace: true })
+      // conservar query string y hash (ej. #noticias desde NoticiaPage, UTM)
+      navigate(`/fibras/${slugCanonico}${location.search}${location.hash}`, { replace: true })
     }
-  }, [slugCanonico, slug, navigate])
+  }, [slugCanonico, slug, navigate, location.search, location.hash])
 
   const pageTitle = fibra
     ? `${fibra.ticker} — ${fibra.fullName} | Fibras Inmobiliarias`
@@ -162,9 +164,13 @@ export function FibraPage() {
   // dominio canónico per historias 11-1/11-2 + URL slug per 11-3
   const canonicalUrl = `https://fibrasinmobiliarias.com/fibras/${slugCanonico ?? slug}`
 
+  // slug sin ticker extraíble (ej. /fibras/fibra-uno- o /fibras/-): la query queda
+  // deshabilitada (isLoading=false, fibra=undefined) y sin este guard el render
+  // llegaría a fibra!.* con undefined
+  if (!ticker) return <FibraNotFound ticker={slug ?? ''} />
   if (isLoading) return <FibraPageSkeleton />
   if (isError) return <FibraErrorState />
-  if (fibra === null) return <FibraNotFound ticker={ticker!} />
+  if (fibra === null) return <FibraNotFound ticker={ticker} />
 
   const marketPrice = toNum(marketData?.lastPrice)
   const annualizedYield = toNum(marketData?.annualizedYield)

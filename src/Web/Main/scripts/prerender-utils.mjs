@@ -7,7 +7,7 @@
 export function buildFibraSlug(fullName, ticker) {
   const namePart = fullName
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\p{Mn}/gu, '') // paridad con C#: toda Nonspacing_Mark, no solo U+0300-036F
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')

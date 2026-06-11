@@ -51,6 +51,17 @@ public class SeoEndpointTests(ApiWebFactory factory)
         Assert.Equal("utf-8", response.Content.Headers.ContentType?.CharSet);
     }
 
+    [Theory]
+    [InlineData("/sitemap.xml")]
+    [InlineData("/robots.txt")]
+    public async Task HeadSeoEndpoints_ReturnsOk(string path)
+    {
+        // los validadores SEO y curl -I usan HEAD — MapGet solo respondería 405
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, path));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task GetRobotsTxt_ContainsDisallowsAndSitemapReference()
     {

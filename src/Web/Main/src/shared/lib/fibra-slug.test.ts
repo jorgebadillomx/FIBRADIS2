@@ -24,6 +24,12 @@ test('buildFibraSlug colapsa puntuación a un guión (paridad con C#)', () => {
   assert.equal(buildFibraSlug('  Fibra -- Test!  ', 'X99'), 'fibra-test-x99')
 })
 
+test('buildFibraSlug elimina marcas combinantes fuera de U+0300-036F (paridad con C#)', () => {
+  // U+0483 (titlo cirílico) es Nonspacing_Mark fuera del rango clásico de acentos —
+  // C# la elimina vía UnicodeCategory.NonSpacingMark; debe dar el mismo slug aquí
+  assert.equal(buildFibraSlug('Fibra҃uno', 'FUNO11'), 'fibrauno-funo11')
+})
+
 test('buildFibraSlug con nombre vacío devuelve solo el ticker', () => {
   assert.equal(buildFibraSlug('', 'FUNO11'), 'funo11')
   assert.equal(buildFibraSlug('   ', 'FUNO11'), 'funo11')

@@ -15,7 +15,10 @@ public partial class FibraSlugRedirectMiddleware(
     RequestDelegate next,
     IServiceScopeFactory scopeFactory)
 {
-    [GeneratedRegex("^/fibras/([^/]+)$")]
+    // Trailing slash opcional e IgnoreCase: /fibras/funo11/ y /Fibras/... también deben
+    // 301-ear a la canónica — react-router las renderiza 200 y serían duplicados indexables.
+    // La comparación contra el canónico sigue siendo Ordinal, así que toda variante redirige.
+    [GeneratedRegex("^/fibras/([^/]+)/?$", RegexOptions.IgnoreCase)]
     private static partial Regex FibraPathRegex();
 
     public async Task InvokeAsync(HttpContext context)
