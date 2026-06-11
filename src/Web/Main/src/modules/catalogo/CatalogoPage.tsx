@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllFibras, fetchMarketSnapshots } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
+import { buildFibraSlug } from '@/shared/lib/fibra-slug'
 import { Input } from '@/shared/ui/input'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
 
@@ -177,7 +178,7 @@ function FibraCard({ fibra, snapshot }: FibraCardProps) {
   return (
     <Link
       className="group flex flex-col rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer overflow-hidden"
-      to={`/fibras/${fibra.ticker}`}
+      to={`/fibras/${buildFibraSlug(fibra.fullName, fibra.ticker)}`}
     >
       {/* Cuerpo principal */}
       <div className="flex flex-col gap-3 p-5">

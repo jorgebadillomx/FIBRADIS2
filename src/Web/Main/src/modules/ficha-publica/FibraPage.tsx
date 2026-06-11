@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -21,6 +21,7 @@ import { IsrCalculatorWidget } from './IsrCalculatorWidget'
 import { FreshnessBadge } from '@/shared/ui/freshness-badge'
 import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
 import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
+import { buildFibraSlug, extractTickerFromSlug } from '@/shared/lib/fibra-slug'
 import { KPI_DEFINITIONS, type KpiKey } from '@/shared/lib/kpi-definitions'
 
 function SectionHeader({ title }: { title: string }) {
@@ -64,7 +65,12 @@ const SECTION_TITLES: Record<string, string> = {
 }
 
 export function FibraPage() {
-  const { ticker } = useParams<{ ticker: string }>()
+  const { slug } = useParams<{ slug: string }>()
+  // el ticker (mayúsculas) es el último segmento del slug — los queryKeys no cambian,
+  // lo que mantiene compatible el initialData del prerender
+  const ticker = slug ? extractTickerFromSlug(slug) : undefined
+  const navigate = useNavigate()
+  const location = useLocation()
   const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(undefined)
   const { isAuthenticated } = useAuth()
   const { favoriteIds, toggle } = useFavorites()
@@ -137,6 +143,16 @@ export function FibraPage() {
 
   const marketData = snapshots.find(s => s.ticker === fibra?.ticker) ?? null
 
+  // Canonicalización client-side (CA-10): un link viejo /fibras/FUNO11 o un slug
+  // obsoleto navegado en la SPA se reemplaza por la URL slug canónica sin recargar
+  const slugCanonico = fibra ? buildFibraSlug(fibra.fullName, fibra.ticker) : undefined
+  useEffect(() => {
+    if (slugCanonico && slug !== slugCanonico) {
+      // conservar query string y hash (ej. #noticias desde NoticiaPage, UTM)
+      navigate(`/fibras/${slugCanonico}${location.search}${location.hash}`, { replace: true })
+    }
+  }, [slugCanonico, slug, navigate, location.search, location.hash])
+
   const pageTitle = fibra
     ? `${fibra.ticker} — ${fibra.fullName} | Fibras Inmobiliarias`
     : `${ticker?.toUpperCase() ?? 'FIBRA'} | Fibras Inmobiliarias`
@@ -145,12 +161,16 @@ export function FibraPage() {
     ? `Análisis de ${fibra.fullName} (${fibra.ticker}): precio de mercado, fundamentales, distribuciones y noticias. ${fibra.sector} — ${fibra.market}.`
     : `Perfil de FIBRA ${ticker} en Fibras Inmobiliarias.`
 
-  // dominio canónico per historias 11-1/11-2 (antes apuntaba al incorrecto fibradis.mx)
-  const canonicalUrl = `https://fibrasinmobiliarias.com/fibras/${fibra?.ticker ?? ticker}`
+  // dominio canónico per historias 11-1/11-2 + URL slug per 11-3
+  const canonicalUrl = `https://fibrasinmobiliarias.com/fibras/${slugCanonico ?? slug}`
 
+  // slug sin ticker extraíble (ej. /fibras/fibra-uno- o /fibras/-): la query queda
+  // deshabilitada (isLoading=false, fibra=undefined) y sin este guard el render
+  // llegaría a fibra!.* con undefined
+  if (!ticker) return <FibraNotFound ticker={slug ?? ''} />
   if (isLoading) return <FibraPageSkeleton />
   if (isError) return <FibraErrorState />
-  if (fibra === null) return <FibraNotFound ticker={ticker!} />
+  if (fibra === null) return <FibraNotFound ticker={ticker} />
 
   const marketPrice = toNum(marketData?.lastPrice)
   const annualizedYield = toNum(marketData?.annualizedYield)

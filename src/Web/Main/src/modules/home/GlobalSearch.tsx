@@ -6,6 +6,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/shared/ui/popover'
 import { Input } from '@/shared/ui/input'
 import { fetchAllFibras } from '@/api/fibrasApi'
 import { filterFibrasByQuery } from './global-search'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 import { cn } from '@/shared/lib/utils'
 
 interface GlobalSearchProps {
@@ -26,12 +27,13 @@ export function GlobalSearch({ onSelect, className }: GlobalSearchProps) {
   })
 
   const filtered = filterFibrasByQuery(fibras, query)
+  const { slugFor } = useFibraSlugMap()
 
   function handleSelect(ticker: string) {
     setOpen(false)
     setQuery('')
     onSelect?.(ticker)
-    navigate(`/fibras/${encodeURIComponent(ticker)}`)
+    navigate(`/fibras/${slugFor(ticker)}`)
   }
 
   return (

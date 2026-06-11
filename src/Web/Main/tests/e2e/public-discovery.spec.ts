@@ -22,7 +22,8 @@ test('Home publica permite buscar una FIBRA y navegar a su ficha', async ({ page
 
   await page.getByRole('option', { name: /FUNO11/ }).click()
 
-  await expect(page).toHaveURL(/\/fibras\/FUNO11$/)
+  // URL slug canónica (historia 11.3): nombre + ticker al final
+  await expect(page).toHaveURL(/\/fibras\/fibra-uno-funo11$/)
   await expect(page.getByText('Fresh').first()).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mercado' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Fundamentales' })).toBeVisible()

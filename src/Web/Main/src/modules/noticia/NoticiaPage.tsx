@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import { fetchArticleById, fetchRelatedNews, type NewsKeyFigure } from '@/api/newsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 
 const DEFAULT_TITLE = 'Fibras Inmobiliarias'
 const DEFAULT_DESCRIPTION = 'Preview de noticia de Fibras Inmobiliarias.'
@@ -16,6 +17,7 @@ const IMPACT_BADGE: Record<string, string> = {
 
 export function NoticiaPage() {
   const { id } = useParams<{ id: string }>()
+  const { slugFor } = useFibraSlugMap()
   const { data: article, isLoading, isError } = useQuery({
     queryKey: ['news', 'article', id],
     queryFn: () => fetchArticleById(id!),
@@ -113,7 +115,7 @@ export function NoticiaPage() {
             {article.linkedFibras.map(fibra => (
               <Link
                 key={fibra.id}
-                to={`/fibras/${fibra.ticker}#noticias`}
+                to={`/fibras/${slugFor(fibra.ticker)}#noticias`}
                 className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
               >
                 {fibra.ticker} — ver noticias →

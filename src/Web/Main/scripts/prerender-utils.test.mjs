@@ -1,12 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { extractHeadElements } from './prerender-utils.mjs'
+import { buildFibraSlug, extractHeadElements } from './prerender-utils.mjs'
 
 test('extractHeadElements extrae title, meta y link del rendered y deja cleanBody sin ellos', () => {
   const rendered =
     '<title>FUNO11 — Fibra Uno | Fibras Inmobiliarias</title>' +
     '<meta name="description" content="Análisis de Fibra Uno." />' +
-    '<link rel="canonical" href="https://fibradis.mx/fibras/FUNO11" />' +
+    '<link rel="canonical" href="https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11" />' +
     '<div class="container">contenido</div>'
 
   const { headElements, cleanBody } = extractHeadElements(rendered)
@@ -63,6 +63,15 @@ test('extractHeadElements es case-insensitive para los tags', () => {
 
   assert.equal(headElements.length, 3)
   assert.equal(cleanBody, '<div>cuerpo</div>')
+})
+
+test('buildFibraSlug coincide con los ejemplos del catálogo (paridad TS/C#)', () => {
+  assert.equal(buildFibraSlug('Fibra Uno', 'FUNO11'), 'fibra-uno-funo11')
+  assert.equal(buildFibraSlug('Fibra Macquarie', 'FIBRAMQ12'), 'fibra-macquarie-fibramq12')
+  assert.equal(buildFibraSlug('Fibra Hotel City Express', 'HCITY17'), 'fibra-hotel-city-express-hcity17')
+  assert.equal(buildFibraSlug('CFE Fibra E', 'FCFE18'), 'cfe-fibra-e-fcfe18')
+  // marca combinante fuera de U+0300-036F — paridad con UnicodeCategory.NonSpacingMark de C#
+  assert.equal(buildFibraSlug('Fibra҃uno', 'FUNO11'), 'fibrauno-funo11')
 })
 
 test('extractHeadElements extrae el title cuando el contenido tiene caracteres especiales como —', () => {

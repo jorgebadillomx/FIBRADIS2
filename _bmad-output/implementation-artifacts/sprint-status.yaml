@@ -348,8 +348,9 @@ development_status:
   epic-11: in-progress
   11-1-canonical-y-redireccion-www-https: done
   11-2-spa-metadata-injection: done
-  # story 11-3 ampliada y ready-for-dev — sitemap+robots + migración ruta /fibras/:ticker → /fibras/:nombre-fibra-ticker (slug FullName+ticker, 301 server-side, canonicalización cliente, 9 link sites, prerender)
-  11-3-sitemap-xml-y-robots-txt: ready-for-dev
+  # story 11-3 review — sitemap.xml dinámico (8 estáticas + fibras activas slug) + robots.txt + FibraSlug C#/TS paridad + FibraSlugRedirectMiddleware 301 + ruta /fibras/:slug con canonicalización + 9 link sites + prerender slugs + menú "Fibras". 777 backend + 115 frontend tests verdes
+  # story 11-3 done — code review pass (11 patches: P1 guard ticker vacío FibraPage crash, P2 orden XSD changefreq/priority CA-1, P3 escaping XML <loc>, P4 HEAD en endpoints SEO, P5 search+hash en canonicalización, P6 paridad \p{Mn} slugify, P7 regex 301 trailing slash+IgnoreCase, P8 ExcludeFromDescription codegen, P9 hoist useFibraSlugMap, P10 /herramientas en sitemap, P11 validación charset ticker Ops). 3 defers. 780 backend + 116 frontend tests verdes
+  11-3-sitemap-xml-y-robots-txt: done
   # story 11-4 creada — slug URLs + metadata SSR dinámica para /noticias/:slug, OpsNewsManagement backfill, NewsMetadataMiddleware
   11-4-slug-urls-noticias: ready-for-dev
 

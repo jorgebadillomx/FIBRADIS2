@@ -257,6 +257,16 @@ public static class OpsCatalogEndpoints
         AddOptionalUrl(errors, "reportsUrl", request.ReportsUrl);
         AddVariants(errors, request.NameVariants);
 
+        // Las URLs slug /fibras/{nombre}-{ticker} (11.3) extraen el ticker después del
+        // último guión, y el sitemap lo interpola en XML — un ticker con guión o símbolos
+        // rompería la resolución de la URL canónica
+        if (!errors.ContainsKey("ticker") &&
+            !string.IsNullOrWhiteSpace(request.Ticker) &&
+            !request.Ticker.Trim().All(char.IsAsciiLetterOrDigit))
+        {
+            errors["ticker"] = ["El ticker solo puede contener letras y números, sin guiones ni símbolos."];
+        }
+
         if (!errors.ContainsKey("currency") &&
             !string.IsNullOrWhiteSpace(request.Currency) &&
             !AllowedCurrencies.Contains(request.Currency.Trim().ToUpperInvariant()))

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchMarketSnapshots } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
 import { splitGainersLosers } from './movers-logic'
+import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 
 export function GainersLosers() {
   const { data: snapshots = [], isLoading } = useQuery({
@@ -10,6 +11,7 @@ export function GainersLosers() {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
+  const { slugFor } = useFibraSlugMap()
 
   const { gainers, losers } = splitGainersLosers(snapshots, 5)
   const isEmpty = !isLoading && gainers.length === 0 && losers.length === 0
@@ -56,7 +58,7 @@ export function GainersLosers() {
                   return (
                     <a
                       key={snap.ticker}
-                      href={`/fibras/${snap.ticker}`}
+                      href={`/fibras/${slugFor(snap.ticker)}`}
                       className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
                     >
                       <span className="text-sm font-semibold">{snap.ticker}</span>
@@ -84,7 +86,7 @@ export function GainersLosers() {
                   return (
                     <a
                       key={snap.ticker}
-                      href={`/fibras/${snap.ticker}`}
+                      href={`/fibras/${slugFor(snap.ticker)}`}
                       className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
                     >
                       <span className="text-sm font-semibold">{snap.ticker}</span>
