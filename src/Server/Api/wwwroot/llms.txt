@@ -1,0 +1,56 @@
+# FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas
+
+> Plataforma de análisis de FIBRAs (Real Estate Investment Trusts) del mercado mexicano.
+> Datos de precios en tiempo real, distribuciones históricas, fundamentales (Cap Rate, NAV, NOI)
+> y noticias del sector inmobiliario bursátil. Información actualizada diariamente desde la BMV.
+
+## Páginas principales
+
+- [Inicio](https://fibrasinmobiliarias.com/) — Dashboard con precios, ganadores y perdedores del día
+- [Conoce las FIBRAs](https://fibrasinmobiliarias.com/conoce-las-fibras) — Guía completa sobre qué son las FIBRAs inmobiliarias, cómo funcionan y cómo invertir
+- [Catálogo de FIBRAs](https://fibrasinmobiliarias.com/fibras) — Directorio con perfil de cada FIBRA activa en la BMV
+- [Comparar FIBRAs](https://fibrasinmobiliarias.com/comparar) — Herramienta de comparación de hasta 4 FIBRAs en precio, yield y fundamentales
+- [Fundamentales](https://fibrasinmobiliarias.com/fundamentales) — Métricas comparativas: Cap Rate, NAV por CBFI, LTV, NOI Margin
+- [Calculadora ISR](https://fibrasinmobiliarias.com/calculadora) — Calculadora de Impuesto Sobre la Renta para distribuciones de FIBRAs
+- [Calendario corporativo](https://fibrasinmobiliarias.com/calendario) — Próximas asambleas y distribuciones
+- [Noticias](https://fibrasinmobiliarias.com/noticias) — Últimas noticias del mercado inmobiliario bursátil mexicano
+- [Acerca](https://fibrasinmobiliarias.com/acerca) — Metodología, fuentes de datos y cálculo de fundamentales
+
+## FIBRAs cubiertas (19 activas)
+
+| Ticker | Nombre | Sector |
+|--------|--------|--------|
+| FUNO11 | Fibra Uno | Diversificado |
+| FMTY14 | Fibra Monterrey | Industrial / Oficinas |
+| FIBRAMQ12 | Fibra Macquarie | Industrial |
+| FIBRAPL14 | Fibra Prologis | Industrial |
+| DANHOS13 | Fibra Danhos | Comercial / Oficinas |
+| FSHOP13 | Fibra Shop | Comercial |
+| FIHO12 | Fibra Hotel | Hotelero |
+| FINN13 | Fibra Inn | Hotelero |
+| FHIPO14 | FHipo | Hipotecario |
+| FCFE18 | CFE Fibra E | Infraestructura Energética |
+| EDUCA18 | Fibra Educa | Educativo |
+| FNOVA17 | Fibra Nova | Industrial |
+| FPLUS16 | Fibra Plus | Diversificado |
+| FIBRAUP18 | Fibra Upsite | Centros de Datos |
+| HCITY17 | Fibra Hotel City Express | Hotelero |
+| NEXT25 | Fibra Next | Industrial |
+| SOMA21 | Fibra Soma | Oficinas |
+| STORAGE18 | Fibra Storage | Autoalmacenaje |
+| VESTA15 | Fibra Vesta | Industrial |
+
+## Sobre las FIBRAs
+
+Las FIBRAs (Fideicomisos de Inversión en Bienes Raíces) son el equivalente mexicano de los REITs.
+Cotizan en la Bolsa Mexicana de Valores (BMV) y están obligadas a distribuir al menos el 95% de su
+resultado fiscal anual. Sus CBFIs (Certificados Bursátiles Fiduciarios Inmobiliarios) son el
+instrumento de inversión.
+
+## Acerca de FIBRADIS
+
+FIBRADIS es una plataforma independiente de análisis de FIBRAs inmobiliarias mexicanas.
+No es un asesor de inversiones registrado. La información se proporciona con fines educativos
+e informativos únicamente.
+
+Contacto: https://fibrasinmobiliarias.com/contacto

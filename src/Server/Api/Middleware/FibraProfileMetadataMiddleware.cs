@@ -42,6 +42,15 @@ public partial class FibraProfileMetadataMiddleware(
     [GeneratedRegex("<title>.*?</title>", RegexOptions.Singleline)]
     private static partial Regex TitleTagRegex();
 
+    [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
+    private static partial Regex MarkdownLinkRegex();
+
+    [GeneratedRegex(@"[*_`#>]+")]
+    private static partial Regex MarkdownSyntaxRegex();
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhitespaceRunRegex();
+
     public async Task InvokeAsync(HttpContext context)
     {
         if (!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method))
@@ -185,6 +194,8 @@ public partial class FibraProfileMetadataMiddleware(
         var encodedTitle = Encoder.Encode(title);
         var encodedDescription = Encoder.Encode(description);
 
+        var ogImage = Encoder.Encode($"{baseUrl}/og-image.png");
+
         return new StringBuilder()
             .Append($"<title>{encodedTitle}</title>\n    ")
             .Append($"<meta name=\"description\" content=\"{encodedDescription}\" />\n    ")
@@ -193,14 +204,26 @@ public partial class FibraProfileMetadataMiddleware(
             .Append($"<meta property=\"og:description\" content=\"{encodedDescription}\" />\n    ")
             .Append("<meta property=\"og:type\" content=\"website\" />\n    ")
             .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
-            .Append($"<meta property=\"og:image\" content=\"{Encoder.Encode($"{baseUrl}/og-image.png")}\" />\n    ")
+            .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
+            .Append("<meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
+            .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+            .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
+            .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
+            .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")
             .Append($"<script type=\"application/ld+json\">{jsonLd}</script>")
             .ToString();
     }
 
+    private static string StripMarkdown(string text)
+    {
+        text = MarkdownLinkRegex().Replace(text, "$1");
+        text = MarkdownSyntaxRegex().Replace(text, string.Empty);
+        return WhitespaceRunRegex().Replace(text, " ");
+    }
+
     private static string BuildDescription(Fibra fibra)
     {
-        var text = fibra.Description?.Trim() ?? string.Empty;
+        var text = StripMarkdown(fibra.Description?.Trim() ?? string.Empty);
 
         if (text.Length > MaxDescriptionLength)
             return TruncateWithEllipsis(text);

@@ -20,6 +20,12 @@ builder.Services.AddHttpsRedirection(options =>
 {
     options.RedirectStatusCode = StatusCodes.Status301MovedPermanently;
 });
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+});
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
@@ -43,7 +49,10 @@ app.Use(async (context, next) =>
 });
 app.UseMiddleware<WwwToNonWwwMiddleware>();
 if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
     app.UseHttpsRedirection();
+}
 // El 301 a la URL slug canónica debe resolverse ANTES de servir HTML (SpaMetadataMiddleware)
 app.UseMiddleware<FibraSlugRedirectMiddleware>();
 // /fibras/{slug} dinámico — después del 301 canónico, antes que SpaMetadataMiddleware (que cubre /fibras listado)

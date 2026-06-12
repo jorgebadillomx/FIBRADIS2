@@ -107,6 +107,7 @@ public partial class SpaMetadataMiddleware(
         var title = Encoder.Encode(meta.Title);
         var description = Encoder.Encode(meta.Description);
         var canonicalUrl = Encoder.Encode($"{baseUrl}{meta.CanonicalPath}");
+        var ogImage = Encoder.Encode($"{baseUrl}/og-image.png");
 
         var block = new StringBuilder()
             .Append($"<title>{title}</title>\n    ")
@@ -116,11 +117,16 @@ public partial class SpaMetadataMiddleware(
             .Append($"<meta property=\"og:description\" content=\"{description}\" />\n    ")
             .Append("<meta property=\"og:type\" content=\"website\" />\n    ")
             .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
-            .Append($"<meta property=\"og:image\" content=\"{Encoder.Encode($"{baseUrl}/og-image.png")}\" />");
+            .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
+            .Append("<meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
+            .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+            .Append($"<meta name=\"twitter:title\" content=\"{title}\" />\n    ")
+            .Append($"<meta name=\"twitter:description\" content=\"{description}\" />\n    ")
+            .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />");
 
         if (meta.JsonLd is not null)
         {
-            // escapar < como \u003c (escape JSON válido): impide que un </script> en el contenido rompa el bloque
+            // escapar < como < (escape JSON válido): impide que un </script> en el contenido rompa el bloque
             var jsonLd = meta.JsonLd.Replace("<", "\\u003c");
             block.Append($"\n    <script type=\"application/ld+json\">{jsonLd}</script>");
         }

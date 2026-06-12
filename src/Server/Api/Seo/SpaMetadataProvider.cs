@@ -28,6 +28,53 @@ public class SpaMetadataProvider : ISpaMetadataProvider
         }
         """;
 
+    private const string ConoceLasFibrasJsonLd = """
+        {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Article",
+              "@id": "https://fibrasinmobiliarias.com/conoce-las-fibras#article",
+              "headline": "¿Qué son las FIBRAs Inmobiliarias? Guía Completa",
+              "description": "Aprende qué son las FIBRAs inmobiliarias, cómo funcionan, cómo invertir y qué beneficios fiscales ofrecen. Guía para inversionistas.",
+              "url": "https://fibrasinmobiliarias.com/conoce-las-fibras",
+              "inLanguage": "es-MX",
+              "publisher": { "@id": "https://fibrasinmobiliarias.com/#organization" },
+              "isPartOf": { "@id": "https://fibrasinmobiliarias.com/#website" }
+            },
+            {
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "¿Qué es una FIBRA inmobiliaria?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Una FIBRA (Fideicomiso de Inversión en Bienes Raíces) es el equivalente mexicano de un REIT. Cotiza en la Bolsa Mexicana de Valores (BMV) y permite a inversores acceder al mercado inmobiliario sin comprar propiedades directamente. Está obligada a distribuir al menos el 95% de su resultado fiscal anual."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "¿Cómo invierto en FIBRAs inmobiliarias?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Para invertir en FIBRAs necesitas una cuenta en una casa de bolsa mexicana o en una plataforma de inversión como GBM, Actinver o BBVA Bancomer. Los CBFIs (Certificados Bursátiles Fiduciarios Inmobiliarios) de cada FIBRA se compran y venden igual que acciones en la BMV."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "¿Qué es un CBFI?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "CBFI es el Certificado Bursátil Fiduciario Inmobiliario, el instrumento de inversión de las FIBRAs. Cada CBFI representa una participación proporcional en el patrimonio del fideicomiso. Las distribuciones (equivalentes a dividendos) se calculan y pagan por CBFI."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
     private const string CalculadoraJsonLd = """
         {
           "@context": "https://schema.org",
@@ -89,7 +136,8 @@ public class SpaMetadataProvider : ISpaMetadataProvider
             ["/conoce-las-fibras"] = new(
                 "¿Qué son las FIBRAs Inmobiliarias? Guía Completa | FIBRADIS",
                 "Aprende qué son las FIBRAs inmobiliarias, cómo funcionan, cómo invertir y qué beneficios fiscales ofrecen. Guía para inversionistas.",
-                "/conoce-las-fibras"),
+                "/conoce-las-fibras",
+                ConoceLasFibrasJsonLd),
             ["/calendario"] = new(
                 "Calendario de Eventos Corporativos FIBRAs | FIBRADIS",
                 "Próximas asambleas, distribuciones y eventos corporativos de FIBRAs inmobiliarias mexicanas. Mantente informado para tus decisiones.",
