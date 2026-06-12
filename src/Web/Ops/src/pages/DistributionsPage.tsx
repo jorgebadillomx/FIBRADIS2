@@ -50,7 +50,7 @@ export function DistributionsPage() {
   })
 
   const activeFibras = useMemo(
-    () => (catalogQuery.data ?? []).filter((f) => f.isActive).sort((a, b) => a.ticker.localeCompare(b.ticker)),
+    () => (catalogQuery.data ?? []).filter((f) => f.state === 'Active').sort((a, b) => a.ticker.localeCompare(b.ticker)),
     [catalogQuery.data],
   )
 

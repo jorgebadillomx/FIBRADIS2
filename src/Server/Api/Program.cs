@@ -9,6 +9,7 @@ using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Infrastructure.Persistence.SqlServer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -19,12 +20,19 @@ builder.Services.AddHttpsRedirection(options =>
 {
     options.RedirectStatusCode = StatusCodes.Status301MovedPermanently;
 });
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseMiddleware<WwwToNonWwwMiddleware>();
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();

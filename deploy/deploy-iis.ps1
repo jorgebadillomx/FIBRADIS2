@@ -56,7 +56,14 @@ New-Item -ItemType Directory -Force (Join-Path $Wwwroot "ops") | Out-Null
 Copy-Item -Recurse -Force (Join-Path $Root "src\Web\Main\dist\*") $Wwwroot
 Copy-Item -Recurse -Force (Join-Path $Root "src\Web\Ops\dist\*")  (Join-Path $Wwwroot "ops")
 
-# -- 5. Crear ZIP --
+# -- 5. Limpiar contenido runtime (uploads generados en dev/prod, no van en el paquete) --
+$UploadsDir = Join-Path $Wwwroot "uploads"
+if (Test-Path $UploadsDir) {
+    Remove-Item -Recurse -Force $UploadsDir
+    Write-Host "  uploads/ excluido del paquete"
+}
+
+# -- 6. Crear ZIP --
 Write-Host "=== Crear ZIP ===" -ForegroundColor Cyan
 Compress-Archive -Path (Join-Path $PublishDir "*") -DestinationPath $OutZip
 
