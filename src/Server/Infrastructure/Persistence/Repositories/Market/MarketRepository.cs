@@ -216,6 +216,14 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
         var existing = await db.Distributions
             .FirstOrDefaultAsync(d => d.FibraId == fibraId && d.PaymentDate == paymentDate, ct);
 
+        // Yahoo Finance stores the ex-dividend date as PaymentDate, not the actual payment date.
+        // If the primary lookup fails, try matching by ex-dividend date from MasDividendos.
+        if (existing is null && exDate.HasValue)
+        {
+            existing = await db.Distributions
+                .FirstOrDefaultAsync(d => d.FibraId == fibraId && d.PaymentDate == exDate.Value, ct);
+        }
+
         if (existing is null)
             return false;
 

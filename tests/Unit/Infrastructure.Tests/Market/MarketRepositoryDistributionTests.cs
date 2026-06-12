@@ -56,6 +56,38 @@ public class MarketRepositoryDistributionTests
     }
 
     [Fact]
+    public async Task UpdateDistributionBreakdown_FallsBackToExDate_WhenPaymentDateMismatches()
+    {
+        // Yahoo Finance stores the ex-dividend date as PaymentDate.
+        // MasDividendos provides the actual FechaPago (different date).
+        // The fallback must match using FechaExDerecho == Distribution.PaymentDate.
+        var fibraId = Guid.NewGuid();
+        var yahooExDate = new DateOnly(2026, 6, 5);   // what Yahoo stored as PaymentDate
+        var masFechaPago = new DateOnly(2026, 6, 20); // actual payment date from MasDividendos
+
+        await using var db = CreateDbContext();
+        db.Distributions.Add(CreateDistribution(fibraId, "FUNO11", yahooExDate, 0.31m));
+        await db.SaveChangesAsync();
+
+        var repo = new MarketRepository(db);
+
+        // Primary lookup by masFechaPago fails; fallback by yahooExDate succeeds.
+        var result = await repo.UpdateDistributionBreakdownAsync(
+            fibraId,
+            masFechaPago,
+            yahooExDate,
+            0.21m,
+            0.10m,
+            null);
+
+        Assert.True(result);
+        var stored = await db.Distributions.FirstAsync(d => d.FibraId == fibraId);
+        Assert.Equal(0.21m, stored.TaxableAmount);
+        Assert.Equal(0.10m, stored.CapitalReturnAmount);
+        Assert.Equal(yahooExDate, stored.ExDividendDate);
+    }
+
+    [Fact]
     public async Task UpdateDistributionBreakdown_SeedsNullFields_AndUpdatesOnValueChange()
     {
         var fibraId = Guid.NewGuid();
