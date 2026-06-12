@@ -1,5 +1,11 @@
 # Deferred Work
 
+## Deferred from: code review de spec-promediar-simulador-yield-y-renta (2026-06-12)
+
+- D1: `whatIfTargetRenta` y `whatIfTitulos` no se resetean al cambiar de FIBRA en el selector "¿Qué pasaría si...?" — la UI muestra resultados calculados con el target de una FIBRA aplicados a otra. Patrón pre-existente idéntico para `whatIfTitulos`. Fix: agregar `useEffect` que resetee ambos inputs cuando `whatIfFibraId` cambia. `PromediarTab.tsx`.
+- D2: Cuando `precioActual = 0` (FIBRA sin precio), `costoInversionParaTarget` muestra `$0` para un número no-cero de títulos adicionales — aparece como inversión gratuita. Mismo problema pre-existente en las otras columnas de simulación. Fix: suprimir el campo de costo cuando `currentPrice <= 0`. `PromediarTab.tsx`.
+- D3: Input `whatIfTargetRenta` acepta notación científica (`"1e10"`) produciendo números astronómicos válidos. `parseFloat("1e10") = 10,000,000,000`. Cosmético: no crashea, solo muestra un número muy grande. Fix: añadir validación `targetRentaMensualNum < 1_000_000` o usar un input con `max`. `PromediarTab.tsx`.
+
 ## Deferred from: code review de 9-1-perfil-usuario-main (2026-06-06)
 
 - D1: `UpdateApodoAsync` acepta `apodo = ""` (empty string) como valor válido — la validación solo se ejecuta cuando `apodo is not null`; una llamada directa a la API con `{ "apodo": "" }` almacena `""` en BD en lugar de `null`, inconsistente con el contrato implícito. Fix: `user.Apodo = string.IsNullOrEmpty(apodo) ? null : apodo` (`UserService.cs:115`).

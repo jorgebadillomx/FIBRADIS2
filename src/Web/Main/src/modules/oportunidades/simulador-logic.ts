@@ -34,3 +34,40 @@ export function calcNewAvgCost(
     total
   return Math.round(raw * 10_000) / 10_000
 }
+
+export function calcRentaProyectadaAnual(
+  currentRentaAnual: number,
+  additionalTitulos: number,
+  precioActual: number,
+  dividendYieldPct: number | null | undefined,
+  currentTitulos: number,
+): number {
+  if (additionalTitulos <= 0) return currentRentaAnual
+  if (dividendYieldPct != null) {
+    return currentRentaAnual + additionalTitulos * precioActual * (dividendYieldPct / 100)
+  }
+  if (currentTitulos > 0 && currentRentaAnual > 0) {
+    const rentaPerTitle = currentRentaAnual / currentTitulos
+    return currentRentaAnual + additionalTitulos * rentaPerTitle
+  }
+  return currentRentaAnual
+}
+
+export function calcTitulosParaRentaTarget(
+  targetMensual: number,
+  precioActual: number,
+  dividendYieldPct: number | null | undefined,
+  currentTitulos: number,
+  currentRentaAnual: number,
+): number | null {
+  if (targetMensual <= 0) return null
+  const targetAnual = targetMensual * 12
+  if (dividendYieldPct != null && dividendYieldPct > 0 && precioActual > 0) {
+    return Math.ceil(targetAnual / (precioActual * (dividendYieldPct / 100)))
+  }
+  if (currentTitulos > 0 && currentRentaAnual > 0) {
+    const rentaPerTitle = currentRentaAnual / currentTitulos
+    return Math.ceil(targetAnual / rentaPerTitle)
+  }
+  return null
+}

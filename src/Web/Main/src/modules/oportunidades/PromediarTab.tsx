@@ -8,6 +8,8 @@ import {
   calcNuevoAvg,
   calcNuevaPlusvaliaPct,
   calcNuevoValor,
+  calcRentaProyectadaAnual,
+  calcTitulosParaRentaTarget,
 } from '@/modules/oportunidades/simulador-logic'
 import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
 
@@ -51,6 +53,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
   const [adicionales, setAdicionales] = useState<Record<string, string>>({})
   const [whatIfFibraId, setWhatIfFibraId] = useState<string>('')
   const [whatIfTitulos, setWhatIfTitulos] = useState<string>('')
+  const [whatIfTargetRenta, setWhatIfTargetRenta] = useState<string>('')
 
   const portfolioQuery = useQuery<PortfolioResponseDto>({
     queryKey: ['portfolio', 'positions'],
@@ -167,6 +170,41 @@ export function PromediarTab({ weights }: { weights: Weights }) {
           (portfolioValue + additionalWhatIfTitles * currentPrice!)) * 100
       : null
 
+  const dividendYieldPct = selectedWhatIfRow?.opportunityRow?.dividendYieldPct ?? null
+  const currentRentaAnual = selectedWhatIfRow?.position.rentaAnual ?? 0
+
+  const rentaAnualEstimada = canSimulateWhatIf && currentTitulos != null && currentPrice != null
+    ? calcRentaProyectadaAnual(
+        currentRentaAnual,
+        additionalWhatIfTitles,
+        currentPrice,
+        dividendYieldPct,
+        currentTitulos,
+      )
+    : null
+  const rentaMensualEstimada = rentaAnualEstimada != null ? rentaAnualEstimada / 12 : null
+
+  const targetRentaMensualNum = parseFloat(whatIfTargetRenta)
+  const hasTargetRenta = !isNaN(targetRentaMensualNum) && targetRentaMensualNum > 0
+  const titulosTotalesParaTarget = hasTargetRenta && selectedWhatIfRow != null
+    ? calcTitulosParaRentaTarget(
+        targetRentaMensualNum,
+        currentPrice ?? 0,
+        dividendYieldPct,
+        currentTitulos ?? 0,
+        currentRentaAnual,
+      )
+    : null
+  const titulosAdicionalesParaTarget = titulosTotalesParaTarget != null && currentTitulos != null
+    ? Math.max(0, titulosTotalesParaTarget - currentTitulos)
+    : null
+  const costoInversionParaTarget = titulosAdicionalesParaTarget != null
+    ? titulosAdicionalesParaTarget * (currentPrice ?? 0) * (1 + commissionFactor)
+    : null
+  const targetYaCumplido = hasTargetRenta && titulosTotalesParaTarget != null
+    && currentTitulos != null && currentTitulos >= titulosTotalesParaTarget
+  const sinDatosRenta = hasTargetRenta && selectedWhatIfRow != null && titulosTotalesParaTarget === null
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border">
@@ -179,10 +217,12 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               <th className="px-3 py-2 text-right">Precio actual</th>
               <th className="px-3 py-2 text-right">Dif. %</th>
               <th className="px-3 py-2 text-right">Score</th>
+              <th className="px-3 py-2 text-right">Yield</th>
               <th className="px-3 py-2 text-right">Títulos adicionales</th>
               <th className="px-3 py-2 text-right">Nuevo avg</th>
               <th className="px-3 py-2 text-right">Nuevo valor</th>
               <th className="px-3 py-2 text-right">Nueva plusvalía</th>
+              <th className="px-3 py-2 text-right">Costo compra</th>
             </tr>
           </thead>
           <tbody>
@@ -195,6 +235,9 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               const adicionalesStr = adicionales[position.fibraId] ?? ''
               const adicionalesNum = parseInt(adicionalesStr, 10)
               const hasSimulacion = !isNaN(adicionalesNum) && adicionalesNum > 0 && precioActual != null
+
+              const yieldPct = opportunityRow?.dividendYieldPct ?? null
+              const costoCompra = hasSimulacion && precioActual != null ? adicionalesNum * precioActual : null
 
               const difPct = precioActual != null && costoPromedio > 0
                 ? ((precioActual - costoPromedio) / costoPromedio) * 100
@@ -237,6 +280,9 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                   <td className="px-3 py-2 text-right">
                     {score != null ? <ScoreBadge score={score} /> : <span className="text-xs text-muted-foreground">—</span>}
                   </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-xs text-muted-foreground">
+                    {yieldPct != null ? `${yieldPct.toFixed(1)}%` : '—'}
+                  </td>
                   <td className="px-3 py-2 text-right">
                     <input
                       type="number"
@@ -261,6 +307,9 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                     nuevaPlusvalia >= 0 ? 'text-green-700' : 'text-red-700'
                   }`}>
                     {nuevaPlusvalia != null ? `${nuevaPlusvalia.toFixed(1)}%` : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-xs">
+                    {costoCompra != null ? fmtMxnNoDecimals(costoCompra) : '—'}
                   </td>
                 </tr>
               )
@@ -327,7 +376,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard title="Nuevo costo promedio" value={formatMoney(newAvgCost)} />
             <MetricCard
               title="Delta vs precio actual"
@@ -346,6 +395,54 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               title="Nuevo % portafolio"
               value={formatPercent(newPortfolioPct)}
             />
+            <MetricCard
+              title="Renta mensual estimada"
+              value={formatMoney(rentaMensualEstimada)}
+            />
+          </div>
+
+          <div className="mt-4 border-t pt-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Calcular objetivo de renta
+            </p>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
+                Renta mensual objetivo (MXN)
+              </span>
+              <input
+                type="number"
+                min={0}
+                step={100}
+                value={whatIfTargetRenta}
+                onChange={(e) => setWhatIfTargetRenta(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
+                placeholder="0"
+              />
+            </label>
+            {targetYaCumplido && (
+              <p className="text-sm text-green-700 font-medium">
+                Ya cumples el objetivo con tus posiciones actuales.
+              </p>
+            )}
+            {sinDatosRenta && (
+              <p className="text-sm text-muted-foreground">
+                Datos de renta no disponibles para esta FIBRA.
+              </p>
+            )}
+            {!targetYaCumplido && !sinDatosRenta && titulosAdicionalesParaTarget != null && (
+              <p className="text-sm text-foreground">
+                Necesitas{' '}
+                <span className="font-semibold">
+                  {titulosAdicionalesParaTarget.toLocaleString('es-MX')}
+                </span>{' '}
+                títulos adicionales
+                {costoInversionParaTarget != null && costoInversionParaTarget > 0 && (
+                  <span className="text-muted-foreground">
+                    {' '}(~{fmtMxnNoDecimals(costoInversionParaTarget)} de inversión)
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
       </section>
