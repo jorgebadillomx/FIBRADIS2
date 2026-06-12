@@ -91,6 +91,35 @@
         }
       }
     },
+    "/api/v1/market/indicadores": {
+      "get": {
+        "tags": [
+          "Market"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicadoresDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site-content": {
       "get": {
         "tags": [
@@ -6525,6 +6554,31 @@
           }
         }
       },
+      "IndicadoresDto": {
+        "required": [
+          "cetes28d",
+          "lastUpdated"
+        ],
+        "type": "object",
+        "properties": {
+          "cetes28d": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "lastUpdated": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "KpiExtractionDto": {
         "required": [
           "capRate",
@@ -9064,6 +9118,9 @@
       "name": "Editorial"
     },
     {
+      "name": "Market"
+    },
+    {
       "name": "Public"
     },
     {
@@ -9077,9 +9134,6 @@
     },
     {
       "name": "Catalog"
-    },
-    {
-      "name": "Market"
     },
     {
       "name": "Fundamentals"

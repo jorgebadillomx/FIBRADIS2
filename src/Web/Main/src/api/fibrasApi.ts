@@ -70,9 +70,16 @@ export async function fetchFibraByTicker(ticker: string) {
 }
 
 export type CalculadoraFibraDto = components['schemas']['CalculadoraFibraDto']
+export type IndicadoresDto = components['schemas']['IndicadoresDto']
 
 export async function fetchCalculadoraFibras(): Promise<CalculadoraFibraDto[]> {
   const { data, error } = await apiClient.GET('/api/v1/market/calculadora')
   if (error) throw new Error(`Error al obtener calculadora de FIBRAs: ${JSON.stringify(error)}`)
   return data ?? []
+}
+
+export async function fetchIndicadores(): Promise<IndicadoresDto | null> {
+  const { data, error } = await apiClient.GET('/api/v1/market/indicadores')
+  if (error || !data) return null
+  return data
 }

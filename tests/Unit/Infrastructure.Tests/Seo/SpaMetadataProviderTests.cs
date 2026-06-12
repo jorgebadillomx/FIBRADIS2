@@ -15,7 +15,6 @@ public class SpaMetadataProviderTests
     [InlineData("/conoce-las-fibras")]
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
-    [InlineData("/herramientas")]
     [InlineData("/privacidad")]
     [InlineData("/acerca")]
     [InlineData("/contacto")]
@@ -34,6 +33,7 @@ public class SpaMetadataProviderTests
     [InlineData("/fibras/FUNO11")]
     [InlineData("/noticias/abc-123")]
     [InlineData("/login")]
+    [InlineData("/herramientas")]
     public void GetMetaForPath_ReturnsNull_ForUnknownRoutes(string path)
     {
         Assert.Null(_provider.GetMetaForPath(path));
@@ -54,16 +54,15 @@ public class SpaMetadataProviderTests
     [Theory]
     [InlineData("/")]
     [InlineData("/calculadora")]
-    [InlineData("/comparar")]
-    [InlineData("/fibras")]
-    [InlineData("/noticias")]
-    [InlineData("/conoce-las-fibras")]
-    [InlineData("/calendario")]
-    [InlineData("/fundamentales")]
-    [InlineData("/herramientas")]
-    [InlineData("/privacidad")]
-    [InlineData("/acerca")]
-    [InlineData("/contacto")]
+        [InlineData("/comparar")]
+        [InlineData("/fibras")]
+        [InlineData("/noticias")]
+        [InlineData("/conoce-las-fibras")]
+        [InlineData("/calendario")]
+        [InlineData("/fundamentales")]
+        [InlineData("/privacidad")]
+        [InlineData("/acerca")]
+        [InlineData("/contacto")]
     public void Descriptions_AreBetween120And160Chars(string path)
     {
         var meta = _provider.GetMetaForPath(path);

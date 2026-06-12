@@ -40,7 +40,6 @@ export const routes: RouteObject[] = [
       { path: '/', element: <HomePage /> },
       { path: '/fibras', element: p(<CatalogoPage />) },
       { path: '/comparar', element: p(<ComparadorPage />) },
-      { path: '/herramientas', element: p(<HerramientasPage />) },
       { path: '/calculadora', element: p(<CalculadoraPage />) },
       { path: '/fibras/:slug', element: p(<FibraPage />) },
       { path: '/noticias', element: p(<NoticiasListPage />) },
@@ -57,6 +56,7 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/portafolio', element: p(<PortafolioPage />) },
           { path: '/oportunidades', element: p(<OportunidadesPage />) },
+          { path: '/herramientas', element: p(<HerramientasPage />) },
           { path: '/perfil', element: p(<PerfilPage />) },
         ],
       },

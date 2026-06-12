@@ -21,7 +21,6 @@ public static class SeoEndpoints
         "/conoce-las-fibras",
         "/calendario",
         "/fundamentales",
-        "/herramientas",
         "/calculadora",
         "/acerca",
         "/contacto",

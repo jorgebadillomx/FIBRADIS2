@@ -9,6 +9,8 @@ public class OperationalConfig
     public int FibraNewsMonths { get; set; } = 15;
     public int FundamentalsCadenceMinutes { get; set; } = 2880;
     public int DistributionCadenceMinutes { get; set; } = 1440;
+    public decimal? Cetes28dRate { get; set; }
+    public DateTimeOffset? Cetes28dRateUpdatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? UpdatedBy { get; set; }
     public bool TermsEnabled { get; set; }

@@ -4,6 +4,7 @@ using Api.Endpoints.Private;
 using Api.Endpoints.Public;
 using Api.Middleware;
 using Application.Ops;
+using Application.Jobs;
 using Hangfire;
 using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
@@ -91,6 +92,7 @@ app.MapNews();
 app.MapEditorial();
 app.MapCatalog();
 app.MapMarket();
+app.MapIndicators();
 app.MapCalculadora();
 app.MapOpsFundamentals();
 app.MapOpsCatalog();
@@ -167,6 +169,12 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         MarketPipelineSchedule.DistributionJobId,
         j => j.ExecuteAsync(CancellationToken.None),
         MarketPipelineSchedule.DistributionCronExpression,
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+    RecurringJob.AddOrUpdate<BanxicoSyncJob>(
+        "banxico-cetes-sync",
+        j => j.ExecuteAsync(CancellationToken.None),
+        "0 6 * * 3",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
     var fundamentalsCadenceMinutes = FundamentalsPipelineSchedule.DefaultCadenceMinutes;

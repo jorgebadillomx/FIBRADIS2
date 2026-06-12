@@ -121,11 +121,6 @@ public class SpaMetadataProvider : ISpaMetadataProvider
                 "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
                 "Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.",
                 "/fundamentales"),
-            // agregada en code review 11-2 (deuda 10-2): ruta pública sin metadata server-side
-            ["/herramientas"] = new(
-                "Herramientas para Inversionistas en FIBRAs — Yield e ISR | FIBRADIS",
-                "Calculadoras públicas para estimar yield anualizado e ISR de distribuciones de FIBRAs con cifras claras en MXN y resultados fáciles de leer.",
-                "/herramientas"),
             ["/privacidad"] = new(
                 "Aviso de Privacidad | FIBRADIS",
                 "Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.",

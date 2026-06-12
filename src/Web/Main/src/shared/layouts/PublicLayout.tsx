@@ -103,7 +103,6 @@ export function PublicLayout() {
             <Link to="/conoce-las-fibras" className="hover:text-foreground transition-colors duration-150">Conoce las FIBRAs</Link>
             <Link to="/fibras" className="hover:text-foreground transition-colors duration-150">Fibras</Link>
             <Link to="/comparar" className="hover:text-foreground transition-colors duration-150">Comparar</Link>
-            <Link to="/herramientas" className="hover:text-foreground transition-colors duration-150">Herramientas</Link>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
             <Link to="/calendario" className="hover:text-foreground transition-colors duration-150">Calendario</Link>
             <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
@@ -114,6 +113,9 @@ export function PublicLayout() {
                 </Link>
                 <Link to="/oportunidades" className="hover:text-foreground transition-colors duration-150">
                   Oportunidades
+                </Link>
+                <Link to="/herramientas" className="hover:text-foreground transition-colors duration-150">
+                  Herramientas
                 </Link>
               </>
             )}
@@ -234,13 +236,6 @@ export function PublicLayout() {
                 Comparar
               </Link>
               <Link
-                to="/herramientas"
-                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Herramientas
-              </Link>
-              <Link
                 to="/noticias"
                 className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
                 onClick={() => setMobileMenuOpen(false)}
@@ -276,6 +271,13 @@ export function PublicLayout() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Oportunidades
+                  </Link>
+                  <Link
+                    to="/herramientas"
+                    className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Herramientas
                   </Link>
                 </>
               ) : null}

@@ -20,6 +20,10 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
         builder.Property(x => x.FibraNewsMonths).HasColumnName("fibra_news_months");
         builder.Property(x => x.FundamentalsCadenceMinutes).HasColumnName("fundamentals_cadence_minutes");
         builder.Property(x => x.DistributionCadenceMinutes).HasColumnName("distribution_cadence_minutes");
+        builder.Property(x => x.Cetes28dRate)
+            .HasColumnName("cetes_28d_rate")
+            .HasPrecision(10, 4);
+        builder.Property(x => x.Cetes28dRateUpdatedAt).HasColumnName("cetes_28d_rate_updated_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasMaxLength(256);
         builder.Property(x => x.TermsEnabled).HasColumnName("terms_enabled").HasDefaultValue(false);

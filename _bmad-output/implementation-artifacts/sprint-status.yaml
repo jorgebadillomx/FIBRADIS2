@@ -228,6 +228,10 @@ development_status:
   # story 3-6 creada — job incremental por fibra (MAX Date), cron diario 22:15 UTC, benchmarks ^MXX/^GSPC como Fibra Inactive, reset endpoint Ops
   3-6-daily-snapshot-incremental-y-benchmarks: ready-for-dev
 
+  # ── 3.7: Indicadores Macro — TIIE 28d e INPC anualizado con historial 12 meses ──
+  # story 3-7 creada — TIIE via BanxicoSyncJob semanal (+2 cols OperationalConfig), INPC via BanxicoMonthlySyncJob mensual (tabla InpcMonthly, algoritmo catch-up), endpoint indicadores expandido, badge TIIE en HerramientasPage
+  3-7-indicadores-macro-tiie-inpc: ready-for-dev
+
   # ── 4.6: Display fixes + AiMode On (post-release improvements) ───────────
   # story 4-6 creada — og:image redirects, HTML snippet strip, AiMode Off/On, home 5 noticias
   4-6-noticias-display-fixes-y-aimode-on: done
@@ -369,7 +373,7 @@ development_status:
   # story 11-5 creada — calculadora de compra de FIBRAs: tabla interactiva con CBFIs, Dist. CBFI, Dist. CBFI Anual, Renta Bruta/Anual. Acción A3 de retro 11.
   11-5-calculadora-compra-fibras: done
   # story 11-6 creada — /herramientas pasa a privado (ProtectedRoute) + hub de herramientas + 3 calculadoras: FIBRAs vs CETES, meta de renta mensual, retorno total real. BanxicoSyncJob integra SIE API miércoles 6 AM UTC para tasa CETES 28d. Acción A4 de retro 11.
-  11-6-herramientas-hub-privado: ready-for-dev
+  11-6-herramientas-hub-privado: done
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done

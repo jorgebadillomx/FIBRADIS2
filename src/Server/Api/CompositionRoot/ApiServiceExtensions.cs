@@ -2,6 +2,7 @@ using Api.Authentication;
 using Api.HealthChecks;
 using Api.Seo;
 using Application.Auth;
+using Application.Integrations;
 using Application.Catalog;
 using Application.Jobs;
 using Application.Market;
@@ -11,6 +12,7 @@ using Hangfire;
 using Hangfire.SqlServer;
 using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Articles;
+using Infrastructure.Integrations.Banxico;
 using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.OgImage;
 using Infrastructure.Integrations.MasDividendos;
@@ -122,6 +124,11 @@ public static class ApiServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Referrer = new Uri("https://app.masdividendos.mx/");
         });
+        builder.Services.AddHttpClient<IBanxicoClient, BanxicoClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        builder.Services.AddScoped<BanxicoSyncJob>();
         builder.Services.AddScoped<DistributionPipelineJob>();
         builder.Services.AddScoped<IAiProviderConfigRepository, AiProviderConfigRepository>();
         builder.Services.AddTransient<AiCapturingHandler>();

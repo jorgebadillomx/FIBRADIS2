@@ -19,6 +19,8 @@ public class OperationalConfigRepositoryTests
         Assert.Equal(4, config.AvgPeriods);
         Assert.Equal(1440, config.NewsCadenceMinutes);
         Assert.Equal(2880, config.FundamentalsCadenceMinutes);
+        Assert.Null(config.Cetes28dRate);
+        Assert.Null(config.Cetes28dRateUpdatedAt);
     }
 
     [Fact]
@@ -35,6 +37,24 @@ public class OperationalConfigRepositoryTests
         Assert.Equal(1440, config.NewsCadenceMinutes);
         Assert.Equal(2880, config.FundamentalsCadenceMinutes);
         Assert.Equal("system", config.UpdatedBy);
+        Assert.Null(config.Cetes28dRate);
+        Assert.Null(config.Cetes28dRateUpdatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateCetesRateAsync_UpdatesRateAndTimestamp()
+    {
+        await using var db = CreateDbContext();
+        var repo = new OperationalConfigRepository(db);
+        var updatedAt = new DateTimeOffset(2026, 6, 12, 18, 30, 0, TimeSpan.Zero);
+
+        await repo.UpdateCetesRateAsync(9.5m, updatedAt);
+
+        var config = await db.OperationalConfigs.SingleAsync();
+
+        Assert.Equal(9.5m, config.Cetes28dRate);
+        Assert.Equal(updatedAt, config.Cetes28dRateUpdatedAt);
+        Assert.Equal(updatedAt, config.UpdatedAt);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.Globalization;
 using Application.Ops;
 using Domain.Ops;
 using Infrastructure.Persistence.SqlServer;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories.Ops;
 
@@ -10,6 +11,34 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
     public async Task<OperationalConfig> GetAsync(CancellationToken ct = default)
         => await db.OperationalConfigs.FindAsync([1], ct)
            ?? new OperationalConfig();
+
+    public async Task UpdateCetesRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default)
+    {
+        if (db.Database.IsRelational())
+        {
+            var affected = await db.OperationalConfigs
+                .Where(config => config.Id == 1)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(config => config.Cetes28dRate, rate)
+                    .SetProperty(config => config.Cetes28dRateUpdatedAt, updatedAt)
+                    .SetProperty(config => config.UpdatedAt, updatedAt), ct);
+
+            if (affected > 0)
+                return;
+        }
+
+        var config = await db.OperationalConfigs.FindAsync([1], ct);
+        if (config is null)
+        {
+            config = new OperationalConfig { Id = 1 };
+            db.OperationalConfigs.Add(config);
+        }
+
+        config.Cetes28dRate = rate;
+        config.Cetes28dRateUpdatedAt = updatedAt;
+        config.UpdatedAt = updatedAt;
+        await db.SaveChangesAsync(ct);
+    }
 
     public async Task UpdateAsync(
         decimal? commissionFactor,
