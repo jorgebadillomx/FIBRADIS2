@@ -59,4 +59,5 @@ coverage/
 project-memory/chroma_db/
 project-memory/mem0.db
 deploy/release/fibradis.zip
+deploy/iis-publish/
 scripts/seo_fetch.ps1
