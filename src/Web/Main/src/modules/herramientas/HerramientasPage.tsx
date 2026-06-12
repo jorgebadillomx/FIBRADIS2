@@ -56,7 +56,7 @@ export function HerramientasPage() {
           <Card
             eyebrow="Rendimiento"
             title="Calculadora Yield"
-            description="Ingresa el precio actual y la distribución trimestral para obtener el yield anualizado en porcentaje."
+            description="Ingresa el precio actual y la suma de distribuciones de los últimos 12 meses (TTM) para obtener el yield."
           >
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -76,7 +76,7 @@ export function HerramientasPage() {
                 </label>
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Distribución trimestral (MXN)
+                    Distribución anual TTM (MXN)
                   </span>
                   <input
                     type="number"
@@ -85,7 +85,7 @@ export function HerramientasPage() {
                     value={yieldDistribution}
                     onChange={(event) => setYieldDistribution(event.target.value)}
                     className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                    placeholder="0.62"
+                    placeholder="1.184"
                   />
                 </label>
               </div>
@@ -96,7 +96,7 @@ export function HerramientasPage() {
                   {yieldResult != null ? formatPercent(yieldResult) : '—'}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Cálculo anualizado a partir de cuatro distribuciones por año.
+                  Suma real de distribuciones de los últimos 12 meses (TTM) entre el precio.
                 </p>
               </div>
             </div>
