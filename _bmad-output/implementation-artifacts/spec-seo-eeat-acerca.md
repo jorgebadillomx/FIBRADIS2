@@ -2,7 +2,8 @@
 title: 'E-E-A-T: expandir /acerca con misión, año de fundación y metodología técnica'
 type: 'feature'
 created: '2026-06-12'
-status: 'draft'
+status: 'done'
+baseline_commit: '45f8a065a4e6736aaac10e5224958898ca4d4621'
 context: []
 ---
 
@@ -39,7 +40,7 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/Web/Main/src/modules/acerca/AcercaPage.tsx` -- Reestructurar y expandir el componente con las secciones descritas en Design Notes -- El contenido actual es demasiado escueto para generar confianza E-E-A-T
+- [x] `src/Web/Main/src/modules/acerca/AcercaPage.tsx` -- Reestructurar y expandir el componente con las secciones descritas en Design Notes -- El contenido actual es demasiado escueto para generar confianza E-E-A-T
 
 **Acceptance Criteria:**
 - Dado que el usuario visita `/acerca`, cuando la página carga, entonces ve una declaración de misión con el año 2023.
@@ -95,3 +96,20 @@ Añadir al final, antes del cierre del `<div>` contenedor:
 **Manual checks (if no CLI):**
 - Abrir `/acerca` en dev server y verificar que todas las secciones renderizan sin overflow ni layout roto en móvil (< 400px) y desktop.
 - Confirmar con Jorge si quiere exponer los pesos del score antes de aprobarlo.
+
+## Suggested Review Order
+
+- Componente completo: expandido de ~57 a ~140 líneas con 6 nuevas secciones
+  [`AcercaPage.tsx:1`](../../src/Web/Main/src/modules/acerca/AcercaPage.tsx#L1)
+
+- Sección Misión: año de fundación 2023 + declaración de independencia
+  [`AcercaPage.tsx:11`](../../src/Web/Main/src/modules/acerca/AcercaPage.tsx#L11)
+
+- Tabla de fórmulas con `scope="col"` (patch de accesibilidad aplicado en review)
+  [`AcercaPage.tsx:57`](../../src/Web/Main/src/modules/acerca/AcercaPage.tsx#L57)
+
+- Score de oportunidad: descripción cualitativa, sin pesos exactos
+  [`AcercaPage.tsx:97`](../../src/Web/Main/src/modules/acerca/AcercaPage.tsx#L97)
+
+- Fecha hardcodeada — defer registrado en `deferred-work.md`
+  [`AcercaPage.tsx:134`](../../src/Web/Main/src/modules/acerca/AcercaPage.tsx#L134)

@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: spec-seo-eeat-acerca (2026-06-12)
+
+- **STALE DATE (LOW): "Actualizado: Junio 2026" hardcodeado en `AcercaPage.tsx`** — La fecha es literal estática; quedará desactualizada después de Junio 2026. Opciones: extraerla a una constante en un archivo de config, o mover el contenido de la página al CMS editorial (misma infraestructura que `/conoce-las-fibras`).
+
 ## Deferred from: code review of 11-2-spa-metadata-injection (2026-06-11)
 
 - **W1 (LOW): Caché en memoria de `index.html` en `SpaMetadataMiddleware`** — `File.ReadAllTextAsync` + regex en cada request de las 8 rutas mapeadas (incluida `/`, la más traficada); el archivo solo cambia en deploy. Cachear contenido (invalidar con `IFileProvider.Watch` o por `LastWriteTime`) cuando se toque el middleware de nuevo.
