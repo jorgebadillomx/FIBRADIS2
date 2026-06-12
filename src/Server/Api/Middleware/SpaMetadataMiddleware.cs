@@ -115,7 +115,8 @@ public partial class SpaMetadataMiddleware(
             .Append($"<meta property=\"og:title\" content=\"{title}\" />\n    ")
             .Append($"<meta property=\"og:description\" content=\"{description}\" />\n    ")
             .Append("<meta property=\"og:type\" content=\"website\" />\n    ")
-            .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />");
+            .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
+            .Append($"<meta property=\"og:image\" content=\"{Encoder.Encode($"{baseUrl}/og-image.png")}\" />");
 
         if (meta.JsonLd is not null)
         {

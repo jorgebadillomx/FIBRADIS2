@@ -11,23 +11,22 @@ public static class SeoEndpoints
     private const string DefaultBaseUrl = "https://fibrasinmobiliarias.com";
     private const int MaxNewsInSitemap = 500;
 
-    // Prioridades según valor SEO de cada ruta (ver Dev Notes 11.3):
-    // Home 1.0, /calculadora 0.9 (quick win GSC), contenido principal 0.8,
-    // herramientas 0.7, contenido educativo 0.6
-    private static readonly (string Path, string Priority, string Changefreq)[] StaticRoutes =
+    private static readonly string[] StaticRoutes =
     [
-        ("/", "1.0", "daily"),
-        ("/fibras", "0.8", "weekly"),
-        ("/comparar", "0.7", "weekly"),
-        ("/noticias", "0.7", "daily"),
-        ("/conoce-las-fibras", "0.6", "monthly"),
-        ("/calendario", "0.7", "weekly"),
-        ("/fundamentales", "0.7", "weekly"),
-        ("/herramientas", "0.7", "weekly"),
-        ("/calculadora", "0.9", "daily"),
+        "/",
+        "/fibras",
+        "/comparar",
+        "/noticias",
+        "/conoce-las-fibras",
+        "/calendario",
+        "/fundamentales",
+        "/herramientas",
+        "/calculadora",
+        "/acerca",
+        "/contacto",
+        "/privacidad",
     ];
 
-    // GET y HEAD: los validadores SEO y curl -I usan HEAD — MapGet solo responde GET (405)
     private static readonly string[] GetAndHead = [HttpMethods.Get, HttpMethods.Head];
 
     public static IEndpointRouteBuilder MapSeo(this IEndpointRouteBuilder app)
@@ -48,7 +47,7 @@ public static class SeoEndpoints
             return Results.Content(xml, "application/xml; charset=utf-8");
         })
         .AllowAnonymous()
-        .ExcludeFromDescription(); // infraestructura SEO — fuera del contrato OpenAPI/codegen
+        .ExcludeFromDescription();
 
         app.MapMethods("/robots.txt", GetAndHead, (IConfiguration config) =>
             Results.Content(BuildRobotsTxt(GetBaseUrl(config)), "text/plain; charset=utf-8"))
@@ -72,33 +71,61 @@ public static class SeoEndpoints
         sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
 
-        foreach (var (path, priority, changefreq) in StaticRoutes)
-            AppendUrlEntry(sb, $"{baseUrl}{path}", priority, changefreq);
+        foreach (var path in StaticRoutes)
+            AppendUrlEntry(sb, $"{baseUrl}{path}");
 
+        // FIBRAs: lastmod = hoy porque los precios actualizan diario
+        var today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         foreach (var (fullName, ticker) in activeFibras)
-            AppendUrlEntry(sb, $"{baseUrl}/fibras/{FibraSlug.Build(fullName, ticker)}", "0.8", "weekly");
+            AppendUrlEntry(sb, $"{baseUrl}/fibras/{FibraSlug.Build(fullName, ticker)}", today);
 
         foreach (var (slug, publishedAt) in newsArticles ?? [])
             // InvariantCulture: con cultura de calendario no gregoriano "yyyy" emitiría un año inválido
-            AppendUrlEntry(sb, $"{baseUrl}/noticias/{slug}", "0.6", "daily", publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            AppendUrlEntry(sb, $"{baseUrl}/noticias/{slug}", publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
         sb.Append("</urlset>\n");
         return sb.ToString();
     }
 
     public static string BuildRobotsTxt(string baseUrl) =>
-        $"User-agent: *\nAllow: /\nDisallow: /ops/\nDisallow: /api/\nDisallow: /hangfire/\n\nSitemap: {baseUrl}/sitemap.xml\n";
+        $"""
+        User-agent: *
+        Allow: /
+        Disallow: /ops/
+        Disallow: /api/
+        Disallow: /hangfire/
 
-    // Orden según el XSD de sitemaps.org: loc, lastmod, changefreq, priority.
-    // <loc> con entity-escaping: App:BaseUrl viene de config sin validar (un '&' rompería el XML)
-    private static void AppendUrlEntry(StringBuilder sb, string loc, string priority, string changefreq, string? lastmod = null)
+        User-agent: GPTBot
+        Allow: /
+
+        User-agent: ClaudeBot
+        Allow: /
+
+        User-agent: Google-Extended
+        Allow: /
+
+        User-agent: Applebot-Extended
+        Allow: /
+
+        User-agent: CCBot
+        Disallow: /
+
+        User-agent: Bytespider
+        Disallow: /
+
+        User-agent: meta-externalagent
+        Disallow: /
+
+        Sitemap: {baseUrl}/sitemap.xml
+        """;
+
+    // XSD sitemaps.org: loc, lastmod — changefreq y priority los ignora Google desde 2023
+    private static void AppendUrlEntry(StringBuilder sb, string loc, string? lastmod = null)
     {
         sb.Append("  <url>\n");
         sb.Append($"    <loc>{SecurityElement.Escape(loc)}</loc>\n");
         if (lastmod is not null)
             sb.Append($"    <lastmod>{lastmod}</lastmod>\n");
-        sb.Append($"    <changefreq>{changefreq}</changefreq>\n");
-        sb.Append($"    <priority>{priority}</priority>\n");
         sb.Append("  </url>\n");
     }
 }

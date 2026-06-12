@@ -7,6 +7,7 @@ import {
   clearMainAccessToken,
   getMainTokenClaims,
   getStoredMainAccessToken,
+  hasSessionCookie,
 } from './mainAuth'
 import { acceptTermsApi } from './authApi'
 
@@ -34,6 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true
 
     async function bootstrapSession() {
+      if (!hasSessionCookie()) {
+        setStatus('anonymous')
+        return
+      }
       try {
         const restored = await refreshMainSession()
         if (!active) return

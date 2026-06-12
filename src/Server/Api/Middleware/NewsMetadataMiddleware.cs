@@ -183,7 +183,19 @@ public partial class NewsMetadataMiddleware(
             ["headline"] = headline,
             ["datePublished"] = publishedIso,
             ["author"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = article.Source },
-            ["publisher"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = "FIBRADIS", ["url"] = baseUrl },
+            ["publisher"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Organization",
+                ["name"] = "FIBRADIS",
+                ["url"] = baseUrl,
+                ["logo"] = new Dictionary<string, object?>
+                {
+                    ["@type"] = "ImageObject",
+                    ["url"] = $"{baseUrl}/logo.png",
+                    ["width"] = 512,
+                    ["height"] = 512,
+                },
+            },
             ["url"] = canonicalPath,
             ["description"] = description,
         }, JsonLdOptions);
@@ -201,10 +213,8 @@ public partial class NewsMetadataMiddleware(
             .Append("<meta property=\"og:type\" content=\"article\" />\n    ")
             .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />");
 
-        if (article.ImageUrl is not null)
-        {
-            block.Append($"\n    <meta property=\"og:image\" content=\"{Encoder.Encode(article.ImageUrl)}\" />");
-        }
+        var ogImage = article.ImageUrl ?? $"{baseUrl}/og-image.png";
+        block.Append($"\n    <meta property=\"og:image\" content=\"{Encoder.Encode(ogImage)}\" />");
 
         block.Append($"\n    <script type=\"application/ld+json\">{jsonLd}</script>");
 

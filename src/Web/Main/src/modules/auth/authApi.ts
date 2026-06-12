@@ -2,6 +2,7 @@ import { createPathBasedClient } from 'openapi-fetch'
 import type { components, paths } from '@fibradis/shared-api-client'
 import {
   clearMainAccessToken,
+  clearSessionIndicator,
   decodeTokenRole,
   getMainAuthHeaders,
   notifyMainAuthRequired,
@@ -86,7 +87,10 @@ export function refreshMainSession(): Promise<boolean> {
         error && typeof error === 'object' && 'status' in error && typeof error.status === 'number'
           ? error.status
           : null
-      if (status === 401) return false
+      if (status === 401) {
+        clearSessionIndicator()
+        return false
+      }
       throw new Error('No se pudo restaurar la sesión.')
     }
 

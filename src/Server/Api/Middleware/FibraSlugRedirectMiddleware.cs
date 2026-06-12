@@ -44,11 +44,25 @@ public partial class FibraSlugRedirectMiddleware(
             return;
         }
 
-        // Redirect estático: /catalogo renombrado a /fibras
+        // Redirects estáticos de rutas antiguas o aliases conocidos
+        if (path.TrimEnd('/').Equals("/blog", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.StatusCode = StatusCodes.Status301MovedPermanently;
+            context.Response.Headers.Location = "/noticias" + context.Request.QueryString;
+            return;
+        }
+
         if (path.TrimEnd('/').Equals("/catalogo", StringComparison.OrdinalIgnoreCase))
         {
             context.Response.StatusCode = StatusCodes.Status301MovedPermanently;
             context.Response.Headers.Location = "/fibras" + context.Request.QueryString;
+            return;
+        }
+
+        if (path.TrimEnd('/').Equals("/aviso-de-privacidad", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.StatusCode = StatusCodes.Status301MovedPermanently;
+            context.Response.Headers.Location = "/privacidad" + context.Request.QueryString;
             return;
         }
 

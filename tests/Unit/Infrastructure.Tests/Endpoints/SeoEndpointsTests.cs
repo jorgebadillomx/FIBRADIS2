@@ -19,13 +19,11 @@ public class SeoEndpointsTests
     ];
 
     [Fact]
-    public void SitemapContainsCalculadora_WithPriority09()
+    public void SitemapContainsCalculadora()
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
 
-        Assert.Contains(
-            "<loc>https://fibrasinmobiliarias.com/calculadora</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>",
-            xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>", xml);
     }
 
     [Fact]
@@ -33,15 +31,27 @@ public class SeoEndpointsTests
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, []);
 
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/comparar</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calendario</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fundamentales</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/herramientas</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/comparar</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calendario</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fundamentales</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/herramientas</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/acerca</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/contacto</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/privacidad</loc>", xml);
+    }
+
+    [Fact]
+    public void SitemapDoesNotContainChangefreqOrPriority()
+    {
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
+
+        Assert.DoesNotContain("<changefreq>", xml);
+        Assert.DoesNotContain("<priority>", xml);
     }
 
     [Fact]
@@ -49,11 +59,29 @@ public class SeoEndpointsTests
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
 
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11</loc>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-macquarie-fibramq12</loc>", xml);
-        // las URLs viejas por ticker NO se incluyen (CA-3)
+        // las URLs viejas por ticker NO se incluyen
         Assert.DoesNotContain("/fibras/FUNO11", xml);
         Assert.DoesNotContain("<loc>https://fibrasinmobiliarias.com/fibras/funo11</loc>", xml);
+    }
+
+    [Fact]
+    public void SitemapFibraUrls_ContainLastmod()
+    {
+        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+
+        var fibraUrls = doc.Root!.Elements()
+            .Where(u => u.Elements().First().Value.Contains("/fibras/fibra-"))
+            .ToList();
+
+        Assert.NotEmpty(fibraUrls);
+        Assert.All(fibraUrls, u =>
+        {
+            var children = u.Elements().Select(e => e.Name.LocalName).ToArray();
+            Assert.Equal(["loc", "lastmod"], children);
+        });
     }
 
     [Fact]
@@ -61,39 +89,39 @@ public class SeoEndpointsTests
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
 
-        var doc = System.Xml.Linq.XDocument.Parse(xml); // lanza si el XML está mal formado
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
         Assert.Equal("urlset", doc.Root!.Name.LocalName);
         Assert.Equal("http://www.sitemaps.org/schemas/sitemap/0.9", doc.Root.Name.NamespaceName);
-        // 9 rutas estáticas + 2 fibras
-        Assert.Equal(11, doc.Root.Elements().Count());
+        // 12 rutas estáticas + 2 fibras
+        Assert.Equal(14, doc.Root.Elements().Count());
     }
 
     [Fact]
-    public void SitemapElementsFollowXsdSequence_ChangefreqBeforePriority()
+    public void SitemapElementsHaveCorrectStructure()
     {
-        // El XSD de sitemaps.org define la secuencia loc, lastmod, changefreq, priority —
-        // un validador estricto rechaza priority antes de changefreq (CA-1)
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
         var doc = System.Xml.Linq.XDocument.Parse(xml);
 
         foreach (var url in doc.Root!.Elements())
         {
             var names = url.Elements().Select(e => e.Name.LocalName).ToArray();
-            // las entradas de noticias incluyen lastmod (PublishedAt); el resto no
-            if (names.Length == 4)
-                Assert.Equal(["loc", "lastmod", "changefreq", "priority"], names);
-            else
-                Assert.Equal(["loc", "changefreq", "priority"], names);
+            // Primer elemento siempre es <loc>
+            Assert.Equal("loc", names[0]);
+            // Si hay segundo elemento, debe ser <lastmod> (FIBRA pages y noticias)
+            if (names.Length == 2)
+                Assert.Equal("lastmod", names[1]);
+            // Nunca más de 2 elementos
+            Assert.True(names.Length <= 2, $"URL entry had {names.Length} elements: {string.Join(", ", names)}");
         }
     }
 
     [Fact]
-    public void SitemapContainsNewsSlugUrls_WithPriority06DailyAndLastmod()
+    public void SitemapContainsNewsSlugUrls_WithLastmod()
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
 
         Assert.Contains(
-            "<loc>https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25</loc>\n    <lastmod>2026-06-10</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.6</priority>",
+            "<loc>https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25</loc>\n    <lastmod>2026-06-10</lastmod>",
             xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias/danhos13-anuncia-distribucion</loc>", xml);
     }
@@ -104,8 +132,8 @@ public class SeoEndpointsTests
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
 
         var doc = System.Xml.Linq.XDocument.Parse(xml);
-        // 9 rutas estáticas + 2 fibras + 2 noticias
-        Assert.Equal(13, doc.Root!.Elements().Count());
+        // 12 rutas estáticas + 2 fibras + 2 noticias
+        Assert.Equal(16, doc.Root!.Elements().Count());
     }
 
     [Fact]
@@ -114,7 +142,7 @@ public class SeoEndpointsTests
         // llamada sin noticias (firma previa) — no debe emitir entradas /noticias/{slug}
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
 
-        Assert.DoesNotContain("/noticias/", xml);
+        Assert.DoesNotContain("/noticias/funo11-reporta", xml);
     }
 
     [Fact]
@@ -124,7 +152,7 @@ public class SeoEndpointsTests
         var xml = SeoEndpoints.BuildSitemapXml("https://example.com/x?a=1&b=2", SampleFibras);
 
         Assert.Contains("&amp;", xml);
-        var doc = System.Xml.Linq.XDocument.Parse(xml); // lanza si quedó un '&' crudo
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
         Assert.Contains(doc.Root!.Elements(), u => u.Elements().First().Value.Contains("a=1&b=2"));
     }
 
@@ -156,12 +184,23 @@ public class SeoEndpointsTests
     }
 
     [Fact]
-    public void RobotsTxt_HasExactExpectedFormat()
+    public void RobotsTxt_AllowsAiSearchCrawlers()
     {
         var robots = SeoEndpoints.BuildRobotsTxt(BaseUrl);
 
-        Assert.Equal(
-            "User-agent: *\nAllow: /\nDisallow: /ops/\nDisallow: /api/\nDisallow: /hangfire/\n\nSitemap: https://fibrasinmobiliarias.com/sitemap.xml\n",
-            robots);
+        Assert.Contains("User-agent: GPTBot\nAllow: /", robots);
+        Assert.Contains("User-agent: ClaudeBot\nAllow: /", robots);
+        Assert.Contains("User-agent: Google-Extended\nAllow: /", robots);
+        Assert.Contains("User-agent: Applebot-Extended\nAllow: /", robots);
+    }
+
+    [Fact]
+    public void RobotsTxt_BlocksTrainingOnlyCrawlers()
+    {
+        var robots = SeoEndpoints.BuildRobotsTxt(BaseUrl);
+
+        Assert.Contains("User-agent: CCBot\nDisallow: /", robots);
+        Assert.Contains("User-agent: Bytespider\nDisallow: /", robots);
+        Assert.Contains("User-agent: meta-externalagent\nDisallow: /", robots);
     }
 }

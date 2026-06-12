@@ -16,6 +16,9 @@ public class SpaMetadataProviderTests
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
     [InlineData("/herramientas")]
+    [InlineData("/privacidad")]
+    [InlineData("/acerca")]
+    [InlineData("/contacto")]
     public void GetMetaForPath_ReturnsMeta_ForKnownRoutes(string path)
     {
         var meta = _provider.GetMetaForPath(path);
@@ -58,6 +61,9 @@ public class SpaMetadataProviderTests
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
     [InlineData("/herramientas")]
+    [InlineData("/privacidad")]
+    [InlineData("/acerca")]
+    [InlineData("/contacto")]
     public void Descriptions_AreBetween120And160Chars(string path)
     {
         var meta = _provider.GetMetaForPath(path);
@@ -78,10 +84,23 @@ public class SpaMetadataProviderTests
     }
 
     [Fact]
-    public void OtherRoutes_HaveNoJsonLd()
+    public void Homepage_HasOrganizationAndWebSiteJsonLd()
     {
-        Assert.Null(_provider.GetMetaForPath("/")!.JsonLd);
-        Assert.Null(_provider.GetMetaForPath("/noticias")!.JsonLd);
+        var meta = _provider.GetMetaForPath("/");
+
+        Assert.NotNull(meta);
+        Assert.NotNull(meta.JsonLd);
+        Assert.Contains("\"@type\": \"Organization\"", meta.JsonLd);
+        Assert.Contains("\"@type\": \"WebSite\"", meta.JsonLd);
+    }
+
+    [Theory]
+    [InlineData("/noticias")]
+    [InlineData("/fibras")]
+    [InlineData("/comparar")]
+    public void ContentRoutes_HaveNoJsonLd(string path)
+    {
+        Assert.Null(_provider.GetMetaForPath(path)!.JsonLd);
     }
 
     private static int CountOccurrences(string text, string token)

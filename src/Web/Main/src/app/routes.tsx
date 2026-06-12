@@ -1,47 +1,63 @@
+import { lazy, Suspense } from 'react'
 import type { RouteObject } from 'react-router'
 import { PublicLayout } from '@/shared/layouts/PublicLayout'
 import { HomePage } from '@/modules/home/HomePage'
-import { FibraPage } from '@/modules/ficha-publica/FibraPage'
-import { NoticiaPage } from '@/modules/noticia/NoticiaPage'
-import { NoticiasListPage } from '@/modules/noticias/NoticiasListPage'
-import { FundamentalesPage } from '@/modules/fundamentales/FundamentalesPage'
-import { CalendarioPage } from '@/modules/calendario/CalendarioPage'
-import { ConoceLasFibrasPage } from '@/modules/conoce-las-fibras/ConoceLasFibrasPage'
-import { CatalogoPage } from '@/modules/catalogo/CatalogoPage'
-import { ComparadorPage } from '@/modules/comparador/ComparadorPage'
-import { HerramientasPage } from '@/modules/herramientas/HerramientasPage'
-import { CalculadoraPage } from '@/modules/calculadora/CalculadoraPage'
-import { PortafolioPage } from '@/modules/portafolio/PortafolioPage'
-import { OportunidadesPage } from '@/modules/oportunidades/OportunidadesPage'
-import { LoginPage } from '@/modules/auth/LoginPage'
 import { ProtectedRoute } from '@/modules/auth/ProtectedRoute'
 import { NotFound } from '@/shared/layouts/NotFound'
-import { PrivacidadPage } from '@/modules/privacidad/PrivacidadPage'
-import { PerfilPage } from '@/modules/perfil/PerfilPage'
+
+const FibraPage = lazy(() => import('@/modules/ficha-publica/FibraPage').then(m => ({ default: m.FibraPage })))
+const NoticiaPage = lazy(() => import('@/modules/noticia/NoticiaPage').then(m => ({ default: m.NoticiaPage })))
+const NoticiasListPage = lazy(() => import('@/modules/noticias/NoticiasListPage').then(m => ({ default: m.NoticiasListPage })))
+const FundamentalesPage = lazy(() => import('@/modules/fundamentales/FundamentalesPage').then(m => ({ default: m.FundamentalesPage })))
+const CalendarioPage = lazy(() => import('@/modules/calendario/CalendarioPage').then(m => ({ default: m.CalendarioPage })))
+const ConoceLasFibrasPage = lazy(() => import('@/modules/conoce-las-fibras/ConoceLasFibrasPage').then(m => ({ default: m.ConoceLasFibrasPage })))
+const CatalogoPage = lazy(() => import('@/modules/catalogo/CatalogoPage').then(m => ({ default: m.CatalogoPage })))
+const ComparadorPage = lazy(() => import('@/modules/comparador/ComparadorPage').then(m => ({ default: m.ComparadorPage })))
+const HerramientasPage = lazy(() => import('@/modules/herramientas/HerramientasPage').then(m => ({ default: m.HerramientasPage })))
+const CalculadoraPage = lazy(() => import('@/modules/calculadora/CalculadoraPage').then(m => ({ default: m.CalculadoraPage })))
+const PortafolioPage = lazy(() => import('@/modules/portafolio/PortafolioPage').then(m => ({ default: m.PortafolioPage })))
+const OportunidadesPage = lazy(() => import('@/modules/oportunidades/OportunidadesPage').then(m => ({ default: m.OportunidadesPage })))
+const LoginPage = lazy(() => import('@/modules/auth/LoginPage').then(m => ({ default: m.LoginPage })))
+const PrivacidadPage = lazy(() => import('@/modules/privacidad/PrivacidadPage').then(m => ({ default: m.PrivacidadPage })))
+const AcercaPage = lazy(() => import('@/modules/acerca/AcercaPage').then(m => ({ default: m.AcercaPage })))
+const ContactoPage = lazy(() => import('@/modules/contacto/ContactoPage').then(m => ({ default: m.ContactoPage })))
+const PerfilPage = lazy(() => import('@/modules/perfil/PerfilPage').then(m => ({ default: m.PerfilPage })))
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[40vh]">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+)
+
+const p = (element: React.ReactElement) => (
+  <Suspense fallback={<PageLoader />}>{element}</Suspense>
+)
 
 export const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
       { path: '/', element: <HomePage /> },
-      { path: '/fibras', element: <CatalogoPage /> },
-      { path: '/comparar', element: <ComparadorPage /> },
-      { path: '/herramientas', element: <HerramientasPage /> },
-      { path: '/calculadora', element: <CalculadoraPage /> },
-      { path: '/fibras/:slug', element: <FibraPage /> },
-      { path: '/noticias', element: <NoticiasListPage /> },
-      { path: '/calendario', element: <CalendarioPage /> },
-      { path: '/conoce-las-fibras', element: <ConoceLasFibrasPage /> },
-      { path: '/noticias/:slug', element: <NoticiaPage /> },
-      { path: '/fundamentales', element: <FundamentalesPage /> },
-      { path: '/login', element: <LoginPage /> },
-      { path: '/privacidad', element: <PrivacidadPage /> },
+      { path: '/fibras', element: p(<CatalogoPage />) },
+      { path: '/comparar', element: p(<ComparadorPage />) },
+      { path: '/herramientas', element: p(<HerramientasPage />) },
+      { path: '/calculadora', element: p(<CalculadoraPage />) },
+      { path: '/fibras/:slug', element: p(<FibraPage />) },
+      { path: '/noticias', element: p(<NoticiasListPage />) },
+      { path: '/calendario', element: p(<CalendarioPage />) },
+      { path: '/conoce-las-fibras', element: p(<ConoceLasFibrasPage />) },
+      { path: '/noticias/:slug', element: p(<NoticiaPage />) },
+      { path: '/fundamentales', element: p(<FundamentalesPage />) },
+      { path: '/login', element: p(<LoginPage />) },
+      { path: '/privacidad', element: p(<PrivacidadPage />) },
+      { path: '/acerca', element: p(<AcercaPage />) },
+      { path: '/contacto', element: p(<ContactoPage />) },
       {
         element: <ProtectedRoute />,
         children: [
-          { path: '/portafolio', element: <PortafolioPage /> },
-          { path: '/oportunidades', element: <OportunidadesPage /> },
-          { path: '/perfil', element: <PerfilPage /> },
+          { path: '/portafolio', element: p(<PortafolioPage />) },
+          { path: '/oportunidades', element: p(<OportunidadesPage />) },
+          { path: '/perfil', element: p(<PerfilPage />) },
         ],
       },
       { path: '*', element: <NotFound /> },

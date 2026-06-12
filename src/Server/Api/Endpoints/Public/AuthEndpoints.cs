@@ -6,6 +6,9 @@ namespace Api.Endpoints.Public;
 public static class AuthEndpoints
 {
     private const string RefreshTokenCookie = "refreshToken";
+    // Cookie no-HttpOnly que el cliente lee para saber si tiene sesión activa,
+    // evitando llamar a /refresh en cada visita anónima (L-4 SEO audit)
+    private const string SessionIndicatorCookie = "s";
 
     public static IEndpointRouteBuilder MapAuth(this IEndpointRouteBuilder app)
     {
@@ -52,6 +55,7 @@ public static class AuthEndpoints
                 await authService.LogoutAsync(rawToken, ct);
 
             ctx.Response.Cookies.Delete(RefreshTokenCookie);
+            ctx.Response.Cookies.Delete(SessionIndicatorCookie);
             return Results.NoContent();
         })
         .AllowAnonymous()
@@ -63,12 +67,20 @@ public static class AuthEndpoints
 
     private static void SetRefreshCookie(HttpContext ctx, string token)
     {
+        var expiry = DateTimeOffset.UtcNow.AddDays(7);
         ctx.Response.Cookies.Append(RefreshTokenCookie, token, new CookieOptions
         {
             HttpOnly = true,
             Secure = ctx.Request.IsHttps,
             SameSite = SameSiteMode.Lax,
-            Expires = DateTimeOffset.UtcNow.AddDays(7),
+            Expires = expiry,
+        });
+        ctx.Response.Cookies.Append(SessionIndicatorCookie, "1", new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = ctx.Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Expires = expiry,
         });
     }
 }

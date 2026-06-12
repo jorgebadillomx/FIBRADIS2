@@ -23,7 +23,7 @@ builder.Services.AddHttpsRedirection(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -33,16 +33,35 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
 app.UseMiddleware<WwwToNonWwwMiddleware>();
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 // El 301 a la URL slug canónica debe resolverse ANTES de servir HTML (SpaMetadataMiddleware)
 app.UseMiddleware<FibraSlugRedirectMiddleware>();
+// /fibras/{slug} dinámico — después del 301 canónico, antes que SpaMetadataMiddleware (que cubre /fibras listado)
+app.UseMiddleware<FibraProfileMetadataMiddleware>();
 // /noticias/{slug|guid} dinámico — antes que SpaMetadataMiddleware (que cubre /noticias listado)
 app.UseMiddleware<NewsMetadataMiddleware>();
 app.UseMiddleware<SpaMetadataMiddleware>();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// Assets con content-hash de Vite (en /assets/) → cache inmutable de 1 año
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? string.Empty;
+        if (path.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase))
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+    }
+});
 app.UseRouting(); // explícito: debe ir después de static files para que los assets no sean interceptados por el fallback
 app.UseApiInfrastructure();
 app.MapAuth();

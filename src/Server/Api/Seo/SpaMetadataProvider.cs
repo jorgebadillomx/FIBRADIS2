@@ -2,6 +2,32 @@ namespace Api.Seo;
 
 public class SpaMetadataProvider : ISpaMetadataProvider
 {
+    private const string HomepageJsonLd = """
+        {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://fibrasinmobiliarias.com/#organization",
+              "name": "FIBRADIS",
+              "url": "https://fibrasinmobiliarias.com",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://fibrasinmobiliarias.com/logo.png"
+              }
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://fibrasinmobiliarias.com/#website",
+              "url": "https://fibrasinmobiliarias.com",
+              "name": "FIBRADIS — Fibras Inmobiliarias",
+              "publisher": { "@id": "https://fibrasinmobiliarias.com/#organization" },
+              "inLanguage": "es-MX"
+            }
+          ]
+        }
+        """;
+
     private const string CalculadoraJsonLd = """
         {
           "@context": "https://schema.org",
@@ -41,7 +67,8 @@ public class SpaMetadataProvider : ISpaMetadataProvider
             ["/"] = new(
                 "FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS",
                 "Plataforma de análisis de FIBRAs inmobiliarias mexicanas. Precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades.",
-                "/"),
+                "/",
+                HomepageJsonLd),
             ["/calculadora"] = new(
                 "Calculadora ISR FIBRAs — Impuesto sobre la Renta | FIBRADIS",
                 "Calcula el Impuesto Sobre la Renta (ISR) de tus distribuciones de FIBRAs inmobiliarias mexicanas. Herramienta gratuita con base en la Ley del ISR vigente.",
@@ -76,6 +103,18 @@ public class SpaMetadataProvider : ISpaMetadataProvider
                 "Herramientas para Inversionistas en FIBRAs — Yield e ISR | FIBRADIS",
                 "Calculadoras públicas para estimar yield anualizado e ISR de distribuciones de FIBRAs con cifras claras en MXN y resultados fáciles de leer.",
                 "/herramientas"),
+            ["/privacidad"] = new(
+                "Aviso de Privacidad | FIBRADIS",
+                "Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.",
+                "/privacidad"),
+            ["/acerca"] = new(
+                "Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS",
+                "Conoce la metodología de FIBRADIS: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.",
+                "/acerca"),
+            ["/contacto"] = new(
+                "Contacto | FIBRADIS",
+                "Contacta con FIBRADIS para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.",
+                "/contacto"),
         };
 
     public SpaPageMeta? GetMetaForPath(string path)

@@ -52,3 +52,13 @@ export function notifyMainAuthRequired(): void {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new Event(MAIN_AUTH_REQUIRED_EVENT))
 }
+
+export function hasSessionCookie(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.cookie.split(';').some(c => c.trim() === 's=1')
+}
+
+export function clearSessionIndicator(): void {
+  if (typeof document === 'undefined') return
+  document.cookie = 's=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'
+}
