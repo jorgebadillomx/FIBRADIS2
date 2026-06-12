@@ -266,12 +266,12 @@ export function FibraPage() {
           <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Link
               className="flex items-center gap-1 transition hover:text-foreground cursor-pointer"
-              to="/catalogo"
+              to="/fibras"
             >
               <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
               </svg>
-              Catálogo
+              Fibras
             </Link>
             <span aria-hidden="true">/</span>
             <span className="font-medium text-foreground">{ticker}</span>

@@ -24,7 +24,7 @@ export const routes: RouteObject[] = [
     element: <PublicLayout />,
     children: [
       { path: '/', element: <HomePage /> },
-      { path: '/catalogo', element: <CatalogoPage /> },
+      { path: '/fibras', element: <CatalogoPage /> },
       { path: '/comparar', element: <ComparadorPage /> },
       { path: '/herramientas', element: <HerramientasPage /> },
       { path: '/calculadora', element: <CalculadoraPage /> },

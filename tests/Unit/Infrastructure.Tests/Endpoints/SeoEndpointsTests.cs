@@ -34,7 +34,7 @@ public class SeoEndpointsTests
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, []);
 
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/catalogo</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/comparar</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>", xml);

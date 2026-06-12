@@ -17,7 +17,7 @@ public static class SeoEndpoints
     private static readonly (string Path, string Priority, string Changefreq)[] StaticRoutes =
     [
         ("/", "1.0", "daily"),
-        ("/catalogo", "0.8", "weekly"),
+        ("/fibras", "0.8", "weekly"),
         ("/comparar", "0.7", "weekly"),
         ("/noticias", "0.7", "daily"),
         ("/conoce-las-fibras", "0.6", "monthly"),
