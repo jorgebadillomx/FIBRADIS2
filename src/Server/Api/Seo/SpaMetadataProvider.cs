@@ -51,10 +51,10 @@ public class SpaMetadataProvider : ISpaMetadataProvider
                 "Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS",
                 "Compara hasta 4 FIBRAs inmobiliarias en precio, yield, fundamentales y score de oportunidad. Toma mejores decisiones de inversión.",
                 "/comparar"),
-            ["/catalogo"] = new(
-                "Catálogo de FIBRAs Inmobiliarias Mexicanas | FIBRADIS",
+            ["/fibras"] = new(
+                "FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | FIBRADIS",
                 "Directorio completo de FIBRAs inmobiliarias en México con descripción, sector, precio y datos fundamentales de cada fideicomiso.",
-                "/catalogo"),
+                "/fibras"),
             ["/noticias"] = new(
                 "Noticias FIBRAs Inmobiliarias | FIBRADIS",
                 "Últimas noticias y novedades sobre el mercado de FIBRAs inmobiliarias mexicanas. Actualización continua desde fuentes especializadas.",

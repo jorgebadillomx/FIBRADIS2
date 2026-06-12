@@ -44,6 +44,14 @@ public partial class FibraSlugRedirectMiddleware(
             return;
         }
 
+        // Redirect estático: /catalogo renombrado a /fibras
+        if (path.TrimEnd('/').Equals("/catalogo", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.StatusCode = StatusCodes.Status301MovedPermanently;
+            context.Response.Headers.Location = "/fibras" + context.Request.QueryString;
+            return;
+        }
+
         var match = FibraPathRegex().Match(path);
         if (!match.Success)
         {
