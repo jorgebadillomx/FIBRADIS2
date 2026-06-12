@@ -38,11 +38,11 @@ public static class SeoEndpoints
             CancellationToken ct) =>
         {
             // secuencial: ambos repos comparten el mismo DbContext Scoped (no thread-safe)
-            var fibras = await fibraRepo.GetAllActiveAsync(ct);
+            var fibras = await fibraRepo.GetAllActiveForSitemapAsync(ct);
             var newsArticles = await newsRepo.GetArticlesForSitemapAsync(MaxNewsInSitemap, ct);
             var xml = BuildSitemapXml(
                 GetBaseUrl(config),
-                fibras.Select(f => (f.FullName, f.Ticker)),
+                fibras,
                 newsArticles);
             return Results.Content(xml, "application/xml; charset=utf-8");
         })

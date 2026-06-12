@@ -341,6 +341,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
     public async Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
     {
         var rows = await db.NewsArticles
+            .AsNoTracking()
             .Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null)
             .OrderByDescending(n => n.PublishedAt)
             .Take(limit)

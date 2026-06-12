@@ -39,5 +39,10 @@ public class NewsArticleConfiguration : IEntityTypeConfiguration<NewsArticle>
 
         builder.HasIndex(x => new { x.TitleNormalized, x.CapturedAt })
             .HasDatabaseName("IX_NewsArticle_TitleNormalized_CapturedAt");
+
+        builder.HasIndex(x => x.PublishedAt)
+            .IsDescending(true)
+            .HasFilter("[status] = 'Processed' AND [deleted_at] IS NULL AND [slug] IS NOT NULL")
+            .HasDatabaseName("IX_NewsArticle_Sitemap");
     }
 }

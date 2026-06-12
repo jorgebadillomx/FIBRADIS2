@@ -191,6 +191,8 @@ internal sealed class FakeDistFibraRepository(IReadOnlyList<Fibra> fibras) : IFi
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);
+    public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
+        => throw new NotImplementedException();
 }
 
 internal sealed class FakeDistYahooClient : IYahooFinanceClient

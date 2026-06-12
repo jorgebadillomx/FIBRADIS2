@@ -62,4 +62,15 @@ public class FibraRepository(AppDbContext db) : IFibraRepository
             .Where(f => f.State == FibraState.Active)
             .OrderBy(f => f.Ticker)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
+    {
+        var rows = await db.Fibras
+            .AsNoTracking()
+            .Where(f => f.State == FibraState.Active)
+            .OrderBy(f => f.Ticker)
+            .Select(f => new { f.FullName, f.Ticker })
+            .ToListAsync(ct);
+        return rows.Select(r => (r.FullName, r.Ticker)).ToList();
+    }
 }

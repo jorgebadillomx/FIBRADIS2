@@ -462,6 +462,8 @@ internal sealed class FakeFundamentalsFibraRepository(IReadOnlyList<Fibra> fibra
         => Task.FromResult(fibras);
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult(fibras);
+    public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
+        => throw new NotImplementedException();
 }
 
 internal sealed class FakeKpiExtractorService : IKpiExtractorService

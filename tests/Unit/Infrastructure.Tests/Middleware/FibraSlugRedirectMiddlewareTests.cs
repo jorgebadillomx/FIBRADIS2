@@ -184,5 +184,6 @@ public class FibraSlugRedirectMiddlewareTests
         public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<IReadOnlyList<Fibra>> GetAllAsync(CancellationToken ct = default) => throw new NotImplementedException();
         public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default) => throw new NotImplementedException();
     }
 }
