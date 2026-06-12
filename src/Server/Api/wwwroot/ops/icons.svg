@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Fibras Inmobiliarias icon</title>
+  <desc id="desc">Símbolo premium de Fibras Inmobiliarias con torres geométricas en dorado sobre fondo azul marino oscuro.</desc>
+  <rect width="512" height="512" rx="112" fill="#0D1B2A"/>
+  <g fill="none" stroke="#C9A84C" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M128 368V208L192 160V368"/>
+    <path d="M224 368V120L288 80V368"/>
+    <path d="M320 368V184L384 224V368"/>
+  </g>
+  <path d="M104 400H408" stroke="#243447" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+</svg>
