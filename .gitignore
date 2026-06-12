@@ -40,6 +40,7 @@ scripts/codegen/build-output/
 
 ## wwwroot — frontend build output (Vite), excepto uploads que son runtime
 src/Server/Api/wwwroot/*
+!src/Server/Api/wwwroot/*.svg
 !src/Server/Api/wwwroot/uploads/
 src/Server/Api/wwwroot/uploads/**
 
