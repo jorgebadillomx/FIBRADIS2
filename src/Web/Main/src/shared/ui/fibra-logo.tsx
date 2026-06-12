@@ -43,13 +43,17 @@ export function FibraLogo({ siteUrl, ticker, size = 'sm' }: FibraLogoProps) {
     ? 'h-12 w-12 rounded-xl text-xs'
     : 'h-10 w-10 rounded-lg text-[10px]'
 
+  const imgSize = size === 'md' ? 48 : 40
+
   if (logoUrl && !failed) {
     return (
       <img
         alt={ticker}
         className={`shrink-0 border border-border bg-white object-contain p-1 ${sizeClass}`}
+        height={imgSize}
         onError={() => setFailed(true)}
         src={logoUrl}
+        width={imgSize}
       />
     )
   }

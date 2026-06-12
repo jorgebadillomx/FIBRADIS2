@@ -215,6 +215,14 @@ public partial class NewsMetadataMiddleware(
 
         var ogImage = article.ImageUrl ?? $"{baseUrl}/og-image.png";
         block.Append($"\n    <meta property=\"og:image\" content=\"{Encoder.Encode(ogImage)}\" />");
+        block.Append("\n    <meta property=\"og:locale\" content=\"es_MX\" />");
+        block.Append("\n    <meta property=\"og:site_name\" content=\"FIBRADIS\" />");
+        if (article.ImageUrl is null)
+        {
+            block.Append("\n    <meta property=\"og:image:width\" content=\"1200\" />");
+            block.Append("\n    <meta property=\"og:image:height\" content=\"630\" />");
+            block.Append("\n    <meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />");
+        }
 
         block.Append("\n    <meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
              .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
