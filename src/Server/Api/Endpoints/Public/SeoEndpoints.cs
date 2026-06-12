@@ -3,6 +3,7 @@ using System.Security;
 using System.Text;
 using Application.Catalog;
 using Application.News;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Endpoints.Public;
 
@@ -35,16 +36,21 @@ public static class SeoEndpoints
             IFibraRepository fibraRepo,
             INewsRepository newsRepo,
             IConfiguration config,
+            IMemoryCache cache,
+            HttpContext httpContext,
             CancellationToken ct) =>
         {
-            // secuencial: ambos repos comparten el mismo DbContext Scoped (no thread-safe)
-            var fibras = await fibraRepo.GetAllActiveForSitemapAsync(ct);
-            var newsArticles = await newsRepo.GetArticlesForSitemapAsync(MaxNewsInSitemap, ct);
-            var xml = BuildSitemapXml(
-                GetBaseUrl(config),
-                fibras,
-                newsArticles);
-            return Results.Content(xml, "application/xml; charset=utf-8");
+            const string cacheKey = "sitemap-xml";
+            if (!cache.TryGetValue(cacheKey, out string? xml))
+            {
+                // secuencial: ambos repos comparten el mismo DbContext Scoped (no thread-safe)
+                var fibras = await fibraRepo.GetAllActiveForSitemapAsync(ct);
+                var newsArticles = await newsRepo.GetArticlesForSitemapAsync(MaxNewsInSitemap, ct);
+                xml = BuildSitemapXml(GetBaseUrl(config), fibras, newsArticles);
+                cache.Set(cacheKey, xml, TimeSpan.FromHours(1));
+            }
+            httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
+            return Results.Content(xml!, "application/xml; charset=utf-8");
         })
         .AllowAnonymous()
         .ExcludeFromDescription();

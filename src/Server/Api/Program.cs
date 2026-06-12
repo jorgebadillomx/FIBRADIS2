@@ -106,7 +106,12 @@ app.MapOpsNewsManagement();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("/ops/{**slug}", "ops/index.html");
-app.MapFallbackToFile("index.html");
+app.MapFallback(async ctx =>
+{
+    ctx.Response.Headers.CacheControl = "s-maxage=180, stale-while-revalidate=60";
+    await ctx.Response.SendFileAsync(
+        app.Environment.WebRootFileProvider.GetFileInfo("index.html"));
+});
 
 var useInMemoryHangfire = builder.Configuration.GetValue<bool>("Hangfire:UseInMemoryStorage");
 var hangfireConnStr = builder.Configuration.GetConnectionString("DefaultConnection");
