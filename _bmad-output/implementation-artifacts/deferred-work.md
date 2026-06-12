@@ -1,5 +1,12 @@
 # Deferred Work
 
+## Deferred from: code review of 11-5-calculadora-compra-fibras (2026-06-12)
+
+- **D1 (LOW): FIBRA sin pagos en 400+ días indistinguible de FIBRA sin historial** — `CalculadoraEndpoints.cs` usa ventana de 400 días; una FIBRA activa que no ha distribuido en más de 400 días muestra `distCbfi=null` igual que una nueva sin datos, sin indicador de distinción para el usuario.
+- **D2 (LOW): `distCbfiAnual` visualmente similar a `distCbfi` para FIBRAs de pago concentrado** — Cuando todos los pagos anuales caen en el mismo trimestre, la cifra anual no supera significativamente a la trimestral; UX confusa. Diseño intencional del spec pero puede mejorarse añadiendo etiqueta explicativa.
+- **D3 (LOW): Sort CBFIs/Sobra mezcla FIBRAs sin precio con FIBRAs sin monto** — Ambas muestran 0 CBFIs/Sobra; el sort no puede distinguirlas. Considerar usar `null` para FIBRAs sin precio en lugar de 0 en el sort value.
+- **D4 (MEDIUM): Sin output cache en endpoint público `/api/v1/market/calculadora`** — 3 queries a BD (fibras + snapshots + distribuciones 400d) por cada request anónimo. Agregar `OutputCache` con TTL de ~1 min cuando se toque el endpoint en historia futura.
+
 ## Deferred from: spec-seo-eeat-acerca (2026-06-12)
 
 - **STALE DATE (LOW): "Actualizado: Junio 2026" hardcodeado en `AcercaPage.tsx`** — La fecha es literal estática; quedará desactualizada después de Junio 2026. Opciones: extraerla a una constante en un archivo de config, o mover el contenido de la página al CMS editorial (misma infraestructura que `/conoce-las-fibras`).

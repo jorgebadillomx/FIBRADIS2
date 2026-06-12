@@ -46,11 +46,11 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
         Assert.False(nextCalled.Value);
         Assert.StartsWith("text/html", context.Response.ContentType);
-        Assert.Contains("<title>Calculadora ISR FIBRAs — Impuesto sobre la Renta | FIBRADIS</title>", body);
+        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<meta property=\"og:url\" content=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<script type=\"application/ld+json\">", body);
-        Assert.Contains("\"@type\": \"FAQPage\"", body);
+        Assert.Contains("\"@type\": \"SoftwareApplication\"", body);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>Calculadora ISR FIBRAs — Impuesto sobre la Renta | FIBRADIS</title>", body);
+        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS</title>", body);
     }
 
     [Fact]

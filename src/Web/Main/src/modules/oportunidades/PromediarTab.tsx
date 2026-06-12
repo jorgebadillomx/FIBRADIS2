@@ -170,8 +170,10 @@ export function PromediarTab({ weights }: { weights: Weights }) {
           (portfolioValue + additionalWhatIfTitles * currentPrice!)) * 100
       : null
 
-  const dividendYieldPct = selectedWhatIfRow?.opportunityRow?.dividendYieldPct ?? null
-  const currentRentaAnual = selectedWhatIfRow?.position.rentaAnual ?? 0
+  const dividendYieldPct = selectedWhatIfRow?.opportunityRow?.dividendYieldPct != null
+    ? toNum(selectedWhatIfRow.opportunityRow.dividendYieldPct)
+    : null
+  const currentRentaAnual = toNum(selectedWhatIfRow?.position.rentaAnual)
 
   const rentaAnualEstimada = canSimulateWhatIf && currentTitulos != null && currentPrice != null
     ? calcRentaProyectadaAnual(
@@ -236,7 +238,9 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               const adicionalesNum = parseInt(adicionalesStr, 10)
               const hasSimulacion = !isNaN(adicionalesNum) && adicionalesNum > 0 && precioActual != null
 
-              const yieldPct = opportunityRow?.dividendYieldPct ?? null
+              const yieldPct = opportunityRow?.dividendYieldPct != null
+                ? toNum(opportunityRow.dividendYieldPct)
+                : null
               const costoCompra = hasSimulacion && precioActual != null ? adicionalesNum * precioActual : null
 
               const difPct = precioActual != null && costoPromedio > 0

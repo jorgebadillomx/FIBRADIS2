@@ -73,14 +73,15 @@ public class SpaMetadataProviderTests
     }
 
     [Fact]
-    public void Calculadora_HasFaqPageJsonLd_WithAtLeastTwoQuestions()
+    public void Calculadora_HasSoftwareApplicationJsonLd()
     {
         var meta = _provider.GetMetaForPath("/calculadora");
 
         Assert.NotNull(meta);
         Assert.NotNull(meta.JsonLd);
-        Assert.Contains("\"@type\": \"FAQPage\"", meta.JsonLd);
-        Assert.True(CountOccurrences(meta.JsonLd, "\"@type\": \"Question\"") >= 2);
+        Assert.Contains("\"@type\": \"SoftwareApplication\"", meta.JsonLd);
+        Assert.Contains("\"name\": \"Calculadora de compra de FIBRAs\"", meta.JsonLd);
+        Assert.Contains("\"description\": \"Calcula cuántos CBFIs puedes comprar con tu presupuesto", meta.JsonLd);
     }
 
     [Fact]

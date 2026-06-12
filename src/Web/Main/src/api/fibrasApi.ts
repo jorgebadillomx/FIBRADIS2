@@ -1,5 +1,5 @@
 import createClient from 'openapi-fetch'
-import type { paths } from '@fibradis/shared-api-client'
+import type { components, paths } from '@fibradis/shared-api-client'
 import { clearMainAccessToken, getStoredMainAccessToken, notifyMainAuthRequired } from '@/modules/auth/mainAuth'
 
 export const apiClient = createClient<paths>({ baseUrl: '' })
@@ -67,4 +67,12 @@ export async function fetchFibraByTicker(ticker: string) {
     throw new Error(`Error al obtener FIBRA '${ticker}': ${JSON.stringify(error)}`)
   }
   return data
+}
+
+export type CalculadoraFibraDto = components['schemas']['CalculadoraFibraDto']
+
+export async function fetchCalculadoraFibras(): Promise<CalculadoraFibraDto[]> {
+  const { data, error } = await apiClient.GET('/api/v1/market/calculadora')
+  if (error) throw new Error(`Error al obtener calculadora de FIBRAs: ${JSON.stringify(error)}`)
+  return data ?? []
 }

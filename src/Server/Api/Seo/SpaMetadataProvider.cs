@@ -73,13 +73,13 @@ public class SpaMetadataProvider : ISpaMetadataProvider
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
           "@id": "https://fibrasinmobiliarias.com/calculadora#app",
-          "name": "Calculadora ISR de FIBRAs",
+          "name": "Calculadora de compra de FIBRAs",
           "url": "https://fibrasinmobiliarias.com/calculadora",
           "applicationCategory": "FinanceApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "MXN" },
           "provider": { "@id": "https://fibrasinmobiliarias.com/#organization" },
-          "description": "Calcula el ISR de distribuciones de FIBRAs inmobiliarias mexicanas según la Ley del ISR vigente."
+          "description": "Calcula cuántos CBFIs puedes comprar con tu presupuesto, qué distribución recibirías y tu renta bruta estimada para cada FIBRA inmobiliaria mexicana."
         }
         """;
 
@@ -92,8 +92,8 @@ public class SpaMetadataProvider : ISpaMetadataProvider
                 "/",
                 HomepageJsonLd),
             ["/calculadora"] = new(
-                "Calculadora ISR FIBRAs — Impuesto sobre la Renta | FIBRADIS",
-                "Calcula el Impuesto Sobre la Renta (ISR) de tus distribuciones de FIBRAs inmobiliarias mexicanas. Herramienta gratuita con base en la Ley del ISR vigente.",
+                "Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS",
+                "Calcula cuántos CBFIs puedes comprar con tu presupuesto, qué distribución recibirías y tu renta bruta estimada para cada FIBRA inmobiliaria mexicana.",
                 "/calculadora",
                 CalculadoraJsonLd),
             ["/comparar"] = new(
