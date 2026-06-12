@@ -190,9 +190,10 @@ export function ComparadorPage() {
 
   function addTicker(ticker: string) {
     if (selectedCount >= MAX_COMPARE_FIBRAS) return
+    const nextCount = selectedCount + 1
     updateSelection([...selectedTickers, ticker])
     setSearch('')
-    setIsSearchFocused(true)
+    setIsSearchFocused(nextCount < MAX_COMPARE_FIBRAS)
   }
 
   function removeTicker(ticker: string) {
@@ -434,7 +435,7 @@ export function ComparadorPage() {
                   <tr className="border-b border-border bg-muted/30 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3 text-left">Métrica</th>
                     {comparisonRows.map((row) => (
-                      <th key={row.ticker} className="px-4 py-3 text-left align-top">
+                      <th key={row.ticker} className="px-4 py-3 text-right align-top">
                         <div className="space-y-1">
                           <span className="block font-mono text-sm font-semibold text-primary">
                             {row.ticker}
