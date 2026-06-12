@@ -70,6 +70,8 @@ app.UseStaticFiles(new StaticFileOptions
         var path = ctx.Context.Request.Path.Value ?? string.Empty;
         if (path.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase))
             ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        if (path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+            ctx.Context.Response.ContentType = "text/plain; charset=utf-8";
     }
 });
 app.UseRouting(); // explícito: debe ir después de static files para que los assets no sean interceptados por el fallback
