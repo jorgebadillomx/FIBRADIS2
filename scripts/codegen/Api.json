@@ -2498,6 +2498,28 @@
         }
       }
     },
+    "/api/v1/market/calculadora": {
+      "get": {
+        "tags": [
+          "Market"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalculadoraFibraDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/fundamentals/{ticker}/run": {
       "post": {
         "tags": [
@@ -4892,6 +4914,65 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CalculadoraFibraDto": {
+        "required": [
+          "ticker",
+          "empresa",
+          "precioActual",
+          "ultimoPeriodo",
+          "distCbfi",
+          "distCbfiAnual",
+          "freshnessStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string"
+          },
+          "empresa": {
+            "type": "string"
+          },
+          "precioActual": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ultimoPeriodo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "distCbfi": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "distCbfiAnual": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "freshnessStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

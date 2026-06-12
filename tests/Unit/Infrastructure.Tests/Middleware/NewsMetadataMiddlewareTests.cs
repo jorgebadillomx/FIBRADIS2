@@ -122,7 +122,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         var bodyWithout = await ReadBodyAsync(contextWithout);
 
         Assert.Contains("<meta property=\"og:image\" content=\"https://cdn.example.com/img.jpg\" />", bodyWith);
-        Assert.DoesNotContain("og:image", bodyWithout);
+        Assert.Contains("<meta property=\"og:image\" content=\"https://fibrasinmobiliarias.com/og-image.png\" />", bodyWithout);
     }
 
     [Fact]

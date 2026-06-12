@@ -91,6 +91,7 @@ app.MapNews();
 app.MapEditorial();
 app.MapCatalog();
 app.MapMarket();
+app.MapCalculadora();
 app.MapOpsFundamentals();
 app.MapOpsCatalog();
 app.MapOpsConfig();

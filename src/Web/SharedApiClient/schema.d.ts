@@ -2875,6 +2875,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/calculadora": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalculadoraFibraDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/fundamentals/{ticker}/run": {
         parameters: {
             query?: never;
@@ -5408,6 +5443,18 @@ export interface components {
             term: string;
             /** Format: date-time */
             createdAt: string;
+        };
+        CalculadoraFibraDto: {
+            ticker: string;
+            empresa: string;
+            /** Format: double */
+            precioActual: null | number | string;
+            ultimoPeriodo: null | string;
+            /** Format: double */
+            distCbfi: null | number | string;
+            /** Format: double */
+            distCbfiAnual: null | number | string;
+            freshnessStatus: null | string;
         };
         CalendarEventDto: {
             eventType: string;
