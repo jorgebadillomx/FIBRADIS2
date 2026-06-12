@@ -54,7 +54,7 @@ baseline_commit: '877a3e52e6e3b6e21fc59af1f103fc816a460862'
 - Dado `SlugHelper.NormalizeText("FIBRA Uno S.A. de C.V.")`, cuando se llama, entonces retorna `"fibra uno s.a. de c.v."` (post-normalización, pre-slugify).
 - Dado `SlugHelper.NormalizeText("Distribución")`, cuando se llama, entonces retorna `"distribucion"` (acento removido, lowercase).
 - Dado `SlugHelper.NormalizeText("Fibra҃uno")` (U+0483), cuando se llama, entonces retorna `"fibrauno"` (marca combinante no-latina removida).
-- `[ManualCheck]` Después de aplicar el cambio: `FibraSlug.Build(fibra.FullName, fibra.Ticker)` para cada fibra activa en BD debe producir exactamente el mismo slug que el que ya está almacenado (verificar con query SQL o endpoint de sitemap antes de deployar).
+- `[ManualCheck N/A]` ~~Verificar slug almacenado en BD~~ — `catalog.Fibra` no tiene columna `slug`; el slug se computa on-the-fly en `FibraSlugRedirectMiddleware` y `SeoEndpoints` por cada request/sitemap. No hay estado persistido que pueda divergir. Riesgo: ninguno.
 
 ## Verification
 
