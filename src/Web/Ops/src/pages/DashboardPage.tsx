@@ -10,6 +10,9 @@ const pipelineCards: Array<{ name: PipelineName; target: RunPipelineTarget; acce
   { name: 'News', target: 'news', accent: 'from-sky-500/18 to-sky-100' },
   { name: 'Distribution', target: 'distribution', accent: 'from-amber-500/18 to-amber-100' },
   { name: 'Fundamentals', target: 'fundamentals', accent: 'from-cyan-500/18 to-cyan-100' },
+  { name: 'BanxicoSync', target: 'banxico-sync', accent: 'from-violet-500/18 to-violet-100' },
+  { name: 'BanxicoInpc', target: 'banxico-inpc', accent: 'from-orange-500/18 to-orange-100' },
+  { name: 'DailySnapshot', target: 'daily-snapshot', accent: 'from-indigo-500/18 to-indigo-100' },
 ]
 
 export function DashboardPage() {
@@ -47,11 +50,29 @@ export function DashboardPage() {
     onSuccess: invalidateDashboard,
   })
 
+  const banxicoSyncMutation = useMutation({
+    mutationFn: () => runPipeline('banxico-sync'),
+    onSuccess: invalidateDashboard,
+  })
+
+  const banxicoInpcMutation = useMutation({
+    mutationFn: () => runPipeline('banxico-inpc'),
+    onSuccess: invalidateDashboard,
+  })
+
+  const dailySnapshotMutation = useMutation({
+    mutationFn: () => runPipeline('daily-snapshot'),
+    onSuccess: invalidateDashboard,
+  })
+
   const mutationByTarget = {
     market: marketMutation,
     news: newsMutation,
     distribution: distributionMutation,
     fundamentals: fundamentalsMutation,
+    'banxico-sync': banxicoSyncMutation,
+    'banxico-inpc': banxicoInpcMutation,
+    'daily-snapshot': dailySnapshotMutation,
   } as const
 
   const pipelines = dashboardQuery.data?.pipelines ?? []

@@ -1,6 +1,8 @@
 using Application.Catalog;
+using Application.Jobs;
 using Application.Market;
 using Domain.Catalog;
+using Domain.Jobs;
 using Domain.Market;
 using Infrastructure.Integrations.Yahoo;
 using Infrastructure.Jobs.Market;
@@ -38,7 +40,23 @@ public class DailySnapshotHistoricalJobTests
         FakeHistoricalFibraRepository fibraRepo,
         FakeHistoricalYahooClient yahoo,
         FakeHistoricalMarketRepository marketRepo)
-        => new(fibraRepo, yahoo, marketRepo, NullLogger<DailySnapshotHistoricalJob>.Instance);
+        => new(fibraRepo, yahoo, marketRepo, new NullRunLogRepo(), new NullErrorLogRepo(), NullLogger<DailySnapshotHistoricalJob>.Instance);
+
+    private sealed class NullRunLogRepo : IPipelineRunLogRepository
+    {
+        public Task AddAsync(PipelineRunLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<PipelineRunLog>> GetRecentAsync(string? pipeline, int take, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<PipelineRunLog>>([]);
+        public Task<PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
+            => Task.FromResult<PipelineRunLog?>(null);
+    }
+
+    private sealed class NullErrorLogRepo : IPipelineErrorLogRepository
+    {
+        public Task LogErrorAsync(PipelineErrorLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<(IReadOnlyList<PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<PipelineErrorLog>, int)>(([], 0));
+    }
 
     [Fact]
     public async Task WhenYahooReturnsCandles_UpsertsAllSnapshots()

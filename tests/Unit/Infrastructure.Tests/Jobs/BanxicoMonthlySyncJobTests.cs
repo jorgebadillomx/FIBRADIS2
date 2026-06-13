@@ -1,6 +1,7 @@
 using Application.Integrations;
 using Application.Jobs;
 using Application.Ops;
+using Domain.Jobs;
 using Domain.Ops;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +17,7 @@ public class BanxicoMonthlySyncJobTests
         ]);
         var repo = new FakeInpcRepository();
         var logger = new ListLogger<BanxicoMonthlySyncJob>();
-        var job = new BanxicoMonthlySyncJob(client, repo, logger);
+        var job = new BanxicoMonthlySyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         var now = DateTime.UtcNow;
         var expectedFrom = new DateOnly(now.Year, now.Month, 1).AddMonths(-25);
@@ -42,7 +43,7 @@ public class BanxicoMonthlySyncJobTests
             LatestPeriodo = new DateOnly(2025, 5, 1),
         };
         var logger = new ListLogger<BanxicoMonthlySyncJob>();
-        var job = new BanxicoMonthlySyncJob(client, repo, logger);
+        var job = new BanxicoMonthlySyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -62,7 +63,7 @@ public class BanxicoMonthlySyncJobTests
             LatestPeriodo = new DateOnly(now.Year, now.Month, 1),
         };
         var logger = new ListLogger<BanxicoMonthlySyncJob>();
-        var job = new BanxicoMonthlySyncJob(client, repo, logger);
+        var job = new BanxicoMonthlySyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -77,7 +78,7 @@ public class BanxicoMonthlySyncJobTests
         var client = new FakeBanxicoClient([]);
         var repo = new FakeInpcRepository();
         var logger = new ListLogger<BanxicoMonthlySyncJob>();
-        var job = new BanxicoMonthlySyncJob(client, repo, logger);
+        var job = new BanxicoMonthlySyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -97,7 +98,7 @@ public class BanxicoMonthlySyncJobTests
             LatestPeriodo = new DateOnly(2025, 3, 1),
         };
         var logger = new ListLogger<BanxicoMonthlySyncJob>();
-        var job = new BanxicoMonthlySyncJob(client, repo, logger);
+        var job = new BanxicoMonthlySyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -141,6 +142,22 @@ public class BanxicoMonthlySyncJobTests
 
         public Task<IReadOnlyList<InpcMonthlyEntry>> GetLastAsync(int count, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<InpcMonthlyEntry>>(Upserted.TakeLast(count).ToList());
+    }
+
+    private sealed class NullRunLogRepo : IPipelineRunLogRepository
+    {
+        public Task AddAsync(PipelineRunLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<PipelineRunLog>> GetRecentAsync(string? pipeline, int take, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<PipelineRunLog>>([]);
+        public Task<PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
+            => Task.FromResult<PipelineRunLog?>(null);
+    }
+
+    private sealed class NullErrorLogRepo : IPipelineErrorLogRepository
+    {
+        public Task LogErrorAsync(PipelineErrorLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<(IReadOnlyList<PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<PipelineErrorLog>, int)>(([], 0));
     }
 
     private sealed class ListLogger<T> : ILogger<T>

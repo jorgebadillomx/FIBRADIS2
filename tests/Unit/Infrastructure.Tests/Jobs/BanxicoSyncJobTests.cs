@@ -1,6 +1,7 @@
 using Application.Integrations;
 using Application.Jobs;
 using Application.Ops;
+using Domain.Jobs;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Tests.Jobs;
@@ -13,7 +14,7 @@ public class BanxicoSyncJobTests
         var repo = new FakeOperationalConfigRepository();
         var client = new FakeBanxicoClient(cetes: 9.5m, tiie: null);
         var logger = new ListLogger<BanxicoSyncJob>();
-        var job = new BanxicoSyncJob(client, repo, logger);
+        var job = new BanxicoSyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -30,7 +31,7 @@ public class BanxicoSyncJobTests
         var repo = new FakeOperationalConfigRepository();
         var client = new FakeBanxicoClient(cetes: null, tiie: null);
         var logger = new ListLogger<BanxicoSyncJob>();
-        var job = new BanxicoSyncJob(client, repo, logger);
+        var job = new BanxicoSyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -44,7 +45,7 @@ public class BanxicoSyncJobTests
         var repo = new FakeOperationalConfigRepository();
         var client = new FakeBanxicoClient(cetes: null, tiie: 10.25m);
         var logger = new ListLogger<BanxicoSyncJob>();
-        var job = new BanxicoSyncJob(client, repo, logger);
+        var job = new BanxicoSyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -59,7 +60,7 @@ public class BanxicoSyncJobTests
         var repo = new FakeOperationalConfigRepository();
         var client = new FakeBanxicoClient(cetes: 9.5m, tiie: 10.25m);
         var logger = new ListLogger<BanxicoSyncJob>();
-        var job = new BanxicoSyncJob(client, repo, logger);
+        var job = new BanxicoSyncJob(client, repo, new NullRunLogRepo(), new NullErrorLogRepo(), logger);
 
         await job.ExecuteAsync(CancellationToken.None);
 
@@ -121,6 +122,22 @@ public class BanxicoSyncJobTests
             int? universeDegradationThresholdPct = null,
             CancellationToken ct = default)
             => Task.CompletedTask;
+    }
+
+    private sealed class NullRunLogRepo : IPipelineRunLogRepository
+    {
+        public Task AddAsync(PipelineRunLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<PipelineRunLog>> GetRecentAsync(string? pipeline, int take, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<PipelineRunLog>>([]);
+        public Task<PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
+            => Task.FromResult<PipelineRunLog?>(null);
+    }
+
+    private sealed class NullErrorLogRepo : IPipelineErrorLogRepository
+    {
+        public Task LogErrorAsync(PipelineErrorLog entry, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<(IReadOnlyList<PipelineErrorLog> Items, int Total)> GetPagedAsync(string? pipeline, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<PipelineErrorLog>, int)>(([], 0));
     }
 
     private sealed class ListLogger<T> : ILogger<T>

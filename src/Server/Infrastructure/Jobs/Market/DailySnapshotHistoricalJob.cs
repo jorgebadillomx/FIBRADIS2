@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Application.Catalog;
+using Application.Jobs;
 using Application.Market;
 using Domain.Catalog;
+using Domain.Jobs;
 using Domain.Market;
 using Hangfire;
 using Infrastructure.Integrations.Yahoo;
@@ -12,20 +15,45 @@ public class DailySnapshotHistoricalJob(
     IFibraRepository fibraRepo,
     IYahooFinanceClient yahooClient,
     IMarketRepository marketRepo,
+    IPipelineRunLogRepository runLogRepo,
+    IPipelineErrorLogRepository errorLogRepo,
     ILogger<DailySnapshotHistoricalJob> logger)
 {
     [DisableConcurrentExecution(timeoutInSeconds: 0)]
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
+        var startedAt = DateTimeOffset.UtcNow;
+        var status = "Failed";
+        var inserted = 0;
+        var errors = 0;
+
+        try
+        {
+            (inserted, errors) = await ExecuteCoreAsync(ct);
+            status = "Completed";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "DailySnapshotHistoricalJob: error inesperado");
+            errors++;
+            await TryLogErrorAsync("unexpected", null, $"Error inesperado en DailySnapshotHistoricalJob: {ex.Message}", ex);
+        }
+        finally
+        {
+            await TryLogRunAsync(startedAt, status, inserted, errors);
+        }
+    }
+
+    private async Task<(int Inserted, int Errors)> ExecuteCoreAsync(CancellationToken ct)
+    {
+        int inserted = 0, skipped = 0, errors = 0;
         var defaultHistoryStart = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-4));
         var fibras = await fibraRepo.GetAllActiveAsync(ct);
         if (fibras.Count == 0)
         {
             logger.LogDebug("No active fibras found, skipping daily snapshot historical job");
-            return;
+            return (inserted, errors);
         }
-
-        int inserted = 0, skipped = 0, errors = 0;
 
         async Task<(int inserted, int skipped, int errors)> ProcessFibraAsync(Fibra fibra, DateOnly historyStart)
         {
@@ -73,6 +101,7 @@ public class DailySnapshotHistoricalJob(
                     fibra.Ticker,
                     fibra.YahooTicker);
                 localErrors++;
+                await TryLogErrorAsync(fibra.Ticker, fibra.YahooTicker, $"No se pudo obtener historial OHLCV para {fibra.Ticker} ({fibra.YahooTicker}): {ex.Message}", ex);
             }
 
             return (localInserted, localSkipped, localErrors);
@@ -114,5 +143,48 @@ public class DailySnapshotHistoricalJob(
             inserted,
             skipped,
             errors);
+
+        return (inserted, errors);
+    }
+
+    private async Task TryLogRunAsync(DateTimeOffset startedAt, string status, int processed, int errors)
+    {
+        try
+        {
+            await runLogRepo.AddAsync(new PipelineRunLog
+            {
+                Pipeline = "DailySnapshot",
+                StartedAt = startedAt,
+                CompletedAt = DateTimeOffset.UtcNow,
+                Status = status,
+                ItemsProcessed = processed,
+                ErrorCount = errors,
+                Details = JsonSerializer.Serialize(new { inserted = processed, errors }),
+            }, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "DailySnapshotHistoricalJob: fallo al escribir PipelineRunLog");
+        }
+    }
+
+    private async Task TryLogErrorAsync(string ticker, string? yahooTicker, string message, Exception? ex)
+    {
+        try
+        {
+            await errorLogRepo.LogErrorAsync(new PipelineErrorLog
+            {
+                Pipeline = "DailySnapshot",
+                Timestamp = DateTimeOffset.UtcNow,
+                ErrorType = ex?.GetType().Name ?? "Error",
+                Message = message.Length > 500 ? message[..500] : message,
+                Context = JsonSerializer.Serialize(new { ticker, yahooTicker }),
+                AiContext = $"DailySnapshotHistoricalJob falló al procesar {ticker} ({yahooTicker ?? "?"}) desde Yahoo Finance. {message} Revise conectividad con Yahoo Finance, throttling o cambios en el ticker.",
+            }, CancellationToken.None);
+        }
+        catch (Exception logEx)
+        {
+            logger.LogWarning(logEx, "DailySnapshotHistoricalJob: fallo al escribir PipelineErrorLog");
+        }
     }
 }

@@ -5,7 +5,7 @@ import { assertOpsAccessToken, getOpsApiErrorMessage, getOpsAuthHeaders } from '
 const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
 export type PipelineDashboardDto = components['schemas']['PipelineDashboardDto']
-export type RunPipelineTarget = 'market' | 'news' | 'distribution' | 'fundamentals'
+export type RunPipelineTarget = 'market' | 'news' | 'distribution' | 'fundamentals' | 'banxico-sync' | 'banxico-inpc' | 'daily-snapshot'
 
 export async function fetchPipelineDashboard(): Promise<PipelineDashboardDto> {
   assertOpsAccessToken()
@@ -39,6 +39,24 @@ export async function runPipeline(target: RunPipelineTarget): Promise<void> {
   if (target === 'fundamentals') {
     const { error } = await apiClient['/api/v1/ops/market/fundamentals/run'].POST({ headers })
     if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar pipeline Fundamentals: ${JSON.stringify(error)}`))
+    return
+  }
+
+  if (target === 'banxico-sync') {
+    const { error } = await apiClient['/api/v1/ops/banxico/sync-tiie/run'].POST({ headers })
+    if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar BanxicoSync: ${JSON.stringify(error)}`))
+    return
+  }
+
+  if (target === 'banxico-inpc') {
+    const { error } = await apiClient['/api/v1/ops/banxico/sync-inpc/run'].POST({ headers })
+    if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar BanxicoInpc: ${JSON.stringify(error)}`))
+    return
+  }
+
+  if (target === 'daily-snapshot') {
+    const { error } = await apiClient['/api/v1/ops/market/daily-snapshot-historical/run'].POST({ headers })
+    if (error) throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar DailySnapshot: ${JSON.stringify(error)}`))
     return
   }
 
