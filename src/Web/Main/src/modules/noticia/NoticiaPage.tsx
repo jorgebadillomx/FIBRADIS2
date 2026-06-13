@@ -9,7 +9,6 @@ import { getSafeExternalUrl } from '@/shared/lib/safe-external-url'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 
 const DEFAULT_TITLE = 'Fibras Inmobiliarias'
-const BASE_URL = 'https://fibrasinmobiliarias.com'
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Espejo de NewsMetadataMiddleware.BuildDescription (SSR) — la hidratación no debe cambiar la description
@@ -73,7 +72,7 @@ export function NoticiaPage() {
   const pageTitle = displayTitle ? `${displayTitle} — Noticias | FIBRADIS` : DEFAULT_TITLE
   const pageDescription = buildDescription(summaryContent)
 
-  usePageTitle(pageTitle)
+  usePageTitle(pageTitle, pageDescription)
 
   if (isLoading) {
     return <NoticiaPageSkeleton />

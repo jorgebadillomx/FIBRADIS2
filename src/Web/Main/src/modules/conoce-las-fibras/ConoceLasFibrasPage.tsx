@@ -28,7 +28,7 @@ export function ConoceLasFibrasPage() {
   const activePage =
     pagesQuery.data?.find((page) => page.slug === activeSlug) ?? pagesQuery.data?.[0] ?? null
 
-  usePageTitle(PAGE_TITLE)
+  usePageTitle(PAGE_TITLE, PAGE_DESCRIPTION)
 
   return (
     <>
