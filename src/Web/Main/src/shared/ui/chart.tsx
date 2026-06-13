@@ -78,8 +78,8 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: Object.entries(colorConfig)
-          .map(([key, cfg]) => `[data-chart=${id}] { --color-${key}: ${(cfg as { color?: string }).color}; }`)
+        __html: colorConfig
+          .map(([key, cfg]) => `[data-chart=${id}] { --color-${key}: ${cfg.color}; }`)
           .join("\n"),
       }}
     />

@@ -1,8 +1,21 @@
-import { createPathBasedClient } from 'openapi-fetch'
+import createClient, { wrapAsPathBasedClient } from 'openapi-fetch'
 import type { components, paths } from '@fibradis/shared-api-client'
 import { assertOpsAccessToken, getOpsApiErrorMessage, getOpsAuthHeaders } from '@/api/opsAuth'
 
-const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
+const _baseClient = createClient<paths>({ baseUrl: '' })
+
+// openapi-fetch llama response.json() en todos los 2xx; forzar Content-Length:0 en 202 vacíos evita "Unexpected end of JSON input"
+_baseClient.use({
+  async onResponse({ response }) {
+    if (response.ok && !response.headers.get('content-type')) {
+      const headers = new Headers(response.headers)
+      headers.set('content-length', '0')
+      return new Response(null, { status: response.status, headers })
+    }
+  },
+})
+
+const apiClient = wrapAsPathBasedClient(_baseClient)
 
 export type PipelineDashboardDto = components['schemas']['PipelineDashboardDto']
 export type RunPipelineTarget = 'market' | 'news' | 'distribution' | 'fundamentals' | 'banxico-sync' | 'banxico-inpc' | 'daily-snapshot'

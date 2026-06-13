@@ -4,7 +4,10 @@ import { FibraUniverseTable } from './FibraUniverseTable'
 import { NewsSection } from './NewsSection'
 
 export function HomePage() {
-  usePageTitle('FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS')
+  usePageTitle(
+    'FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS',
+    'Plataforma de análisis de FIBRAs inmobiliarias mexicanas. Precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades.',
+  )
 
   return (
     <>

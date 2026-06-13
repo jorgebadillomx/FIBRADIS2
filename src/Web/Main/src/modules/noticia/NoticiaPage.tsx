@@ -19,9 +19,12 @@ const MIN_DESCRIPTION_LENGTH = 120
 
 function stripMarkdown(text: string): string {
   return text
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[*_`#>]+/g, '')
+    .replace(/^\s*\|?(\s*:?-+:?\s*\|)+\s*$/gm, '')  // filas separadoras de tabla | --- | :--- |
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')           // [texto](url) → texto
+    .replace(/\|/g, ' ')                                // pipes de tabla
+    .replace(/[*_`#>]+/g, '')                           // otros chars markdown
     .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function truncateWithEllipsis(text: string): string {

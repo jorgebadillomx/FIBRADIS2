@@ -33,7 +33,10 @@ export function CalendarioPage() {
     [events],
   )
 
-  usePageTitle('Calendario de Eventos Corporativos FIBRAs | FIBRADIS')
+  usePageTitle(
+    'Calendario de Eventos Corporativos FIBRAs | FIBRADIS',
+    'Próximas asambleas, distribuciones y eventos corporativos de FIBRAs inmobiliarias mexicanas. Mantente informado para tus decisiones.',
+  )
 
   return (
     <>

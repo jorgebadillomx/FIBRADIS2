@@ -25,6 +25,18 @@ import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
 import { buildFibraSlug, extractTickerFromSlug } from '@/shared/lib/fibra-slug'
 import { KPI_DEFINITIONS, type KpiKey } from '@/shared/lib/kpi-definitions'
 
+const FIBRA_BRAND_SUFFIX =
+  ' en FIBRADIS — precio en tiempo real, distribuciones, fundamentales y score de inversión.'
+const FIBRA_MAX_DESC = 160
+
+function buildFibraDescription(fibra: { fullName: string; ticker: string; sector?: string | null }): string {
+  const sector = fibra.sector ? ` · ${fibra.sector}` : ''
+  const text = `${fibra.fullName} (${fibra.ticker})${sector}${FIBRA_BRAND_SUFFIX}`
+  if (text.length <= FIBRA_MAX_DESC) return text
+  const cut = text.charCodeAt(FIBRA_MAX_DESC - 4) >= 0xd800 ? FIBRA_MAX_DESC - 4 : FIBRA_MAX_DESC - 3
+  return text.slice(0, cut) + '...'
+}
+
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -158,7 +170,7 @@ export function FibraPage() {
     ? `${fibra.ticker} — ${fibra.fullName} | Fibras Inmobiliarias`
     : `${ticker?.toUpperCase() ?? 'FIBRA'} | Fibras Inmobiliarias`
 
-  usePageTitle(pageTitle)
+  usePageTitle(pageTitle, fibra ? buildFibraDescription(fibra) : undefined)
 
   // slug sin ticker extraíble (ej. /fibras/fibra-uno- o /fibras/-): la query queda
   // deshabilitada (isLoading=false, fibra=undefined) y sin este guard el render

@@ -60,7 +60,10 @@ export function NoticiasListPage() {
     setPage(1)
   }
 
-  usePageTitle('Noticias FIBRAs Inmobiliarias | FIBRADIS')
+  usePageTitle(
+    'Noticias FIBRAs Inmobiliarias | FIBRADIS',
+    'Últimas noticias y novedades sobre el mercado de FIBRAs inmobiliarias mexicanas. Actualización continua desde fuentes especializadas.',
+  )
 
   return (
     <>

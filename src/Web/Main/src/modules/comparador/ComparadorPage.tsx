@@ -215,7 +215,10 @@ export function ComparadorPage() {
   const loadingComparison = comparisonLoading && selectedCount >= MIN_COMPARE_FIBRAS
   const showSuggestions = isSearchFocused && suggestionRows.length > 0
 
-  usePageTitle('Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS')
+  usePageTitle(
+    'Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS',
+    'Compara hasta 4 FIBRAs inmobiliarias en precio, yield, fundamentales y score de oportunidad. Toma mejores decisiones de inversión.',
+  )
 
   return (
     <>

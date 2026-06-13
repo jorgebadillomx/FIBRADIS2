@@ -44,7 +44,10 @@ export function FundamentalesPage() {
     [summaryData, fibraFilter],
   )
 
-  usePageTitle('Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS')
+  usePageTitle(
+    'Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS',
+    'Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.',
+  )
 
   return (
     <>

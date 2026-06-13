@@ -263,6 +263,12 @@ public partial class NewsMetadataMiddleware(
         return text[..cut] + "...";
     }
 
+    [GeneratedRegex(@"^\s*\|?(\s*:?-+:?\s*\|)+\s*$", RegexOptions.Multiline)]
+    private static partial Regex TableSeparatorRowRegex();
+
+    [GeneratedRegex(@"\|")]
+    private static partial Regex TablePipeRegex();
+
     [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
     private static partial Regex MarkdownLinkRegex();
 
@@ -275,9 +281,11 @@ public partial class NewsMetadataMiddleware(
     // SummaryMarkdown llega con sintaxis Markdown que se vería literal en los SERPs
     private static string StripMarkdown(string text)
     {
+        text = TableSeparatorRowRegex().Replace(text, string.Empty);
         text = MarkdownLinkRegex().Replace(text, "$1");
+        text = TablePipeRegex().Replace(text, " ");
         text = MarkdownSyntaxRegex().Replace(text, string.Empty);
-        return WhitespaceRunRegex().Replace(text, " ");
+        return WhitespaceRunRegex().Replace(text, " ").Trim();
     }
 
     private static NewsAiAnalysisDto? TryDeserializeAnalysis(string? json)
