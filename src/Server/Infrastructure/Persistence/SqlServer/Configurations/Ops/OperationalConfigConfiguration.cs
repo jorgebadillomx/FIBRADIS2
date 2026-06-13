@@ -24,6 +24,10 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             .HasColumnName("cetes_28d_rate")
             .HasPrecision(10, 4);
         builder.Property(x => x.Cetes28dRateUpdatedAt).HasColumnName("cetes_28d_rate_updated_at");
+        builder.Property(x => x.Tiie28dRate)
+            .HasColumnName("tiie_28d_rate")
+            .HasPrecision(10, 4);
+        builder.Property(x => x.Tiie28dRateUpdatedAt).HasColumnName("tiie_28d_rate_updated_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasMaxLength(256);
         builder.Property(x => x.TermsEnabled).HasColumnName("terms_enabled").HasDefaultValue(false);

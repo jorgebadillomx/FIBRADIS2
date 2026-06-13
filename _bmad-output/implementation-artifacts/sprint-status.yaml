@@ -230,8 +230,8 @@ development_status:
   3-6-daily-snapshot-incremental-y-benchmarks: done
 
   # ── 3.7: Indicadores Macro — TIIE 28d e INPC anualizado con historial 12 meses ──
-  # story 3-7 creada — TIIE via BanxicoSyncJob semanal (+2 cols OperationalConfig), INPC via BanxicoMonthlySyncJob mensual (tabla InpcMonthly, algoritmo catch-up), endpoint indicadores expandido, badge TIIE en HerramientasPage
-  3-7-indicadores-macro-tiie-inpc: ready-for-dev
+  # story 3-7 done — code review pass (1 patch: P1 DateTime.UtcNow → DateTimeOffset.UtcNow en BanxicoMonthlySyncJob). 3 defers (D1 UpsertManyAsync FindAsync vs ExecuteUpdateAsync, D2 naming sync-tiie/banxico-cetes-sync, D3 InpcHistory nullable). 10 dismissed
+  3-7-indicadores-macro-tiie-inpc: done
 
   # ── 4.6: Display fixes + AiMode On (post-release improvements) ───────────
   # story 4-6 creada — og:image redirects, HTML snippet strip, AiMode Off/On, home 5 noticias

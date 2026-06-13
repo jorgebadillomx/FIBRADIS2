@@ -21,6 +21,8 @@ public class OperationalConfigRepositoryTests
         Assert.Equal(2880, config.FundamentalsCadenceMinutes);
         Assert.Null(config.Cetes28dRate);
         Assert.Null(config.Cetes28dRateUpdatedAt);
+        Assert.Null(config.Tiie28dRate);
+        Assert.Null(config.Tiie28dRateUpdatedAt);
     }
 
     [Fact]
@@ -39,6 +41,8 @@ public class OperationalConfigRepositoryTests
         Assert.Equal("system", config.UpdatedBy);
         Assert.Null(config.Cetes28dRate);
         Assert.Null(config.Cetes28dRateUpdatedAt);
+        Assert.Null(config.Tiie28dRate);
+        Assert.Null(config.Tiie28dRateUpdatedAt);
     }
 
     [Fact]
@@ -54,6 +58,22 @@ public class OperationalConfigRepositoryTests
 
         Assert.Equal(9.5m, config.Cetes28dRate);
         Assert.Equal(updatedAt, config.Cetes28dRateUpdatedAt);
+        Assert.Equal(updatedAt, config.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateTiieRateAsync_UpdatesTiieColumns()
+    {
+        await using var db = CreateDbContext();
+        var repo = new OperationalConfigRepository(db);
+        var updatedAt = new DateTimeOffset(2026, 6, 12, 18, 30, 0, TimeSpan.Zero);
+
+        await repo.UpdateTiieRateAsync(10.25m, updatedAt);
+
+        var config = await db.OperationalConfigs.SingleAsync();
+
+        Assert.Equal(10.25m, config.Tiie28dRate);
+        Assert.Equal(updatedAt, config.Tiie28dRateUpdatedAt);
         Assert.Equal(updatedAt, config.UpdatedAt);
     }
 

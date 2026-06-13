@@ -32,6 +32,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FundamentalRecord> FundamentalRecords => Set<FundamentalRecord>();
     public DbSet<FundamentalSourceManifest> FundamentalSourceManifests => Set<FundamentalSourceManifest>();
     public DbSet<OperationalConfig> OperationalConfigs => Set<OperationalConfig>();
+    public DbSet<InpcMonthlyEntry> InpcMonthlyEntries => Set<InpcMonthlyEntry>();
     public DbSet<EditorialPage> EditorialPages => Set<EditorialPage>();
     public DbSet<ConfigAuditLog> ConfigAuditLogs => Set<ConfigAuditLog>();
     public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();

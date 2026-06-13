@@ -11,7 +11,7 @@ public class BanxicoSyncJobTests
     public async Task ExecuteAsync_WhenRateExists_UpdatesRepository()
     {
         var repo = new FakeOperationalConfigRepository();
-        var client = new FakeBanxicoClient(9.5m);
+        var client = new FakeBanxicoClient(cetes: 9.5m, tiie: null);
         var logger = new ListLogger<BanxicoSyncJob>();
         var job = new BanxicoSyncJob(client, repo, logger);
 
@@ -20,14 +20,15 @@ public class BanxicoSyncJobTests
         Assert.Equal(1, repo.UpdateCalls);
         Assert.Equal(9.5m, repo.LastRate);
         Assert.NotNull(repo.LastUpdatedAt);
-        Assert.Contains(logger.Messages, message => message.Contains("actualizado", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logger.Messages, message => message.Contains("no se obtuvo tasa TIIE 28d", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logger.Messages, message => message.Contains("CETES=9.5", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
     public async Task ExecuteAsync_WhenRateIsNull_DoesNotUpdateRepository()
     {
         var repo = new FakeOperationalConfigRepository();
-        var client = new FakeBanxicoClient(null);
+        var client = new FakeBanxicoClient(cetes: null, tiie: null);
         var logger = new ListLogger<BanxicoSyncJob>();
         var job = new BanxicoSyncJob(client, repo, logger);
 
@@ -37,15 +38,54 @@ public class BanxicoSyncJobTests
         Assert.Contains(logger.Messages, message => message.Contains("no se obtuvo", StringComparison.OrdinalIgnoreCase));
     }
 
-    private sealed class FakeBanxicoClient(decimal? rate) : IBanxicoClient
+    [Fact]
+    public async Task ExecuteAsync_WhenTiieAvailable_UpdatesTiieRate()
     {
-        public Task<decimal?> GetCetes28dAsync(CancellationToken ct = default) => Task.FromResult(rate);
+        var repo = new FakeOperationalConfigRepository();
+        var client = new FakeBanxicoClient(cetes: null, tiie: 10.25m);
+        var logger = new ListLogger<BanxicoSyncJob>();
+        var job = new BanxicoSyncJob(client, repo, logger);
+
+        await job.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(1, repo.TiieUpdateCalls);
+        Assert.Equal(10.25m, repo.LastTiieRate);
+        Assert.NotNull(repo.LastUpdatedAt);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenBothAvailable_UpdatesBothRates()
+    {
+        var repo = new FakeOperationalConfigRepository();
+        var client = new FakeBanxicoClient(cetes: 9.5m, tiie: 10.25m);
+        var logger = new ListLogger<BanxicoSyncJob>();
+        var job = new BanxicoSyncJob(client, repo, logger);
+
+        await job.ExecuteAsync(CancellationToken.None);
+
+        Assert.Equal(1, repo.UpdateCalls);
+        Assert.Equal(1, repo.TiieUpdateCalls);
+        Assert.Equal(9.5m, repo.LastRate);
+        Assert.Equal(10.25m, repo.LastTiieRate);
+    }
+
+    private sealed class FakeBanxicoClient(decimal? cetes, decimal? tiie) : IBanxicoClient
+    {
+        public Task<decimal?> GetCetes28dAsync(CancellationToken ct = default) => Task.FromResult(cetes);
+        public Task<decimal?> GetTiie28dAsync(CancellationToken ct = default) => Task.FromResult(tiie);
+        public Task<IReadOnlyList<(DateOnly Periodo, decimal InpcIndex)>> GetInpcHistoryAsync(
+            DateOnly from,
+            DateOnly to,
+            CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<(DateOnly Periodo, decimal InpcIndex)>>(Array.Empty<(DateOnly, decimal)>());
     }
 
     private sealed class FakeOperationalConfigRepository : IOperationalConfigRepository
     {
         public int UpdateCalls { get; private set; }
+        public int TiieUpdateCalls { get; private set; }
         public decimal? LastRate { get; private set; }
+        public decimal? LastTiieRate { get; private set; }
         public DateTimeOffset? LastUpdatedAt { get; private set; }
 
         public Task<Domain.Ops.OperationalConfig> GetAsync(CancellationToken ct = default)
@@ -55,6 +95,14 @@ public class BanxicoSyncJobTests
         {
             UpdateCalls++;
             LastRate = rate;
+            LastUpdatedAt = updatedAt;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateTiieRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default)
+        {
+            TiieUpdateCalls++;
+            LastTiieRate = rate;
             LastUpdatedAt = updatedAt;
             return Task.CompletedTask;
         }

@@ -13,19 +13,94 @@ public class BanxicoClient(
     ILogger<BanxicoClient> logger) : IBanxicoClient
 {
     private const string DefaultSeries = "SF43936";
+    private const string TiieSeries = "SF43783";
+    private const string InpcSeries = "SP1";
 
     public async Task<decimal?> GetCetes28dAsync(CancellationToken ct = default)
+        => await GetLatestRateAsync(
+            string.IsNullOrWhiteSpace(configuration["Banxico:Series"])
+                ? DefaultSeries
+                : configuration["Banxico:Series"]!,
+            "CETES 28d",
+            ct);
+
+    public Task<decimal?> GetTiie28dAsync(CancellationToken ct = default)
+        => GetLatestRateAsync(TiieSeries, "TIIE 28d", ct);
+
+    public async Task<IReadOnlyList<(DateOnly Periodo, decimal InpcIndex)>> GetInpcHistoryAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken ct = default)
     {
         var token = configuration["Banxico:Token"];
         if (string.IsNullOrWhiteSpace(token))
         {
-            logger.LogWarning("BanxicoClient: Banxico:Token no configurado; CETES 28d no disponible");
-            return null;
+            logger.LogWarning("BanxicoClient: Banxico:Token no configurado; INPC no disponible");
+            return [];
         }
 
-        var series = string.IsNullOrWhiteSpace(configuration["Banxico:Series"])
-            ? DefaultSeries
-            : configuration["Banxico:Series"]!;
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"https://www.banxico.org.mx/SieAPIRest/service/v1/series/{Uri.EscapeDataString(InpcSeries)}/datos/{from:yyyy-MM-dd}/{to:yyyy-MM-dd}");
+
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.TryAddWithoutValidation("Bmx-Token", token);
+
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(
+                    "BanxicoClient: respuesta no exitosa ({StatusCode}) para serie {Series}",
+                    (int)response.StatusCode,
+                    InpcSeries);
+                return [];
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            if (!TryGetDatos(document.RootElement, out var datos))
+            {
+                logger.LogWarning("BanxicoClient: respuesta sin datos INPC para serie {Series}", InpcSeries);
+                return [];
+            }
+
+            var history = new List<(DateOnly Periodo, decimal InpcIndex)>();
+            foreach (var dato in datos.EnumerateArray())
+            {
+                if (!TryParseInpcEntry(dato, out var periodo, out var inpcIndex))
+                    continue;
+
+                history.Add((periodo, inpcIndex));
+            }
+
+            return history;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("BanxicoClient: timeout consultando serie {Series}", InpcSeries);
+            return [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "BanxicoClient: error consultando serie {Series}", InpcSeries);
+            return [];
+        }
+    }
+
+    private async Task<decimal?> GetLatestRateAsync(string series, string label, CancellationToken ct)
+    {
+        var token = configuration["Banxico:Token"];
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            logger.LogWarning("BanxicoClient: Banxico:Token no configurado; {Label} no disponible", label);
+            return null;
+        }
 
         try
         {
@@ -50,7 +125,7 @@ public class BanxicoClient(
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
             if (!TryGetDato(document.RootElement, out var rawDato))
             {
-                logger.LogWarning("BanxicoClient: respuesta sin dato CETES 28d para serie {Series}", series);
+                logger.LogWarning("BanxicoClient: respuesta sin dato {Label} para serie {Series}", label, series);
                 return null;
             }
 
@@ -62,7 +137,7 @@ public class BanxicoClient(
 
             if (!decimal.TryParse(rawDato, NumberStyles.Number, CultureInfo.InvariantCulture, out var rate))
             {
-                logger.LogWarning("BanxicoClient: no se pudo interpretar el dato CETES 28d '{Dato}'", rawDato);
+                logger.LogWarning("BanxicoClient: no se pudo interpretar el dato {Label} '{Dato}'", label, rawDato);
                 return null;
             }
 
@@ -115,6 +190,58 @@ public class BanxicoClient(
             return false;
 
         dato = datoProperty.GetString();
+        return true;
+    }
+
+    private static bool TryGetDatos(JsonElement root, out JsonElement datos)
+    {
+        datos = default;
+
+        if (!root.TryGetProperty("bmx", out var bmx) ||
+            !bmx.TryGetProperty("series", out var series) ||
+            series.ValueKind != JsonValueKind.Array ||
+            series.GetArrayLength() == 0)
+        {
+            return false;
+        }
+
+        var firstSeries = series[0];
+        if (!firstSeries.TryGetProperty("datos", out datos) ||
+            datos.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        return datos.GetArrayLength() > 0;
+    }
+
+    private static bool TryParseInpcEntry(JsonElement dato, out DateOnly periodo, out decimal inpcIndex)
+    {
+        periodo = default;
+        inpcIndex = default;
+
+        if (!dato.TryGetProperty("fecha", out var fechaProperty) ||
+            !dato.TryGetProperty("dato", out var datoProperty))
+        {
+            return false;
+        }
+
+        var rawFecha = fechaProperty.GetString();
+        var rawDato = datoProperty.GetString();
+        if (string.IsNullOrWhiteSpace(rawFecha) ||
+            string.IsNullOrWhiteSpace(rawDato) ||
+            string.Equals(rawDato, "N/E", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!DateOnly.TryParseExact(rawFecha, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedFecha))
+            return false;
+
+        if (!decimal.TryParse(rawDato, NumberStyles.Number, CultureInfo.InvariantCulture, out inpcIndex))
+            return false;
+
+        periodo = new DateOnly(parsedFecha.Year, parsedFecha.Month, 1);
         return true;
     }
 }

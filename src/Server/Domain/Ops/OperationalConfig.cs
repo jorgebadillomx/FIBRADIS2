@@ -11,6 +11,8 @@ public class OperationalConfig
     public int DistributionCadenceMinutes { get; set; } = 1440;
     public decimal? Cetes28dRate { get; set; }
     public DateTimeOffset? Cetes28dRateUpdatedAt { get; set; }
+    public decimal? Tiie28dRate { get; set; }
+    public DateTimeOffset? Tiie28dRateUpdatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? UpdatedBy { get; set; }
     public bool TermsEnabled { get; set; }

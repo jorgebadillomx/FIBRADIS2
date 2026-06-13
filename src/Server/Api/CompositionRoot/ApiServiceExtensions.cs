@@ -126,9 +126,11 @@ public static class ApiServiceExtensions
         });
         builder.Services.AddHttpClient<IBanxicoClient, BanxicoClient>(client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(15);
+            client.Timeout = TimeSpan.FromSeconds(30);
         });
         builder.Services.AddScoped<BanxicoSyncJob>();
+        builder.Services.AddScoped<BanxicoMonthlySyncJob>();
+        builder.Services.AddScoped<IInpcRepository, InpcRepository>();
         builder.Services.AddScoped<DistributionPipelineJob>();
         builder.Services.AddScoped<IAiProviderConfigRepository, AiProviderConfigRepository>();
         builder.Services.AddTransient<AiCapturingHandler>();

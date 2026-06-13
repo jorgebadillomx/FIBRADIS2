@@ -1,5 +1,11 @@
 # Deferred Work
 
+## Deferred from: code review of 3-7-indicadores-macro-tiie-inpc (2026-06-12)
+
+- **D1 (LOW): `UpsertManyAsync` usa N `FindAsync` en vez de `ExecuteUpdateAsync`** — Dev Notes indican `ExecuteUpdateAsync + Add` como patrón preferido del repo. El código actual usa `FindAsync` (N round-trips al DB) que es correcto para 25 entradas/mes pero diverge del patrón. Optimizar en próxima historia que toque `InpcRepository`.
+- **D2 (LOW): Naming — `/sync-tiie/run` y job ID `"banxico-cetes-sync"` ejecutan CETES+TIIE** — Deuda de naming. Dev Notes obligan a job único CETES+TIIE, cambiar el job ID en Hangfire es riesgoso operacionalmente. Considerar renombrar a `"banxico-weekly-sync"` en una ventana de mantenimiento con re-registro explícito.
+- **D3 (LOW): `IReadOnlyList<InpcMonthlyDto>?` nullable pero `BuildInpcHistory` nunca retorna null** — El tipo nullable en `IndicadoresDto.InpcHistory` es inconsistente con el comportamiento real. Corregir a no-nullable cuando se actualice el contrato de la API (requiere re-run de codegen).
+
 ## Deferred from: code review of 3-6-daily-snapshot-incremental-y-benchmarks (2026-06-12)
 
 - **W1 (LOW): `DeleteAllDailySnapshotsAsync` + enqueue sin transacción** — El endpoint borra toda la tabla y luego encola el job; si el proceso muere entre ambas operaciones la tabla queda vacía hasta el siguiente cron (22:15) o trigger manual. Riesgo bajo y recuperable.

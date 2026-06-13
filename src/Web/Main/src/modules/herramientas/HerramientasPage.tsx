@@ -32,7 +32,8 @@ export function HerramientasPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
   })
-  const cetesApiValue = indicadoresQuery.data?.cetes28d ?? null
+  const cetesApiValue = normalizeRate(indicadoresQuery.data?.cetes28d)
+  const tiieApiValue = normalizeRate(indicadoresQuery.data?.tiie28d)
 
   const precioReferenciaQuery = useQuery({
     queryKey: ['herramientas', 'precio-referencia'],
@@ -189,15 +190,22 @@ export function HerramientasPage() {
                   onChange={setFibraYield}
                   placeholder="10"
                 />
-                <NumberField
-                  label="Tasa CETES 28d (%)"
-                  value={fibraCetes}
-                  onChange={(value) => {
-                    setCetesTouched(true)
-                    setFibraCetes(value)
-                  }}
-                  placeholder="ej. 9.50"
-                />
+                <div className="space-y-1.5">
+                  <NumberField
+                    label="Tasa CETES 28d (%)"
+                    value={fibraCetes}
+                    onChange={(value) => {
+                      setCetesTouched(true)
+                      setFibraCetes(value)
+                    }}
+                    placeholder="ej. 9.50"
+                  />
+                  {tiieApiValue != null && (
+                    <p className="text-xs text-muted-foreground">
+                      TIIE 28d vigente: {tiieApiValue.toFixed(2)}%
+                    </p>
+                  )}
+                </div>
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Horizonte
@@ -466,4 +474,10 @@ function MetricRow({
 
 function formatInteger(value: number): string {
   return value.toLocaleString('es-MX', { maximumFractionDigits: 0 })
+}
+
+function normalizeRate(value: number | string | null | undefined): number | null {
+  if (value == null) return null
+  const normalized = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(normalized) ? normalized : null
 }

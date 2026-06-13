@@ -2581,6 +2581,70 @@
         }
       }
     },
+    "/api/v1/ops/banxico/sync-tiie/run": {
+      "post": {
+        "tags": [
+          "Ops"
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/banxico/sync-inpc/run": {
+      "post": {
+        "tags": [
+          "Ops"
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/fundamentals/{ticker}/run": {
       "post": {
         "tags": [
@@ -6589,11 +6653,22 @@
       "IndicadoresDto": {
         "required": [
           "cetes28d",
-          "lastUpdated"
+          "tiie28d",
+          "lastUpdated",
+          "inpcHistory"
         ],
         "type": "object",
         "properties": {
           "cetes28d": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "tiie28d": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
@@ -6608,6 +6683,35 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "inpcHistory": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/InpcMonthlyDto"
+            }
+          }
+        }
+      },
+      "InpcMonthlyDto": {
+        "required": [
+          "periodo",
+          "anualPct"
+        ],
+        "type": "object",
+        "properties": {
+          "periodo": {
+            "type": "string"
+          },
+          "anualPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },

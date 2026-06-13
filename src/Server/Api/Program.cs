@@ -94,6 +94,7 @@ app.MapCatalog();
 app.MapMarket();
 app.MapIndicators();
 app.MapCalculadora();
+app.MapOpsBanxico();
 app.MapOpsFundamentals();
 app.MapOpsCatalog();
 app.MapOpsConfig();
@@ -181,6 +182,12 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         "banxico-cetes-sync",
         j => j.ExecuteAsync(CancellationToken.None),
         "0 6 * * 3",
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+    RecurringJob.AddOrUpdate<BanxicoMonthlySyncJob>(
+        "banxico-inpc-sync",
+        j => j.ExecuteAsync(CancellationToken.None),
+        "0 10 12 * *",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
     var fundamentalsCadenceMinutes = FundamentalsPipelineSchedule.DefaultCadenceMinutes;

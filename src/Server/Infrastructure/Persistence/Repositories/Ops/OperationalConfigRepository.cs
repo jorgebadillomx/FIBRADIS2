@@ -40,6 +40,34 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task UpdateTiieRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default)
+    {
+        if (db.Database.IsRelational())
+        {
+            var affected = await db.OperationalConfigs
+                .Where(config => config.Id == 1)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(config => config.Tiie28dRate, rate)
+                    .SetProperty(config => config.Tiie28dRateUpdatedAt, updatedAt)
+                    .SetProperty(config => config.UpdatedAt, updatedAt), ct);
+
+            if (affected > 0)
+                return;
+        }
+
+        var config = await db.OperationalConfigs.FindAsync([1], ct);
+        if (config is null)
+        {
+            config = new OperationalConfig { Id = 1 };
+            db.OperationalConfigs.Add(config);
+        }
+
+        config.Tiie28dRate = rate;
+        config.Tiie28dRateUpdatedAt = updatedAt;
+        config.UpdatedAt = updatedAt;
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task UpdateAsync(
         decimal? commissionFactor,
         int? avgPeriods,

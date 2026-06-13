@@ -95,6 +95,120 @@ public class BanxicoClientTests
         Assert.Contains(logger.Messages, message => message.Contains("no exitosa", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task GetTiie28dAsync_WhenTokenMissing_ReturnsNullAndSkipsHttp()
+    {
+        var logger = new ListLogger<BanxicoClient>();
+        var handler = new ThrowingHandler();
+        var client = CreateClient(handler, logger, token: "");
+
+        var result = await client.GetTiie28dAsync();
+
+        Assert.Null(result);
+        Assert.Contains(logger.Messages, message => message.Contains("Token", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetTiie28dAsync_WhenValidResponse_ParsesCorrectly()
+    {
+        var logger = new ListLogger<BanxicoClient>();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """
+                {"bmx":{"series":[{"datos":[{"dato":"9.25"}]}]}}
+                """,
+                Encoding.UTF8,
+                "application/json"),
+        });
+        var client = CreateClient(handler, logger);
+
+        var result = await client.GetTiie28dAsync();
+
+        Assert.Equal(9.25m, result);
+        Assert.NotNull(handler.LastRequest);
+        Assert.Contains("SF43783", handler.LastRequest!.RequestUri!.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("test-token", handler.LastRequest.Headers.GetValues("Bmx-Token").Single());
+    }
+
+    [Fact]
+    public async Task GetInpcHistoryAsync_WhenTokenMissing_ReturnsEmptyListAndSkipsHttp()
+    {
+        var logger = new ListLogger<BanxicoClient>();
+        var handler = new ThrowingHandler();
+        var client = CreateClient(handler, logger, token: "");
+
+        var result = await client.GetInpcHistoryAsync(new DateOnly(2024, 1, 1), new DateOnly(2024, 12, 31));
+
+        Assert.Empty(result);
+        Assert.Contains(logger.Messages, message => message.Contains("Token", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetInpcHistoryAsync_WhenValidRange_ReturnsParsedEntries()
+    {
+        var logger = new ListLogger<BanxicoClient>();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """
+                {"bmx":{"series":[{"datos":[
+                  {"fecha":"30/04/2024","dato":"134.1258"},
+                  {"fecha":"31/05/2024","dato":"135.5190"}
+                ]}]}}
+                """,
+                Encoding.UTF8,
+                "application/json"),
+        });
+        var client = CreateClient(handler, logger);
+
+        var result = await client.GetInpcHistoryAsync(new DateOnly(2024, 4, 1), new DateOnly(2024, 5, 31));
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal((new DateOnly(2024, 4, 1), 134.1258m), result[0]);
+        Assert.Equal((new DateOnly(2024, 5, 1), 135.5190m), result[1]);
+        Assert.NotNull(handler.LastRequest);
+        Assert.Contains("/series/SP1/datos/2024-04-01/2024-05-31", handler.LastRequest!.RequestUri!.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("test-token", handler.LastRequest.Headers.GetValues("Bmx-Token").Single());
+    }
+
+    [Fact]
+    public async Task GetInpcHistoryAsync_WhenDatoIsNE_ExcludesEntry()
+    {
+        var logger = new ListLogger<BanxicoClient>();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """
+                {"bmx":{"series":[{"datos":[
+                  {"fecha":"30/04/2024","dato":"N/E"},
+                  {"fecha":"31/05/2024","dato":"135.5190"}
+                ]}]}}
+                """,
+                Encoding.UTF8,
+                "application/json"),
+        });
+        var client = CreateClient(handler, logger);
+
+        var result = await client.GetInpcHistoryAsync(new DateOnly(2024, 4, 1), new DateOnly(2024, 5, 31));
+
+        Assert.Single(result);
+        Assert.Equal((new DateOnly(2024, 5, 1), 135.5190m), result[0]);
+    }
+
+    [Fact]
+    public async Task GetInpcHistoryAsync_WhenHttpFails_ReturnsEmptyList()
+    {
+        var logger = new ListLogger<BanxicoClient>();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.BadRequest));
+        var client = CreateClient(handler, logger);
+
+        var result = await client.GetInpcHistoryAsync(new DateOnly(2024, 4, 1), new DateOnly(2024, 5, 31));
+
+        Assert.Empty(result);
+        Assert.Contains(logger.Messages, message => message.Contains("no exitosa", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static BanxicoClient CreateClient(
         HttpMessageHandler handler,
         ILogger<BanxicoClient> logger,
