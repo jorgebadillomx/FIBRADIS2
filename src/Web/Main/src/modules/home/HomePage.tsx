@@ -1,4 +1,3 @@
-import { PriceCarousel } from './PriceCarousel'
 import { GainersLosers } from './GainersLosers'
 import { FibraUniverseTable } from './FibraUniverseTable'
 import { NewsSection } from './NewsSection'
@@ -25,10 +24,6 @@ export function HomePage() {
       </section>
 
       <div className="container mx-auto px-4 py-6 space-y-8">
-        <section aria-labelledby="heading-precio">
-          <h2 id="heading-precio" className="sr-only">Precios de mercado</h2>
-          <PriceCarousel />
-        </section>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
           <div className="min-w-0 space-y-6">
             <section aria-labelledby="heading-ranking">

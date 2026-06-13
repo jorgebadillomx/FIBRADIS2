@@ -1,4 +1,4 @@
-export type SortKey = 'lastPrice' | 'dailyChange' | 'dailyChangePct' | 'volume' | 'week52High' | 'week52Low'
+export type SortKey = 'lastPrice' | 'dailyChange' | 'dailyChangePct' | 'volume' | 'week52High' | 'week52Low' | 'annualizedYield'
 
 export interface SnapshotRow {
   ticker: string
@@ -8,6 +8,7 @@ export interface SnapshotRow {
   volume: null | number | string
   week52High: null | number | string
   week52Low: null | number | string
+  annualizedYield: null | number | string
 }
 
 function numOf(val: null | number | string | undefined): number | null {

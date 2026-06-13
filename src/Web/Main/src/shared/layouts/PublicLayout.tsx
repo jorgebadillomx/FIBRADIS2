@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
 import { Menu } from 'lucide-react'
 import { GlobalSearch } from '@/modules/home/GlobalSearch'
+import { PriceCarousel } from '@/modules/home/PriceCarousel'
 import { useAuth } from '@/modules/auth/AuthContext'
 import { useProfile } from '@/modules/auth/useProfile'
 import { TermsModal } from '@/modules/auth/TermsModal'
@@ -170,6 +171,12 @@ export function PublicLayout() {
           </div>
         </div>
       </header>
+
+      <div className="border-b border-border bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 py-2">
+          <PriceCarousel />
+        </div>
+      </div>
 
       <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <Outlet />

@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: spec-ui-ajustes-main-carousel-movers-universe (2026-06-12)
+
+- **D1 (LOW): `latestPeriodByTicker` sin `useMemo` en `FibraUniverseTable`** — `Object.fromEntries(fundamentalsSummary.map(...))` se re-ejecuta en cada render. Envolver con `useMemo([fundamentalsSummary])` cuando se toque el componente de nuevo.
+- **D2 (LOW): `queryKey ['fibras']` vs `['fibras', 'all']` en `useFibraSlugMap`** — `GainersLosers` y `PriceCarousel` usan la clave `['fibras']` mientras que `useFibraSlugMap` usa `['fibras', 'all']`, generando dos entradas de caché independientes y doble fetch. Pre-existente en `PriceCarousel`. Unificar claves en una pasada dedicada.
+- **D3 (LOW): Timer de auto-scroll de `PriceCarousel` no se re-arma en refetch si `snapshots.length` no cambia** — Escenario de borde: hover durante refetch puede dejar el timer muerto. Pre-existente; revisar junto con la lógica del carousel.
+- **D4 (LOW): `FibraLogo` dispara hasta 10 requests externos a `t2.gstatic.com` en `GainersLosers`** — Comportamiento ya presente en el catálogo; impacto bajo con ~19 FIBRAs activas. Considerar lazy-loading o debounce en una pasada de performance futura.
+- **D5 (LOW): Tabla Universo FIBRAS sin sticky header** — Con las dos columnas nuevas la tabla es más ancha; el header se escapa al hacer scroll vertical. Considerar `position: sticky top-0` en el header row cuando se rediseñe la tabla.
+
 ## Deferred from: code review of 3-7-indicadores-macro-tiie-inpc (2026-06-12)
 
 - **D1 (LOW): `UpsertManyAsync` usa N `FindAsync` en vez de `ExecuteUpdateAsync`** — Dev Notes indican `ExecuteUpdateAsync + Add` como patrón preferido del repo. El código actual usa `FindAsync` (N round-trips al DB) que es correcto para 25 entradas/mes pero diverge del patrón. Optimizar en próxima historia que toque `InpcRepository`.

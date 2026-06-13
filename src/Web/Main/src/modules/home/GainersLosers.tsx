@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchMarketSnapshots } from '@/api/fibrasApi'
+import { fetchMarketSnapshots, fetchAllFibras } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
 import { splitGainersLosers } from './movers-logic'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
+import { FibraLogo } from '@/shared/ui/fibra-logo'
 
 export function GainersLosers() {
   const { data: snapshots = [], isLoading } = useQuery({
@@ -11,6 +12,12 @@ export function GainersLosers() {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
+  const { data: fibras = [] } = useQuery({
+    queryKey: ['fibras'],
+    queryFn: fetchAllFibras,
+    staleTime: 5 * 60_000,
+  })
+  const fibraByTicker = Object.fromEntries(fibras.map(f => [f.ticker, f]))
   const { slugFor } = useFibraSlugMap()
 
   const { gainers, losers } = splitGainersLosers(snapshots, 5)
@@ -29,11 +36,13 @@ export function GainersLosers() {
       {isLoading ? (
         <div className="grid grid-cols-2 divide-x divide-border animate-pulse">
           {[0, 1].map(col => (
-            <div key={col} className="px-4 py-3 space-y-3">
+            <div key={col} className="px-3 py-2 space-y-2">
               <div className="h-3 w-16 bg-muted rounded" />
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex justify-between">
-                  <div className="h-3 w-14 bg-muted rounded" />
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-10 w-10 bg-muted rounded-lg shrink-0" />
+                  <div className="h-3 flex-1 bg-muted rounded" />
+                  <div className="h-3 w-10 bg-muted rounded" />
                   <div className="h-3 w-12 bg-muted rounded" />
                 </div>
               ))}
@@ -54,15 +63,20 @@ export function GainersLosers() {
                 <p className="px-4 py-3 text-xs text-muted-foreground">Sin datos</p>
               ) : (
                 gainers.map(snap => {
+                  const dailyChange = toNum(snap.dailyChange)
                   const changePct = toNum(snap.dailyChangePct)
                   return (
                     <a
                       key={snap.ticker}
                       href={`/fibras/${slugFor(snap.ticker)}`}
-                      className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
+                      className="px-3 py-1.5 flex items-center gap-2 hover:bg-muted/30 transition-colors"
                     >
-                      <span className="text-sm font-semibold">{snap.ticker}</span>
-                      <span className="text-sm tabular-nums font-medium text-positive">
+                      <FibraLogo size="sm" siteUrl={fibraByTicker[snap.ticker]?.siteUrl ?? null} ticker={snap.ticker} />
+                      <span className="text-sm font-semibold flex-1 min-w-0 truncate">{snap.ticker}</span>
+                      <span className="text-xs tabular-nums font-medium text-positive shrink-0">
+                        {dailyChange != null ? `+${dailyChange.toFixed(2)}` : '—'}
+                      </span>
+                      <span className="text-xs tabular-nums font-medium text-positive shrink-0">
                         {changePct != null ? `+${changePct.toFixed(2)}%` : '—'}
                       </span>
                     </a>
@@ -82,15 +96,20 @@ export function GainersLosers() {
                 <p className="px-4 py-3 text-xs text-muted-foreground">Sin datos</p>
               ) : (
                 losers.map(snap => {
+                  const dailyChange = toNum(snap.dailyChange)
                   const changePct = toNum(snap.dailyChangePct)
                   return (
                     <a
                       key={snap.ticker}
                       href={`/fibras/${slugFor(snap.ticker)}`}
-                      className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
+                      className="px-3 py-1.5 flex items-center gap-2 hover:bg-muted/30 transition-colors"
                     >
-                      <span className="text-sm font-semibold">{snap.ticker}</span>
-                      <span className="text-sm tabular-nums font-medium text-negative">
+                      <FibraLogo size="sm" siteUrl={fibraByTicker[snap.ticker]?.siteUrl ?? null} ticker={snap.ticker} />
+                      <span className="text-sm font-semibold flex-1 min-w-0 truncate">{snap.ticker}</span>
+                      <span className="text-xs tabular-nums font-medium text-negative shrink-0">
+                        {dailyChange != null ? `${dailyChange.toFixed(2)}` : '—'}
+                      </span>
+                      <span className="text-xs tabular-nums font-medium text-negative shrink-0">
                         {changePct != null ? `${changePct.toFixed(2)}%` : '—'}
                       </span>
                     </a>
