@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import { fetchEditorialPages } from '@/api/editorialApi'
@@ -27,11 +28,10 @@ export function ConoceLasFibrasPage() {
   const activePage =
     pagesQuery.data?.find((page) => page.slug === activeSlug) ?? pagesQuery.data?.[0] ?? null
 
+  usePageTitle(PAGE_TITLE)
+
   return (
     <>
-      <title>{PAGE_TITLE}</title>
-      <meta name="description" content={PAGE_DESCRIPTION} />
-
       <section className="bg-[radial-gradient(circle_at_top_left,rgba(38,103,255,0.12),transparent_34%),linear-gradient(180deg,rgba(10,14,26,0.02),transparent_26%)]">
         <div className="container mx-auto px-4 py-10 md:py-14">
           <div className="max-w-3xl">

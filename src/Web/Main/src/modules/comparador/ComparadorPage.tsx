@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
@@ -214,20 +215,10 @@ export function ComparadorPage() {
   const loadingComparison = comparisonLoading && selectedCount >= MIN_COMPARE_FIBRAS
   const showSuggestions = isSearchFocused && suggestionRows.length > 0
 
+  usePageTitle('Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS')
+
   return (
     <>
-      <title>Comparador de FIBRAs — Fibras Inmobiliarias</title>
-      <meta
-        name="description"
-        content="Compara hasta 4 FIBRAs mexicanas lado a lado: precio, fundamentales, distribuciones y score de oportunidad público. Sin registrarte."
-      />
-      <meta property="og:title" content="Comparador de FIBRAs — Fibras Inmobiliarias" />
-      <meta
-        property="og:description"
-        content="Compara hasta 4 FIBRAs mexicanas lado a lado: precio, fundamentales, distribuciones y score de oportunidad público. Sin registrarte."
-      />
-      <meta property="og:type" content="website" />
-
       <div className="container mx-auto px-4 py-8 space-y-8">
         <header className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">

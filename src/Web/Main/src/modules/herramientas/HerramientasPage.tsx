@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { ArrowUpRight, Plus, Search, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -172,20 +173,10 @@ export function HerramientasPage() {
     [selectedFibrasWithYield, retornoPrecioCompraValue, retornoIsrValue],
   )
 
+  usePageTitle('Herramientas — FIBRADIS')
+
   return (
     <>
-      <title>Herramientas privadas — FIBRADIS</title>
-      <meta
-        name="description"
-        content="Hub privado de análisis con accesos rápidos a FIBRAs, CETES y retorno total para tomar decisiones de inversión con más contexto."
-      />
-      <meta property="og:title" content="Herramientas privadas — FIBRADIS" />
-      <meta
-        property="og:description"
-        content="Hub privado de análisis con accesos rápidos a FIBRAs, CETES y retorno total para tomar decisiones de inversión con más contexto."
-      />
-      <meta property="og:type" content="website" />
-
       <div className="relative overflow-hidden bg-[radial-gradient(circle_at_15%_10%,rgba(194,65,12,0.14),transparent_28%),radial-gradient(circle_at_85%_20%,rgba(15,118,110,0.10),transparent_24%),linear-gradient(180deg,rgba(10,14,26,0.02),transparent_28%)]">
         <div className="container mx-auto px-4 py-8 md:py-10">
           <header className="max-w-4xl space-y-4">

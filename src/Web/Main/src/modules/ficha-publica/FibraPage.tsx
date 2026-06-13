@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
 import ReactMarkdown from 'react-markdown'
@@ -157,12 +158,7 @@ export function FibraPage() {
     ? `${fibra.ticker} — ${fibra.fullName} | Fibras Inmobiliarias`
     : `${ticker?.toUpperCase() ?? 'FIBRA'} | Fibras Inmobiliarias`
 
-  const pageDescription = fibra
-    ? `Análisis de ${fibra.fullName} (${fibra.ticker}): precio de mercado, fundamentales, distribuciones y noticias. ${fibra.sector} — ${fibra.market}.`
-    : `Perfil de FIBRA ${ticker} en Fibras Inmobiliarias.`
-
-  // dominio canónico per historias 11-1/11-2 + URL slug per 11-3
-  const canonicalUrl = `https://fibrasinmobiliarias.com/fibras/${slugCanonico ?? slug}`
+  usePageTitle(pageTitle)
 
   // slug sin ticker extraíble (ej. /fibras/fibra-uno- o /fibras/-): la query queda
   // deshabilitada (isLoading=false, fibra=undefined) y sin este guard el render
@@ -187,10 +183,6 @@ export function FibraPage() {
 
   return (
     <>
-      <title>{pageTitle}</title>
-      <meta name="description" content={pageDescription} />
-      <link rel="canonical" href={canonicalUrl} />
-
       <div>
         <h1 className="sr-only">{fibra!.fullName} ({fibra!.ticker}) | Fibras Inmobiliarias</h1>
         <header className="sticky top-14 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

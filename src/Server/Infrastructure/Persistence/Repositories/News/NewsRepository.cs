@@ -238,22 +238,30 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
         if (fibraIds.Count > 0)
         {
-            var related = await db.NewsArticleFibras
+            // SQL Server no permite DISTINCT en columnas text; primero obtenemos los IDs únicos.
+            var relatedIds = await db.NewsArticleFibras
                 .Where(x => fibraIds.Contains(x.FibraId) && x.NewsArticleId != excludeId)
-                .Select(x => x.NewsArticle)
-                .Where(a => a.DeletedAt == null
-                    && a.AiAnalysisJson != null
-                    && a.PublishedAt >= since
-                    && (a.Status == NewsArticleStatus.Pending
-                        || a.Status == NewsArticleStatus.Processed
-                        || a.Status == NewsArticleStatus.Partial))
+                .Select(x => x.NewsArticleId)
                 .Distinct()
-                .OrderByDescending(a => a.PublishedAt)
-                .Take(count)
                 .ToListAsync(ct);
 
-            if (related.Count > 0)
-                return related;
+            if (relatedIds.Count > 0)
+            {
+                var related = await db.NewsArticles
+                    .Where(a => relatedIds.Contains(a.Id)
+                        && a.DeletedAt == null
+                        && a.AiAnalysisJson != null
+                        && a.PublishedAt >= since
+                        && (a.Status == NewsArticleStatus.Pending
+                            || a.Status == NewsArticleStatus.Processed
+                            || a.Status == NewsArticleStatus.Partial))
+                    .OrderByDescending(a => a.PublishedAt)
+                    .Take(count)
+                    .ToListAsync(ct);
+
+                if (related.Count > 0)
+                    return related;
+            }
         }
 
         return await db.NewsArticles

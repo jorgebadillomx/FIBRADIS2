@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFundamentalesSummary, fetchAllFundamentalesPeriods } from '@/api/fundamentalesApi'
@@ -43,14 +44,10 @@ export function FundamentalesPage() {
     [summaryData, fibraFilter],
   )
 
+  usePageTitle('Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS')
+
   return (
     <>
-      <title>Fundamentales — Fibras Inmobiliarias</title>
-      <meta name="description" content="Compara los indicadores financieros de todas las FIBRAs mexicanas en una tabla cross-FIBRA con filtros de período y emisora." />
-      <meta property="og:title" content="Fundamentales — Fibras Inmobiliarias" />
-      <meta property="og:description" content="Compara los indicadores financieros de todas las FIBRAs mexicanas en una tabla cross-FIBRA con filtros de período y emisora." />
-      <meta property="og:type" content="website" />
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Análisis comparativo</p>

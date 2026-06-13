@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
@@ -72,60 +73,38 @@ export function NoticiaPage() {
   const pageTitle = displayTitle ? `${displayTitle} — Noticias | FIBRADIS` : DEFAULT_TITLE
   const pageDescription = buildDescription(summaryContent)
 
+  usePageTitle(pageTitle)
+
   if (isLoading) {
-    return (
-      <>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <NoticiaPageSkeleton />
-      </>
-    )
+    return <NoticiaPageSkeleton />
   }
 
   if (isError || article === undefined) {
     return (
-      <>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <p className="mb-4 text-muted-foreground">No se pudo cargar la noticia.</p>
-          <Link to="/" className="text-brand underline">
-            Volver al inicio
-          </Link>
-        </div>
-      </>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p className="mb-4 text-muted-foreground">No se pudo cargar la noticia.</p>
+        <Link to="/" className="text-brand underline">
+          Volver al inicio
+        </Link>
+      </div>
     )
   }
 
   if (article === null) {
     return (
-      <>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <p className="mb-4 text-muted-foreground">Noticia no encontrada.</p>
-          <Link to="/" className="text-brand underline">
-            Volver al inicio
-          </Link>
-        </div>
-      </>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p className="mb-4 text-muted-foreground">Noticia no encontrada.</p>
+        <Link to="/" className="text-brand underline">
+          Volver al inicio
+        </Link>
+      </div>
     )
   }
 
   const safeExternalUrl = getSafeExternalUrl(article.url)
-  const canonicalUrl = `${BASE_URL}/noticias/${article.slug ?? article.id}`
 
   return (
     <>
-      <title>{pageTitle}</title>
-      <meta name="description" content={pageDescription} />
-      <link rel="canonical" href={canonicalUrl} />
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={pageDescription} />
-      <meta property="og:type" content="article" />
-      <meta property="og:url" content={canonicalUrl} />
-      {article.imageUrl ? <meta property="og:image" content={article.imageUrl} /> : null}
-
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
         <div className="min-w-0">

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllFibras, fetchMarketSnapshots } from '@/api/fibrasApi'
@@ -51,14 +52,10 @@ export function CatalogoPage() {
 
   const hasFilters = search || sector || market
 
+  usePageTitle('FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | FIBRADIS')
+
   return (
     <>
-      <title>Catálogo de FIBRAs — Fibras Inmobiliarias</title>
-      <meta
-        name="description"
-        content="Explora el universo completo de FIBRAs inmobiliarias mexicanas con datos clave, sector, mercado y descripción editorial."
-      />
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">

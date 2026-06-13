@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllFibras } from '@/api/fibrasApi'
@@ -59,14 +60,10 @@ export function NoticiasListPage() {
     setPage(1)
   }
 
+  usePageTitle('Noticias FIBRAs Inmobiliarias | FIBRADIS')
+
   return (
     <>
-      <title>Noticias — Fibras Inmobiliarias</title>
-      <meta name="description" content="Explora noticias procesadas de FIBRAs mexicanas con filtros por texto y por emisora." />
-      <meta property="og:title" content="Noticias — Fibras Inmobiliarias" />
-      <meta property="og:description" content="Explora noticias procesadas de FIBRAs mexicanas con filtros por texto y por emisora." />
-      <meta property="og:type" content="website" />
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">

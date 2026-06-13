@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import type { MarketCalendarEvent } from '@/api/calendarApi'
 import { useCalendarEvents } from './useCalendarEvents'
@@ -32,22 +33,10 @@ export function CalendarioPage() {
     [events],
   )
 
+  usePageTitle('Calendario de Eventos Corporativos FIBRAs | FIBRADIS')
+
   return (
     <>
-      <title>Calendario de Distribuciones — FIBRADIS</title>
-      <meta
-        name="description"
-        content="Consulta el calendario mensual de distribuciones de FIBRAs mexicanas: fechas de pago, fechas ex derecho y desglose fiscal de cada distribución."
-      />
-      <meta property="og:title" content="Calendario de Distribuciones — FIBRADIS" />
-      <meta
-        property="og:description"
-        content="Consulta el calendario mensual de distribuciones de FIBRAs mexicanas: fechas de pago, fechas ex derecho y desglose fiscal de cada distribución."
-      />
-      <meta property="og:type" content="website" />
-      {/* canonical lo inyecta SpaMetadataMiddleware con el dominio configurado (App:BaseUrl);
-          el client-side apuntaba al dominio incorrecto fibradis.mx — retirado en code review 11-2 */}
-
       <div className="container mx-auto px-4 py-8">
         <div className="overflow-hidden rounded-[2rem] border border-border bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.16),_transparent_35%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(236,253,245,0.92))] shadow-sm">
           <div className="grid gap-6 px-6 py-8 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-start lg:px-8">
