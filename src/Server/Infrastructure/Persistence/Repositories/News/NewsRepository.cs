@@ -349,14 +349,23 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     public async Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
-        var rows = await db.NewsArticles
+        var query = db.NewsArticles
             .AsNoTracking()
             .Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null)
             .OrderByDescending(n => n.PublishedAt)
             .Take(limit)
-            .Select(n => new { n.Slug, n.PublishedAt })
-            .ToListAsync(ct);
+            .Select(n => new { n.Slug, n.PublishedAt });
+
+        // READ UNCOMMITTED evita contención de locks al generar el sitemap; el provider
+        // InMemory (tests) no soporta transacciones con isolation level, así que se omite
+        if (!db.Database.IsRelational())
+        {
+            var rowsNoTx = await query.ToListAsync(ct);
+            return rowsNoTx.Select(r => (r.Slug!, r.PublishedAt)).ToList();
+        }
+
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
+        var rows = await query.ToListAsync(ct);
         await tx.CommitAsync(ct);
         return rows.Select(r => (r.Slug!, r.PublishedAt)).ToList();
     }

@@ -66,13 +66,22 @@ public class FibraRepository(AppDbContext db) : IFibraRepository
 
     public async Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
-        var rows = await db.Fibras
+        var query = db.Fibras
             .AsNoTracking()
             .Where(f => f.State == FibraState.Active)
             .OrderBy(f => f.Ticker)
-            .Select(f => new { f.FullName, f.Ticker })
-            .ToListAsync(ct);
+            .Select(f => new { f.FullName, f.Ticker });
+
+        // READ UNCOMMITTED evita contención de locks al generar el sitemap; el provider
+        // InMemory (tests) no soporta transacciones con isolation level, así que se omite
+        if (!db.Database.IsRelational())
+        {
+            var rowsNoTx = await query.ToListAsync(ct);
+            return rowsNoTx.Select(r => (r.FullName, r.Ticker)).ToList();
+        }
+
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
+        var rows = await query.ToListAsync(ct);
         await tx.CommitAsync(ct);
         return rows.Select(r => (r.FullName, r.Ticker)).ToList();
     }
