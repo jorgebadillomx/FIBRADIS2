@@ -1,3 +1,4 @@
+using System.Data;
 using Application.News;
 using Domain.News;
 using Infrastructure.Persistence.SqlServer;
@@ -348,6 +349,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     public async Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
         var rows = await db.NewsArticles
             .AsNoTracking()
             .Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null)
@@ -355,6 +357,7 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .Take(limit)
             .Select(n => new { n.Slug, n.PublishedAt })
             .ToListAsync(ct);
+        await tx.CommitAsync(ct);
         return rows.Select(r => (r.Slug!, r.PublishedAt)).ToList();
     }
 }

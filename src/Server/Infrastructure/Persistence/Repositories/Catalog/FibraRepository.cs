@@ -1,3 +1,4 @@
+using System.Data;
 using Application.Catalog;
 using Domain.Catalog;
 using Infrastructure.Persistence.SqlServer;
@@ -65,12 +66,14 @@ public class FibraRepository(AppDbContext db) : IFibraRepository
 
     public async Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
         var rows = await db.Fibras
             .AsNoTracking()
             .Where(f => f.State == FibraState.Active)
             .OrderBy(f => f.Ticker)
             .Select(f => new { f.FullName, f.Ticker })
             .ToListAsync(ct);
+        await tx.CommitAsync(ct);
         return rows.Select(r => (r.FullName, r.Ticker)).ToList();
     }
 }

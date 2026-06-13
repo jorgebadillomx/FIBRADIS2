@@ -29,7 +29,7 @@ public class BanxicoSyncJob(
             {
                 logger.LogWarning("BanxicoSyncJob: no se obtuvo tasa CETES 28d");
                 errors++;
-                await TryLogErrorAsync("CETES 28d (SF43783) retornó null — Banxico no devolvió dato válido.");
+                await TryLogErrorAsync("CETES 28d (SF43936) retornó null — Banxico no devolvió dato válido.");
             }
             else
             {
@@ -96,7 +96,7 @@ public class BanxicoSyncJob(
                 Timestamp = DateTimeOffset.UtcNow,
                 ErrorType = ex?.GetType().Name ?? "NullResult",
                 Message = message.Length > 500 ? message[..500] : message,
-                AiContext = $"BanxicoSyncJob intentó sincronizar tasas CETES y TIIE 28d desde la API de Banxico. {message} Revise el token de API de Banxico en OperationalConfig y la disponibilidad del endpoint SIE.",
+                AiContext = $"BanxicoSyncJob intentó sincronizar tasas CETES y TIIE 28d desde la API de Banxico. {message} Revise Banxico:Token en appsettings y la disponibilidad del endpoint SIE.",
             }, CancellationToken.None);
         }
         catch (Exception logEx)

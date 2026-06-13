@@ -112,7 +112,7 @@ public class BanxicoMonthlySyncJob(
                 Timestamp = DateTimeOffset.UtcNow,
                 ErrorType = ex?.GetType().Name ?? "EmptyResult",
                 Message = message.Length > 500 ? message[..500] : message,
-                AiContext = $"BanxicoMonthlySyncJob intentó sincronizar el INPC mensual (serie SP1) desde la API de Banxico. {message} Revise el token de API y la disponibilidad del endpoint SIE para la serie SP1.",
+                AiContext = $"BanxicoMonthlySyncJob intentó sincronizar el INPC mensual (serie SP1) desde la API de Banxico. {message} Revise Banxico:Token en appsettings y la disponibilidad del endpoint SIE para la serie SP1.",
             }, CancellationToken.None);
         }
         catch (Exception logEx)
