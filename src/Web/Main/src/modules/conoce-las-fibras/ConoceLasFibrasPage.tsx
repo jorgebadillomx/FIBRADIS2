@@ -32,7 +32,7 @@ export function ConoceLasFibrasPage() {
       <title>{PAGE_TITLE}</title>
       <meta name="description" content={PAGE_DESCRIPTION} />
 
-      <section className="bg-[linear-gradient(180deg,_rgba(26,74,58,0.07)_0%,_rgba(244,246,248,0)_100%)]">
+      <section className="bg-[radial-gradient(circle_at_top_left,rgba(38,103,255,0.12),transparent_34%),linear-gradient(180deg,rgba(10,14,26,0.02),transparent_26%)]">
         <div className="container mx-auto px-4 py-10 md:py-14">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Aprende antes de invertir</p>
@@ -63,7 +63,7 @@ export function ConoceLasFibrasPage() {
             <div className="mt-8 grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
               <nav
                 aria-label="Secciones educativas"
-                className="h-fit rounded-[1.75rem] border border-border bg-white/92 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)]"
+                className="h-fit rounded-[1.75rem] border border-border bg-surface-elevated p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)]"
               >
                 <div className="flex gap-2 overflow-x-auto lg:flex-col">
                   {pagesQuery.data?.map((page) => (
@@ -75,7 +75,7 @@ export function ConoceLasFibrasPage() {
                         'min-w-max rounded-2xl border px-4 py-3 text-left text-sm font-medium transition lg:min-w-0',
                         page.slug === activePage?.slug
                           ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                          : 'border-transparent bg-slate-50 text-slate-700 hover:border-slate-200 hover:bg-white',
+                          : 'border-transparent bg-muted text-muted-foreground hover:border-border hover:bg-background',
                       )}
                     >
                       {TAB_LABELS[page.slug] ?? page.title}
@@ -84,7 +84,7 @@ export function ConoceLasFibrasPage() {
                 </div>
               </nav>
 
-              <article className="rounded-[1.75rem] border border-border bg-white/94 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] md:p-8">
+              <article className="rounded-[1.75rem] border border-border bg-surface-elevated p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] md:p-8">
                 <div className="flex flex-col gap-2 border-b border-border pb-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary/80">
                     {TAB_LABELS[activePage.slug] ?? activePage.title}
@@ -115,7 +115,7 @@ export function ConoceLasFibrasPage() {
 function EditorialSkeleton() {
   return (
     <div className="mt-8 grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <div className="rounded-[1.75rem] border border-border bg-white/92 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+      <div className="rounded-[1.75rem] border border-border bg-surface-elevated p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
         <div className="flex gap-2 overflow-x-auto lg:flex-col">
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} className="h-11 min-w-28 animate-pulse rounded-2xl bg-muted lg:min-w-0" />
@@ -123,7 +123,7 @@ function EditorialSkeleton() {
         </div>
       </div>
 
-      <div className="rounded-[1.75rem] border border-border bg-white/94 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] md:p-8">
+      <div className="rounded-[1.75rem] border border-border bg-surface-elevated p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] md:p-8">
         <div className="h-5 w-28 animate-pulse rounded bg-muted" />
         <div className="mt-4 h-9 w-1/2 animate-pulse rounded bg-muted" />
         <div className="mt-10 space-y-3">

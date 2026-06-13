@@ -16,7 +16,7 @@ public class CalculadoraDistributionCalculatorTests
     }
 
     [Fact]
-    public void Calculate_UsesMostRecentQuarterAndSumsQuarterAndYear()
+    public void Calculate_ReturnsReportingPeriodMinusOneAndSumsTrailing12Months()
     {
         var distributions = new[]
         {
@@ -28,11 +28,31 @@ public class CalculadoraDistributionCalculatorTests
 
         var result = CalculadoraDistributionCalculator.Calculate(distributions);
 
-        Assert.Equal("Q2-2026", result.UltimoPeriodo);
+        // Pagos en Q2-2026 → periodo reportado Q1-2026 (pagan un trimestre después)
+        Assert.Equal("Q1-2026", result.UltimoPeriodo);
         Assert.NotNull(result.DistCbfi);
         Assert.NotNull(result.DistCbfiAnual);
         Assert.Equal(0.40m, result.DistCbfi.Value);
-        Assert.Equal(0.45m, result.DistCbfiAnual.Value);
+        // Trailing 12 meses desde 2026-05-20: todos los 4 pagos están dentro → 0.30+0.10+0.05+0.20 = 0.65
+        Assert.Equal(0.65m, result.DistCbfiAnual.Value);
+    }
+
+    [Fact]
+    public void Calculate_ExcludesDistributionsOlderThan12Months()
+    {
+        var distributions = new[]
+        {
+            Dist(new DateOnly(2026, 5, 15), 0.45m),
+            Dist(new DateOnly(2026, 2, 15), 0.45m),
+            Dist(new DateOnly(2025, 11, 15), 0.45m),
+            Dist(new DateOnly(2025, 8, 15), 0.45m),
+            Dist(new DateOnly(2025, 5, 14), 0.45m), // exactamente fuera del rango (< cutoff 2025-05-15)
+        };
+
+        var result = CalculadoraDistributionCalculator.Calculate(distributions);
+
+        // Solo los 4 pagos dentro de 12 meses → 0.45 × 4 = 1.80
+        Assert.Equal(1.80m, result.DistCbfiAnual!.Value);
     }
 
     private static Distribution Dist(DateOnly paymentDate, decimal amount) => new()

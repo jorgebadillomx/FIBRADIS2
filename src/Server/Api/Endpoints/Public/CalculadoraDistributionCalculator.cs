@@ -20,19 +20,26 @@ public static class CalculadoraDistributionCalculator
             .ToList();
 
         var lastDate = ordered[0].PaymentDate;
-        var lastYear = lastDate.Year;
-        var lastQuarter = (lastDate.Month - 1) / 3 + 1;
+        var paymentQuarter = QuarterOf(lastDate);
+        var paymentYear = lastDate.Year;
+
+        // El periodo reportado es el trimestre anterior al pago (FIBRAs pagan Q+1)
+        var reportQuarter = paymentQuarter - 1;
+        var reportYear = paymentYear;
+        if (reportQuarter == 0) { reportQuarter = 4; reportYear--; }
 
         var distCbfi = ordered
-            .Where(d => d.PaymentDate.Year == lastYear && QuarterOf(d.PaymentDate) == lastQuarter)
+            .Where(d => d.PaymentDate.Year == paymentYear && QuarterOf(d.PaymentDate) == paymentQuarter)
             .Sum(d => d.AmountPerUnit);
 
+        // Suma trailing 12 meses desde la última distribución (incluye la actual)
+        var cutoff = lastDate.AddYears(-1);
         var distCbfiAnual = ordered
-            .Where(d => d.PaymentDate.Year == lastYear)
+            .Where(d => d.PaymentDate >= cutoff)
             .Sum(d => d.AmountPerUnit);
 
         return new CalculadoraDistributionSummary(
-            $"Q{lastQuarter}-{lastYear}",
+            $"Q{reportQuarter}-{reportYear}",
             distCbfi,
             distCbfiAnual);
     }

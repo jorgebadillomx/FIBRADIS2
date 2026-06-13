@@ -105,6 +105,7 @@ export function PublicLayout() {
             <Link to="/fibras" className="hover:text-foreground transition-colors duration-150">Fibras</Link>
             <Link to="/comparar" className="hover:text-foreground transition-colors duration-150">Comparar</Link>
             <Link to="/noticias" className="hover:text-foreground transition-colors duration-150">Noticias</Link>
+            <Link to="/calculadora" className="hover:text-foreground transition-colors duration-150">Calculadora</Link>
             <Link to="/calendario" className="hover:text-foreground transition-colors duration-150">Calendario</Link>
             <Link to="/fundamentales" className="hover:text-foreground transition-colors duration-150">Fundamentales</Link>
             {status === 'authenticated' && (
@@ -128,7 +129,7 @@ export function PublicLayout() {
             {status === 'authenticated' ? (
               <div ref={menuRef} className="relative">
                 <button
-                  aria-expanded={menuOpen}
+                  aria-expanded={menuOpen ? 'true' : 'false'}
                   aria-haspopup="menu"
                   className="max-w-[13rem] text-sm font-medium px-3 py-1.5 rounded border border-border text-foreground hover:border-primary hover:text-primary transition-colors duration-150 cursor-pointer truncate"
                   onClick={() => setMenuOpen((value) => !value)}
@@ -248,6 +249,13 @@ export function PublicLayout() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Noticias
+              </Link>
+              <Link
+                to="/calculadora"
+                className="block rounded-lg px-3 py-2 text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Calculadora
               </Link>
               <Link
                 to="/calendario"

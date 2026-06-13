@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchMarketSnapshots } from '@/api/fibrasApi'
+import { fetchMarketSnapshots, fetchAllFibras } from '@/api/fibrasApi'
 import { fetchFundamentalesSummary } from '@/api/fundamentalesApi'
 import { toNum } from '@/shared/lib/format-time'
 import { FreshnessBadge, type FreshnessStatus } from '@/shared/ui/freshness-badge'
+import { FibraLogo } from '@/shared/ui/fibra-logo'
 import { formatVolume } from './movers-logic'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 import {
@@ -34,11 +35,18 @@ export function FibraUniverseTable() {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
+  const { data: fibras = [] } = useQuery({
+    queryKey: ['fibras'],
+    queryFn: fetchAllFibras,
+    staleTime: 5 * 60_000,
+  })
   const { data: fundamentalsSummary = [] } = useQuery({
     queryKey: ['fundamentals-summary'],
     queryFn: () => fetchFundamentalesSummary(),
     staleTime: 10 * 60_000,
   })
+
+  const fibraByTicker = Object.fromEntries(fibras.map(f => [f.ticker, f]))
   const latestPeriodByTicker = Object.fromEntries(
     fundamentalsSummary.map(f => [f.ticker, f.period])
   )
@@ -83,10 +91,11 @@ export function FibraUniverseTable() {
         />
       </div>
 
-      {/* Column headers — order must match data row order */}
+      {/* Column headers */}
       <div className="overflow-x-auto">
-        <div className="min-w-[56rem]">
-          <div className="px-4 py-2 border-y border-border grid grid-cols-[minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 text-xs font-semibold text-muted-foreground">
+        <div className="min-w-[60rem]">
+          <div className="px-4 py-2 border-y border-border grid grid-cols-[2.5rem_minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 text-xs font-semibold text-muted-foreground">
+            <span />
             <span>Emisora</span>
             {SORT_COLUMNS.slice(0, 4).map(col => (
               <button
@@ -133,8 +142,9 @@ export function FibraUniverseTable() {
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="px-4 py-3 grid grid-cols-[minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 items-center"
+                  className="px-4 py-3 grid grid-cols-[2.5rem_minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 items-center"
                 >
+                  <div className="h-10 w-10 bg-muted rounded-lg shrink-0" />
                   <div className="h-3 w-16 bg-muted rounded" />
                   <div className="h-3 w-12 bg-muted rounded" />
                   <div className="h-3 w-10 bg-muted rounded" />
@@ -181,10 +191,19 @@ export function FibraUniverseTable() {
                   <a
                     key={snap.ticker}
                     href={`/fibras/${slugFor(snap.ticker)}`}
-                    className="px-4 py-3 grid grid-cols-[minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 items-center hover:bg-muted/30 transition-colors"
+                    className="px-4 py-3 grid grid-cols-[2.5rem_minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 items-center hover:bg-muted/30 transition-colors"
                   >
+                    {/* Logo */}
+                    <FibraLogo
+                      size="sm"
+                      siteUrl={fibraByTicker[snap.ticker]?.siteUrl ?? null}
+                      ticker={snap.ticker}
+                    />
+
                     {/* Emisora */}
-                    <span className="text-sm font-semibold">{snap.ticker}</span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold truncate">{snap.ticker}</span>
+                    </span>
 
                     {/* Precio */}
                     <span className="text-sm tabular-nums text-right">

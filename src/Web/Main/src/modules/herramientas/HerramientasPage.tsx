@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Plus, Search, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchCalculadoraFibras, fetchIndicadores } from '@/api/fibrasApi'
+import { fetchCalculadoraFibras, fetchIndicadores, type CalculadoraFibraDto } from '@/api/fibrasApi'
 import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
 import {
   calcFibraVsCetes,
@@ -12,18 +12,20 @@ import {
 } from './herramientas-logic'
 
 const HORIZON_OPTIONS = [1, 3, 5, 10] as const
+const MAX_FIBRAS = 4
+
+type FibraWithYield = CalculadoraFibraDto & { yieldPct: number | null }
 
 export function HerramientasPage() {
+  const [selectedTickers, setSelectedTickers] = useState<string[]>([])
+  const [search, setSearch] = useState('')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [fibraMonto, setFibraMonto] = useState('100000')
-  const [fibraYield, setFibraYield] = useState('10')
   const [fibraCetes, setFibraCetes] = useState('')
   const [fibraHorizonte, setFibraHorizonte] = useState<(typeof HORIZON_OPTIONS)[number]>(5)
   const [metaRentaMensual, setMetaRentaMensual] = useState('5000')
-  const [metaYield, setMetaYield] = useState('9')
   const [retornoPrecioCompra, setRetornoPrecioCompra] = useState('20')
-  const [retornoPrecioActual, setRetornoPrecioActual] = useState('22')
-  const [retornoDistribuciones, setRetornoDistribuciones] = useState('2.4')
-  const [retornoIsr, setRetornoIsr] = useState('0.72')
+  const [retornoIsr, setRetornoIsr] = useState('0')
   const [cetesTouched, setCetesTouched] = useState(false)
 
   const indicadoresQuery = useQuery({
@@ -35,8 +37,8 @@ export function HerramientasPage() {
   const cetesApiValue = normalizeRate(indicadoresQuery.data?.cetes28d)
   const tiieApiValue = normalizeRate(indicadoresQuery.data?.tiie28d)
 
-  const precioReferenciaQuery = useQuery({
-    queryKey: ['herramientas', 'precio-referencia'],
+  const calculadoraQuery = useQuery({
+    queryKey: ['herramientas', 'calculadora'],
     queryFn: async () => {
       try {
         return await fetchCalculadoraFibras()
@@ -54,60 +56,121 @@ export function HerramientasPage() {
     setFibraCetes(cetesApiValue.toFixed(2))
   }, [cetesApiValue, cetesTouched])
 
-  const precioRefPromedio = useMemo(() => {
-    const prices = (precioReferenciaQuery.data ?? [])
-      .map((fibra) => parseNumberInput(String(fibra.precioActual ?? '')))
-      .filter((price): price is number => price != null && price > 0)
+  const allFibras = calculadoraQuery.data ?? []
 
-    if (prices.length === 0) return null
-    return prices.reduce((sum, price) => sum + price, 0) / prices.length
-  }, [precioReferenciaQuery.data])
+  const calculadoraByTicker = useMemo(
+    () => new Map(allFibras.map((f) => [f.ticker.toUpperCase(), f])),
+    [allFibras],
+  )
+
+  const selectedSet = useMemo(() => new Set(selectedTickers), [selectedTickers])
+
+  const selectedFibrasWithYield = useMemo<FibraWithYield[]>(
+    () =>
+      selectedTickers
+        .map((t) => calculadoraByTicker.get(t))
+        .filter((f): f is CalculadoraFibraDto => f != null)
+        .map((f) => {
+          const precio = f.precioActual != null ? Number(f.precioActual) : null
+          const distAnual = f.distCbfiAnual != null ? Number(f.distCbfiAnual) : null
+          const yieldPct =
+            precio != null && precio > 0 && distAnual != null && distAnual > 0
+              ? (distAnual / precio) * 100
+              : null
+          return { ...f, yieldPct }
+        }),
+    [selectedTickers, calculadoraByTicker],
+  )
+
+  const suggestionRows = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    const pool = allFibras.filter((f) => !selectedSet.has(f.ticker.toUpperCase()))
+    if (!term) return pool.slice(0, 8)
+    return pool
+      .filter(
+        (f) =>
+          f.ticker.toLowerCase().includes(term) || f.empresa.toLowerCase().includes(term),
+      )
+      .slice(0, 8)
+  }, [allFibras, search, selectedSet])
+
+  function addTicker(ticker: string) {
+    if (selectedTickers.length >= MAX_FIBRAS) return
+    setSelectedTickers((prev) => [...prev, ticker.toUpperCase()])
+    setSearch('')
+    setIsSearchFocused(selectedTickers.length + 1 < MAX_FIBRAS)
+  }
+
+  function removeTicker(ticker: string) {
+    setSelectedTickers((prev) => prev.filter((t) => t !== ticker))
+  }
+
+  const selectorDisabled = selectedTickers.length >= MAX_FIBRAS
+  const showSuggestions = isSearchFocused && suggestionRows.length > 0
+  const hasSelection = selectedTickers.length > 0
 
   const fibraMontoValue = parseNumberInput(fibraMonto)
-  const fibraYieldValue = parseNumberInput(fibraYield)
   const fibraCetesValue = parseNumberInput(fibraCetes)
-  const fibraScenario = calcFibraVsCetes(
-    fibraMontoValue ?? 0,
-    fibraYieldValue ?? 0,
-    fibraCetesValue ?? 0,
-    fibraHorizonte,
-  )
-  const fibraInputsValid =
-    fibraMontoValue != null &&
-    fibraYieldValue != null &&
-    fibraCetesValue != null &&
-    fibraMontoValue > 0 &&
-    fibraHorizonte > 0
-
   const metaRentaMensualValue = parseNumberInput(metaRentaMensual)
-  const metaYieldValue = parseNumberInput(metaYield)
-  const metaResult = calcMetaRenta(
-    metaRentaMensualValue ?? 0,
-    metaYieldValue ?? 0,
-    precioRefPromedio ?? undefined,
+  const retornoPrecioCompraValue = parseNumberInput(retornoPrecioCompra)
+  const retornoIsrValue = parseNumberInput(retornoIsr)
+
+  const cetesScenario = useMemo(() => {
+    if (fibraMontoValue == null || fibraCetesValue == null) return null
+    return calcFibraVsCetes(fibraMontoValue, 0, fibraCetesValue, fibraHorizonte).cetes
+  }, [fibraMontoValue, fibraCetesValue, fibraHorizonte])
+
+  const fibraScenarios = useMemo(
+    () =>
+      selectedFibrasWithYield.map((f) => ({
+        ticker: f.ticker,
+        yieldPct: f.yieldPct,
+        scenario:
+          f.yieldPct != null && fibraMontoValue != null
+            ? calcFibraVsCetes(fibraMontoValue, f.yieldPct, fibraCetesValue ?? 0, fibraHorizonte)
+                .fibra
+            : null,
+      })),
+    [selectedFibrasWithYield, fibraMontoValue, fibraCetesValue, fibraHorizonte],
   )
 
-  const retornoPrecioCompraValue = parseNumberInput(retornoPrecioCompra)
-  const retornoPrecioActualValue = parseNumberInput(retornoPrecioActual)
-  const retornoDistribucionesValue = parseNumberInput(retornoDistribuciones)
-  const retornoIsrValue = parseNumberInput(retornoIsr)
-  const retornoInputsValid =
-    retornoPrecioCompraValue != null &&
-    retornoPrecioActualValue != null &&
-    retornoDistribucionesValue != null &&
-    retornoIsrValue != null
-  const retornoResult = retornoInputsValid
-    ? calcRetornoTotal(
-        retornoPrecioCompraValue,
-        retornoPrecioActualValue,
-        retornoDistribucionesValue,
-        retornoIsrValue,
-      )
-    : {
-        plusvaliaPct: null,
-        yieldNetoPct: null,
-        retornoTotalPct: null,
-      }
+  const metaResults = useMemo(
+    () =>
+      selectedFibrasWithYield.map((f) => {
+        const precioNum = f.precioActual != null ? Number(f.precioActual) : undefined
+        return {
+          ticker: f.ticker,
+          yieldPct: f.yieldPct,
+          precioActual: precioNum,
+          result:
+            f.yieldPct != null && metaRentaMensualValue != null
+              ? calcMetaRenta(metaRentaMensualValue, f.yieldPct, precioNum)
+              : null,
+        }
+      }),
+    [selectedFibrasWithYield, metaRentaMensualValue],
+  )
+
+  const retornoResults = useMemo(
+    () =>
+      selectedFibrasWithYield.map((f) => {
+        const precioActual = f.precioActual != null ? Number(f.precioActual) : null
+        const distAnual = f.distCbfiAnual != null ? Number(f.distCbfiAnual) : null
+        return {
+          ticker: f.ticker,
+          precioActual,
+          distCbfiAnual: distAnual,
+          result:
+            precioActual != null &&
+            distAnual != null &&
+            retornoPrecioCompraValue != null &&
+            retornoIsrValue != null
+              ? calcRetornoTotal(retornoPrecioCompraValue, precioActual, distAnual, retornoIsrValue)
+              : null,
+        }
+      }),
+    [selectedFibrasWithYield, retornoPrecioCompraValue, retornoIsrValue],
+  )
 
   return (
     <>
@@ -133,8 +196,8 @@ export function HerramientasPage() {
               Herramientas para decidir con más contexto
             </h1>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
-              Cruza rendimiento, ingreso objetivo y retorno total sin salir de la plataforma. Los accesos
-              rápidos conectan con las superficies donde ya existe contexto detallado.
+              Cruza rendimiento, ingreso objetivo y retorno total sin salir de la plataforma. Los
+              accesos rápidos conectan con las superficies donde ya existe contexto detallado.
             </p>
           </header>
 
@@ -149,7 +212,6 @@ export function HerramientasPage() {
                 </h2>
               </div>
             </div>
-
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               <HubLinkCard
                 href="/comparar"
@@ -169,197 +231,375 @@ export function HerramientasPage() {
             </div>
           </section>
 
-          <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <section className="rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
-              <SectionHeader
-                eyebrow="Rentabilidad comparada"
-                title="FIBRAs vs CETES"
-                description="Compara crecimiento compuesto con tasas netas estimadas y horizonte flexible."
-              />
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <NumberField
-                  label="Monto (MXN)"
-                  value={fibraMonto}
-                  onChange={setFibraMonto}
-                  placeholder="100000"
-                />
-                <NumberField
-                  label="Yield FIBRA (%)"
-                  value={fibraYield}
-                  onChange={setFibraYield}
-                  placeholder="10"
-                />
-                <div className="space-y-1.5">
-                  <NumberField
-                    label="Tasa CETES 28d (%)"
-                    value={fibraCetes}
-                    onChange={(value) => {
-                      setCetesTouched(true)
-                      setFibraCetes(value)
-                    }}
-                    placeholder="ej. 9.50"
-                  />
-                  {tiieApiValue != null && (
-                    <p className="text-xs text-muted-foreground">
-                      TIIE 28d vigente: {tiieApiValue.toFixed(2)}%
-                    </p>
-                  )}
-                </div>
-                <label className="space-y-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Horizonte
-                  </span>
-                  <select
-                    value={fibraHorizonte}
-                    onChange={(event) => setFibraHorizonte(Number(event.target.value) as (typeof HORIZON_OPTIONS)[number])}
-                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  >
-                    {HORIZON_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option} año{option === 1 ? '' : 's'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="mt-5 overflow-hidden rounded-2xl border border-border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/30 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3 text-left">Métrica</th>
-                      <th className="px-4 py-3 text-right">FIBRA</th>
-                      <th className="px-4 py-3 text-right">CETES</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    <MetricRow
-                      label="Capital final estimado"
-                      fibraValue={fibraInputsValid ? formatMoney(fibraScenario.fibra.capitalFinal) : '—'}
-                      cetesValue={fibraInputsValid ? formatMoney(fibraScenario.cetes.capitalFinal) : '—'}
-                    />
-                    <MetricRow
-                      label="Renta acumulada neta de ISR"
-                      fibraValue={fibraInputsValid ? formatMoney(fibraScenario.fibra.rentaAcumuladaNeta) : '—'}
-                      cetesValue={fibraInputsValid ? formatMoney(fibraScenario.cetes.rentaAcumuladaNeta) : '—'}
-                    />
-                    <MetricRow
-                      label="Rendimiento total %"
-                      fibraValue={fibraInputsValid ? formatPercent(fibraScenario.fibra.rendimientoTotalPct) : '—'}
-                      cetesValue={fibraInputsValid ? formatPercent(fibraScenario.cetes.rendimientoTotalPct) : '—'}
-                    />
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                El supuesto neto aplica 70% sobre distribuciones de FIBRA y 80% sobre CETES. Si el backend ya
-                trae una tasa CETES 28d, el campo se prellena automáticamente.
-              </p>
-            </section>
-
-            <section className="rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
-              <SectionHeader
-                eyebrow="Ingreso objetivo"
-                title="Meta de renta"
-                description="Calcula el capital requerido para una renta mensual y, si hay referencia, los títulos aproximados."
-              />
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <NumberField
-                  label="Renta mensual objetivo (MXN)"
-                  value={metaRentaMensual}
-                  onChange={setMetaRentaMensual}
-                  placeholder="5000"
-                />
-                <NumberField
-                  label="Yield estimado (%)"
-                  value={metaYield}
-                  onChange={setMetaYield}
-                  placeholder="9"
-                />
-              </div>
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <OutputTile
-                  label="Capital necesario"
-                  value={formatMoney(metaResult.capitalNecesario)}
-                  helper="Basado en la renta mensual objetivo y el yield estimado."
-                />
-                <OutputTile
-                  label="CBFIs estimados"
-                  value={metaResult.cbfisEstimados != null ? formatInteger(metaResult.cbfisEstimados) : '—'}
-                  helper={
-                    precioRefPromedio != null
-                      ? `Usa un precio promedio de ${formatMoney(precioRefPromedio)} como referencia.`
-                      : 'No hay precio de referencia disponible.'
-                  }
-                />
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-                Validación inversa:{' '}
-                <span className="font-medium text-foreground">
-                  {formatMoney(metaResult.rentaMensualBrutaEstimada)}
-                </span>{' '}
-                al mes con el capital calculado.
-              </div>
-            </section>
-          </div>
-
-          <section className="mt-6 rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
+          {/* Selector de FIBRAs */}
+          <section className="mt-8 rounded-3xl border border-border bg-surface-elevated/95 p-5 shadow-sm backdrop-blur">
             <SectionHeader
-              eyebrow="Retorno real"
-              title="Retorno total"
-              description="Integra precio de compra, precio actual, distribuciones e ISR retenido en una sola vista."
+              eyebrow="Referencia de datos"
+              title="Selecciona tus FIBRAs"
+              description="Elige de 1 a 4 emisoras. Sus datos reales de precio, distribuciones TTM y yield se usarán automáticamente en las calculadoras."
             />
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-4">
-              <NumberField
-                label="Precio de compra"
-                value={retornoPrecioCompra}
-                onChange={setRetornoPrecioCompra}
-                placeholder="20"
-              />
-              <NumberField
-                label="Precio actual"
-                value={retornoPrecioActual}
-                onChange={setRetornoPrecioActual}
-                placeholder="22"
-              />
-              <NumberField
-                label="Distribuciones TTM"
-                value={retornoDistribuciones}
-                onChange={setRetornoDistribuciones}
-                placeholder="2.4"
-              />
-              <NumberField
-                label="ISR retenido total"
-                value={retornoIsr}
-                onChange={setRetornoIsr}
-                placeholder="0.72"
-              />
-            </div>
+            <div className="mt-5">
+              <div className="relative max-w-2xl">
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Agregar FIBRA
+                  </span>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      aria-label="Buscar FIBRAs para las herramientas"
+                      disabled={selectorDisabled}
+                      onBlur={() => setIsSearchFocused(false)}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      placeholder={
+                        selectorDisabled ? 'Máximo 4 FIBRAs seleccionadas' : 'Ticker o nombre...'
+                      }
+                      value={search}
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-10 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-muted/40"
+                    />
+                    {selectorDisabled ? (
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        Límite 4
+                      </span>
+                    ) : null}
+                  </div>
+                </label>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <OutputTile
-                label="Plusvalía %"
-                value={formatPercent(retornoResult.plusvaliaPct)}
-                helper="Comparación pura entre precio actual y precio de compra."
-              />
-              <OutputTile
-                label="Yield neto recibido %"
-                value={formatPercent(retornoResult.yieldNetoPct)}
-                helper="Distribuciones netas después de ISR retenido."
-              />
-              <OutputTile
-                label="Retorno total %"
-                value={formatPercent(retornoResult.retornoTotalPct)}
-                helper="Suma de plusvalía y flujo neto recibido."
-              />
+                {showSuggestions ? (
+                  <div className="absolute z-20 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-border bg-background shadow-lg">
+                    {suggestionRows.map((fibra) => (
+                      <button
+                        key={fibra.ticker}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => addTicker(fibra.ticker)}
+                        className="flex w-full items-center justify-between gap-3 border-b border-border px-4 py-3 text-left text-sm transition-colors last:border-b-0 hover:bg-muted/50"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-semibold text-primary">
+                              {fibra.ticker}
+                            </span>
+                            <span className="text-xs text-muted-foreground">Agregar</span>
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground">{fibra.empresa}</p>
+                        </div>
+                        <Plus className="size-4 shrink-0 text-muted-foreground" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {calculadoraQuery.isLoading
+                    ? 'Cargando universo activo...'
+                    : 'Usa ticker o nombre de la emisora.'}
+                </p>
+              </div>
+
+              {selectedTickers.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {selectedTickers.map((ticker) => {
+                    const fibra = calculadoraByTicker.get(ticker)
+                    const withYield = selectedFibrasWithYield.find((f) => f.ticker === ticker)
+                    return (
+                      <div
+                        key={ticker}
+                        className="inline-flex items-center gap-2.5 rounded-full border border-border bg-background px-3 py-1.5"
+                      >
+                        <div className="min-w-0">
+                          <span className="font-mono text-xs font-semibold text-primary">
+                            {ticker}
+                          </span>
+                          {withYield?.yieldPct != null ? (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {withYield.yieldPct.toFixed(2)}% TTM
+                            </span>
+                          ) : null}
+                          {fibra?.empresa ? (
+                            <span className="ml-1 hidden text-xs text-muted-foreground sm:inline">
+                              · {fibra.empresa}
+                            </span>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          title={`Quitar ${ticker}`}
+                          onClick={() => removeTicker(ticker)}
+                          className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
             </div>
           </section>
+
+          {!hasSelection ? (
+            <div className="mt-8 rounded-3xl border border-dashed border-border bg-background px-6 py-12 text-center">
+              <p className="text-sm font-medium text-foreground">
+                Selecciona al menos una FIBRA para activar las calculadoras.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Sus datos de precio y distribuciones se usarán automáticamente.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                {/* FIBRAs vs CETES */}
+                <section className="rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
+                  <SectionHeader
+                    eyebrow="Rentabilidad comparada"
+                    title="FIBRAs vs CETES"
+                    description="Compara crecimiento compuesto con tasas netas estimadas y horizonte flexible."
+                  />
+
+                  <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                    <NumberField
+                      label="Monto (MXN)"
+                      value={fibraMonto}
+                      onChange={setFibraMonto}
+                      placeholder="100000"
+                    />
+                    <div className="space-y-1.5">
+                      <NumberField
+                        label="Tasa CETES 28d (%)"
+                        value={fibraCetes}
+                        onChange={(value) => {
+                          setCetesTouched(true)
+                          setFibraCetes(value)
+                        }}
+                        placeholder="ej. 9.50"
+                      />
+                      {tiieApiValue != null && (
+                        <p className="text-xs text-muted-foreground">
+                          TIIE 28d vigente: {tiieApiValue.toFixed(2)}%
+                        </p>
+                      )}
+                    </div>
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Horizonte
+                      </span>
+                      <select
+                        value={fibraHorizonte}
+                        onChange={(e) =>
+                          setFibraHorizonte(
+                            Number(e.target.value) as (typeof HORIZON_OPTIONS)[number],
+                          )
+                        }
+                        className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        {HORIZON_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o} año{o === 1 ? '' : 's'}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-5 overflow-x-auto rounded-2xl border border-border">
+                    <table className="w-full min-w-max text-sm">
+                      <thead className="bg-muted/30 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        <tr>
+                          <th className="px-4 py-3 text-left">Métrica</th>
+                          {fibraScenarios.map((f) => (
+                            <th key={f.ticker} className="px-4 py-3 text-right">
+                              <span className="font-mono text-primary">{f.ticker}</span>
+                              {f.yieldPct != null ? (
+                                <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                                  {f.yieldPct.toFixed(1)}%
+                                </span>
+                              ) : null}
+                            </th>
+                          ))}
+                          <th className="px-4 py-3 text-right">CETES</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium text-foreground">
+                            Capital final estimado
+                          </th>
+                          {fibraScenarios.map((f) => (
+                            <td
+                              key={f.ticker}
+                              className="px-4 py-3 text-right tabular-nums text-foreground"
+                            >
+                              {f.scenario ? formatMoney(f.scenario.capitalFinal) : '—'}
+                            </td>
+                          ))}
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {cetesScenario ? formatMoney(cetesScenario.capitalFinal) : '—'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium text-foreground">
+                            Renta acumulada neta de ISR
+                          </th>
+                          {fibraScenarios.map((f) => (
+                            <td
+                              key={f.ticker}
+                              className="px-4 py-3 text-right tabular-nums text-foreground"
+                            >
+                              {f.scenario ? formatMoney(f.scenario.rentaAcumuladaNeta) : '—'}
+                            </td>
+                          ))}
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {cetesScenario ? formatMoney(cetesScenario.rentaAcumuladaNeta) : '—'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium text-foreground">
+                            Rendimiento total %
+                          </th>
+                          {fibraScenarios.map((f) => (
+                            <td
+                              key={f.ticker}
+                              className="px-4 py-3 text-right tabular-nums text-foreground"
+                            >
+                              {f.scenario ? formatPercent(f.scenario.rendimientoTotalPct) : '—'}
+                            </td>
+                          ))}
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {cetesScenario
+                              ? formatPercent(cetesScenario.rendimientoTotalPct)
+                              : '—'}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    El yield de cada FIBRA es TTM (últimos 12 meses). Neto aplica 70% sobre
+                    distribuciones FIBRA y 80% sobre CETES.
+                  </p>
+                </section>
+
+                {/* Meta de renta */}
+                <section className="rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
+                  <SectionHeader
+                    eyebrow="Ingreso objetivo"
+                    title="Meta de renta"
+                    description="Capital requerido para la renta mensual objetivo, calculado por cada FIBRA seleccionada."
+                  />
+
+                  <div className="mt-5">
+                    <NumberField
+                      label="Renta mensual objetivo (MXN)"
+                      value={metaRentaMensual}
+                      onChange={setMetaRentaMensual}
+                      placeholder="5000"
+                    />
+                  </div>
+
+                  <div className="mt-5 overflow-hidden rounded-2xl border border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/30 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        <tr>
+                          <th className="px-4 py-3 text-left">FIBRA</th>
+                          <th className="px-4 py-3 text-right">Yield TTM</th>
+                          <th className="px-4 py-3 text-right">Capital necesario</th>
+                          <th className="px-4 py-3 text-right">CBFIs est.</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {metaResults.map((r) => (
+                          <tr key={r.ticker}>
+                            <th className="px-4 py-3 text-left font-mono font-semibold text-primary">
+                              {r.ticker}
+                            </th>
+                            <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                              {r.yieldPct != null ? formatPercent(r.yieldPct) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                              {r.result ? formatMoney(r.result.capitalNecesario) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                              {r.result?.cbfisEstimados != null
+                                ? formatInteger(r.result.cbfisEstimados)
+                                : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+
+              {/* Retorno total */}
+              <section className="mt-6 rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
+                <SectionHeader
+                  eyebrow="Retorno real"
+                  title="Retorno total"
+                  description="Integra precio de compra e ISR retenido con el precio actual y distribuciones TTM de cada emisora."
+                />
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <NumberField
+                    label="Precio de compra"
+                    value={retornoPrecioCompra}
+                    onChange={setRetornoPrecioCompra}
+                    placeholder="20"
+                  />
+                  <NumberField
+                    label="ISR retenido total"
+                    value={retornoIsr}
+                    onChange={setRetornoIsr}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="mt-5 overflow-x-auto rounded-2xl border border-border">
+                  <table className="w-full min-w-max text-sm">
+                    <thead className="bg-muted/30 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3 text-left">FIBRA</th>
+                        <th className="px-4 py-3 text-right">Precio actual</th>
+                        <th className="px-4 py-3 text-right">Dist TTM</th>
+                        <th className="px-4 py-3 text-right">Plusvalía %</th>
+                        <th className="px-4 py-3 text-right">Yield neto %</th>
+                        <th className="px-4 py-3 text-right">Retorno total %</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {retornoResults.map((r) => (
+                        <tr key={r.ticker}>
+                          <th className="px-4 py-3 text-left font-mono font-semibold text-primary">
+                            {r.ticker}
+                          </th>
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {r.precioActual != null ? formatMoney(r.precioActual) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {r.distCbfiAnual != null ? formatMoney(r.distCbfiAnual) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {r.result ? formatPercent(r.result.plusvaliaPct) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {r.result ? formatPercent(r.result.yieldNetoPct) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                            {r.result ? formatPercent(r.result.retornoTotalPct) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </div>
     </>
@@ -377,7 +617,9 @@ function SectionHeader({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">{eyebrow}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+        {eyebrow}
+      </p>
       <h2 className="font-playfair text-2xl font-semibold text-foreground">{title}</h2>
       <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
     </div>
@@ -422,53 +664,19 @@ function NumberField({
 }) {
   return (
     <label className="space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
       <input
         type="number"
         inputMode="decimal"
         step="any"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
     </label>
-  )
-}
-
-function OutputTile({
-  label,
-  value,
-  helper,
-}: {
-  label: string
-  value: string
-  helper: string
-}) {
-  return (
-    <article className="rounded-2xl border border-border bg-background/70 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{value}</p>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{helper}</p>
-    </article>
-  )
-}
-
-function MetricRow({
-  label,
-  fibraValue,
-  cetesValue,
-}: {
-  label: string
-  fibraValue: string
-  cetesValue: string
-}) {
-  return (
-    <tr>
-      <th className="px-4 py-3 text-left font-medium text-foreground">{label}</th>
-      <td className="px-4 py-3 text-right tabular-nums text-foreground">{fibraValue}</td>
-      <td className="px-4 py-3 text-right tabular-nums text-foreground">{cetesValue}</td>
-    </tr>
   )
 }
 

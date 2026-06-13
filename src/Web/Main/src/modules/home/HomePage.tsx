@@ -23,19 +23,13 @@ export function HomePage() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-6 space-y-8">
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Ganadores/Perdedores + Noticias en fila */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-          <div className="min-w-0 space-y-6">
-            <section aria-labelledby="heading-ranking">
-              <h2 id="heading-ranking" className="sr-only">Ganadores y perdedores del día</h2>
-              <GainersLosers />
-            </section>
-
-            <section aria-labelledby="heading-universo">
-              <h2 id="heading-universo" className="sr-only">Universo FIBRAS</h2>
-              <FibraUniverseTable />
-            </section>
-          </div>
+          <section aria-labelledby="heading-ranking">
+            <h2 id="heading-ranking" className="sr-only">Ganadores y perdedores del día</h2>
+            <GainersLosers />
+          </section>
 
           <aside className="xl:sticky xl:top-28">
             <section aria-labelledby="heading-noticias">
@@ -44,6 +38,12 @@ export function HomePage() {
             </section>
           </aside>
         </div>
+
+        {/* Tabla universo a ancho completo */}
+        <section aria-labelledby="heading-universo">
+          <h2 id="heading-universo" className="sr-only">Universo FIBRAS</h2>
+          <FibraUniverseTable />
+        </section>
       </div>
     </>
   )
