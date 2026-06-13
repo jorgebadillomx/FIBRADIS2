@@ -22,9 +22,7 @@ public partial class FibraProfileMetadataMiddleware(
     IServiceScopeFactory scopeFactory)
 {
     private const string PrerenderMetaComment = "<!-- prerender-meta -->";
-    private const string BrandDescriptionSuffix = " — Análisis de rendimientos, distribuciones, fundamentales y precio histórico en FIBRADIS, la plataforma de referencia para FIBRAs inmobiliarias en México.";
-    private const int MaxDescriptionLength = 160;
-    private const int MinDescriptionLength = 120;
+    private const int MaxDescriptionLength = 155;
     private const int MaxSlugLength = 256;
 
     private static readonly HtmlEncoder Encoder = HtmlEncoder.Create(UnicodeRanges.All);
@@ -42,10 +40,7 @@ public partial class FibraProfileMetadataMiddleware(
     [GeneratedRegex("<title>.*?</title>", RegexOptions.Singleline)]
     private static partial Regex TitleTagRegex();
 
-    [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
-    private static partial Regex MarkdownLinkRegex();
-
-    [GeneratedRegex(@"[*_`#>]+")]
+    [GeneratedRegex(@"[#|*>_`]+")]
     private static partial Regex MarkdownSyntaxRegex();
 
     [GeneratedRegex(@"\s+")]
@@ -219,37 +214,42 @@ public partial class FibraProfileMetadataMiddleware(
             .ToString();
     }
 
-    private static string StripMarkdown(string text)
-    {
-        text = MarkdownLinkRegex().Replace(text, "$1");
-        text = MarkdownSyntaxRegex().Replace(text, string.Empty);
-        return WhitespaceRunRegex().Replace(text, " ");
-    }
-
+    // Plantilla limpia derivada de campos estructurados (FullName/Ticker/Sector), nunca del
+    // markdown de Description: ese campo llega con heading, tablas "| Campo | Detalle |" y emoji
+    // y se volcaba crudo en las 3 superficies SEO (meta description, twitter:description y el
+    // "description" del JSON-LD FinancialProduct). La plantilla garantiza una frase legible,
+    // sin sintaxis markdown ni pérdida de encoding ("??") al evitar el origen corrupto.
     private static string BuildDescription(Fibra fibra)
     {
-        var text = StripMarkdown(fibra.Description?.Trim() ?? string.Empty);
+        var sectorClause = string.IsNullOrWhiteSpace(fibra.Sector)
+            ? " Cotiza en la BMV."
+            : $" Sector {fibra.Sector.Trim()} en la BMV.";
 
-        if (text.Length > MaxDescriptionLength)
-            return TruncateWithEllipsis(text);
+        var text = Sanitize(
+            $"Análisis de {fibra.FullName} ({fibra.Ticker}): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones.{sectorClause}");
 
-        if (text.Length >= MinDescriptionLength)
-            return text;
-
-        var padded = text.Length > 0
-            ? text + BrandDescriptionSuffix
-            : $"{fibra.FullName} ({fibra.Ticker}){(string.IsNullOrWhiteSpace(fibra.Sector) ? string.Empty : $" · {fibra.Sector}")}{BrandDescriptionSuffix}";
-
-        return padded.Length > MaxDescriptionLength
-            ? TruncateWithEllipsis(padded)
-            : padded;
+        return text.Length > MaxDescriptionLength ? TruncateAtWordBoundary(text) : text;
     }
 
-    private static string TruncateWithEllipsis(string text)
+    // FullName/Sector son texto libre de BD: eliminar sintaxis markdown residual (#, |, *, >, _, `)
+    // y colapsar espacios para que ninguna de estas se filtre a la metadata servida.
+    private static string Sanitize(string text)
     {
-        var cut = MaxDescriptionLength - 3;
-        if (char.IsHighSurrogate(text[cut - 1]))
-            cut--;
-        return text[..cut] + "...";
+        text = MarkdownSyntaxRegex().Replace(text, " ");
+        return WhitespaceRunRegex().Replace(text, " ").Trim();
+    }
+
+    private static string TruncateAtWordBoundary(string text)
+    {
+        var slice = text[..MaxDescriptionLength];
+        // No partir un surrogate pair en el límite duro (dejaría un U+FFFD)
+        if (char.IsHighSurrogate(slice[^1]))
+            slice = slice[..^1];
+
+        var lastSpace = slice.LastIndexOf(' ');
+        if (lastSpace > 0)
+            slice = slice[..lastSpace];
+
+        return slice.TrimEnd(' ', ',', ';', ':', '.', '·') + "…";
     }
 }
