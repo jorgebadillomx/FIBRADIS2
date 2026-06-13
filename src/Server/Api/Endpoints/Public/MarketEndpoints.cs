@@ -91,7 +91,7 @@ public static class MarketEndpoints
 
             var dto = new FibraHistoryDto(
                 fibra.Ticker,
-                snapshots.Select(s => new DailyPricePointDto(s.Date.ToString("yyyy-MM-dd"), s.Close)).ToList(),
+                snapshots.Select(s => new DailyPricePointDto(s.Date.ToString("yyyy-MM-dd"), s.Open, s.Close)).ToList(),
                 distributions.Take(MaxDistributionsInResponse).Select(d => new DistributionPointDto(
                     d.PaymentDate.ToString("yyyy-MM-dd"),
                     d.AmountPerUnit,

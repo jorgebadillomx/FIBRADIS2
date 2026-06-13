@@ -5770,6 +5770,8 @@ export interface components {
         DailyPricePointDto: {
             date: string;
             /** Format: double */
+            open: null | number | string;
+            /** Format: double */
             close: null | number | string;
         };
         DiagnoseExtractionRequest: {

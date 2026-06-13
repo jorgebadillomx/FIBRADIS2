@@ -4,15 +4,24 @@ import { buildPriceChartPoints, summarizePriceChart } from './price-chart.utils.
 
 test('buildPriceChartPoints formatea fechas y normaliza valores nulos', () => {
   const points = buildPriceChartPoints([
-    { date: '2026-05-01', close: '24.55' },
+    { date: '2026-05-01', open: '24.10', close: '24.55' },
     { date: '2026-05-02', close: null },
   ])
 
+  assert.equal(points[0]?.open, 24.10)
   assert.equal(points[0]?.close, 24.55)
   assert.equal(points[0]?.date, '2026-05-01')
   assert.match(points[0]?.shortLabel ?? '', /01/)
   assert.match(points[0]?.fullLabel ?? '', /2026/)
   assert.equal(points[1]?.close, null)
+  assert.equal(points[1]?.open, null)
+})
+
+test('buildPriceChartPoints asigna open null cuando no se provee', () => {
+  const points = buildPriceChartPoints([
+    { date: '2026-05-01', close: '24.55' },
+  ])
+  assert.equal(points[0]?.open, null)
 })
 
 test('summarizePriceChart calcula rango y variación', () => {

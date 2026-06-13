@@ -2,22 +2,100 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraHistory } from '@/api/fibrasApi'
 import { toNum } from '@/shared/lib/format-time'
-import { getDistributionPeriodLabel, inferDistributionCadence } from './distribuciones'
+import {
+  groupDistributionsByPeriod,
+  calcPeriodDiff,
+  inferDistributionCadence,
+  type PeriodGroup,
+} from './distribuciones'
 
-const INITIAL_ROWS = 8
+const INITIAL_GROUPS = 8
 
 interface DistribucionesSectionProps {
   ticker: string
 }
 
+function DiffCell({ diff }: { diff: number | null }) {
+  if (diff == null) return <span className="text-muted-foreground">—</span>
+  const sign = diff > 0 ? '+' : ''
+  const cls = diff > 0 ? 'text-positive' : diff < 0 ? 'text-negative' : 'text-muted-foreground'
+  return (
+    <span className={`font-mono tabular-nums ${cls}`}>
+      {sign}${Math.abs(diff).toFixed(4)}
+    </span>
+  )
+}
+
+function GroupRow({
+  group,
+  diff,
+  expanded,
+  onToggle,
+  isAlt,
+}: {
+  group: PeriodGroup
+  diff: number | null
+  expanded: boolean
+  onToggle: () => void
+  isAlt: boolean
+}) {
+  return (
+    <>
+      <tr
+        className={`cursor-pointer hover:bg-muted/30 transition-colors ${isAlt ? 'bg-muted/20' : ''}`}
+        onClick={onToggle}
+        aria-expanded={expanded ? 'true' : 'false'}
+      >
+        <td className="px-4 py-2 font-medium text-foreground/85 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground select-none">{expanded ? '▼' : '▶'}</span>
+            {group.label}
+            {group.items.length > 1 && (
+              <span className="text-[10px] text-muted-foreground">({group.items.length} pagos)</span>
+            )}
+          </span>
+        </td>
+        <td className="px-4 py-2 text-right tabular-nums font-medium">
+          ${group.total.toFixed(4)}
+        </td>
+        <td className="px-4 py-2 text-right">
+          <DiffCell diff={diff} />
+        </td>
+      </tr>
+      {expanded && group.items.map((item) => (
+        <tr key={item.date} className="bg-brand-muted/20 border-l-2 border-brand/20">
+          <td className="pl-8 pr-4 py-1.5 text-xs text-muted-foreground whitespace-nowrap">
+            {item.date}
+          </td>
+          <td className="px-4 py-1.5 text-right text-xs tabular-nums text-muted-foreground">
+            ${toNum(item.amountPerUnit)?.toFixed(4) ?? '—'}
+          </td>
+          <td />
+        </tr>
+      ))}
+    </>
+  )
+}
+
 export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
   const [showAll, setShowAll] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
   const { data: history, isLoading, isError } = useQuery({
     queryKey: ['fibra-history', ticker, '1y'],
     queryFn: () => fetchFibraHistory(ticker, '1y'),
     staleTime: 60 * 60_000,
     enabled: !!ticker,
   })
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
+  }
 
   if (isLoading) {
     return (
@@ -38,8 +116,10 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
 
   const yieldRaw = toNum(history?.annualizedYield)
   const dists = history?.distributions ?? []
-  const displayDists = showAll ? dists : dists.slice(0, INITIAL_ROWS)
   const cadence = inferDistributionCadence(dists)
+  const allGroups = groupDistributionsByPeriod(dists, cadence)
+  const diffs = calcPeriodDiff(allGroups)
+  const displayGroups = showAll ? allGroups : allGroups.slice(0, INITIAL_GROUPS)
 
   return (
     <div className="space-y-4">
@@ -64,33 +144,32 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
             <thead>
               <tr className="bg-muted/50 text-muted-foreground">
                 <th className="text-left px-4 py-2 font-medium">Periodo</th>
-                <th className="text-left px-4 py-2 font-medium">Fecha de pago</th>
                 <th className="text-right px-4 py-2 font-medium">Monto por CBFI</th>
+                <th className="text-right px-4 py-2 font-medium">Diferencia</th>
               </tr>
             </thead>
             <tbody>
-              {displayDists.map((d, i) => (
-                <tr key={d.date} className={i % 2 === 0 ? '' : 'bg-muted/20'}>
-                  <td className="px-4 py-2 font-medium text-foreground/85 whitespace-nowrap">
-                    {getDistributionPeriodLabel(d.date, cadence)}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">{d.date}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    ${toNum(d.amountPerUnit)?.toFixed(4) ?? '—'}
-                  </td>
-                </tr>
+              {displayGroups.map((group, i) => (
+                <GroupRow
+                  key={group.label}
+                  group={group}
+                  diff={diffs[i] ?? null}
+                  expanded={expandedGroups.has(group.label)}
+                  onToggle={() => toggleGroup(group.label)}
+                  isAlt={i % 2 !== 0}
+                />
               ))}
             </tbody>
           </table>
-          {dists.length > INITIAL_ROWS && (
+          {allGroups.length > INITIAL_GROUPS && (
             <div className="px-4 py-2 border-t border-border">
               <button
                 type="button"
-                aria-expanded={showAll}
+                aria-expanded={showAll ? 'true' : 'false'}
                 onClick={() => setShowAll(prev => !prev)}
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
               >
-                {showAll ? 'Ver menos' : `Ver historial completo (${dists.length})`}
+                {showAll ? 'Ver menos' : `Ver historial completo (${allGroups.length} periodos)`}
               </button>
             </div>
           )}

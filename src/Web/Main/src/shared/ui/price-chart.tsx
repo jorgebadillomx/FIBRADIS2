@@ -7,8 +7,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/shared/ui/chart'
-import { buildPriceChartPoints, summarizePriceChart, type PriceChartInputPoint } from '@/shared/ui/price-chart.utils'
+import { ChartContainer, ChartTooltip } from '@/shared/ui/chart'
+import { buildPriceChartPoints, summarizePriceChart, type PriceChartInputPoint, type PriceChartPoint } from '@/shared/ui/price-chart.utils'
 
 const dayMonthFmt = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short' })
 const monthYearFmt = new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' })
@@ -19,11 +19,34 @@ interface PriceChartProps {
 }
 
 const chartConfig = {
-  close: { label: 'Precio' },
+  close: { label: 'Cierre' },
 }
 
 function formatCurrency(value: number | null) {
   return value == null ? '—' : `$${value.toFixed(2)}`
+}
+
+function PriceTooltip({ active, payload }: { active?: boolean; payload?: { payload?: PriceChartPoint }[] }) {
+  if (!active || !payload?.length) return null
+  const point = payload[0]?.payload
+  if (!point || (point.close == null && point.open == null)) return null
+  return (
+    <div className="rounded-lg border border-border bg-background p-3 shadow-md text-xs">
+      <p className="mb-2 font-medium text-foreground">{point.fullLabel}</p>
+      {point.open != null && (
+        <div className="flex min-w-[10rem] items-center justify-between gap-4">
+          <span className="text-muted-foreground">Apertura</span>
+          <span className="font-mono font-semibold tabular-nums text-foreground">${point.open.toFixed(2)}</span>
+        </div>
+      )}
+      <div className="flex min-w-[10rem] items-center justify-between gap-4">
+        <span className="text-muted-foreground">Cierre</span>
+        <span className="font-mono font-semibold tabular-nums text-foreground">
+          {point.close != null ? `$${point.close.toFixed(2)}` : '—'}
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function formatChange(value: number | null, pct: number | null) {
@@ -125,23 +148,7 @@ export function PriceChart({ data, periodLabel }: PriceChartProps) {
 
             <ChartTooltip
               cursor={{ stroke: 'var(--primary)', strokeOpacity: 0.18, strokeWidth: 1.5 }}
-              content={
-                <ChartTooltipContent
-                  indicator="line"
-                  labelFormatter={(_, payload) => {
-                    const item = payload[0]?.payload as { fullLabel?: string } | undefined
-                    return item?.fullLabel ?? '—'
-                  }}
-                  formatter={(value) => (
-                    <div className="flex min-w-[10rem] items-center justify-between gap-4">
-                      <span className="text-muted-foreground">Cierre</span>
-                      <span className="font-mono font-semibold tabular-nums text-foreground">
-                        {typeof value === 'number' ? `$${value.toFixed(2)}` : '—'}
-                      </span>
-                    </div>
-                  )}
-                />
-              }
+              content={<PriceTooltip />}
             />
 
             <ReferenceLine

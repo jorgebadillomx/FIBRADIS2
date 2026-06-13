@@ -9,6 +9,7 @@ public record FibraHistoryDto(
 
 public record DailyPricePointDto(
     string Date,
+    decimal? Open,
     decimal? Close
 );
 

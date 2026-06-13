@@ -5615,12 +5615,22 @@
       "DailyPricePointDto": {
         "required": [
           "date",
+          "open",
           "close"
         ],
         "type": "object",
         "properties": {
           "date": {
             "type": "string"
+          },
+          "open": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           },
           "close": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",

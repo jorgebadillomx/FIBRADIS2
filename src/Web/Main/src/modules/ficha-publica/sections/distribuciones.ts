@@ -1,12 +1,20 @@
+import { toNum } from '../../../shared/lib/format-time.ts'
+
 const monthFormatter = new Intl.DateTimeFormat('es-MX', {
   month: 'short',
   year: 'numeric',
   timeZone: 'UTC',
 })
 
-type DistributionPoint = {
+export type DistributionPoint = {
   date: string
   amountPerUnit: number | string
+}
+
+export type PeriodGroup = {
+  label: string
+  total: number
+  items: DistributionPoint[]
 }
 
 type Cadence = 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'irregular'
@@ -52,22 +60,30 @@ export function inferDistributionCadence(distributions: DistributionPoint[]): Ca
   return 'annual'
 }
 
+// La fecha de pago corresponde al periodo anterior: una distribución pagada en Q2
+// cubre el periodo Q1, en S2 cubre S1, en mes M cubre M-1, etc.
 export function getDistributionPeriodLabel(date: string, cadence: Cadence): string {
   const current = parseDate(date)
   const year = current.getUTCFullYear()
   const month = current.getUTCMonth() // 0-11
 
   if (cadence === 'monthly') {
-    return monthFormatter.format(current).replace('.', '')
+    // shift −1 mes
+    const periodDate = new Date(Date.UTC(year, month - 1, 1))
+    return monthFormatter.format(periodDate).replace('.', '')
   }
 
   if (cadence === 'quarterly') {
-    const q = Math.floor(month / 3) + 1 // 1-4
-    return `Q${q} ${year}`
+    const paymentQ = Math.floor(month / 3) + 1 // 1-4
+    const periodQ = paymentQ === 1 ? 4 : paymentQ - 1
+    const periodYear = paymentQ === 1 ? year - 1 : year
+    return `Q${periodQ} ${periodYear}`
   }
 
   if (cadence === 'semiannual') {
-    return month < 6 ? `S1 ${year}` : `S2 ${year}`
+    // S1 (Jan-Jun) → pago por S2 anterior; S2 (Jul-Dec) → pago por S1 mismo año
+    const isFirstHalf = month < 6
+    return isFirstHalf ? `S2 ${year - 1}` : `S1 ${year}`
   }
 
   if (cadence === 'annual') {
@@ -75,4 +91,34 @@ export function getDistributionPeriodLabel(date: string, cadence: Cadence): stri
   }
 
   return monthFormatter.format(current).replace('.', '')
+}
+
+export function groupDistributionsByPeriod(
+  distributions: DistributionPoint[],
+  cadence: Cadence,
+): PeriodGroup[] {
+  const map = new Map<string, PeriodGroup>()
+  // preserve insertion order (distributions are most-recent-first)
+  for (const dist of distributions) {
+    const label = getDistributionPeriodLabel(dist.date, cadence)
+    const amount = toNum(dist.amountPerUnit)
+    if (amount == null) continue
+    const existing = map.get(label)
+    if (existing) {
+      existing.total += amount
+      existing.items.push(dist)
+    } else {
+      map.set(label, { label, total: amount, items: [dist] })
+    }
+  }
+  return Array.from(map.values())
+}
+
+// Returns an array of diffs aligned with groups: diff[i] = groups[i].total - groups[i+1].total
+// (positive = current period paid more than previous period). Last group = null.
+export function calcPeriodDiff(groups: PeriodGroup[]): (number | null)[] {
+  return groups.map((group, i) => {
+    const next = groups[i + 1]
+    return next != null ? group.total - next.total : null
+  })
 }

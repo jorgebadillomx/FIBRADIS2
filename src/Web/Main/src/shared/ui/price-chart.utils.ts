@@ -2,10 +2,12 @@ import { toNum } from '../lib/format-time.ts'
 
 export interface PriceChartInputPoint {
   date: string
+  open?: number | string | null | undefined
   close: number | string | null | undefined
 }
 
 export interface PriceChartPoint {
+  open: number | null
   close: number | null
   date: string
   fullLabel: string
@@ -39,6 +41,7 @@ export function buildPriceChartPoints(raw: PriceChartInputPoint[]): PriceChartPo
 
     return {
       date: entry.date,
+      open: toNum(entry.open ?? null) ?? null,
       close: toNum(entry.close),
       shortLabel: shortDateFormatter.format(date),
       fullLabel: fullDateFormatter.format(date),
