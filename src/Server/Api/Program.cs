@@ -137,6 +137,12 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
             new RecurringJobOptions { TimeZone = mexicoTz });
     }
 
+    RecurringJob.AddOrUpdate<DailySnapshotHistoricalJob>(
+        "daily-snapshot-incremental",
+        j => j.ExecuteAsync(CancellationToken.None),
+        "15 22 * * 1-5",
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
     RecurringJob.AddOrUpdate<NewsPipelineJob>(
         NewsPipelineSchedule.HourlyJobId,
         j => j.ExecuteAsync(CancellationToken.None),

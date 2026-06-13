@@ -7,6 +7,8 @@ public interface IMarketRepository
     Task AddPriceSnapshotAsync(PriceSnapshot snapshot, CancellationToken ct = default);
     Task<IReadOnlyList<PriceSnapshot>> GetLastSnapshotsAsync(Guid fibraId, int count, CancellationToken ct = default);
     Task<bool> UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default);
+    Task<DateOnly?> GetLatestDailySnapshotDateAsync(Guid fibraId, CancellationToken ct = default);
+    Task DeleteAllDailySnapshotsAsync(CancellationToken ct = default);
     Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default);
     Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default);
 

@@ -1,5 +1,6 @@
 using Application.Catalog;
 using Application.Market;
+using Domain.Catalog;
 using Domain.Market;
 using Hangfire;
 using Infrastructure.Integrations.Yahoo;
@@ -16,7 +17,7 @@ public class DailySnapshotHistoricalJob(
     [DisableConcurrentExecution(timeoutInSeconds: 0)]
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
-        var historyStart = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-5));
+        var defaultHistoryStart = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-4));
         var fibras = await fibraRepo.GetAllActiveAsync(ct);
         if (fibras.Count == 0)
         {
@@ -26,10 +27,11 @@ public class DailySnapshotHistoricalJob(
 
         int inserted = 0, skipped = 0, errors = 0;
 
-        foreach (var (fibra, index) in fibras.Select((f, i) => (f, i)))
+        async Task<(int inserted, int skipped, int errors)> ProcessFibraAsync(Fibra fibra, DateOnly historyStart)
         {
-            if (index > 0)
-                await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+            var localInserted = 0;
+            var localSkipped = 0;
+            var localErrors = 0;
 
             try
             {
@@ -40,9 +42,7 @@ public class DailySnapshotHistoricalJob(
                 foreach (var candle in candles)
                 {
                     if (candle.Close <= 0)
-                    {
                         continue;
-                    }
 
                     var snapshot = new DailySnapshot
                     {
@@ -57,8 +57,8 @@ public class DailySnapshotHistoricalJob(
                     };
 
                     var wasInserted = await marketRepo.UpsertDailySnapshotAsync(snapshot, ct);
-                    if (wasInserted) inserted++;
-                    else skipped++;
+                    if (wasInserted) localInserted++;
+                    else localSkipped++;
                 }
             }
             catch (OperationCanceledException)
@@ -72,8 +72,41 @@ public class DailySnapshotHistoricalJob(
                     "Failed to fetch OHLCV history for {Ticker} ({YahooTicker})",
                     fibra.Ticker,
                     fibra.YahooTicker);
-                errors++;
+                localErrors++;
             }
+
+            return (localInserted, localSkipped, localErrors);
+        }
+
+        foreach (var (fibra, index) in fibras.Select((f, i) => (f, i)))
+        {
+            if (index > 0)
+                await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+
+            var lastDate = await marketRepo.GetLatestDailySnapshotDateAsync(fibra.Id, ct);
+            var result = await ProcessFibraAsync(fibra, lastDate ?? defaultHistoryStart);
+            inserted += result.inserted;
+            skipped += result.skipped;
+            errors += result.errors;
+        }
+
+        var benchmarkTickers = new[] { "^MXX", "^GSPC" };
+        foreach (var ticker in benchmarkTickers)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+
+            var benchmark = await fibraRepo.GetByTickerAsync(ticker, ct);
+            if (benchmark is null)
+            {
+                logger.LogWarning("Benchmark {Ticker} not found in Fibras table, skipping", ticker);
+                continue;
+            }
+
+            var lastDate = await marketRepo.GetLatestDailySnapshotDateAsync(benchmark.Id, ct);
+            var result = await ProcessFibraAsync(benchmark, lastDate ?? defaultHistoryStart);
+            inserted += result.inserted;
+            skipped += result.skipped;
+            errors += result.errors;
         }
 
         logger.LogInformation(

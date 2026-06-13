@@ -47,6 +47,14 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
         return false;
     }
 
+    public async Task<DateOnly?> GetLatestDailySnapshotDateAsync(Guid fibraId, CancellationToken ct = default)
+        => await db.DailySnapshots
+            .Where(d => d.FibraId == fibraId)
+            .MaxAsync(d => (DateOnly?)d.Date, ct);
+
+    public async Task DeleteAllDailySnapshotsAsync(CancellationToken ct = default)
+        => await db.DailySnapshots.ExecuteDeleteAsync(ct);
+
     public async Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default)
     {
         var cutoffDt = cutoff.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);

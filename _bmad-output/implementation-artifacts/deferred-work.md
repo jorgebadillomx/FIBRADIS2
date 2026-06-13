@@ -1,5 +1,10 @@
 # Deferred Work
 
+## Deferred from: code review of 3-6-daily-snapshot-incremental-y-benchmarks (2026-06-12)
+
+- **W1 (LOW): `DeleteAllDailySnapshotsAsync` + enqueue sin transacción** — El endpoint borra toda la tabla y luego encola el job; si el proceso muere entre ambas operaciones la tabla queda vacía hasta el siguiente cron (22:15) o trigger manual. Riesgo bajo y recuperable.
+- **W2 (LOW): Early-return salta benchmarks cuando `fibras.Count == 0`** — Si la tabla de FIBRAs activas está vacía (setup inicial), los benchmarks ^MXX/^GSPC no se procesan en ese ciclo. Escenario extremadamente improbable en producción.
+
 ## Deferred from: code review of 11-5-calculadora-compra-fibras (2026-06-12)
 
 - **D1 (LOW): FIBRA sin pagos en 400+ días indistinguible de FIBRA sin historial** — `CalculadoraEndpoints.cs` usa ventana de 400 días; una FIBRA activa que no ha distribuido en más de 400 días muestra `distCbfi=null` igual que una nueva sin datos, sin indicador de distinción para el usuario.

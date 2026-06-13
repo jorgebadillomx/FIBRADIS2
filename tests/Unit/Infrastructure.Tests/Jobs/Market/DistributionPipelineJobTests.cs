@@ -178,10 +178,13 @@ internal sealed class FakeDistFibraRepository(IReadOnlyList<Fibra> fibras) : IFi
 
     public Task<(IReadOnlyList<Fibra> Items, int Total)> GetActivePagedAsync(
         FibraFilter filter, CancellationToken ct = default)
-        => Task.FromResult<(IReadOnlyList<Fibra>, int)>((fibras, fibras.Count));
+    {
+        var active = fibras.Where(f => f.State == FibraState.Active).ToList();
+        return Task.FromResult<(IReadOnlyList<Fibra>, int)>((active, active.Count));
+    }
 
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
-        => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
+        => Task.FromResult(fibras.FirstOrDefault(f => string.Equals(f.Ticker, ticker, StringComparison.OrdinalIgnoreCase)));
 
     public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
@@ -190,7 +193,7 @@ internal sealed class FakeDistFibraRepository(IReadOnlyList<Fibra> fibras) : IFi
         => Task.FromResult<IReadOnlyList<Fibra>>([]);
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
-        => Task.FromResult(fibras);
+        => Task.FromResult<IReadOnlyList<Fibra>>(fibras.Where(f => f.State == FibraState.Active).ToList());
     public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
         => throw new NotImplementedException();
 }
@@ -262,6 +265,12 @@ internal sealed class FakeDistMarketRepository : IMarketRepository
 
     public Task<bool> UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default)
         => Task.FromResult(true);
+
+    public Task<DateOnly?> GetLatestDailySnapshotDateAsync(Guid fibraId, CancellationToken ct = default)
+        => Task.FromResult<DateOnly?>(null);
+
+    public Task DeleteAllDailySnapshotsAsync(CancellationToken ct = default)
+        => Task.CompletedTask;
 
     public Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default)
         => Task.CompletedTask;

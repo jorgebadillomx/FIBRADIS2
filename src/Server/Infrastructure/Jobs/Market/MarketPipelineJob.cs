@@ -133,19 +133,6 @@ public class MarketPipelineJob(
 
                     await marketRepo.AddPriceSnapshotAsync(snapshot, ct);
 
-                    var daily = new DailySnapshot
-                    {
-                        FibraId = fibra.Id,
-                        Ticker = fibra.Ticker,
-                        Date = DateOnly.FromDateTime(capturedAt.UtcDateTime),
-                        Open = quote.Open,
-                        High = quote.DayHigh,
-                        Low = quote.DayLow,
-                        Close = quote.LastPrice,
-                        Volume = quote.Volume,
-                    };
-                    await marketRepo.UpsertDailySnapshotAsync(daily, ct);
-
                     processed++;
                 }
                 else

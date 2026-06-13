@@ -67,7 +67,7 @@ public class MarketPipelineJobTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenAllFibrasSucceed_PersistsSnapshotsWithStatusProcessed()
+    public async Task Execute_DoesNotCallUpsertDailySnapshot()
     {
         var marketRepo = new FakeMarketRepository();
         var yahoo = new FakeYahooClient(
@@ -85,7 +85,7 @@ public class MarketPipelineJobTests
         Assert.Single(marketRepo.AddedSnapshots);
         Assert.Equal(MarketDataStatus.Processed, marketRepo.AddedSnapshots[0].Status);
         Assert.Equal(50m, marketRepo.AddedSnapshots[0].LastPrice);
-        Assert.Single(marketRepo.UpsertedDailies);
+        Assert.Empty(marketRepo.UpsertedDailies);
     }
 
     [Fact]
@@ -221,10 +221,13 @@ internal sealed class FakeFibraRepository(IReadOnlyList<Fibra> fibras) : IFibraR
 
     public Task<(IReadOnlyList<Fibra> Items, int Total)> GetActivePagedAsync(
         FibraFilter filter, CancellationToken ct = default)
-        => Task.FromResult<(IReadOnlyList<Fibra>, int)>((fibras, fibras.Count));
+    {
+        var active = fibras.Where(f => f.State == FibraState.Active).ToList();
+        return Task.FromResult<(IReadOnlyList<Fibra>, int)>((active, active.Count));
+    }
 
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
-        => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
+        => Task.FromResult(fibras.FirstOrDefault(f => string.Equals(f.Ticker, ticker, StringComparison.OrdinalIgnoreCase)));
 
     public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
@@ -233,7 +236,7 @@ internal sealed class FakeFibraRepository(IReadOnlyList<Fibra> fibras) : IFibraR
         => Task.FromResult<IReadOnlyList<Fibra>>([]);
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
-        => Task.FromResult(fibras);
+        => Task.FromResult<IReadOnlyList<Fibra>>(fibras.Where(f => f.State == FibraState.Active).ToList());
     public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
         => throw new NotImplementedException();
 }
@@ -288,6 +291,12 @@ internal sealed class FakeMarketRepository : IMarketRepository
         UpsertedDailies.Add(snapshot);
         return Task.FromResult(true);
     }
+
+    public Task<DateOnly?> GetLatestDailySnapshotDateAsync(Guid fibraId, CancellationToken ct = default)
+        => Task.FromResult<DateOnly?>(null);
+
+    public Task DeleteAllDailySnapshotsAsync(CancellationToken ct = default)
+        => Task.CompletedTask;
 
     public Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default)
     {

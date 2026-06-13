@@ -77,6 +77,24 @@ public static class OpsMarketEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
+        group.MapPost("/daily-snapshot-reset/run", async (
+            IMarketRepository marketRepo,
+            IBackgroundJobClient jobClient,
+            IPipelineRunLogRepository runLogRepo,
+            ILoggerFactory loggerFactory,
+            IEmailEncryptor emailEncryptor,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            await marketRepo.DeleteAllDailySnapshotsAsync(ct);
+            jobClient.Enqueue<DailySnapshotHistoricalJob>(j => j.ExecuteAsync(CancellationToken.None));
+            await TryLogQueuedRunAsync("DailySnapshotReset", ctx, runLogRepo, emailEncryptor, loggerFactory.CreateLogger("OpsMarketEndpoints"), ct);
+            return Results.Accepted();
+        })
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
         group.MapPost("/distribution/run", async (
             IBackgroundJobClient jobClient,
             IPipelineRunLogRepository runLogRepo,

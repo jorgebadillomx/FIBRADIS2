@@ -93,6 +93,7 @@
 
 generated: 2026-05-15
 last_updated: 2026-06-12
+# story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
 # epic-11 creada — SEO Foundation: 3 historias (11-1 canonical+redirect, 11-2 SpaMetadataMiddleware+calculadora, 11-3 sitemap+robots). Derivadas del audit SEO junio 2026 (score 41/100, canonical mismatch, /calculadora no indexada).
@@ -226,7 +227,7 @@ development_status:
 
   # ── 3.6: DailySnapshot incremental diario + benchmarks IPC BMV/S&P 500 ──
   # story 3-6 creada — job incremental por fibra (MAX Date), cron diario 22:15 UTC, benchmarks ^MXX/^GSPC como Fibra Inactive, reset endpoint Ops
-  3-6-daily-snapshot-incremental-y-benchmarks: ready-for-dev
+  3-6-daily-snapshot-incremental-y-benchmarks: done
 
   # ── 3.7: Indicadores Macro — TIIE 28d e INPC anualizado con historial 12 meses ──
   # story 3-7 creada — TIIE via BanxicoSyncJob semanal (+2 cols OperationalConfig), INPC via BanxicoMonthlySyncJob mensual (tabla InpcMonthly, algoritmo catch-up), endpoint indicadores expandido, badge TIIE en HerramientasPage

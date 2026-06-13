@@ -15,10 +15,23 @@ public class DailySnapshotHistoricalJobTests
         Id = Guid.NewGuid(), Ticker = "FUNO11", YahooTicker = "FUNO11.MX",
         Currency = "MXN", State = FibraState.Active
     };
+
     private static readonly Fibra _fibraFmty = new()
     {
         Id = Guid.NewGuid(), Ticker = "FMTY14", YahooTicker = "FMTY14.MX",
         Currency = "MXN", State = FibraState.Active
+    };
+
+    private static readonly Fibra _benchmarkMxx = new()
+    {
+        Id = Guid.NewGuid(), Ticker = "^MXX", YahooTicker = "^MXX",
+        Currency = "MXN", State = FibraState.Inactive
+    };
+
+    private static readonly Fibra _benchmarkGspc = new()
+    {
+        Id = Guid.NewGuid(), Ticker = "^GSPC", YahooTicker = "^GSPC",
+        Currency = "USD", State = FibraState.Inactive
     };
 
     private static DailySnapshotHistoricalJob Build(
@@ -112,6 +125,83 @@ public class DailySnapshotHistoricalJobTests
     }
 
     [Fact]
+    public async Task WhenFibraHasExistingSnapshots_FetchesFromLastDate()
+    {
+        var marketRepo = new FakeHistoricalMarketRepository();
+        marketRepo.LatestDailySnapshotDates[_fibraFuno.Id] = new DateOnly(2026, 6, 10);
+
+        var yahoo = new FakeHistoricalYahooClient(("FUNO11.MX", []));
+
+        var job = Build(
+            new FakeHistoricalFibraRepository([_fibraFuno]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Single(yahoo.HistoryRequests);
+        Assert.Equal(new DateOnly(2026, 6, 10), yahoo.HistoryRequests[0].From);
+    }
+
+    [Fact]
+    public async Task WhenFibraHasNoSnapshots_FetchesFrom4YearsAgo()
+    {
+        var expectedFrom = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-4));
+        var marketRepo = new FakeHistoricalMarketRepository();
+        var yahoo = new FakeHistoricalYahooClient(("FUNO11.MX", []));
+
+        var job = Build(
+            new FakeHistoricalFibraRepository([_fibraFuno]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Single(yahoo.HistoryRequests);
+        Assert.Equal(expectedFrom, yahoo.HistoryRequests[0].From);
+    }
+
+    [Fact]
+    public async Task WhenBenchmarkExistsInactive_IsProcessedByJob()
+    {
+        var marketRepo = new FakeHistoricalMarketRepository();
+        marketRepo.LatestDailySnapshotDates[_fibraFuno.Id] = new DateOnly(2026, 6, 9);
+        marketRepo.LatestDailySnapshotDates[_benchmarkMxx.Id] = new DateOnly(2026, 6, 10);
+
+        var yahoo = new FakeHistoricalYahooClient(
+            ("FUNO11.MX", [new YahooOhlcvResult(new DateOnly(2026, 6, 10), 10m, 11m, 9m, 10.5m, 1000L)]),
+            ("^MXX", [new YahooOhlcvResult(new DateOnly(2026, 6, 11), 100m, 101m, 99m, 100.5m, 5000L)]));
+
+        var job = Build(
+            new FakeHistoricalFibraRepository([_fibraFuno, _benchmarkMxx]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Equal(2, yahoo.HistoryRequests.Count);
+        Assert.Contains(yahoo.HistoryRequests, call => call.YahooTicker == "FUNO11.MX" && call.From == new DateOnly(2026, 6, 9));
+        Assert.Contains(yahoo.HistoryRequests, call => call.YahooTicker == "^MXX" && call.From == new DateOnly(2026, 6, 10));
+    }
+
+    [Fact]
+    public async Task WhenBenchmarkNotInDb_IsSkippedGracefully()
+    {
+        var marketRepo = new FakeHistoricalMarketRepository();
+        var yahoo = new FakeHistoricalYahooClient(("FUNO11.MX", []));
+
+        var job = Build(
+            new FakeHistoricalFibraRepository([_fibraFuno]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        Assert.Single(yahoo.HistoryRequests);
+        Assert.Equal("FUNO11.MX", yahoo.HistoryRequests[0].YahooTicker);
+    }
+
+    [Fact]
     public async Task WhenOneTickerFails_OtherTickersAreProcessed()
     {
         var marketRepo = new FakeHistoricalMarketRepository();
@@ -160,10 +250,13 @@ internal sealed class FakeHistoricalFibraRepository(IReadOnlyList<Fibra> fibras)
 
     public Task<(IReadOnlyList<Fibra> Items, int Total)> GetActivePagedAsync(
         FibraFilter filter, CancellationToken ct = default)
-        => Task.FromResult<(IReadOnlyList<Fibra>, int)>((fibras, fibras.Count));
+    {
+        var active = fibras.Where(f => f.State == FibraState.Active).ToList();
+        return Task.FromResult<(IReadOnlyList<Fibra>, int)>((active, active.Count));
+    }
 
     public Task<Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default)
-        => Task.FromResult(fibras.FirstOrDefault(f => f.Ticker == ticker));
+        => Task.FromResult(fibras.FirstOrDefault(f => string.Equals(f.Ticker, ticker, StringComparison.OrdinalIgnoreCase)));
 
     public Task<Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult(fibras.FirstOrDefault(f => f.Id == id));
@@ -172,7 +265,8 @@ internal sealed class FakeHistoricalFibraRepository(IReadOnlyList<Fibra> fibras)
         => Task.FromResult<IReadOnlyList<Fibra>>([]);
 
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
-        => Task.FromResult(fibras);
+        => Task.FromResult<IReadOnlyList<Fibra>>(fibras.Where(f => f.State == FibraState.Active).ToList());
+
     public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
         => throw new NotImplementedException();
 }
@@ -183,6 +277,7 @@ internal sealed class FakeHistoricalYahooClient : IYahooFinanceClient
     private readonly string? _throwForTicker;
 
     public int CallCount { get; private set; }
+    public List<(string YahooTicker, DateOnly From)> HistoryRequests { get; } = [];
 
     public FakeHistoricalYahooClient(
         (string ticker, IReadOnlyList<YahooOhlcvResult> candles)? entry = null,
@@ -211,6 +306,7 @@ internal sealed class FakeHistoricalYahooClient : IYahooFinanceClient
         string yahooTicker, DateOnly from, CancellationToken ct = default)
     {
         CallCount++;
+        HistoryRequests.Add((yahooTicker, from));
         if (_throwForTicker is not null && yahooTicker == _throwForTicker)
             throw new InvalidOperationException($"Simulated failure for {yahooTicker}");
 
@@ -227,6 +323,7 @@ internal sealed class FakeHistoricalMarketRepository : IMarketRepository
 
     public List<DailySnapshot> UpsertedDailies { get; } = [];
     public int FalseResultCount { get; private set; }
+    public Dictionary<Guid, DateOnly?> LatestDailySnapshotDates { get; } = [];
 
     public Task AddPriceSnapshotAsync(PriceSnapshot snapshot, CancellationToken ct = default)
         => Task.CompletedTask;
@@ -256,6 +353,12 @@ internal sealed class FakeHistoricalMarketRepository : IMarketRepository
         if (!_alwaysInsert) FalseResultCount++;
         return Task.FromResult(_alwaysInsert);
     }
+
+    public Task<DateOnly?> GetLatestDailySnapshotDateAsync(Guid fibraId, CancellationToken ct = default)
+        => Task.FromResult(LatestDailySnapshotDates.TryGetValue(fibraId, out var value) ? value : null);
+
+    public Task DeleteAllDailySnapshotsAsync(CancellationToken ct = default)
+        => Task.CompletedTask;
 
     public Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default)
         => Task.CompletedTask;

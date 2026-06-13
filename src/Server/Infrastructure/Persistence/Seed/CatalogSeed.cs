@@ -29,7 +29,9 @@ public static class CatalogSeed
             F("SOMA21",    "SOMA21.MX",    "Fibra SOMA",               "Fibra SOMA",  "Comercial",     "BIVA", "MXN", "https://fibrasoma.group",        null,                                  "https://fibrasoma.group/investors/quarterly-reports-2/", ["Fibra SOMA", "SOMA", "SOMA21"]),
             F("STORAGE18", "STORAGE18.MX", "Fibra Storage",            "Fibra Storage", "Autoalmacenaje", "BMV", "MXN", "https://fibrastorage.com",     null,                                  "https://fibrastorage.com/repositorio-informacion-financiera/", ["Fibra Storage", "Storage", "STORAGE18", "U-Storage"]),
             F("FHIPO14",   "FHIPO14.MX",   "FHipo",                    "FHipo",       "Hipotecario",   "BIVA", "MXN", "https://fhipo.com/es/",          "https://fhipo.com/es/kit-para-inversionistas/", "https://fhipo.com/es/reportes-trimestrales/", ["FHipo", "Fideicomiso Hipotecario", "FHIPO", "FHIPO14"]),
-            F("FCFE18",    "FCFE18.MX",    "CFE Fibra E",              "CFE Fibra E", "Infraestructura", "BMV/BIVA", "MXN", "https://cfecapital.com.mx", "https://cfecapital.com.mx/inversionistas", "https://cfecapital.com.mx/informacion-financiera", ["CFE Fibra E", "FCFE", "FCFE18"])
+            F("FCFE18",    "FCFE18.MX",    "CFE Fibra E",              "CFE Fibra E", "Infraestructura", "BMV/BIVA", "MXN", "https://cfecapital.com.mx", "https://cfecapital.com.mx/inversionistas", "https://cfecapital.com.mx/informacion-financiera", ["CFE Fibra E", "FCFE", "FCFE18"]),
+            BenchmarkF("^MXX",  "^MXX",  "IPC BMV", "IPC", "BMV", "MXN"),
+            BenchmarkF("^GSPC", "^GSPC", "S&P 500", "S&P 500", "NYSE", "USD")
         );
     }
 
@@ -53,6 +55,24 @@ public static class CatalogSeed
             InvestorUrl = investorUrl,
             ReportsUrl = reportsUrl,
             NameVariants = nameVariants,
+            CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        };
+
+    private static Fibra BenchmarkF(
+        string ticker, string yahooTicker, string fullName, string shortName,
+        string market, string currency)
+        => new()
+        {
+            Id = GuidFromTicker(ticker),
+            Ticker = ticker,
+            YahooTicker = yahooTicker,
+            FullName = fullName,
+            ShortName = shortName,
+            Sector = "Índice",
+            Market = market,
+            Currency = currency,
+            State = FibraState.Inactive,
+            NameVariants = [],
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
 
