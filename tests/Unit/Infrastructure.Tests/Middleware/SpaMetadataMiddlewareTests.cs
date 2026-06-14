@@ -1,8 +1,12 @@
 using Api.Middleware;
+using Application.Seo;
 using Api.Seo;
+using Domain.Seo;
+using Infrastructure.Seo;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 
 namespace Infrastructure.Tests.Middleware;
@@ -50,7 +54,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<meta property=\"og:url\" content=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<script type=\"application/ld+json\">", body);
-        Assert.Contains("\"@type\": \"SoftwareApplication\"", body);
+        Assert.Contains("\"@type\":\"SoftwareApplication\"", body);
     }
 
     [Fact]
@@ -65,6 +69,44 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         Assert.Contains("<meta name=\"description\"", body);
         Assert.Contains("<meta property=\"og:title\"", body);
         Assert.Contains("<meta property=\"og:description\"", body);
+    }
+
+    [Fact]
+    public async Task UsesSeoRepository_WhenActiveRowExists()
+    {
+        var seoMetadata = CreateSeoMetadata(
+            title: "SEO manual de Calculadora",
+            description: "Descripción SEO manual para la calculadora.",
+            canonicalPath: "/calculadora",
+            ogImageUrl: "https://cdn.example.com/calculadora.png",
+            jsonLd: """{"@type":"SoftwareApplication","name":"Calculadora SEO"}""");
+
+        var (context, nextCalled) = await InvokeAsync("/calculadora", seoMetadata: seoMetadata);
+        var body = await ReadBodyAsync(context);
+
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<title>SEO manual de Calculadora</title>", body);
+        Assert.Contains("<meta name=\"description\" content=\"Descripción SEO manual para la calculadora.\" />", body);
+        Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
+        Assert.Contains("<meta property=\"og:image\" content=\"https://cdn.example.com/calculadora.png\" />", body);
+        Assert.Contains("\"Calculadora SEO\"", body);
+    }
+
+    [Fact]
+    public async Task FallsBackToProvider_WhenSeoRowIsInactive()
+    {
+        var seoMetadata = CreateSeoMetadata(
+            title: "SEO inactivo",
+            description: "Descripción que no debe usarse.",
+            canonicalPath: "/calculadora",
+            isActive: false);
+
+        var (context, nextCalled) = await InvokeAsync("/calculadora", seoMetadata: seoMetadata);
+        var body = await ReadBodyAsync(context);
+
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS</title>", body);
+        Assert.DoesNotContain("SEO inactivo", body);
     }
 
     [Fact]
@@ -200,6 +242,8 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var ex = Assert.Throws<InvalidOperationException>(() => new SpaMetadataMiddleware(
             _ => Task.CompletedTask,
             new SpaMetadataProvider(),
+            new SeoDefaultsBuilder(),
+            BuildScopeFactory(null),
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
             emptyConfig));
 
@@ -221,7 +265,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         Assert.DoesNotContain("<title>Título con \"comillas\" & <tag></title>", body);
         Assert.Contains("Título con &quot;comillas&quot; &amp; &lt;tag&gt;", body);
         Assert.DoesNotContain("</script><img src=x>", body);
-        Assert.Contains("\\u003c/script>\\u003cimg src=x>", body);
+        Assert.True(body.Contains("\\u003C/script\\u003E\\u003Cimg src=x\\u003E", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -240,10 +284,38 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         public SpaPageMeta? GetMetaForPath(string path) => meta;
     }
 
+    private static SeoMetadata CreateSeoMetadata(
+        string title,
+        string description,
+        string canonicalPath,
+        string? ogImageUrl = null,
+        string? jsonLd = null,
+        bool isActive = true) => new()
+    {
+        Id = Guid.NewGuid(),
+        PageType = SeoPageType.StaticPage,
+        EntityKey = "/calculadora",
+        Title = title,
+        MetaDescription = description,
+        CanonicalPath = canonicalPath,
+        OgTitle = title,
+        OgDescription = description,
+        OgType = "website",
+        OgImageUrl = ogImageUrl ?? "https://fibrasinmobiliarias.com/og-image.png",
+        OgLocale = "es_MX",
+        TwitterCard = "summary_large_image",
+        RobotsDirectives = "index,follow",
+        JsonLd = jsonLd,
+        IsActive = isActive,
+        UpdatedAt = DateTimeOffset.UtcNow,
+        UpdatedBy = "adminops@test.com",
+    };
+
     private async Task<(DefaultHttpContext Context, StrongBox<bool> NextCalled)> InvokeAsync(
         string path,
         string method = "GET",
-        ISpaMetadataProvider? provider = null)
+        ISpaMetadataProvider? provider = null,
+        SeoMetadata? seoMetadata = null)
     {
         var nextCalled = new StrongBox<bool>(false);
         var middleware = new SpaMetadataMiddleware(
@@ -253,6 +325,8 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
                 return Task.CompletedTask;
             },
             provider ?? new SpaMetadataProvider(),
+            new SeoDefaultsBuilder(),
+            BuildScopeFactory(seoMetadata),
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
             BuildConfig());
 
@@ -263,6 +337,13 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
         await middleware.InvokeAsync(context);
         return (context, nextCalled);
+    }
+
+    private static IServiceScopeFactory BuildScopeFactory(SeoMetadata? seoMetadata)
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
+        return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 
     private static IConfiguration BuildConfig() =>
@@ -296,6 +377,40 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
     private sealed class StrongBox<T>(T value)
     {
         public T Value { get; set; } = value;
+    }
+
+    private sealed class StubSeoMetadataRepository(SeoMetadata? seoMetadata) : ISeoMetadataRepository
+    {
+        public Task<SeoMetadata?> GetAsync(SeoPageType pageType, string entityKey, CancellationToken ct = default)
+            => Task.FromResult(
+                seoMetadata is not null &&
+                seoMetadata.PageType == pageType &&
+                string.Equals(NormalizeEntityKey(seoMetadata.EntityKey), NormalizeEntityKey(entityKey), StringComparison.OrdinalIgnoreCase)
+                    ? seoMetadata
+                    : null);
+
+        public Task<IReadOnlyList<SeoMetadata>> GetAllAsync(SeoMetadataQuery? query = null, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task<bool> ExistsAsync(SeoPageType pageType, string entityKey, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task<SeoMetadata> UpsertAsync(SeoMetadata metadata, bool overrideMode = false, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(SeoPageType PageType, string EntityKey)>> GetExistingKeysAsync(
+            IEnumerable<(SeoPageType PageType, string EntityKey)> keys,
+            CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        private static string NormalizeEntityKey(string entityKey)
+        {
+            var normalized = entityKey.Trim();
+            if (normalized.Length == 0)
+                return normalized;
+
+            return normalized == "/" ? "/" : normalized.TrimEnd('/');
+        }
     }
 
     private sealed class FakeWebHostEnvironment : IWebHostEnvironment

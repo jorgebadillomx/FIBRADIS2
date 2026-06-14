@@ -1,6 +1,6 @@
 # Story 12.1: Módulo SEO administrable desde Ops (fundación)
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -264,9 +264,95 @@ El servidor sirve `Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias`, pero
 ## Dev Agent Record
 
 ### Agent Model Used
+GPT-5 Codex
 
 ### Debug Log References
+- `dotnet ef migrations add AddSeoModule --project src/Server/Infrastructure --startup-project src/Server/Api`
+- `dotnet ef database update --project src/Server/Infrastructure --startup-project src/Server/Api`
+- `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj --filter SeoMetadataModelTests`
+- `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj --filter SeoMetadataRepositoryTests`
+- `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj --filter SeoDefaultsBuilderTests`
+- `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj --filter Seo`
 
 ### Completion Notes List
+- Se implementó el núcleo del módulo SEO administrable: `seo.SeoMetadata`, `SeoPageType`, configuración EF, migración `AddSeoModule` y aplicación a SQL Server.
+- Se agregó `ISeoMetadataRepository` y `SeoMetadataRepository` con upsert idempotente y respeto de flags de override.
+- Se agregó `ISeoDefaultsBuilder` / `SeoDefaultsBuilder` y se conectaron `SpaMetadataMiddleware`, `FibraProfileMetadataMiddleware` y `NewsMetadataMiddleware` a lookup en BD con fallback al builder.
+- Se añadieron pruebas unitarias para modelo, repositorio, builder y cobertura de override/fallback en middlewares.
+- Queda pendiente el alcance Ops/UI/backfill/sitemap de la historia.
 
 ### File List
+- `src/Server/Application/Seo/ISeoDefaultsBuilder.cs`
+- `src/Server/Application/Seo/ISeoMetadataRepository.cs`
+- `src/Server/Application/Seo/SeoMetadataQuery.cs`
+- `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs`
+- `src/Server/Api/Middleware/FibraProfileMetadataMiddleware.cs`
+- `src/Server/Api/Middleware/NewsMetadataMiddleware.cs`
+- `src/Server/Api/Middleware/SpaMetadataMiddleware.cs`
+- `src/Server/Domain/Seo/SeoMetadata.cs`
+- `src/Server/Domain/Seo/SeoPageType.cs`
+- `src/Server/Infrastructure/Migrations/SqlServer/20260613222344_AddSeoModule.cs`
+- `src/Server/Infrastructure/Migrations/SqlServer/20260613222344_AddSeoModule.Designer.cs`
+- `src/Server/Infrastructure/Migrations/SqlServer/AppDbContextModelSnapshot.cs`
+- `src/Server/Infrastructure/Persistence/Repositories/Seo/SeoMetadataRepository.cs`
+- `src/Server/Infrastructure/Persistence/SqlServer/AppDbContext.cs`
+- `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Seo/SeoMetadataConfiguration.cs`
+- `src/Server/Infrastructure/Seo/SeoDefaultsBuilder.cs`
+- `tests/Unit/Infrastructure.Tests/Middleware/FibraProfileMetadataMiddlewareTests.cs`
+- `tests/Unit/Infrastructure.Tests/Middleware/NewsMetadataMiddlewareTests.cs`
+- `tests/Unit/Infrastructure.Tests/Middleware/SpaMetadataMiddlewareTests.cs`
+- `tests/Unit/Infrastructure.Tests/Persistence/Repositories/Seo/SeoMetadataRepositoryTests.cs`
+- `tests/Unit/Infrastructure.Tests/Seo/SeoDefaultsBuilderTests.cs`
+- `tests/Unit/Infrastructure.Tests/Seo/SeoMetadataModelTests.cs`
+
+## Senior Developer Review (AI)
+
+**Fecha:** 2026-06-13 · **Modo:** full (spec + convenciones) · **Target:** `git diff main` + untracked (módulo SEO 12-1)
+**Reviewers:** Blind Hunter · Edge Case Hunter · Acceptance Auditor (3 capas paralelas)
+
+> **Estado del alcance:** la historia está `in-progress`. El diff cubre **T1–T4** (dominio, EF/migración, repositorio, builder de defaults, conexión de los 3 middlewares con fallback + unit tests). **Ausentes:** AC-3 (endpoints + UI Ops + auditoría), AC-5 (auto-llenado en `NewsRepository`/`FibraRepository`), AC-7 (backfill), AC-8 (sitemap noindex) y parte de AC-9 (integration tests). La base de datos (AC-1/AC-2) y el lookup→fallback request-time (AC-4) están sólidos y bien testeados, incluyendo el fix C1/C2 de description limpia de fibra.
+
+### Veredicto por AC
+
+| AC | Veredicto |
+|---|---|
+| AC-1 Schema + entidad + migración | ✅ cumplido |
+| AC-2 Campos SEO 2026 + flags override | ✅ cumplido |
+| AC-3 Módulo Ops CRUD | ❌ ausente (T5/T9) |
+| AC-4 3 middlewares leen BD con fallback | ⚠️ parcial (ver P1/P2/P5) |
+| AC-5 Auto-llenado al crear | ❌ ausente (T6) |
+| AC-6 Override: edición manual gana | ⚠️ parcial (mecánica lista; sin flujo de escritura) |
+| AC-7 Backfill idempotente | ❌ ausente (T7) |
+| AC-8 Sitemap respeta noindex | ❌ ausente (T8) |
+| AC-9 Tests | ⚠️ parcial (falta `Descriptions_AreBetween120And160Chars` + integration) |
+
+### Review Findings
+
+- [x] [Review][Patch] Title/OgTitle del builder no caben en `nvarchar(70)` — `SeoDefaultsBuilder.BuildFibra` arma `"{FullName} ({Ticker}) | FIBRADIS — Fibras Inmobiliarias"` (~36 chars de sufijo) sin tope; un `FullName` largo supera 70 y, al persistir vía backfill/upsert (T7), SQL Server lanzará truncation error. **Decisión tomada (2026-06-13): ampliar la columna** — subir `Title`/`OgTitle` a `nvarchar(120)` en `SeoMetadataConfiguration` + ajustar la migración `AddSeoModule` (aún no commiteada) y el `AppDbContextModelSnapshot`. El meta title largo lo trunca Google en SERP de todas formas. [src/Server/Infrastructure/Persistence/SqlServer/Configurations/Seo/SeoMetadataConfiguration.cs]
+
+- [x] [Review][Patch] JSON-LD de fila de BD se inyecta crudo en los middlewares de Fibra y News — `BuildMetaBlock(SeoMetadata)` hace `.Append($"<script ...>{metadata.JsonLd}</script>")` sin re-encodar, mientras `SpaMetadataMiddleware` sí re-serializa con `JsonDocument.Parse` + `JavaScriptEncoder` (escapa `<`→`<`). Viola la regla "JSON-LD encoding" de convenciones. Hoy inocuo (el JsonLd viene del builder, ya seguro), pero stored-XSS en cuanto AC-3 habilite edición desde Ops. Replicar el patrón de SPA. [src/Server/Api/Middleware/FibraProfileMetadataMiddleware.cs:186] [src/Server/Api/Middleware/NewsMetadataMiddleware.cs:210]
+- [x] [Review][Patch] `JsonDocument.Parse(metadata.JsonLd)` sin try/catch en SPA — un `JsonLd` no parseable en BD lanza `JsonException` → 500 en home/páginas estáticas. Envolver en try/catch y, ante fallo, omitir el bloque JSON-LD (no romper la página). Aplicar el mismo guard al patch P1 de Fibra/News. [src/Server/Api/Middleware/SpaMetadataMiddleware.cs:169]
+- [x] [Review][Patch] Falta el test obligatorio `Descriptions_AreBetween120And160Chars` para los defaults de `SeoDefaultsBuilder` — exigido por AC-9 y por convenciones (§Middleware). `SeoDefaultsBuilderTests` asevera valores exactos pero ningún test cubre el invariante piso 120 / techo 160 sobre las descriptions generadas (Fibra y News). [tests/Unit/Infrastructure.Tests/Seo/SeoDefaultsBuilderTests.cs]
+- [x] [Review][Patch] `UpsertAsync` no hace `Detach` de la entidad tras `catch (DbUpdateException)` — `metadata` queda en estado `Added`; el `SaveChangesAsync` final (tras `ApplyMetadata(existing)`) reintenta el insert junto al update → re-dispara la violación de índice único. Detach `metadata` antes de aplicar a `existing`. No cubierto por test (repo usa InMemory, que ignora índices únicos). [src/Server/Infrastructure/Persistence/Repositories/Seo/SeoMetadataRepository.cs:66-78]
+- [x] [Review][Patch] Mismatch de casing en EntityKey de Fibra — `NormalizeEntityKey` solo hace `Trim()`+`TrimEnd('/')` (no uppercasea), pero `BuildFibra` guarda `EntityKey = ticker.ToUpperInvariant()` y `FibraProfileMetadataMiddleware` consulta con `fibra.Ticker` crudo. Con collation case-sensitive la fila administrada nunca se encuentra → siempre cae al fallback, ignorando overrides. Normalizar el ticker de forma idéntica en lookup y almacenamiento. [src/Server/Infrastructure/Persistence/Repositories/Seo/SeoMetadataRepository.cs:146] [src/Server/Api/Middleware/FibraProfileMetadataMiddleware.cs:144]
+- [x] [Review][Patch] `og:image:width/height/alt` en News condicionado a `OgImageUrl.EndsWith("/og-image.png")` — falso negativo (imagen propia 1200×630 con otro nombre pierde las anotaciones) y falso positivo (URL arbitraria que termine en ese nombre las recibe). Fibra las emite siempre. Unificar: emitir dimensiones reales o de forma consistente. [src/Server/Api/Middleware/NewsMetadataMiddleware.cs:197]
+
+- [x] [Review][Defer] Cambio de slug de noticia deja huérfano el override SEO (clave por slug vs id) — deferred, depende de auto-llenado/backfill (T6/T7) aún no implementados; resolver el esquema de claves estables al implementarlos.
+- [x] [Review][Defer] Sobrecargas antiguas `BuildMetaBlock(Fibra,…)` y `BuildMetaBlock(NewsArticle,…)` quedan sin invocar tras el refactor — deferred; eliminar tras verificar que ningún test las usa (deuda anti-divergencia: lógica de generación duplicada). [src/Server/Api/Middleware/FibraProfileMetadataMiddleware.cs:190] [src/Server/Api/Middleware/NewsMetadataMiddleware.cs:215]
+- [x] [Review][Defer] Tests del repositorio usan InMemory — no validan índice único, longitudes `nvarchar` ni collation, por lo que P4/P5 y el truncado de Title quedan sin cobertura. Añadir cobertura con provider relacional/Testcontainers al implementar la persistencia (T6/T7). [tests/Unit/Infrastructure.Tests/Persistence/Repositories/Seo/SeoMetadataRepositoryTests.cs]
+- [x] [Review][Defer] `TruncateWithEllipsis` accede `text[cut-1]` sin guard `cut>=1` — deferred, no alcanzable con las constantes actuales (solo se invoca con maxLength=160); añadir guard si la función se reutiliza. [src/Server/Infrastructure/Seo/SeoDefaultsBuilder.cs]
+- [x] [Review][Defer] Caracteres de control (` `–``) en `Title`/`OgImageUrl`/`CanonicalPath` no se sanitizan — deferred; `HtmlEncoder` escapa `<>&"'` pero no neutraliza whitespace de control en campos que el builder no limpia. Relevante cuando AC-3 permita edición libre.
+- [x] [Review][Defer] `UpsertAsync` en modo no-override no reactiva `IsActive=false` — deferred; probablemente intencional (preservar la desactivación manual), pero no hay ruta de regen que reactive. Confirmar comportamiento deseado al implementar el flujo de escritura.
+
+**Descartados (ruido / falso positivo):** (1) `if (seoMetadata is null)` en `SpaMetadataMiddleware.cs:93` reportado como código muerto — **falso**: es alcanzable cuando el path no tiene entrada en el provider ni fila en BD (`GetMetaForPath` devuelve null). (2) `SeoDefaultsBuilder` como Singleton — correcto, es stateless.
+
+**Resolución (2026-06-13):** los 7 patches (P1–P6 + D1) se aplicaron. Detalle:
+- **P1/P2** — helper compartido `Api/Middleware/SeoJsonLd.cs`: re-serializa el JSON-LD con `JavaScriptEncoder` (escapa `<`→`<`) y omite el bloque ante JSON inválido (try/catch). Lo consumen los 3 middlewares → encoding unificado, sin stored-XSS ni 500.
+- **P3** — además del test `Descriptions_AreBetween120And160Chars` (Theory para Fibra y News), se añadió el **piso 120** a `BuildFibraDescription` (antes solo truncaba el techo 155; un nombre corto sin sector caía bajo 120, violando la convención).
+- **P4** — `Detach` de la entidad `Added` tras `DbUpdateException` en `UpsertAsync`.
+- **P5** — lookup de Fibra normaliza el ticker a MAYÚSCULAS para coincidir con el `EntityKey` almacenado.
+- **P6** — dimensiones `og:image` en News por comparación exacta contra el OG default (no por sufijo de nombre).
+- **D1** — `Title`/`OgTitle` ampliados a `nvarchar(120)` (config + migración `AddSeoModule` + snapshot + Designer); test del modelo actualizado.
+
+**Build verde (0 advertencias) · 540/540 Infrastructure.Tests verdes.** La historia permanece `in-progress`: faltan AC-3/5/7/8 y los integration tests de AC-9 (tasks T5–T9).
+

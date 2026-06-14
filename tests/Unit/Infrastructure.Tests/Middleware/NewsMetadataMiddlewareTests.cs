@@ -1,6 +1,9 @@
 using Api.Middleware;
+using Application.Seo;
 using Application.News;
 using Domain.News;
+using Domain.Seo;
+using Infrastructure.Seo;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -96,6 +99,44 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
 
         Assert.Contains("<title>Fibra Uno supera expectativas del mercado — Noticias | FIBRADIS</title>", body);
         Assert.Contains("Resumen analítico de los resultados trimestrales", body);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_SeoRepositoryRow_OverridesDefaults()
+    {
+        var seoMetadata = CreateSeoMetadata(
+            title: "SEO manual de la noticia",
+            description: "Descripción SEO manual para la noticia.",
+            canonicalPath: "/noticias/funo11-reporta-resultados-del-2t25",
+            ogImageUrl: "https://cdn.example.com/noticia.png",
+            jsonLd: """{"@type":"NewsArticle","headline":"SEO manual"}""");
+
+        var article = CreateArticle();
+        var (context, _) = await InvokeAsync("/noticias/funo11-reporta-resultados-del-2t25", article, seoMetadata: seoMetadata);
+        var body = await ReadBodyAsync(context);
+
+        Assert.Contains("<title>SEO manual de la noticia</title>", body);
+        Assert.Contains("<meta name=\"description\" content=\"Descripción SEO manual para la noticia.\" />", body);
+        Assert.Contains("<meta property=\"og:image\" content=\"https://cdn.example.com/noticia.png\" />", body);
+        Assert.Contains("\"SEO manual\"", body);
+        Assert.DoesNotContain("FUNO11 reporta resultados del 2T25 — Noticias | FIBRADIS", body);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_InactiveSeoRow_FallsBackToDefaults()
+    {
+        var seoMetadata = CreateSeoMetadata(
+            title: "SEO inactivo",
+            description: "Descripción que no debe usarse.",
+            canonicalPath: "/noticias/funo11-reporta-resultados-del-2t25",
+            isActive: false);
+
+        var article = CreateArticle();
+        var (context, _) = await InvokeAsync("/noticias/funo11-reporta-resultados-del-2t25", article, seoMetadata: seoMetadata);
+        var body = await ReadBodyAsync(context);
+
+        Assert.Contains("<title>FUNO11 reporta resultados del 2T25 — Noticias | FIBRADIS</title>", body);
+        Assert.DoesNotContain("SEO inactivo", body);
     }
 
     [Fact]
@@ -310,6 +351,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
             _ => Task.CompletedTask,
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
             emptyConfig,
+            new SeoDefaultsBuilder(),
             BuildScopeFactory(null)));
 
         Assert.Contains("App:BaseUrl", ex.Message);
@@ -318,7 +360,8 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
     private async Task<(DefaultHttpContext Context, StrongBox<bool> NextCalled)> InvokeAsync(
         string path,
         NewsArticle? article,
-        string method = "GET")
+        string method = "GET",
+        SeoMetadata? seoMetadata = null)
     {
         var nextCalled = new StrongBox<bool>(false);
         var middleware = new NewsMetadataMiddleware(
@@ -329,7 +372,8 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
             },
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
             BuildConfig(),
-            BuildScopeFactory(article));
+            new SeoDefaultsBuilder(),
+            BuildScopeFactory(article, seoMetadata));
 
         var context = new DefaultHttpContext();
         context.Request.Method = method;
@@ -340,10 +384,38 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         return (context, nextCalled);
     }
 
-    private static IServiceScopeFactory BuildScopeFactory(NewsArticle? article)
+    private static SeoMetadata CreateSeoMetadata(
+        string title,
+        string description,
+        string canonicalPath,
+        string? ogImageUrl = null,
+        string? jsonLd = null,
+        bool isActive = true) => new()
+    {
+        Id = Guid.NewGuid(),
+        PageType = SeoPageType.News,
+        EntityKey = "funo11-reporta-resultados-del-2t25",
+        Title = title,
+        MetaDescription = description,
+        CanonicalPath = canonicalPath,
+        OgTitle = title,
+        OgDescription = description,
+        OgType = "article",
+        OgImageUrl = ogImageUrl ?? "https://fibrasinmobiliarias.com/og-image.png",
+        OgLocale = "es_MX",
+        TwitterCard = "summary_large_image",
+        RobotsDirectives = "index,follow",
+        JsonLd = jsonLd,
+        IsActive = isActive,
+        UpdatedAt = DateTimeOffset.UtcNow,
+        UpdatedBy = "adminops@test.com",
+    };
+
+    private static IServiceScopeFactory BuildScopeFactory(NewsArticle? article, SeoMetadata? seoMetadata = null)
     {
         var services = new ServiceCollection();
         services.AddScoped<INewsRepository>(_ => new StubNewsRepository(article));
+        services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 
@@ -408,6 +480,31 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         public Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default) => throw new NotSupportedException();
         public Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
+    private sealed class StubSeoMetadataRepository(SeoMetadata? seoMetadata) : ISeoMetadataRepository
+    {
+        public Task<SeoMetadata?> GetAsync(SeoPageType pageType, string entityKey, CancellationToken ct = default)
+            => Task.FromResult(
+                seoMetadata is not null &&
+                seoMetadata.PageType == pageType &&
+                string.Equals(seoMetadata.EntityKey, entityKey, StringComparison.OrdinalIgnoreCase)
+                    ? seoMetadata
+                    : null);
+
+        public Task<IReadOnlyList<SeoMetadata>> GetAllAsync(SeoMetadataQuery? query = null, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task<bool> ExistsAsync(SeoPageType pageType, string entityKey, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task<SeoMetadata> UpsertAsync(SeoMetadata metadata, bool overrideMode = false, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(SeoPageType PageType, string EntityKey)>> GetExistingKeysAsync(
+            IEnumerable<(SeoPageType PageType, string EntityKey)> keys,
+            CancellationToken ct = default)
+            => throw new NotSupportedException();
     }
 
     private sealed class FakeWebHostEnvironment : IWebHostEnvironment

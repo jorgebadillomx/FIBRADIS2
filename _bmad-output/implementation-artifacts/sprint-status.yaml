@@ -390,7 +390,7 @@ development_status:
   #   (deprecado), llms.txt reencuadrado experimental, Offer.price con fallback PropertyValue,
   #   paginación noindex a medir en GSC, piso 120 de description relajado a warning en edición manual.
   epic-12: in-progress
-  12-1-modulo-seo-administrable: ready-for-dev          # Ola 2
+  12-1-modulo-seo-administrable: in-progress            # Ola 2
   12-2-faqpage-schema-y-qa-administrable: ready-for-dev  # Ola 3
   12-3-datos-financieros-estructurados-ficha: ready-for-dev  # Ola 2
   12-4-eeat-autoridad-ymyl: ready-for-dev               # Ola 1 — alto ROI YMYL
@@ -409,6 +409,13 @@ development_status:
   # story 13-1 creada — Main: nav de hasta 10 enlaces → ≤4 directos + dropdowns "Más" y "Mi inversión" (auth), menú móvil Dialog agrupado; Ops: sidebar de 13 ítems planos → 5 secciones con encabezado (Operación/Datos/Contenido/IA/Sistema) + descripción a tooltip + drawer hamburguesa en <1024px (hoy se apila completo arriba del contenido). Sin cambio de rutas. Reusa patrón dropdown/dialog existente (no shadcn add).
   epic-13: in-progress
   13-1-reorganizacion-menus-navegacion: ready-for-dev
+  # ── Historias derivadas de la revisión de UI 2026-06-13 (localhost:5173, MCP chrome-devtools + design-system/fibradis/MASTER.md) ──
+  # story 13-2 cancelada (2026-06-13, decisión usuario) — la repetición del precio entre el header sticky y la tarjeta hero de FibraPage es un patrón defendible (barra persistente + bloque de entrada), sin impacto funcional ni a11y; el carrusel superior muestra OTRAS fibras (no redundante). No justifica una historia.
+  13-2-jerarquia-encabezado-ficha-fibra: cancelled
+  # story 13-3 creada — accesibilidad de formularios + contraste AA (transversal): inputs sin id/name (warning de consola "form field should have an id or name attribute", 2 ocurrencias) y 2 inputs numéricos sin aria-label; auditar contraste 4.5:1 (badge yield violeta, textos muted #64748B sobre cards #F8FAFC). Incluye corregir la contradicción en design-system/fibradis/MASTER.md ("Light mode default" listado como anti-patrón pese a que la app es light por diseño y la paleta fue ajustada manualmente).
+  13-3-accesibilidad-formularios-y-contraste: backlog
+  # story 13-4 creada — tabla "Universo FIBRAS" responsiva en móvil: hoy es min-w-[60rem] (960px) dentro de scroll interno; en 375px exige scroll horizontal extenso y oculta columnas clave (Volumen/Rango 52S/Yield). Adoptar layout de tarjeta por emisora o columnas prioritarias (Precio + Var%) con detalle expandible en <768px. Evaluar mismo patrón en la tabla de /fundamentales. Sin cambio de datos ni rutas.
+  13-4-tabla-universo-fibras-responsive-movil: backlog
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done

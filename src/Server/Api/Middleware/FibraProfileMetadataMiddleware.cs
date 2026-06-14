@@ -4,7 +4,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using Application.Catalog;
+using Application.Seo;
 using Domain.Catalog;
+using Domain.Seo;
 
 namespace Api.Middleware;
 
@@ -19,6 +21,7 @@ public partial class FibraProfileMetadataMiddleware(
     RequestDelegate next,
     IWebHostEnvironment env,
     IConfiguration config,
+    ISeoDefaultsBuilder seoDefaultsBuilder,
     IServiceScopeFactory scopeFactory)
 {
     private const string PrerenderMetaComment = "<!-- prerender-meta -->";
@@ -134,14 +137,56 @@ public partial class FibraProfileMetadataMiddleware(
             return;
         }
 
-        var canonicalSlug = FibraSlug.Build(fibra.FullName, fibra.Ticker);
+        SeoMetadata? seoMetadata;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var repo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
+            // El EntityKey de Fibra se almacena en MAYÚSCULAS (ver SeoDefaultsBuilder.BuildFibra);
+            // normalizar aquí el ticker para que el lookup coincida bajo collation case-sensitive.
+            seoMetadata = await repo.GetAsync(SeoPageType.Fibra, fibra.Ticker.ToUpperInvariant(), context.RequestAborted);
+        }
+
+        if (seoMetadata is null || !seoMetadata.IsActive)
+        {
+            seoMetadata = seoDefaultsBuilder.BuildFibra(fibra, _baseUrl, DateTimeOffset.UtcNow, "system");
+        }
 
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(fibra, canonicalSlug, _baseUrl));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.Headers.CacheControl = "no-cache";
         await context.Response.WriteAsync(html, context.RequestAborted);
+    }
+
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl)
+    {
+        var encodedTitle = Encoder.Encode(metadata.Title);
+        var encodedDescription = Encoder.Encode(metadata.MetaDescription);
+        var canonicalUrl = Encoder.Encode($"{baseUrl}{metadata.CanonicalPath}");
+        var ogImage = Encoder.Encode(metadata.OgImageUrl);
+
+        return new StringBuilder()
+            .Append($"<title>{encodedTitle}</title>\n    ")
+            .Append($"<meta name=\"description\" content=\"{encodedDescription}\" />\n    ")
+            .Append($"<link rel=\"canonical\" href=\"{canonicalUrl}\" />\n    ")
+            .Append($"<meta property=\"og:title\" content=\"{encodedTitle}\" />\n    ")
+            .Append($"<meta property=\"og:description\" content=\"{encodedDescription}\" />\n    ")
+            .Append($"<meta property=\"og:type\" content=\"{Encoder.Encode(metadata.OgType)}\" />\n    ")
+            .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
+            .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
+            .Append($"<meta property=\"og:locale\" content=\"{Encoder.Encode(metadata.OgLocale)}\" />\n    ")
+            .Append("<meta property=\"og:site_name\" content=\"FIBRADIS\" />\n    ")
+            .Append("<meta property=\"og:image:width\" content=\"1200\" />\n    ")
+            .Append("<meta property=\"og:image:height\" content=\"630\" />\n    ")
+            .Append("<meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
+            .Append($"<meta name=\"twitter:card\" content=\"{Encoder.Encode(metadata.TwitterCard)}\" />\n    ")
+            .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+            .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
+            .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
+            .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")
+            .Append(SeoJsonLd.BuildScriptBlock(metadata.JsonLd))
+            .ToString();
     }
 
     private static string BuildMetaBlock(Fibra fibra, string canonicalSlug, string baseUrl)

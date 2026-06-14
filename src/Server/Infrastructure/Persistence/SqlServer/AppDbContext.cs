@@ -7,6 +7,7 @@ using Domain.Market;
 using Domain.News;
 using Domain.Ops;
 using Domain.Portfolio;
+using Domain.Seo;
 using Infrastructure.Persistence.Seed;
 using Infrastructure.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserPortfolioSettings> UserPortfolioSettings => Set<UserPortfolioSettings>();
     public DbSet<UserOpportunityWeights> UserOpportunityWeights => Set<UserOpportunityWeights>();
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
+    public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

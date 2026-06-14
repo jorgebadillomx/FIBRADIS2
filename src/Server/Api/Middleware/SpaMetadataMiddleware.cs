@@ -2,13 +2,17 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
+using Application.Seo;
 using Api.Seo;
+using Domain.Seo;
 
 namespace Api.Middleware;
 
 public partial class SpaMetadataMiddleware(
     RequestDelegate next,
     ISpaMetadataProvider metadataProvider,
+    ISeoDefaultsBuilder seoDefaultsBuilder,
+    IServiceScopeFactory scopeFactory,
     IWebHostEnvironment env,
     IConfiguration config)
 {
@@ -54,8 +58,38 @@ public partial class SpaMetadataMiddleware(
             return;
         }
 
-        var meta = metadataProvider.GetMetaForPath(path);
-        if (meta is null)
+        var normalizedPath = NormalizePath(path);
+        var pageType = normalizedPath == "/" ? SeoPageType.Home : SeoPageType.StaticPage;
+
+        SeoMetadata? seoMetadata;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var repo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
+            seoMetadata = await repo.GetAsync(pageType, normalizedPath, context.RequestAborted);
+        }
+
+        if (seoMetadata is null || !seoMetadata.IsActive)
+        {
+            var meta = metadataProvider.GetMetaForPath(path);
+            if (meta is null)
+            {
+                await next(context);
+                return;
+            }
+
+            seoMetadata = seoDefaultsBuilder.BuildStaticPage(
+                pageType,
+                meta.CanonicalPath,
+                meta.Title,
+                meta.Description,
+                meta.CanonicalPath,
+                meta.JsonLd,
+                _baseUrl,
+                DateTimeOffset.UtcNow,
+                "system");
+        }
+
+        if (seoMetadata is null)
         {
             await next(context);
             return;
@@ -93,7 +127,7 @@ public partial class SpaMetadataMiddleware(
         // Sustituir el <title> estático evita títulos duplicados en el HTML servido
         // (Google tomaría el primero, el genérico) — extensión de CA-3 aprobada por el usuario
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(meta, _baseUrl));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado cambia por deploy y pierde el ETag/304 de StaticFiles;
@@ -102,12 +136,12 @@ public partial class SpaMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SpaPageMeta meta, string baseUrl)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl)
     {
-        var title = Encoder.Encode(meta.Title);
-        var description = Encoder.Encode(meta.Description);
-        var canonicalUrl = Encoder.Encode($"{baseUrl}{meta.CanonicalPath}");
-        var ogImage = Encoder.Encode($"{baseUrl}/og-image.png");
+        var title = Encoder.Encode(metadata.Title);
+        var description = Encoder.Encode(metadata.MetaDescription);
+        var canonicalUrl = Encoder.Encode($"{baseUrl}{metadata.CanonicalPath}");
+        var ogImage = Encoder.Encode(metadata.OgImageUrl);
 
         var block = new StringBuilder()
             .Append($"<title>{title}</title>\n    ")
@@ -115,27 +149,30 @@ public partial class SpaMetadataMiddleware(
             .Append($"<link rel=\"canonical\" href=\"{canonicalUrl}\" />\n    ")
             .Append($"<meta property=\"og:title\" content=\"{title}\" />\n    ")
             .Append($"<meta property=\"og:description\" content=\"{description}\" />\n    ")
-            .Append("<meta property=\"og:type\" content=\"website\" />\n    ")
+            .Append($"<meta property=\"og:type\" content=\"{Encoder.Encode(metadata.OgType)}\" />\n    ")
             .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
             .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
-            .Append("<meta property=\"og:locale\" content=\"es_MX\" />\n    ")
+            .Append($"<meta property=\"og:locale\" content=\"{Encoder.Encode(metadata.OgLocale)}\" />\n    ")
             .Append("<meta property=\"og:site_name\" content=\"FIBRADIS\" />\n    ")
             .Append("<meta property=\"og:image:width\" content=\"1200\" />\n    ")
             .Append("<meta property=\"og:image:height\" content=\"630\" />\n    ")
             .Append("<meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
-            .Append("<meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
+            .Append($"<meta name=\"twitter:card\" content=\"{Encoder.Encode(metadata.TwitterCard)}\" />\n    ")
             .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
             .Append($"<meta name=\"twitter:title\" content=\"{title}\" />\n    ")
             .Append($"<meta name=\"twitter:description\" content=\"{description}\" />\n    ")
             .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />");
 
-        if (meta.JsonLd is not null)
-        {
-            // escapar < como < (escape JSON válido): impide que un </script> en el contenido rompa el bloque
-            var jsonLd = meta.JsonLd.Replace("<", "\\u003c");
-            block.Append($"\n    <script type=\"application/ld+json\">{jsonLd}</script>");
-        }
+        var jsonLdBlock = SeoJsonLd.BuildScriptBlock(metadata.JsonLd);
+        if (jsonLdBlock.Length > 0)
+            block.Append($"\n    {jsonLdBlock}");
 
         return block.ToString();
+    }
+
+    private static string NormalizePath(string path)
+    {
+        var normalized = path.TrimEnd('/').ToLowerInvariant();
+        return normalized.Length == 0 ? "/" : normalized;
     }
 }
