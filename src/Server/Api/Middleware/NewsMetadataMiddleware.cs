@@ -101,11 +101,10 @@ public partial class NewsMetadataMiddleware(
 
         // La columna slug es nvarchar(256): un identificador más largo no puede existir —
         // evita que paths arbitrariamente largos de bots viajen al WHERE de SQL
+        using var scope = scopeFactory.CreateScope();
         NewsArticle? article = null;
         if (identifier.Length <= MaxSlugLength)
         {
-            // INewsRepository es Scoped y el middleware es Singleton — resolver vía scope propio
-            using var scope = scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<INewsRepository>();
             article = Guid.TryParse(identifier, out var id)
                 ? await repo.GetByIdAsync(id, context.RequestAborted)
@@ -156,18 +155,22 @@ public partial class NewsMetadataMiddleware(
         // Sustituir el <title> estático evita títulos duplicados en el HTML servido
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
         SeoMetadata? seoMetadata;
-        using (var scope = scopeFactory.CreateScope())
-        {
-            var repo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
-            seoMetadata = await repo.GetAsync(SeoPageType.News, article.Slug ?? article.Id.ToString(), context.RequestAborted);
-        }
+        var seoRepo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
+        var entityKey = article.Slug ?? article.Id.ToString();
+        seoMetadata = await seoRepo.GetAsync(SeoPageType.News, entityKey, context.RequestAborted);
 
         if (seoMetadata is null || !seoMetadata.IsActive)
         {
             seoMetadata = seoDefaultsBuilder.BuildNews(article, _baseUrl, DateTimeOffset.UtcNow, "system");
         }
 
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl));
+        var faqRepo = scope.ServiceProvider.GetRequiredService<IFaqRepository>();
+        var faqItems = await faqRepo.GetByPageAsync(SeoPageType.News, entityKey, includeInactive: false, context.RequestAborted);
+        var faqJsonLdBlock = faqItems.Count > 0
+            ? SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems))
+            : string.Empty;
+
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, faqJsonLdBlock));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado varía por artículo y deploy — forzar revalidación
@@ -175,7 +178,7 @@ public partial class NewsMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
     {
         var encodedTitle = Encoder.Encode(metadata.Title);
         var encodedDescription = Encoder.Encode(metadata.MetaDescription);
@@ -213,6 +216,9 @@ public partial class NewsMetadataMiddleware(
         var jsonLdBlock = SeoJsonLd.BuildScriptBlock(metadata.JsonLd);
         if (jsonLdBlock.Length > 0)
             block.Append($"\n    {jsonLdBlock}");
+
+        if (!string.IsNullOrWhiteSpace(extraJsonLdBlock))
+            block.Append($"\n    {extraJsonLdBlock}");
 
         return block.ToString();
     }

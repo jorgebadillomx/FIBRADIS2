@@ -3,11 +3,15 @@ import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import { fetchEditorialPages } from '@/api/editorialApi'
+import { fetchFaqItems } from '@/api/faqApi'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { cn } from '@/shared/lib/utils'
 
 const PAGE_TITLE = 'Conoce las FIBRAs — Fibras Inmobiliarias'
 const PAGE_DESCRIPTION =
   'Guía completa sobre FIBRAs inmobiliarias mexicanas: qué son, cómo funcionan, historia, por qué invertir y su régimen fiscal.'
+const PAGE_TYPE = 'StaticPage'
+const ENTITY_KEY = '/conoce-las-fibras'
 
 const TAB_LABELS: Record<string, string> = {
   'que-son-las-fibras': '¿Qué son?',
@@ -22,6 +26,12 @@ export function ConoceLasFibrasPage() {
   const pagesQuery = useQuery({
     queryKey: ['editorial-pages'],
     queryFn: fetchEditorialPages,
+    staleTime: 60 * 60_000,
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', PAGE_TYPE, ENTITY_KEY],
+    queryFn: () => fetchFaqItems(PAGE_TYPE, ENTITY_KEY),
     staleTime: 60 * 60_000,
   })
 
@@ -106,6 +116,25 @@ export function ConoceLasFibrasPage() {
               </article>
             </div>
           ) : null}
+
+          {faqQuery.isLoading ? <FaqSkeleton /> : null}
+
+          {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+            <div className="mt-8">
+              <FaqAccordion
+                items={faqQuery.data}
+                kicker="FAQ editorial"
+                title="Respuestas rápidas sobre FIBRAs"
+                description="Las preguntas frecuentes reutilizan el contenido editorial y se sincronizan con el JSON-LD FAQPage para GEO."
+              />
+            </div>
+          ) : null}
+
+          {faqQuery.isError ? (
+            <div className="mt-8 rounded-[1.5rem] border border-rose-200 bg-white px-5 py-4 text-sm text-rose-700 shadow-sm">
+              {faqQuery.error.message}
+            </div>
+          ) : null}
         </div>
       </section>
     </>
@@ -132,6 +161,21 @@ function EditorialSkeleton() {
           <div className="h-4 w-11/12 animate-pulse rounded bg-muted" />
           <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
         </div>
+      </div>
+    </div>
+  )
+}
+
+function FaqSkeleton() {
+  return (
+    <div className="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(247,250,255,0.92))] px-5 py-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] md:px-8">
+      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+      <div className="mt-3 h-8 w-80 max-w-full animate-pulse rounded bg-slate-200" />
+      <div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-slate-200" />
+      <div className="mt-6 space-y-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="h-20 animate-pulse rounded-[1.5rem] bg-slate-100" />
+        ))}
       </div>
     </div>
   )

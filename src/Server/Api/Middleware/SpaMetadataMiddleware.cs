@@ -62,7 +62,8 @@ public partial class SpaMetadataMiddleware(
         var pageType = normalizedPath == "/" ? SeoPageType.Home : SeoPageType.StaticPage;
 
         SeoMetadata? seoMetadata;
-        using (var scope = scopeFactory.CreateScope())
+        string faqJsonLdBlock = string.Empty;
+        using var scope = scopeFactory.CreateScope();
         {
             var repo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
             seoMetadata = await repo.GetAsync(pageType, normalizedPath, context.RequestAborted);
@@ -126,8 +127,13 @@ public partial class SpaMetadataMiddleware(
 
         // Sustituir el <title> estático evita títulos duplicados en el HTML servido
         // (Google tomaría el primero, el genérico) — extensión de CA-3 aprobada por el usuario
+        var faqRepo = scope.ServiceProvider.GetRequiredService<IFaqRepository>();
+        var faqItems = await faqRepo.GetByPageAsync(pageType, normalizedPath, includeInactive: false, context.RequestAborted);
+        if (faqItems.Count > 0)
+            faqJsonLdBlock = SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems));
+
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, faqJsonLdBlock));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado cambia por deploy y pierde el ETag/304 de StaticFiles;
@@ -136,7 +142,7 @@ public partial class SpaMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
     {
         var title = Encoder.Encode(metadata.Title);
         var description = Encoder.Encode(metadata.MetaDescription);
@@ -166,6 +172,9 @@ public partial class SpaMetadataMiddleware(
         var jsonLdBlock = SeoJsonLd.BuildScriptBlock(metadata.JsonLd);
         if (jsonLdBlock.Length > 0)
             block.Append($"\n    {jsonLdBlock}");
+
+        if (!string.IsNullOrWhiteSpace(extraJsonLdBlock))
+            block.Append($"\n    {extraJsonLdBlock}");
 
         return block.ToString();
     }

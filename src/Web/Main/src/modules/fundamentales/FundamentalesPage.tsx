@@ -3,9 +3,11 @@ import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFundamentalesSummary, fetchAllFundamentalesPeriods } from '@/api/fundamentalesApi'
+import { fetchFaqItems } from '@/api/faqApi'
 import { formatFundamentalValue } from '@/modules/ficha-publica/sections/fundamentales'
 import { KPI_DEFINITIONS } from '@/shared/lib/kpi-definitions'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import type { FundamentalesSummaryItemDto } from '@/api/fundamentalesApi'
 
 export function FundamentalesPage() {
@@ -31,6 +33,12 @@ export function FundamentalesPage() {
     queryKey: ['fundamentales', 'periods'],
     queryFn: fetchAllFundamentalesPeriods,
     staleTime: 10 * 60_000,
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', 'StaticPage', '/fundamentales'],
+    queryFn: () => fetchFaqItems('StaticPage', '/fundamentales'),
+    staleTime: 60 * 60_000,
   })
 
   const filteredRows = useMemo(
@@ -138,6 +146,25 @@ export function FundamentalesPage() {
             </tbody>
           </table>
         </section>
+
+        {faqQuery.isLoading ? <FaqSkeleton /> : null}
+
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-8">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ de fundamentales"
+              title="Respuestas sobre métricas y rendimiento"
+              description="Las mismas definiciones que ves aquí se materializan como FAQPage JSON-LD en el servidor."
+            />
+          </div>
+        ) : null}
+
+        {faqQuery.isError ? (
+          <div className="mt-8 rounded-[1.5rem] border border-rose-200 bg-white px-5 py-4 text-sm text-rose-700 shadow-sm">
+            {faqQuery.error.message}
+          </div>
+        ) : null}
       </div>
     </>
   )
@@ -210,4 +237,19 @@ function toNullableNumber(value: number | string | null | undefined): number | n
   if (value === null || value === undefined) return null
   const n = typeof value === 'string' ? Number(value) : value
   return Number.isNaN(n) ? null : n
+}
+
+function FaqSkeleton() {
+  return (
+    <div className="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(247,250,255,0.92))] px-5 py-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] md:px-8">
+      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+      <div className="mt-3 h-8 w-80 max-w-full animate-pulse rounded bg-slate-200" />
+      <div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-slate-200" />
+      <div className="mt-6 space-y-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="h-20 animate-pulse rounded-[1.5rem] bg-slate-100" />
+        ))}
+      </div>
+    </div>
+  )
 }

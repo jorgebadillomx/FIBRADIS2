@@ -2,6 +2,7 @@ using Domain.Catalog;
 using Domain.News;
 using Domain.Seo;
 using Infrastructure.Seo;
+using System.Text.Json;
 
 namespace Infrastructure.Tests.Seo;
 
@@ -165,5 +166,85 @@ public class SeoDefaultsBuilderTests
         Assert.Contains("\"headline\":\"FUNO11 reporta resultados del 2T25\"", result.JsonLd);
         Assert.Contains("\"description\":\"Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.\"", result.JsonLd);
         Assert.Equal("system", result.UpdatedBy);
+    }
+
+    [Fact]
+    public void BuildFaqPageJsonLd_UsesOnlyActiveItems_AndStripsMarkdown()
+    {
+        var items = new List<FaqItem>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                PageType = SeoPageType.StaticPage,
+                EntityKey = "/fundamentales",
+                Question = "¿Qué es Cap Rate?",
+                Answer = "**Cap Rate** = NOI anualizado / Valor de propiedades de inversión",
+                Order = 2,
+                IsActive = true,
+                UpdatedAt = Now,
+                UpdatedBy = "system",
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                PageType = SeoPageType.StaticPage,
+                EntityKey = "/fundamentales",
+                Question = "¿Qué es NAV por CBFI?",
+                Answer = "NAV/CBFI = NAV / CBFIs en circulación",
+                Order = 1,
+                IsActive = true,
+                UpdatedAt = Now,
+                UpdatedBy = "system",
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                PageType = SeoPageType.StaticPage,
+                EntityKey = "/fundamentales",
+                Question = "¿FAQ inactiva?",
+                Answer = "No debe salir.",
+                Order = 3,
+                IsActive = false,
+                UpdatedAt = Now,
+                UpdatedBy = "system",
+            },
+        };
+
+        var json = _builder.BuildFaqPageJsonLd(items);
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("FAQPage", root.GetProperty("@type").GetString());
+
+        var mainEntity = root.GetProperty("mainEntity").EnumerateArray().ToArray();
+        Assert.Equal(2, mainEntity.Length);
+        Assert.Equal("¿Qué es NAV por CBFI?", mainEntity[0].GetProperty("name").GetString());
+        Assert.Equal("NAV/CBFI = NAV / CBFIs en circulación", mainEntity[0].GetProperty("acceptedAnswer").GetProperty("text").GetString());
+        Assert.Equal("¿Qué es Cap Rate?", mainEntity[1].GetProperty("name").GetString());
+        Assert.Equal("Cap Rate = NOI anualizado / Valor de propiedades de inversión", mainEntity[1].GetProperty("acceptedAnswer").GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public void BuildFaqPageJsonLd_ReturnsEmptyStringWhenNothingActive()
+    {
+        var json = _builder.BuildFaqPageJsonLd(
+            [
+                new FaqItem
+                {
+                    Id = Guid.NewGuid(),
+                    PageType = SeoPageType.StaticPage,
+                    EntityKey = "/fundamentales",
+                    Question = "Pregunta",
+                    Answer = "Respuesta",
+                    Order = 1,
+                    IsActive = false,
+                    UpdatedAt = Now,
+                    UpdatedBy = "system",
+                },
+            ]);
+
+        Assert.Equal(string.Empty, json);
     }
 }

@@ -13,6 +13,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { DistributionsPage } from '@/pages/DistributionsPage'
 import { EditorialPage } from '@/pages/EditorialPage'
 import { FundamentalsPage } from '@/pages/FundamentalsPage'
+import { SeoFaqPage } from '@/pages/SeoFaqPage'
 import { NewsBodyPage } from '@/pages/NewsBodyPage'
 import { AiCallLogsPage } from '@/pages/AiCallLogsPage'
 import { PipelineLogsPage } from '@/pages/PipelineLogsPage'
@@ -32,6 +33,7 @@ const router = createBrowserRouter([
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'ai-config', element: <AiConfigPage /> },
       { path: 'editorial', element: <EditorialPage /> },
+      { path: 'seo/faq', element: <SeoFaqPage /> },
       { path: 'noticias', element: <NewsBodyPage /> },
       { path: 'blocklist', element: <BlocklistPage /> },
       { path: 'pipeline-logs', element: <PipelineLogsPage /> },

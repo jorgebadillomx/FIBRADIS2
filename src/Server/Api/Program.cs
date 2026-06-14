@@ -107,7 +107,9 @@ app.MapOpportunities();
 app.MapOpsUsers();
 app.MapAccount();
 app.MapSeo();
+app.MapFaq();
 app.MapOpsNewsManagement();
+app.MapOpsSeoFaq();
 
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());

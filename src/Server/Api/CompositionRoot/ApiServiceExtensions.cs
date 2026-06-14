@@ -109,6 +109,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFundamentalsAutomationService, FundamentalsAutomationService>();
         builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         builder.Services.AddScoped<ISeoMetadataRepository, SeoMetadataRepository>();
+        builder.Services.AddScoped<IFaqRepository, FaqRepository>();
         builder.Services.AddSingleton<ISeoDefaultsBuilder, SeoDefaultsBuilder>();
         builder.Services.AddScoped<IOpportunityWeightsRepository, OpportunityWeightsRepository>();
         builder.Services.AddScoped<IUserFavoritesRepository, UserFavoritesRepository>();
@@ -199,7 +200,25 @@ public static class ApiServiceExtensions
             UseCookies = true,
         });
 
-        // Discovery sources — multi-source fundamentals pipeline
+        // Discovery sources — multi-source fundamentals pipeline.
+        // Order matters: the IEnumerable<IFundamentalsDiscoverySource> resolves in
+        // registration order. Economatica is registered FIRST so it is the primary
+        // source; the per-period dedup in FundamentalsAutomationService then lets the
+        // remaining sources (AMEFIBRA, official, norte19) only fill gaps.
+        builder.Services.AddHttpClient<EconomaticaDiscoverySource>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5,
+            // Session cookie required: server issues PHPSESSID + eco_repor on first 302,
+            // then serves content on the redirect follow-up
+            UseCookies = true,
+        });
+        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
+            sp.GetRequiredService<EconomaticaDiscoverySource>());
         builder.Services.AddTransient<AmefibraDiscoverySource>();
         builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
             sp.GetRequiredService<AmefibraDiscoverySource>());
@@ -220,20 +239,6 @@ public static class ApiServiceExtensions
         });
         builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
             sp.GetRequiredService<Norte19DiscoverySource>());
-        builder.Services.AddHttpClient<EconomaticaDiscoverySource>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            AllowAutoRedirect = true,
-            MaxAutomaticRedirections = 5,
-            // Session cookie required: server issues PHPSESSID + eco_repor on first 302,
-            // then serves content on the redirect follow-up
-            UseCookies = true,
-        });
-        builder.Services.AddTransient<IFundamentalsDiscoverySource>(sp =>
-            sp.GetRequiredService<EconomaticaDiscoverySource>());
         builder.Services.AddHttpClient("FundamentalsDownloader", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);

@@ -391,7 +391,8 @@ development_status:
   #   paginación noindex a medir en GSC, piso 120 de description relajado a warning en edición manual.
   epic-12: in-progress
   12-1-modulo-seo-administrable: in-progress            # Ola 2
-  12-2-faqpage-schema-y-qa-administrable: ready-for-dev  # Ola 3
+  # story 12-2 done — code review pass (3 patches: P1 Answer text→nvarchar(max) +migración/snapshot, P2 DELETE log DEACTIVATE dentro del if, P3 unit test sin host LAPBADIS hardcodeado). 2 BLOCKERS de tests resueltos en review (IFaqRepository sin registrar en 3 BuildScopeFactory de middleware tests + FaqRepositoryTests entityKey con slash) — la nota "tests verdes" del dev era falsa. 4 defers + 9 dismissed. 549/549 unit + 4/4 integration FAQ verdes.
+  12-2-faqpage-schema-y-qa-administrable: done           # Ola 3
   12-3-datos-financieros-estructurados-ficha: ready-for-dev  # Ola 2
   12-4-eeat-autoridad-ymyl: ready-for-dev               # Ola 1 — alto ROI YMYL
   12-5-jsonld-comparador-fundamentales-breadcrumbs: ready-for-dev  # Ola 2

@@ -138,12 +138,19 @@ public partial class FibraProfileMetadataMiddleware(
         }
 
         SeoMetadata? seoMetadata;
-        using (var scope = scopeFactory.CreateScope())
+        string faqJsonLdBlock = string.Empty;
+        using var metadataScope = scopeFactory.CreateScope();
         {
-            var repo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
+            var repo = metadataScope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
             // El EntityKey de Fibra se almacena en MAYÚSCULAS (ver SeoDefaultsBuilder.BuildFibra);
             // normalizar aquí el ticker para que el lookup coincida bajo collation case-sensitive.
-            seoMetadata = await repo.GetAsync(SeoPageType.Fibra, fibra.Ticker.ToUpperInvariant(), context.RequestAborted);
+            var entityKey = fibra.Ticker.ToUpperInvariant();
+            seoMetadata = await repo.GetAsync(SeoPageType.Fibra, entityKey, context.RequestAborted);
+
+            var faqRepo = metadataScope.ServiceProvider.GetRequiredService<IFaqRepository>();
+            var faqItems = await faqRepo.GetByPageAsync(SeoPageType.Fibra, entityKey, includeInactive: false, context.RequestAborted);
+            if (faqItems.Count > 0)
+                faqJsonLdBlock = SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems));
         }
 
         if (seoMetadata is null || !seoMetadata.IsActive)
@@ -152,14 +159,14 @@ public partial class FibraProfileMetadataMiddleware(
         }
 
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, faqJsonLdBlock));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.Headers.CacheControl = "no-cache";
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
     {
         var encodedTitle = Encoder.Encode(metadata.Title);
         var encodedDescription = Encoder.Encode(metadata.MetaDescription);
@@ -186,6 +193,7 @@ public partial class FibraProfileMetadataMiddleware(
             .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
             .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")
             .Append(SeoJsonLd.BuildScriptBlock(metadata.JsonLd))
+            .Append(string.IsNullOrWhiteSpace(extraJsonLdBlock) ? string.Empty : $"\n    {extraJsonLdBlock}")
             .ToString();
     }
 

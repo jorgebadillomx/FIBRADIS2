@@ -43,6 +43,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserOpportunityWeights> UserOpportunityWeights => Set<UserOpportunityWeights>();
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
     public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();
+    public DbSet<FaqItem> FaqItems => Set<FaqItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

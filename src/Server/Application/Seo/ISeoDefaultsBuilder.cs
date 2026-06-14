@@ -28,4 +28,6 @@ public interface ISeoDefaultsBuilder
         string baseUrl,
         DateTimeOffset updatedAt,
         string updatedBy = "system");
+
+    string BuildFaqPageJsonLd(IReadOnlyList<FaqItem> items);
 }

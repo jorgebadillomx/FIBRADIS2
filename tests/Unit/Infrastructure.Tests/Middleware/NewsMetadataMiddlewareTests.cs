@@ -416,7 +416,28 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         var services = new ServiceCollection();
         services.AddScoped<INewsRepository>(_ => new StubNewsRepository(article));
         services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
+        services.AddScoped<IFaqRepository>(_ => new StubFaqRepository());
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+    }
+
+    private sealed class StubFaqRepository : IFaqRepository
+    {
+        public Task<IReadOnlyList<FaqItem>> GetByPageAsync(SeoPageType pageType, string entityKey, bool includeInactive = false, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<FaqItem>>([]);
+
+        public Task<FaqItem?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult<FaqItem?>(null);
+
+        public Task<FaqItem?> GetByNaturalKeyAsync(SeoPageType pageType, string entityKey, string question, CancellationToken ct = default) => Task.FromResult<FaqItem?>(null);
+
+        public Task<bool> ExistsAsync(SeoPageType pageType, string entityKey, string question, CancellationToken ct = default) => Task.FromResult(false);
+
+        public Task AddAsync(FaqItem item, CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<bool> AddIfMissingAsync(FaqItem item, CancellationToken ct = default) => Task.FromResult(true);
+
+        public Task UpdateAsync(FaqItem item, CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<bool> DeactivateAsync(Guid id, string updatedBy, CancellationToken ct = default) => Task.FromResult(true);
     }
 
     private static IConfiguration BuildConfig() =>

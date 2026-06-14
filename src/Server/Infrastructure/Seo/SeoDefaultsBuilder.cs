@@ -179,6 +179,35 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
             ogImageUrl: article.ImageUrl ?? $"{TrimBaseUrl(baseUrl)}{OgImagePath}");
     }
 
+    public string BuildFaqPageJsonLd(IReadOnlyList<FaqItem> items)
+    {
+        var mainEntity = items
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.Order)
+            .ThenBy(item => item.Question, StringComparer.Ordinal)
+            .Select(item => new Dictionary<string, object?>
+            {
+                ["@type"] = "Question",
+                ["name"] = StripMarkdown(item.Question),
+                ["acceptedAnswer"] = new Dictionary<string, object?>
+                {
+                    ["@type"] = "Answer",
+                    ["text"] = StripMarkdown(item.Answer),
+                },
+            })
+            .ToArray();
+
+        if (mainEntity.Length == 0)
+            return string.Empty;
+
+        return JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "FAQPage",
+            ["mainEntity"] = mainEntity,
+        }, JsonLdOptions);
+    }
+
     private static SeoMetadata CreateBase(
         SeoPageType pageType,
         string entityKey,
