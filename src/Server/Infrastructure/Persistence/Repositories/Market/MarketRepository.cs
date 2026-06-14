@@ -188,6 +188,12 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
     public async Task<int> GetDistributionCountAsync(CancellationToken ct = default)
         => await db.Distributions.CountAsync(ct);
 
+    public async Task<IReadOnlyCollection<Guid>> GetFibraIdsWithDistributionsAsync(CancellationToken ct = default)
+        => await db.Distributions
+            .Select(d => d.FibraId)
+            .Distinct()
+            .ToListAsync(ct);
+
     public async Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default)
         => await db.Distributions.FirstOrDefaultAsync(d => d.Id == id, ct);
 

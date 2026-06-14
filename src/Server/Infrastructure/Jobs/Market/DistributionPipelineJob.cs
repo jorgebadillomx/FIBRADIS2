@@ -33,11 +33,13 @@ public class DistributionPipelineJob(
         string? details = null;
         try
         {
-            var distributionCount = await marketRepo.GetDistributionCountAsync(ct);
-            var isInitialLoad = distributionCount == 0;
-            var historyStart = isInitialLoad
-                ? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1))
-                : new DateOnly(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            // La ventana de descarga se decide POR FIBRA: una FIBRA sin distribuciones
+            // requiere backfill histórico (4 años); una que ya tiene datos solo necesita
+            // el mes en curso. Decidirlo con el conteo global dejaba sin histórico a
+            // cualquier FIBRA agregada después de la carga inicial.
+            var fibraIdsWithDistributions = await marketRepo.GetFibraIdsWithDistributionsAsync(ct);
+            var backfillStart = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-4));
+            var incrementalStart = new DateOnly(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
             var historyEnd = new DateOnly(
                 DateTime.UtcNow.Year,
                 DateTime.UtcNow.Month,
@@ -55,6 +57,10 @@ public class DistributionPipelineJob(
             {
                 if (index > 0)
                     await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+
+                var historyStart = fibraIdsWithDistributions.Contains(fibra.Id)
+                    ? incrementalStart
+                    : backfillStart;
 
                 try
                 {
@@ -152,8 +158,9 @@ public class DistributionPipelineJob(
                     skipped = masDividendosSkipped,
                     unmatched = masDividendosUnmatched,
                 },
-                initialLoad = distributionCount == 0,
-                historyStart = historyStart.ToString("yyyy-MM-dd"),
+                initialLoad = fibraIdsWithDistributions.Count == 0,
+                backfillStart = backfillStart.ToString("yyyy-MM-dd"),
+                incrementalStart = incrementalStart.ToString("yyyy-MM-dd"),
                 historyEnd = historyEnd.ToString("yyyy-MM-dd"),
             });
         }

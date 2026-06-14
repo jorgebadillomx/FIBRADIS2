@@ -132,6 +132,48 @@ public class DistributionPipelineJobTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WhenFibraHasNoDistributions_RequestsFourYearBackfill()
+    {
+        // FUNO11 sin distribuciones previas → debe pedir histórico de ~4 años.
+        var marketRepo = new FakeDistMarketRepository(alwaysInsert: true);
+        var yahoo = new FakeDistYahooClient();
+
+        var job = Build(
+            new FakeDistFibraRepository([_fibraFuno]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        var call = Assert.Single(yahoo.Calls);
+        Assert.Equal("FUNO11.MX", call.Ticker);
+        // La ventana arranca ~4 años atrás (no el mes en curso).
+        Assert.True(call.From <= DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-3)),
+            $"Se esperaba backfill de varios años, pero la ventana inició en {call.From:yyyy-MM-dd}");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenFibraAlreadyHasDistributions_RequestsCurrentMonthOnly()
+    {
+        // FUNO11 ya tiene distribuciones → solo el mes en curso (carga incremental).
+        var marketRepo = new FakeDistMarketRepository(
+            alwaysInsert: true,
+            fibraIdsWithDistributions: [_fibraFuno.Id]);
+        var yahoo = new FakeDistYahooClient();
+
+        var job = Build(
+            new FakeDistFibraRepository([_fibraFuno]),
+            yahoo,
+            marketRepo);
+
+        await job.ExecuteAsync();
+
+        var call = Assert.Single(yahoo.Calls);
+        var firstOfMonth = new DateOnly(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+        Assert.Equal(firstOfMonth, call.From);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WhenNoActiveFibras_DoesNotCallYahoo()
     {
         var yahoo = new FakeDistYahooClient();
@@ -205,6 +247,8 @@ internal sealed class FakeDistYahooClient : IYahooFinanceClient
 
     public int CallCount { get; private set; }
 
+    public List<(string Ticker, DateOnly From)> Calls { get; } = [];
+
     public FakeDistYahooClient(
         (string ticker, IReadOnlyList<YahooDividendResult> divs)? entry = null,
         string? throwForTicker = null)
@@ -228,6 +272,7 @@ internal sealed class FakeDistYahooClient : IYahooFinanceClient
         string yahooTicker, DateOnly from, CancellationToken ct = default)
     {
         CallCount++;
+        Calls.Add((yahooTicker, from));
         if (_throwForTicker is not null && yahooTicker == _throwForTicker)
             throw new InvalidOperationException($"Simulated failure for {yahooTicker}");
 
@@ -243,8 +288,13 @@ internal sealed class FakeDistYahooClient : IYahooFinanceClient
 internal sealed class FakeDistMarketRepository : IMarketRepository
 {
     private readonly bool _alwaysInsert;
+    private readonly HashSet<Guid> _fibraIdsWithDistributions;
 
-    public FakeDistMarketRepository(bool alwaysInsert = true) => _alwaysInsert = alwaysInsert;
+    public FakeDistMarketRepository(bool alwaysInsert = true, IEnumerable<Guid>? fibraIdsWithDistributions = null)
+    {
+        _alwaysInsert = alwaysInsert;
+        _fibraIdsWithDistributions = [.. fibraIdsWithDistributions ?? []];
+    }
 
     public List<Distribution> UpsertedDistributions { get; } = [];
     public int UpsertCallCount { get; private set; }
@@ -304,6 +354,9 @@ internal sealed class FakeDistMarketRepository : IMarketRepository
 
     public Task<int> GetDistributionCountAsync(CancellationToken ct = default)
         => Task.FromResult(0);
+
+    public Task<IReadOnlyCollection<Guid>> GetFibraIdsWithDistributionsAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyCollection<Guid>>(_fibraIdsWithDistributions);
 
     public Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult<Distribution?>(null);

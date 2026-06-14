@@ -22,6 +22,7 @@ public interface IMarketRepository
     Task AddDistributionAsync(Distribution dist, CancellationToken ct = default);
     Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default);
     Task<int> GetDistributionCountAsync(CancellationToken ct = default);
+    Task<IReadOnlyCollection<Guid>> GetFibraIdsWithDistributionsAsync(CancellationToken ct = default);
     Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<Distribution>> GetDistributionsByRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default);
     Task<bool> UpdateDistributionAmountAsync(Guid fibraId, DateOnly paymentDate, decimal amount, CancellationToken ct = default);

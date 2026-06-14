@@ -411,6 +411,9 @@ internal sealed class FakeHistoricalMarketRepository : IMarketRepository
     public Task<int> GetDistributionCountAsync(CancellationToken ct = default)
         => Task.FromResult(0);
 
+    public Task<IReadOnlyCollection<Guid>> GetFibraIdsWithDistributionsAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyCollection<Guid>>([]);
+
     public Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default)
         => Task.FromResult<Distribution?>(null);
 
