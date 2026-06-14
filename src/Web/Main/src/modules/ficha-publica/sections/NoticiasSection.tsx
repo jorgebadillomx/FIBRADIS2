@@ -2,17 +2,12 @@ import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraNews } from '@/api/fibraNewsApi'
 import { formatRelativeTime } from '@/shared/lib/format-time'
-import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 
 interface NoticiasSectionProps {
   fibraId: string
-  fibra?: {
-    logoUrl?: string | null
-    sector?: string | null
-  } | null
 }
 
-export function NoticiasSection({ fibraId, fibra }: NoticiasSectionProps) {
+export function NoticiasSection({ fibraId }: NoticiasSectionProps) {
   const { data: articles = [], isLoading, isError } = useQuery({
     queryKey: ['fibra-news', fibraId],
     queryFn: () => fetchFibraNews(fibraId),
@@ -21,7 +16,19 @@ export function NoticiasSection({ fibraId, fibra }: NoticiasSectionProps) {
   })
 
   if (isLoading) {
-    return <div className="rounded-lg border border-border bg-muted/20 animate-pulse h-32" />
+    return (
+      <div aria-busy="true" className="rounded-lg border border-border bg-surface-elevated divide-y divide-border overflow-hidden">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div key={index} className="px-4 py-3">
+            <div className="space-y-2">
+              <div className="h-4 w-3/4 animate-pulse rounded bg-muted/70" />
+              <div className="h-3 w-40 animate-pulse rounded bg-muted/70" />
+              <div className="h-3 w-5/6 animate-pulse rounded bg-muted/70" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   if (isError) {
@@ -48,21 +55,6 @@ export function NoticiasSection({ fibraId, fibra }: NoticiasSectionProps) {
         return (
           <article key={article.id} className="px-4 py-3">
             <Link to={`/noticias/${article.slug ?? article.id}`} className="block">
-              {false && getArticleImageUrl(article, fibra) ? (
-                <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
-                  <img
-                    src={getArticleImageUrl(article, fibra)!}
-                    alt={`Imagen de la nota: ${article.title}`}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.onerror = null
-                      event.currentTarget.style.display = 'none'
-                      event.currentTarget.parentElement!.style.display = 'none'
-                    }}
-                  />
-                </div>
-              ) : null}
               <div className="hover:text-brand transition-colors">
                 <h3 className="text-sm font-medium leading-5">{article.title}</h3>
               </div>

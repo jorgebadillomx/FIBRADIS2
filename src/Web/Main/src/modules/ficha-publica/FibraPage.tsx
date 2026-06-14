@@ -14,7 +14,7 @@ import type { FundamentalesData } from './sections/fundamentales'
 import { FibraNotFound } from './FibraNotFound'
 import { PrecioSection } from './sections/PrecioSection'
 import { MercadoSection } from './sections/MercadoSection'
-import { FundamentalesSection } from './sections/FundamentalesSection'
+import { FundamentalesSection, FundamentalesSectionSkeleton } from './sections/FundamentalesSection'
 import { DistribucionesSection } from './sections/DistribucionesSection'
 import { NoticiasSection } from './sections/NoticiasSection'
 import { ReportesSection } from './sections/ReportesSection'
@@ -24,6 +24,8 @@ import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
 import { toNum, formatRelativeTime } from '@/shared/lib/format-time'
 import { buildFibraSlug, extractTickerFromSlug } from '@/shared/lib/fibra-slug'
 import { KPI_DEFINITIONS, type KpiKey } from '@/shared/lib/kpi-definitions'
+import { PriceChartSkeleton } from '@/shared/ui/price-chart'
+import { FIBRA_PAGE_LOADING_COUNTS, FIBRA_PAGE_LOADING_TABS, FIBRA_HEADER_LOADING_SHELL } from './cwv-layout'
 
 const FIBRA_BRAND_SUFFIX =
   ' en FIBRADIS — precio en tiempo real, distribuciones, fundamentales y score de inversión.'
@@ -32,12 +34,12 @@ const FIBRA_MAX_DESC = 160
 // Desplaza los headings del markdown de "Descripción" +1 (h1→h2, h2→h3, …) para que el <h1>
 // del título de la ficha sea el único de la página (jerarquía correcta — fix H2 auditoría SEO 2026-06-13).
 const DESCRIPTION_MARKDOWN_COMPONENTS: Components = {
-  h1: ({ node, ...props }) => <h2 {...props} />,
-  h2: ({ node, ...props }) => <h3 {...props} />,
-  h3: ({ node, ...props }) => <h4 {...props} />,
-  h4: ({ node, ...props }) => <h5 {...props} />,
-  h5: ({ node, ...props }) => <h6 {...props} />,
-  h6: ({ node, ...props }) => <h6 {...props} />,
+  h1: ({ ...props }) => <h2 {...props} />,
+  h2: ({ ...props }) => <h3 {...props} />,
+  h3: ({ ...props }) => <h4 {...props} />,
+  h4: ({ ...props }) => <h5 {...props} />,
+  h5: ({ ...props }) => <h6 {...props} />,
+  h6: ({ ...props }) => <h6 {...props} />,
 }
 
 function buildFibraDescription(fibra: { fullName: string; ticker: string; sector?: string | null }): string {
@@ -61,12 +63,160 @@ function SectionHeader({ title }: { title: string }) {
 
 function FibraPageSkeleton() {
   return (
-    <div className="animate-pulse space-y-4 container mx-auto px-4 py-6">
-      <div className="h-12 bg-muted rounded w-1/3" />
-      <div className="h-4 bg-muted rounded w-1/2" />
-      <div className="h-4 bg-muted rounded w-1/4" />
-      <div className="h-48 bg-muted rounded" />
-      <div className="h-32 bg-muted rounded" />
+    // El skeleton es puramente decorativo: se marca aria-busy en el contenedor y el contenido se
+    // oculta del árbol de accesibilidad (aria-hidden) para no anunciar landmarks/tabs vacíos.
+    <div aria-busy="true" role="status" className="min-h-[3800px]">
+      <span className="sr-only">Cargando ficha de la FIBRA…</span>
+      <div aria-hidden="true" className="space-y-6">
+      <header className="sticky top-14 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 pt-3 pb-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="h-12 w-12 shrink-0 animate-pulse rounded-xl bg-muted/70" />
+              <div className="min-w-0 space-y-2 pt-1">
+                <div className="h-6 w-64 animate-pulse rounded bg-muted/70" />
+                <div className="h-3 w-48 animate-pulse rounded bg-muted/70" />
+              </div>
+            </div>
+            <div className={`flex items-center justify-end gap-2 pt-1 ${FIBRA_HEADER_LOADING_SHELL.containerWidthClass}`}>
+              <div className={`h-8 animate-pulse rounded bg-muted/70 ${FIBRA_HEADER_LOADING_SHELL.priceSkeletonWidthClass}`} />
+              <div className={`h-6 animate-pulse rounded-full bg-muted/70 ${FIBRA_HEADER_LOADING_SHELL.yieldBadgeWidthClass}`} />
+              <div className={`h-6 animate-pulse rounded-full bg-muted/70 ${FIBRA_HEADER_LOADING_SHELL.freshnessBadgeWidthClass}`} />
+            </div>
+          </div>
+
+          <nav aria-label="Navegación de secciones de la ficha" className="mt-3 flex gap-1 overflow-x-auto -mx-1">
+            {FIBRA_PAGE_LOADING_TABS.map((tab) => (
+              <span
+                key={tab}
+                className="shrink-0 rounded-t-lg px-3 pb-2.5 pt-1 text-sm text-transparent"
+              >
+                <span className="block h-4 w-24 animate-pulse rounded bg-muted/70" />
+              </span>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <div className="container mx-auto space-y-10 px-4 py-6">
+        <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <span className="h-4 w-16 animate-pulse rounded bg-muted/70" />
+          <span aria-hidden="true">/</span>
+          <span className="h-4 w-20 animate-pulse rounded bg-muted/70" />
+        </nav>
+
+        <div className="rounded-xl border border-border bg-surface-elevated px-5 py-4">
+          <div className="flex min-h-14 items-end gap-3">
+            <div className="h-10 w-32 animate-pulse rounded bg-muted/70" />
+            <div className="min-w-[11rem] pb-1 space-y-1">
+              <div className="h-6 w-24 animate-pulse rounded-full bg-muted/70" />
+              <div className="h-4 w-32 animate-pulse rounded bg-muted/70" />
+            </div>
+          </div>
+        </div>
+
+        <section id="mercado" className="scroll-mt-32 space-y-4">
+          <SectionHeader title={SECTION_TITLES.mercado} />
+          <div className="grid grid-cols-3 gap-3">
+            {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.marketMetricCards }).map((_, index) => (
+              <div
+                key={index}
+                className="rounded-lg border border-border bg-surface-elevated px-4 py-3"
+              >
+                <div className="h-3 w-20 animate-pulse rounded bg-muted/70" />
+                <div className="mt-2 h-5 w-16 animate-pulse rounded bg-muted/70" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-border bg-surface-elevated shadow-sm">
+            <div className="flex flex-col gap-4 border-b border-border px-4 py-4 md:flex-row md:items-end md:justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-40 animate-pulse rounded bg-muted/70" />
+                <div className="h-6 w-64 animate-pulse rounded bg-muted/70" />
+                <div className="h-3 w-96 max-w-full animate-pulse rounded bg-muted/70" />
+              </div>
+              <div className="flex gap-2">
+                {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.marketRangeButtons }).map((_, index) => (
+                  <div key={index} className="h-8 w-12 animate-pulse rounded-full bg-muted/70" />
+                ))}
+              </div>
+            </div>
+            <div className="p-4">
+              <PriceChartSkeleton />
+            </div>
+          </div>
+        </section>
+
+        <section id="fundamentales" className="scroll-mt-32 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <SectionHeader title={SECTION_TITLES.fundamentales} />
+            <div className="h-7 w-24 shrink-0 animate-pulse rounded-lg bg-muted/70" />
+          </div>
+          {/* Reusa el skeleton de la sección para que la geometría coincida exactamente
+              entre el page-skeleton y el section-skeleton (evita shift al transicionar). */}
+          <FundamentalesSectionSkeleton />
+        </section>
+
+        <section id="distribuciones" className="scroll-mt-32 space-y-4">
+          <SectionHeader title={SECTION_TITLES.distribuciones} />
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-surface-elevated px-4 py-3">
+              {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.distributionSummaryLines }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-3 animate-pulse rounded bg-muted/70 ${index === 0 ? 'w-40' : 'w-24'}`}
+                />
+              ))}
+              <div className="mt-2 h-8 w-24 animate-pulse rounded bg-muted/70" />
+            </div>
+            <div className="rounded-xl border border-border bg-surface-elevated px-4 py-4">
+              <div className="h-56 animate-pulse rounded-xl bg-muted/20" />
+            </div>
+          </div>
+        </section>
+
+        <section id="noticias" className="scroll-mt-32 space-y-4">
+          <SectionHeader title={SECTION_TITLES.noticias} />
+          <div className="rounded-lg border border-border bg-surface-elevated px-4 py-4">
+            <div className="space-y-3">
+              {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.newsLines }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-4 animate-pulse rounded bg-muted/70 ${
+                    index === 0 ? 'w-3/4' : index === 1 ? 'w-2/3' : 'w-1/2'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="descripcion" className="scroll-mt-32 space-y-4">
+          <SectionHeader title={SECTION_TITLES.descripcion} />
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="space-y-3">
+              {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.descriptionLines }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-4 animate-pulse rounded bg-muted/70 ${
+                    index === 0 ? 'w-3/4' : index === 1 ? 'w-full' : 'w-5/6'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="enlaces" className="scroll-mt-32 space-y-4">
+          <SectionHeader title={SECTION_TITLES.enlaces} />
+          <div className="space-y-2">
+            {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.reportLines }).map((_, index) => (
+              <div key={index} className="h-4 w-48 animate-pulse rounded bg-muted/70" />
+            ))}
+          </div>
+        </section>
+      </div>
+      </div>
     </div>
   )
 }
@@ -105,14 +255,14 @@ export function FibraPage() {
     enabled: !!ticker,
   })
 
-  const { data: snapshots = [] } = useQuery({
+  const { data: snapshots = [], isLoading: isSnapshotsLoading, isError: isSnapshotsError } = useQuery({
     queryKey: ['market-snapshots'],
     queryFn: fetchMarketSnapshots,
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
 
-  const { data: history } = useQuery({
+  const { data: history, isLoading: isHistoryLoading } = useQuery({
     queryKey: ['fibra-history', ticker, '1y'],
     queryFn: () => fetchFibraHistory(ticker!, '1y'),
     staleTime: 60 * 60_000,
@@ -128,7 +278,7 @@ export function FibraPage() {
 
   const activePeriod = selectedPeriod ?? availablePeriods[0]
 
-  const { data: fundamentalesDto } = useQuery({
+  const { data: fundamentalesDto, isLoading: isFundamentalesLoading } = useQuery({
     queryKey: ['fundamentales', ticker, activePeriod],
     queryFn: () => fetchFundamentalesPublic(ticker!, activePeriod),
     enabled: !!ticker && periodsFetched,
@@ -167,6 +317,8 @@ export function FibraPage() {
     : undefined
 
   const marketData = snapshots.find(s => s.ticker === fibra?.ticker) ?? null
+  const isMarketDataLoading = isSnapshotsLoading
+  const isFundamentalesSectionLoading = !periodsFetched || isFundamentalesLoading
 
   // Canonicalización client-side (CA-10): un link viejo /fibras/FUNO11 o un slug
   // obsoleto navegado en la SPA se reemplaza por la URL slug canónica sin recargar
@@ -239,10 +391,16 @@ export function FibraPage() {
                 </div>
               </div>
               {/* Precio real con badge de frescura */}
-              <div className="flex items-center gap-2 shrink-0 pt-1">
-                {hasMarketPrice ? (
+              <div className={`flex items-center justify-end gap-2 shrink-0 pt-1 ${FIBRA_HEADER_LOADING_SHELL.containerWidthClass}`}>
+                {isMarketDataLoading ? (
+                  <div aria-busy="true" className="flex items-center gap-2">
+                    <div className={`h-8 animate-pulse rounded bg-muted/70 ${FIBRA_HEADER_LOADING_SHELL.priceSkeletonWidthClass}`} />
+                    <div className={`h-6 animate-pulse rounded-full bg-muted/70 ${FIBRA_HEADER_LOADING_SHELL.yieldBadgeWidthClass}`} />
+                    <div className={`h-6 animate-pulse rounded-full bg-muted/70 ${FIBRA_HEADER_LOADING_SHELL.freshnessBadgeWidthClass}`} />
+                  </div>
+                ) : hasMarketPrice ? (
                   <>
-                    <span className="text-2xl font-semibold tabular-nums">
+                    <span className={`text-2xl font-semibold tabular-nums ${FIBRA_HEADER_LOADING_SHELL.priceReserveClass}`}>
                       {marketPrice!.toFixed(2)}
                     </span>
                     {annualizedYield != null ? (
@@ -255,8 +413,15 @@ export function FibraPage() {
                       lastUpdated={marketData!.capturedAt ? formatRelativeTime(marketData!.capturedAt) : undefined}
                     />
                   </>
+                ) : isSnapshotsError ? (
+                  <span
+                    title="No se pudo cargar el precio"
+                    className={`text-2xl font-semibold tabular-nums text-muted-foreground ${FIBRA_HEADER_LOADING_SHELL.priceReserveClass}`}
+                  >
+                    —
+                  </span>
                 ) : (
-                  <span className="text-2xl font-semibold tabular-nums text-muted-foreground">—</span>
+                  <span className={`text-2xl font-semibold tabular-nums text-muted-foreground ${FIBRA_HEADER_LOADING_SHELL.priceReserveClass}`}>—</span>
                 )}
               </div>
             </div>
@@ -299,6 +464,8 @@ export function FibraPage() {
             dailyChangePct={marketData?.dailyChangePct}
             capturedAt={marketData?.capturedAt}
             freshnessStatus={marketData?.freshnessStatus}
+            isLoading={isSnapshotsLoading}
+            isError={isSnapshotsError}
           />
 
           <section id="mercado" className="scroll-mt-32 space-y-4">
@@ -315,25 +482,34 @@ export function FibraPage() {
             <div className="flex items-center justify-between gap-4">
               <SectionHeader title={SECTION_TITLES.fundamentales} />
               {availablePeriods.length > 1 && (
-                <select
-                  value={activePeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="shrink-0 rounded-lg border border-border bg-background px-2 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
-                  aria-label="Seleccionar período de fundamentales"
-                >
-                  {availablePeriods.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
+                <div className="min-w-[6.5rem] shrink-0">
+                  <select
+                    value={activePeriod}
+                    onChange={(e) => setSelectedPeriod(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-2 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+                    aria-label="Seleccionar período de fundamentales"
+                  >
+                    {availablePeriods.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {availablePeriods.length <= 1 && (
+                <div aria-hidden="true" className="h-7 min-w-[6.5rem] shrink-0 rounded-lg border border-transparent" />
               )}
             </div>
-            <FundamentalesSection data={fundamentalesData} />
+            <FundamentalesSection data={fundamentalesData} isLoading={isFundamentalesSectionLoading} />
           </section>
 
           <section id="distribuciones" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.distribuciones} />
             <DistribucionesSection ticker={fibra!.ticker} />
-            {history ? (
+            {isHistoryLoading ? (
+              // Reserva la altura de la calculadora ISR mientras carga `history` para que no
+              // aparezca de golpe empujando el footer (CLS, story 12-7).
+              <div aria-busy="true" className="min-h-[46rem] rounded-2xl border border-border bg-surface-elevated" />
+            ) : history ? (
               <IsrCalculatorWidget
                 lastDistribution={toNum(history.distributions[0]?.amountPerUnit)}
                 taxableAmountPerUnit={toNum(history.distributions[0]?.taxableAmountPerUnit)}
@@ -344,7 +520,7 @@ export function FibraPage() {
 
           <section id="noticias" className="scroll-mt-32 space-y-4">
             <SectionHeader title={SECTION_TITLES.noticias} />
-            <NoticiasSection fibraId={fibra!.id} fibra={fibra} />
+            <NoticiasSection fibraId={fibra!.id} />
           </section>
 
           {fibra!.description ? (

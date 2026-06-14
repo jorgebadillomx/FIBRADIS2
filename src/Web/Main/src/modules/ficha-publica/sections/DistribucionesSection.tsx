@@ -8,6 +8,7 @@ import {
   inferDistributionCadence,
   type PeriodGroup,
 } from './distribuciones'
+import { FIBRA_PAGE_LOADING_COUNTS } from '../cwv-layout'
 
 const INITIAL_GROUPS = 8
 
@@ -99,9 +100,32 @@ export function DistribucionesSection({ ticker }: DistribucionesSectionProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        <div className="h-16 bg-muted rounded-lg" />
-        <div className="h-32 bg-muted rounded-lg" />
+      <div aria-busy="true" className="space-y-4">
+        <div className="rounded-lg border border-border bg-surface-elevated px-4 py-3">
+          <div className="h-3 w-36 animate-pulse rounded bg-muted/70" />
+          <div className="mt-2 h-8 w-24 animate-pulse rounded bg-muted/70" />
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface-elevated overflow-hidden">
+          <div className="border-b border-border px-4 py-2.5">
+            <div className="h-3 w-40 animate-pulse rounded bg-muted/70" />
+          </div>
+          <div className="divide-y divide-border">
+            {Array.from({ length: FIBRA_PAGE_LOADING_COUNTS.distributionRows }).map((_, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-[minmax(0,1.3fr)_7rem_5rem] items-center gap-3 px-4 py-2.5"
+              >
+                <div className="h-4 w-40 animate-pulse rounded bg-muted/70" />
+                <div className="ml-auto h-4 w-16 animate-pulse rounded bg-muted/70" />
+                <div className="ml-auto h-4 w-14 animate-pulse rounded bg-muted/70" />
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-border px-4 py-2">
+            <div className="h-3 w-44 animate-pulse rounded bg-muted/70" />
+          </div>
+        </div>
       </div>
     )
   }

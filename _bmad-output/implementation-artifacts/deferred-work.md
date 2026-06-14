@@ -83,3 +83,10 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 - **`GetNewsPageCountAsync` materializa hasta 45k items solo para contar** — perf menor (cacheado 1h). Añadir ruta count-only.
 - **llms.txt: título/descripción sin escapar para Markdown** — `]`/`)` en SeoMetadata (editable Ops) rompería el link. Títulos actuales limpios.
 - **`lastmod`=hoy regenerado a diario para rutas estáticas** — señal débil; considerar fecha de build estática.
+
+## Deferred from: code review of 12-7-core-web-vitals (2026-06-14)
+
+- **M3 a11y pre-existente** — 43 fallos de contraste de color + `aria-expanded` inválido en `<tr>` de la tabla de distribuciones de la ficha; los skeletons nuevos heredan los mismos tokens `bg-muted/70` de bajo contraste. Marcado "adyacente, no CWV" en el spec; subir tokens `muted-foreground` a ≥4.5:1 y mover el affordance de fila expandible a `<button>`.
+- **Test `cwv-loading.test.ts` tautológico** — re-afirma las constantes de `cwv-layout.ts` pero no ejercita los skeletons ni la geometría real; no protege contra el drift de layout (CLS) que motiva la historia. Falta un test que valide que los skeletons consumen las constantes y/o que la altura reservada ≈ contenido cargado.
+- **`availablePeriods.length===0` dispara la query de fundamentales con `activePeriod=undefined`** — request desperdiciada y contrato implícito (gate `enabled: !!ticker && periodsFetched`). Pre-existente al cambio 12-7. Considerar gate adicional `availablePeriods.length > 0`.
+- **AC-6 guardrail no implementado + AC-5 no verificado en navegador real** — sin Lighthouse CI ni check documentado en `convenciones-fibradis.md`; la verificación post-fix fue un probe mockeado local, no las 7 rutas reales con throttling móvil. Pendiente como guardrail opcional + smoke-check manual de no-regresión SSR/SEO.
