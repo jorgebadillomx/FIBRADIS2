@@ -45,6 +45,23 @@ public class SeoEndpointsTests
     }
 
     [Fact]
+    public void SitemapIndexContainsSectionSitemaps()
+    {
+        var xml = SeoEndpoints.BuildSitemapIndexXml(BaseUrl, [
+            "/sitemap-static.xml",
+            "/sitemap-fibras.xml",
+            "/sitemap-noticias-1.xml",
+            "/sitemap-noticias-2.xml",
+        ]);
+
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+        Assert.Equal("sitemapindex", doc.Root!.Name.LocalName);
+        Assert.Equal("http://www.sitemaps.org/schemas/sitemap/0.9", doc.Root.Name.NamespaceName);
+        Assert.Contains(doc.Root.Elements(), e => e.Element(doc.Root.Name.Namespace + "loc")?.Value == "https://fibrasinmobiliarias.com/sitemap-static.xml");
+        Assert.Contains(doc.Root.Elements(), e => e.Element(doc.Root.Name.Namespace + "loc")?.Value == "https://fibrasinmobiliarias.com/sitemap-noticias-2.xml");
+    }
+
+    [Fact]
     public void SitemapDoesNotContainChangefreqOrPriority()
     {
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
@@ -183,6 +200,14 @@ public class SeoEndpointsTests
     }
 
     [Fact]
+    public void RobotsTxtContainsLlmsTxtReference()
+    {
+        var robots = SeoEndpoints.BuildRobotsTxt(BaseUrl);
+
+        Assert.Contains("/llms.txt", robots);
+    }
+
+    [Fact]
     public void RobotsTxt_AllowsAiSearchCrawlers()
     {
         var robots = SeoEndpoints.BuildRobotsTxt(BaseUrl);
@@ -201,5 +226,19 @@ public class SeoEndpointsTests
         Assert.Contains("User-agent: CCBot\nDisallow: /", robots);
         Assert.Contains("User-agent: Bytespider\nDisallow: /", robots);
         Assert.Contains("User-agent: meta-externalagent\nDisallow: /", robots);
+    }
+
+    [Fact]
+    public void LlmsTxtContainsKeyPagesAndUsageNote()
+    {
+        var txt = SeoEndpoints.BuildLlmsTxt(BaseUrl, [
+            ("Inicio", "Plataforma de análisis", "/"),
+            ("Noticias", "Listado de noticias", "/noticias"),
+        ]);
+
+        Assert.Contains("# FIBRADIS", txt);
+        Assert.Contains("[Inicio](https://fibrasinmobiliarias.com/)", txt);
+        Assert.Contains("[Noticias](https://fibrasinmobiliarias.com/noticias)", txt);
+        Assert.Contains("Nota de uso", txt);
     }
 }

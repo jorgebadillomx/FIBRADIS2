@@ -10,6 +10,10 @@ function setOrCreateMeta(type: 'name' | 'property', key: string, content: string
   el.content = content
 }
 
+function removeMeta(type: 'name' | 'property', key: string): void {
+  document.querySelector<HTMLMetaElement>(`meta[${type}="${key}"]`)?.remove()
+}
+
 function setCanonical(href: string): void {
   let el = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
   if (!el) {
@@ -20,9 +24,15 @@ function setCanonical(href: string): void {
   el.href = href
 }
 
-export function usePageTitle(title: string, description?: string): void {
+export interface PageTitleOptions {
+  canonicalPath?: string
+  robotsDirectives?: string | null
+}
+
+export function usePageTitle(title: string, description?: string, options?: PageTitleOptions): void {
   useEffect(() => {
-    const url = `${window.location.origin}${window.location.pathname}`
+    const canonicalPath = options?.canonicalPath ?? window.location.pathname
+    const url = `${window.location.origin}${canonicalPath}`
 
     document.title = title
     setOrCreateMeta('property', 'og:title', title)
@@ -35,5 +45,11 @@ export function usePageTitle(title: string, description?: string): void {
       setOrCreateMeta('property', 'og:description', description)
       setOrCreateMeta('name', 'twitter:description', description)
     }
-  }, [title, description])
+
+    if (options?.robotsDirectives) {
+      setOrCreateMeta('name', 'robots', options.robotsDirectives)
+    } else {
+      removeMeta('name', 'robots')
+    }
+  }, [title, description, options?.canonicalPath, options?.robotsDirectives])
 }

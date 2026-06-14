@@ -1,8 +1,11 @@
 using System.Globalization;
 using System.Security;
 using System.Text;
+using Api.Seo;
 using Application.Catalog;
 using Application.News;
+using Application.Seo;
+using Domain.Seo;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Endpoints.Public;
@@ -10,7 +13,11 @@ namespace Api.Endpoints.Public;
 public static class SeoEndpoints
 {
     private const string DefaultBaseUrl = "https://fibrasinmobiliarias.com";
-    private const int MaxNewsInSitemap = 500;
+    private const int NewsSitemapPageSize = 45_000;
+    private const string SitemapIndexCacheKey = "sitemap-index-xml";
+    private const string SitemapStaticCacheKey = "sitemap-static-xml";
+    private const string SitemapFibrasCacheKey = "sitemap-fibras-xml";
+    private const string LlmsCacheKey = "llms-txt";
 
     private static readonly string[] StaticRoutes =
     [
@@ -34,22 +41,145 @@ public static class SeoEndpoints
         app.MapMethods("/sitemap.xml", GetAndHead, async (
             IFibraRepository fibraRepo,
             INewsRepository newsRepo,
+            ISeoMetadataRepository seoRepo,
             IConfiguration config,
             IMemoryCache cache,
             HttpContext httpContext,
             CancellationToken ct) =>
         {
-            const string cacheKey = "sitemap-xml";
-            if (!cache.TryGetValue(cacheKey, out string? xml))
+            var xml = await GetOrCreateCachedAsync(cache, SitemapIndexCacheKey, async () =>
             {
-                // secuencial: ambos repos comparten el mismo DbContext Scoped (no thread-safe)
-                var fibras = await fibraRepo.GetAllActiveForSitemapAsync(ct);
-                var newsArticles = await newsRepo.GetArticlesForSitemapAsync(MaxNewsInSitemap, ct);
-                xml = BuildSitemapXml(GetBaseUrl(config), fibras, newsArticles);
+                var baseUrl = GetBaseUrl(config);
+                var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
+                var newsPageCount = await GetNewsPageCountAsync(newsRepo, ct);
+
+                var staticPaths = GetVisibleStaticRoutes(visibility);
+                var fibraPaths = await GetVisibleFibraPathsAsync(fibraRepo, visibility, ct);
+                var sitemapPaths = BuildSitemapIndexPaths(staticPaths.Count > 0, fibraPaths.Count > 0, newsPageCount);
+                return BuildSitemapIndexXml(baseUrl, sitemapPaths);
+            });
+
+            httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
+            return Results.Content(xml, "application/xml; charset=utf-8");
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
+        app.MapMethods("/sitemap-static.xml", GetAndHead, async (
+            ISeoMetadataRepository seoRepo,
+            IConfiguration config,
+            IMemoryCache cache,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            var xml = await GetOrCreateCachedAsync(cache, SitemapStaticCacheKey, async () =>
+            {
+                var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
+                var staticRoutes = GetVisibleStaticRoutes(visibility);
+                return BuildUrlSetXml(staticRoutes.Select(path => (Loc: $"{GetBaseUrl(config)}{path}", LastMod: GetGeneratedLastMod())));
+            });
+
+            httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
+            return Results.Content(xml, "application/xml; charset=utf-8");
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
+        app.MapMethods("/sitemap-fibras.xml", GetAndHead, async (
+            IFibraRepository fibraRepo,
+            ISeoMetadataRepository seoRepo,
+            IConfiguration config,
+            IMemoryCache cache,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            var xml = await GetOrCreateCachedAsync(cache, SitemapFibrasCacheKey, async () =>
+            {
+                var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
+                var fibras = await GetVisibleFibraPathsAsync(fibraRepo, visibility, ct);
+                return BuildUrlSetXml(fibras.Select(path => (Loc: $"{GetBaseUrl(config)}{path}", LastMod: GetGeneratedLastMod())));
+            });
+
+            httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
+            return Results.Content(xml, "application/xml; charset=utf-8");
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
+        app.MapMethods("/sitemap-noticias-{page:int}.xml", GetAndHead, async (
+            int page,
+            INewsRepository newsRepo,
+            ISeoMetadataRepository seoRepo,
+            IConfiguration config,
+            IMemoryCache cache,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            if (page < 1)
+                return Results.NotFound();
+
+            // Solo se cachea XML no vacío. Las páginas fuera de rango devuelven 404 sin cachear:
+            // cachear vacíos permitiría (a) crecimiento ilimitado del caché al enumerar páginas
+            // arbitrarias y (b) un 404 rancio que contradiga al índice tras publicar noticias.
+            var cacheKey = $"sitemap-noticias-{page}";
+            if (!cache.TryGetValue(cacheKey, out string? xml) || string.IsNullOrEmpty(xml))
+            {
+                var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
+                var newsPage = await newsRepo.GetArticlesForSitemapPageAsync(page, NewsSitemapPageSize, ct);
+                var totalPages = GetPageCount(newsPage.Total, NewsSitemapPageSize);
+
+                // page 1 siempre se sirve (urlset válido aunque vacío); páginas > máximo → 404.
+                if (page > Math.Max(1, totalPages))
+                    return Results.NotFound();
+
+                var newsPaths = newsPage.Items
+                    .Where(article => !visibility.NewsSlugs.Contains(NormalizeEntityKey(article.Slug)))
+                    .Select(article => (
+                        Loc: $"{GetBaseUrl(config)}/noticias/{article.Slug}",
+                        LastMod: article.PublishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+
+                xml = BuildUrlSetXml(newsPaths);
                 cache.Set(cacheKey, xml, TimeSpan.FromHours(1));
             }
+
             httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
-            return Results.Content(xml!, "application/xml; charset=utf-8");
+            return Results.Content(xml, "application/xml; charset=utf-8");
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
+        app.MapMethods("/llms.txt", GetAndHead, async (
+            ISpaMetadataProvider metadataProvider,
+            IConfiguration config,
+            IMemoryCache cache,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            var txt = await GetOrCreateCachedAsync(cache, LlmsCacheKey, async () =>
+            {
+                var pages = new[]
+                {
+                    "/",
+                    "/conoce-las-fibras",
+                    "/fibras",
+                    "/fundamentales",
+                    "/comparar",
+                    "/noticias",
+                };
+
+                var entries = new List<(string Title, string Description, string Path)>();
+                foreach (var path in pages)
+                {
+                    var meta = await metadataProvider.GetMetaForPathAsync(path, ct);
+                    if (meta is not null)
+                        entries.Add((meta.Title, meta.Description, meta.CanonicalPath));
+                }
+
+                return BuildLlmsTxt(GetBaseUrl(config), entries);
+            });
+
+            httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
+            return Results.Content(txt, "text/plain; charset=utf-8");
         })
         .AllowAnonymous()
         .ExcludeFromDescription();
@@ -61,11 +191,6 @@ public static class SeoEndpoints
 
         return app;
     }
-
-    private static string GetBaseUrl(IConfiguration config) =>
-        !string.IsNullOrWhiteSpace(config["App:BaseUrl"])
-            ? config["App:BaseUrl"]!.TrimEnd('/')
-            : DefaultBaseUrl;
 
     public static string BuildSitemapXml(
         string baseUrl,
@@ -79,16 +204,42 @@ public static class SeoEndpoints
         foreach (var path in StaticRoutes)
             AppendUrlEntry(sb, $"{baseUrl}{path}");
 
-        // FIBRAs: lastmod = hoy porque los precios actualizan diario
         var today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         foreach (var (fullName, ticker) in activeFibras)
             AppendUrlEntry(sb, $"{baseUrl}/fibras/{FibraSlug.Build(fullName, ticker)}", today);
 
         foreach (var (slug, publishedAt) in newsArticles ?? [])
-            // InvariantCulture: con cultura de calendario no gregoriano "yyyy" emitiría un año inválido
             AppendUrlEntry(sb, $"{baseUrl}/noticias/{slug}", publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
         sb.Append("</urlset>\n");
+        return sb.ToString();
+    }
+
+    public static string BuildSitemapIndexXml(string baseUrl, IEnumerable<string> sitemapPaths)
+        => BuildIndexXml(baseUrl, sitemapPaths);
+
+    public static string BuildLlmsTxt(string baseUrl, IReadOnlyList<(string Title, string Description, string Path)> pages)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("# FIBRADIS");
+        sb.AppendLine("Plataforma web integral de análisis de FIBRAs inmobiliarias mexicanas.");
+        sb.AppendLine();
+        sb.AppendLine("## Páginas clave");
+
+        foreach (var (title, description, path) in pages)
+        {
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(path))
+                continue;
+
+            var absoluteUrl = $"{baseUrl}{NormalizePath(path)}";
+            sb.AppendLine($"- [{title}]({absoluteUrl})");
+            if (!string.IsNullOrWhiteSpace(description))
+                sb.AppendLine($"  - {description}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("## Nota de uso");
+        sb.AppendLine("Usa estas páginas como punto de partida, cita las fuentes originales y verifica siempre la fecha de los datos.");
         return sb.ToString();
     }
 
@@ -122,7 +273,119 @@ public static class SeoEndpoints
         Disallow: /
 
         Sitemap: {baseUrl}/sitemap.xml
+        # llms.txt: {baseUrl}/llms.txt
         """;
+
+    private static async Task<string> GetOrCreateCachedAsync(IMemoryCache cache, string cacheKey, Func<Task<string>> factory)
+    {
+        if (!cache.TryGetValue(cacheKey, out string? value))
+        {
+            value = await factory();
+            cache.Set(cacheKey, value, TimeSpan.FromHours(1));
+        }
+
+        return value!;
+    }
+
+    private static async Task<SitemapVisibility> LoadSitemapVisibilityAsync(ISeoMetadataRepository seoRepo, CancellationToken ct)
+    {
+        var metadata = await seoRepo.GetAllAsync(ct: ct);
+        var visibility = new SitemapVisibility();
+
+        foreach (var row in metadata.Where(row => row.IsActive && IsNoIndex(row.RobotsDirectives)))
+        {
+            switch (row.PageType)
+            {
+                case SeoPageType.Home:
+                case SeoPageType.StaticPage:
+                    visibility.StaticRoutes.Add(NormalizePath(row.EntityKey));
+                    break;
+                case SeoPageType.Fibra:
+                    visibility.FibraTickers.Add(row.EntityKey.Trim().ToUpperInvariant());
+                    break;
+                case SeoPageType.News:
+                    visibility.NewsSlugs.Add(NormalizeEntityKey(row.EntityKey));
+                    break;
+            }
+        }
+
+        return visibility;
+    }
+
+    private static async Task<IReadOnlyList<string>> GetVisibleFibraPathsAsync(
+        IFibraRepository fibraRepo,
+        SitemapVisibility visibility,
+        CancellationToken ct)
+    {
+        var activeFibras = await fibraRepo.GetAllActiveForSitemapAsync(ct);
+        return activeFibras
+            .Where(fibra => !visibility.FibraTickers.Contains(fibra.Ticker.Trim().ToUpperInvariant()))
+            .Select(fibra => $"/fibras/{FibraSlug.Build(fibra.FullName, fibra.Ticker)}")
+            .ToList();
+    }
+
+    private static IReadOnlyList<string> GetVisibleStaticRoutes(SitemapVisibility visibility)
+        => StaticRoutes
+            .Where(route => !visibility.StaticRoutes.Contains(NormalizePath(route)))
+            .ToList();
+
+    private static async Task<int> GetNewsPageCountAsync(INewsRepository newsRepo, CancellationToken ct)
+    {
+        var result = await newsRepo.GetArticlesForSitemapPageAsync(1, NewsSitemapPageSize, ct);
+        return GetPageCount(result.Total, NewsSitemapPageSize);
+    }
+
+    private static IReadOnlyList<string> BuildSitemapIndexPaths(bool hasStatic, bool hasFibras, int newsPageCount)
+    {
+        var paths = new List<string>();
+        if (hasStatic)
+            paths.Add("/sitemap-static.xml");
+        if (hasFibras)
+            paths.Add("/sitemap-fibras.xml");
+        for (var page = 1; page <= newsPageCount; page++)
+            paths.Add($"/sitemap-noticias-{page}.xml");
+        return paths;
+    }
+
+    private static string BuildIndexXml(string baseUrl, IEnumerable<string> sitemapPaths)
+    {
+        var sb = new StringBuilder();
+        sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.Append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
+
+        foreach (var path in sitemapPaths)
+        {
+            sb.Append("  <sitemap>\n");
+            sb.Append($"    <loc>{SecurityElement.Escape($"{baseUrl}{path}")}</loc>\n");
+            sb.Append("  </sitemap>\n");
+        }
+
+        sb.Append("</sitemapindex>\n");
+        return sb.ToString();
+    }
+
+    private static string BuildUrlSetXml(IEnumerable<(string Loc, string LastMod)> entries)
+    {
+        var sb = new StringBuilder();
+        sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
+
+        foreach (var (loc, lastmod) in entries)
+            AppendUrlEntry(sb, loc, lastmod);
+
+        sb.Append("</urlset>\n");
+        return sb.ToString();
+    }
+
+    private static string GetGeneratedLastMod() => DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static int GetPageCount(int totalItems, int pageSize)
+        => totalItems <= 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+    private static string GetBaseUrl(IConfiguration config) =>
+        !string.IsNullOrWhiteSpace(config["App:BaseUrl"])
+            ? config["App:BaseUrl"]!.TrimEnd('/')
+            : DefaultBaseUrl;
 
     // XSD sitemaps.org: loc, lastmod — changefreq y priority los ignora Google desde 2023
     private static void AppendUrlEntry(StringBuilder sb, string loc, string? lastmod = null)
@@ -132,5 +395,34 @@ public static class SeoEndpoints
         if (lastmod is not null)
             sb.Append($"    <lastmod>{lastmod}</lastmod>\n");
         sb.Append("  </url>\n");
+    }
+
+    private static bool IsNoIndex(string robotsDirectives)
+        => robotsDirectives.Contains("noindex", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizePath(string path)
+    {
+        var normalized = path.Trim();
+        if (normalized.Length == 0)
+            return "/";
+
+        normalized = normalized.StartsWith('/') ? normalized : $"/{normalized}";
+        return normalized == "/" ? "/" : normalized.TrimEnd('/');
+    }
+
+    private static string NormalizeEntityKey(string entityKey)
+    {
+        var normalized = entityKey.Trim();
+        if (normalized.Length == 0)
+            return normalized;
+
+        return normalized == "/" ? "/" : normalized.TrimEnd('/');
+    }
+
+    private sealed class SitemapVisibility
+    {
+        public HashSet<string> StaticRoutes { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> FibraTickers { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> NewsSlugs { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

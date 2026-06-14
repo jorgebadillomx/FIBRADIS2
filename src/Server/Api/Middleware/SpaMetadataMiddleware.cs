@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
@@ -7,6 +8,7 @@ using Application.Fundamentals;
 using Application.Seo;
 using Api.Seo;
 using Domain.Seo;
+using Microsoft.Extensions.Primitives;
 
 namespace Api.Middleware;
 
@@ -62,6 +64,8 @@ public partial class SpaMetadataMiddleware(
 
         var normalizedPath = NormalizePath(path);
         var pageType = normalizedPath == "/" ? SeoPageType.Home : SeoPageType.StaticPage;
+        var noticiasPage = normalizedPath == "/noticias" ? GetNoticiasPageNumber(context.Request.Query["page"]) : 1;
+        var robotsDirectives = normalizedPath == "/noticias" && noticiasPage > 1 ? "noindex,follow" : null;
 
         SeoMetadata? seoMetadata;
         string breadcrumbJsonLdBlock = string.Empty;
@@ -98,6 +102,9 @@ public partial class SpaMetadataMiddleware(
             await next(context);
             return;
         }
+
+        if (normalizedPath == "/noticias" && noticiasPage > 1)
+            seoMetadata.CanonicalPath = $"/noticias?page={noticiasPage}";
 
         var indexPath = env.WebRootPath is { Length: > 0 }
             ? Path.Combine(env.WebRootPath, "index.html")
@@ -144,7 +151,7 @@ public partial class SpaMetadataMiddleware(
             faqJsonLdBlock = SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems));
 
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock, robotsDirectives));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado cambia por deploy y pierde el ETag/304 de StaticFiles;
@@ -153,7 +160,7 @@ public partial class SpaMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null, string? robotsDirectives = null)
     {
         var title = Encoder.Encode(metadata.Title);
         var description = Encoder.Encode(metadata.MetaDescription);
@@ -178,6 +185,7 @@ public partial class SpaMetadataMiddleware(
             .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
             .Append($"<meta name=\"twitter:title\" content=\"{title}\" />\n    ")
             .Append($"<meta name=\"twitter:description\" content=\"{description}\" />\n    ")
+            .Append(string.IsNullOrWhiteSpace(robotsDirectives) ? string.Empty : $"<meta name=\"robots\" content=\"{Encoder.Encode(robotsDirectives)}\" />\n    ")
             .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />");
 
         var jsonLdBlock = SeoJsonLd.BuildScriptBlock(metadata.JsonLd);
@@ -255,5 +263,15 @@ public partial class SpaMetadataMiddleware(
     {
         var normalized = path.TrimEnd('/').ToLowerInvariant();
         return normalized.Length == 0 ? "/" : normalized;
+    }
+
+    private static int GetNoticiasPageNumber(StringValues pageValue)
+    {
+        if (pageValue.Count == 0)
+            return 1;
+
+        return int.TryParse(pageValue[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var page) && page > 0
+            ? page
+            : 1;
     }
 }

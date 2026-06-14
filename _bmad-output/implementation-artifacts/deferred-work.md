@@ -74,3 +74,12 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 - **Ítem hoja del breadcrumb descartado en silencio si `CanonicalPath` vacío** — el filtro de `BuildBreadcrumbListJsonLd` elimina ítems con `Path` vacío, produciendo un breadcrumb sin la página actual. Hoy no disparable (canonical siempre seteado en ficha/noticia); añadir guard/aserción defensiva.
 - **Sin try/catch en lecturas de BD del JSON-LD dinámico** — una falla transitoria de BD (`GetAllActiveForSitemapAsync`/`GetSummaryLatestAsync`) devuelve 500 en `/comparar` y `/fundamentales` en vez de servir el shell; el mínimo estático no se usa como fallback. Gap de resiliencia transversal del pipeline SEO (la lectura de `SeoMetadata` ya es sin guard).
 - **Sobrecargas muertas `BuildMetaBlock(Fibra,…)` / `BuildMetaBlock(NewsArticle,…)`** — aún cargan `BreadcrumbList` inline sin call sites. Eliminar para evitar doble breadcrumb si un futuro caller las reutiliza (duplica deferral de 12-1, sigue pendiente).
+
+## Deferred from: code review of 12-6-rastreo-indexacion-sitemap-index-llms-txt (2026-06-14)
+
+- **AC-7: validación XSD más débil que el spec** — los tests verifican `XDocument.Parse` + raíz/namespace, no validan contra el XSD oficial de sitemaps.org. XML estructuralmente correcto; reforzar requiere cargar los .xsd y `XmlReaderSettings`.
+- **H3: conflicto robots.txt gestionado por Cloudflare** — bloque "Managed robots.txt / Block AI bots" + doble `User-agent: *` no resueltos (config/infra, no código). Registrar política de bots en una sola fuente.
+- **`<urlset>` vacío devuelve 200 en /sitemap-static.xml y /sitemap-fibras.xml** — vs 404 en noticias; urlset vacío inválido por XSD, solo alcanzable por URL directa (no referenciado por el índice).
+- **`GetNewsPageCountAsync` materializa hasta 45k items solo para contar** — perf menor (cacheado 1h). Añadir ruta count-only.
+- **llms.txt: título/descripción sin escapar para Markdown** — `]`/`)` en SeoMetadata (editable Ops) rompería el link. Títulos actuales limpios.
+- **`lastmod`=hoy regenerado a diario para rutas estáticas** — señal débil; considerar fecha de build estática.

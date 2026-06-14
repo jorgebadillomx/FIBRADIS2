@@ -69,6 +69,35 @@ test.describe('Épica 4 - Noticias y Contenido', () => {
       await expect(articles.nth(1)).toContainText('Resumen IA: FUNO11 refinanció pasivos para extender vencimientos y preservar liquidez.')
     })
 
+    test('Noticias paginadas preservan canonical y robots noindex,follow', async ({ page }) => {
+      await page.route('**/api/v1/news/paged**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            items: [
+              {
+                id: 'dddddddd-3333-3333-3333-333333333333',
+                title: 'Noticias de ejemplo 1',
+                source: 'El Economista',
+                publishedAt: '2026-05-20T12:00:00Z',
+                url: 'https://example.com/noticias/ejemplo-1',
+                snippet: 'Snippet 1',
+                aiSummary: null,
+                imageUrl: null,
+              },
+            ],
+            total: 25,
+          }),
+        })
+      })
+
+      await page.goto('/noticias?page=2')
+
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/noticias\?page=2$/)
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow')
+    })
+
     test('Ficha pública muestra solo noticias asociadas y estado vacío cuando la FIBRA no tiene noticias', async ({ page }) => {
       await page.goto('/fibras/FUNO11')
 
