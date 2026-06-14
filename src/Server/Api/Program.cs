@@ -111,6 +111,7 @@ app.MapSeo();
 app.MapFaq();
 app.MapOpsNewsManagement();
 app.MapOpsSeoFaq();
+app.MapOpsSeoOrganization();
 app.MapOpsSeoRedirects();
 
 

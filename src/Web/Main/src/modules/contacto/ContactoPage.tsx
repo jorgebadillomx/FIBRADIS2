@@ -1,4 +1,15 @@
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
+import { useSiteContent } from '@/shared/hooks/useSiteContent'
+
 export function ContactoPage() {
+  const { data: siteContent } = useSiteContent()
+  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibradis.mx'
+
+  usePageTitle(
+    'Contacto | FIBRADIS',
+    'Contacta con FIBRADIS para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.',
+  )
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-playfair text-3xl font-semibold tracking-tight">Contacto</h1>
@@ -13,8 +24,8 @@ export function ContactoPage() {
           <p className="mt-2">
             Para reportar errores en los datos, solicitudes de acceso o eliminación de cuenta, y
             cualquier otra consulta:{' '}
-            <a className="text-primary hover:underline" href="mailto:contacto@fibradis.mx">
-              contacto@fibradis.mx
+            <a className="text-primary hover:underline" href={`mailto:${contactEmail}`}>
+              {contactEmail}
             </a>
           </p>
         </section>

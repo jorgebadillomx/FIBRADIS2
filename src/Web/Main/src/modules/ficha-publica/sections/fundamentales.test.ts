@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   formatFundamentalValue,
+  getLatestCapturedAt,
   hasFundamentalesItems,
   shouldShowFundamentalesWarning,
   type FundamentalesData,
@@ -28,4 +29,16 @@ test('hasFundamentalesItems detects when the section should render data rows', (
   assert.equal(hasFundamentalesItems(undefined), false)
   assert.equal(hasFundamentalesItems({ items: [] }), false)
   assert.equal(hasFundamentalesItems(data), true)
+})
+
+test('getLatestCapturedAt returns the newest timestamp or null for empty rows', () => {
+  assert.equal(getLatestCapturedAt([]), null)
+
+  const latest = getLatestCapturedAt([
+    { capturedAt: '2026-06-10T14:00:00.000Z' },
+    { capturedAt: '2026-06-13T08:45:00.000Z' },
+  ])
+
+  assert.ok(latest)
+  assert.equal(latest.toISOString(), '2026-06-13T08:45:00.000Z')
 })

@@ -1,146 +1,405 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
+using Application.Fundamentals;
+using Application.Ops;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Api.Seo;
 
-public class SpaMetadataProvider : ISpaMetadataProvider
+public class SpaMetadataProvider(
+    IConfiguration config,
+    IServiceScopeFactory scopeFactory) : ISpaMetadataProvider
 {
-    private const string HomepageJsonLd = """
-        {
-          "@context": "https://schema.org",
-          "@graph": [
-            {
-              "@type": "Organization",
-              "@id": "https://fibrasinmobiliarias.com/#organization",
-              "name": "FIBRADIS",
-              "url": "https://fibrasinmobiliarias.com",
-              "logo": {
-                "@type": "ImageObject",
-                "url": "https://fibrasinmobiliarias.com/logo.png",
-                "width": 512,
-                "height": 512
-              },
-              "description": "Plataforma de análisis de FIBRAs inmobiliarias mexicanas: precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades de inversión.",
-              "areaServed": "MX",
-              "foundingDate": "2023",
-              "sameAs": [
-                "https://twitter.com/fibradis",
-                "https://linkedin.com/company/fibradis"
-              ]
-            },
-            {
-              "@type": "WebSite",
-              "@id": "https://fibrasinmobiliarias.com/#website",
-              "url": "https://fibrasinmobiliarias.com",
-              "name": "FIBRADIS — Fibras Inmobiliarias",
-              "publisher": { "@id": "https://fibrasinmobiliarias.com/#organization" },
-              "inLanguage": "es-MX"
-            },
-            {
-              "@type": "FinancialService",
-              "@id": "https://fibrasinmobiliarias.com/#service",
-              "name": "FIBRADIS — Análisis de FIBRAs Inmobiliarias",
-              "url": "https://fibrasinmobiliarias.com",
-              "provider": { "@id": "https://fibrasinmobiliarias.com/#organization" },
-              "serviceType": "Análisis de inversiones inmobiliarias",
-              "areaServed": {
-                "@type": "Country",
-                "name": "México"
-              },
-              "currenciesAccepted": "MXN",
-              "audience": {
-                "@type": "Audience",
-                "audienceType": "Inversionistas inmobiliarios en México"
-              }
-            }
-          ]
-        }
-        """;
+    private const string BrandName = "FIBRADIS";
+    private const string DefaultDescription =
+        "Plataforma de análisis de FIBRAs inmobiliarias mexicanas: precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades de inversión.";
+    private const string CalculadoraDescription =
+        "Calcula cuántos CBFIs puedes comprar con tu presupuesto, qué distribución recibirías y tu renta bruta estimada para cada FIBRA inmobiliaria mexicana.";
+    private const string ConoceDescription =
+        "Aprende qué son las FIBRAs inmobiliarias, cómo funcionan, cómo invertir y qué beneficios fiscales ofrecen. Guía para inversionistas.";
+    private const string CalendarioDescription =
+        "Próximas asambleas, distribuciones y eventos corporativos de FIBRAs inmobiliarias mexicanas. Mantente informado para tus decisiones.";
+    private const string FundamentalesDescription =
+        "Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.";
+    private const string PrivacyDescription =
+        "Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.";
+    private const string AboutDescription =
+        "Conoce la metodología de FIBRADIS: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.";
+    private const string ContactDescription =
+        "Contacta con FIBRADIS para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.";
 
-    private const string ConoceLasFibrasJsonLd = """
-        {
-          "@context": "https://schema.org",
-          "@type": "Article",
-          "@id": "https://fibrasinmobiliarias.com/conoce-las-fibras#article",
-          "headline": "¿Qué son las FIBRAs Inmobiliarias? Guía Completa",
-          "description": "Aprende qué son las FIBRAs inmobiliarias, cómo funcionan, cómo invertir y qué beneficios fiscales ofrecen. Guía para inversionistas.",
-          "url": "https://fibrasinmobiliarias.com/conoce-las-fibras",
-          "inLanguage": "es-MX",
-          "publisher": { "@id": "https://fibrasinmobiliarias.com/#organization" },
-          "isPartOf": { "@id": "https://fibrasinmobiliarias.com/#website" }
-        }
-        """;
+    private static readonly JsonSerializerOptions JsonLdOptions = new()
+    {
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+    };
 
-    private const string CalculadoraJsonLd = """
-        {
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "@id": "https://fibrasinmobiliarias.com/calculadora#app",
-          "name": "Calculadora de compra de FIBRAs",
-          "url": "https://fibrasinmobiliarias.com/calculadora",
-          "applicationCategory": "FinanceApplication",
-          "operatingSystem": "Web",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "MXN" },
-          "provider": { "@id": "https://fibrasinmobiliarias.com/#organization" },
-          "description": "Calcula cuántos CBFIs puedes comprar con tu presupuesto, qué distribución recibirías y tu renta bruta estimada para cada FIBRA inmobiliaria mexicana."
-        }
-        """;
+    private readonly string _baseUrl = !string.IsNullOrWhiteSpace(config["App:BaseUrl"])
+        ? config["App:BaseUrl"]!.TrimEnd('/')
+        : throw new InvalidOperationException(
+            "App:BaseUrl es requerido por SpaMetadataProvider para construir canonical/og:url absolutos.");
 
-    private static readonly IReadOnlyDictionary<string, SpaPageMeta> Routes =
-        new Dictionary<string, SpaPageMeta>(StringComparer.Ordinal)
+    public async Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
+    {
+        var normalizedPath = NormalizePath(path);
+
+        return normalizedPath switch
         {
-            ["/"] = new(
+            "/" => new SpaPageMeta(
                 "FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS",
-                "Plataforma de análisis de FIBRAs inmobiliarias mexicanas. Precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades.",
+                DefaultDescription,
                 "/",
-                HomepageJsonLd),
-            ["/calculadora"] = new(
+                await BuildHomepageJsonLdAsync(ct)),
+            "/calculadora" => new SpaPageMeta(
                 "Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS",
-                "Calcula cuántos CBFIs puedes comprar con tu presupuesto, qué distribución recibirías y tu renta bruta estimada para cada FIBRA inmobiliaria mexicana.",
+                CalculadoraDescription,
                 "/calculadora",
-                CalculadoraJsonLd),
-            ["/comparar"] = new(
+                BuildCalculadoraJsonLd()),
+            "/comparar" => new SpaPageMeta(
                 "Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS",
                 "Compara hasta 4 FIBRAs inmobiliarias en precio, yield, fundamentales y score de oportunidad. Toma mejores decisiones de inversión.",
                 "/comparar"),
-            ["/fibras"] = new(
+            "/fibras" => new SpaPageMeta(
                 "FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | FIBRADIS",
                 "Directorio completo de FIBRAs inmobiliarias en México con descripción, sector, precio y datos fundamentales de cada fideicomiso.",
                 "/fibras"),
-            ["/noticias"] = new(
+            "/noticias" => new SpaPageMeta(
                 "Noticias FIBRAs Inmobiliarias | FIBRADIS",
                 "Últimas noticias y novedades sobre el mercado de FIBRAs inmobiliarias mexicanas. Actualización continua desde fuentes especializadas.",
                 "/noticias"),
-            ["/conoce-las-fibras"] = new(
+            "/conoce-las-fibras" => new SpaPageMeta(
                 "¿Qué son las FIBRAs Inmobiliarias? Guía Completa | FIBRADIS",
-                "Aprende qué son las FIBRAs inmobiliarias, cómo funcionan, cómo invertir y qué beneficios fiscales ofrecen. Guía para inversionistas.",
+                ConoceDescription,
                 "/conoce-las-fibras",
-                ConoceLasFibrasJsonLd),
-            ["/calendario"] = new(
+                await BuildConoceLasFibrasJsonLdAsync(ct)),
+            "/calendario" => new SpaPageMeta(
                 "Calendario de Eventos Corporativos FIBRAs | FIBRADIS",
-                "Próximas asambleas, distribuciones y eventos corporativos de FIBRAs inmobiliarias mexicanas. Mantente informado para tus decisiones.",
+                CalendarioDescription,
                 "/calendario"),
-            ["/fundamentales"] = new(
+            "/fundamentales" => new SpaPageMeta(
                 "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
-                "Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.",
-                "/fundamentales"),
-            ["/privacidad"] = new(
+                FundamentalesDescription,
+                "/fundamentales",
+                await BuildFundamentalesJsonLdAsync(ct)),
+            "/privacidad" => new SpaPageMeta(
                 "Aviso de Privacidad | FIBRADIS",
-                "Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.",
+                PrivacyDescription,
                 "/privacidad"),
-            ["/acerca"] = new(
+            "/acerca" => new SpaPageMeta(
                 "Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS",
-                "Conoce la metodología de FIBRADIS: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.",
-                "/acerca"),
-            ["/contacto"] = new(
+                AboutDescription,
+                "/acerca",
+                await BuildAboutJsonLdAsync(ct)),
+            "/contacto" => new SpaPageMeta(
                 "Contacto | FIBRADIS",
-                "Contacta con FIBRADIS para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.",
-                "/contacto"),
+                ContactDescription,
+                "/contacto",
+                await BuildContactJsonLdAsync(ct)),
+            _ => null,
+        };
+    }
+
+    private string BuildCalculadoraJsonLd()
+        => JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "SoftwareApplication",
+            ["@id"] = $"{_baseUrl}/calculadora#app",
+            ["name"] = "Calculadora de compra de FIBRAs",
+            ["url"] = $"{_baseUrl}/calculadora",
+            ["applicationCategory"] = "FinanceApplication",
+            ["operatingSystem"] = "Web",
+            ["offers"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Offer",
+                ["price"] = "0",
+                ["priceCurrency"] = "MXN",
+            },
+            ["provider"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#organization",
+            },
+            ["description"] = CalculadoraDescription,
+        }, JsonLdOptions);
+
+    private async Task<string> BuildHomepageJsonLdAsync(CancellationToken ct)
+    {
+        // La home necesita email + sameAs de la misma fila OperationalConfig:
+        // una sola lectura (la home es ruta caliente y se sirve no-cache).
+        var (contactEmail, sameAs) = await GetOrganizationContactDataAsync(ct);
+
+        var organization = new Dictionary<string, object?>
+        {
+            ["@type"] = "Organization",
+            ["@id"] = $"{_baseUrl}/#organization",
+            ["name"] = BrandName,
+            ["url"] = _baseUrl,
+            ["logo"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ImageObject",
+                ["url"] = $"{_baseUrl}/logo.png",
+                ["width"] = 512,
+                ["height"] = 512,
+            },
+            ["description"] = DefaultDescription,
+            ["areaServed"] = "MX",
+            ["foundingDate"] = "2023",
+            ["knowsAbout"] = new[] { "FIBRAs", "REITs México", "inversión inmobiliaria" },
         };
 
-    public SpaPageMeta? GetMetaForPath(string path)
-    {
-        var normalizedPath = path.TrimEnd('/').ToLowerInvariant();
-        if (normalizedPath.Length == 0)
-            normalizedPath = "/";
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+            organization["email"] = contactEmail;
 
-        return Routes.TryGetValue(normalizedPath, out var meta) ? meta : null;
+        if (sameAs.Count > 0)
+            organization["sameAs"] = sameAs;
+
+        var json = new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = new object[]
+            {
+                organization,
+                new Dictionary<string, object?>
+                {
+                    ["@type"] = "WebSite",
+                    ["@id"] = $"{_baseUrl}/#website",
+                    ["url"] = _baseUrl,
+                    ["name"] = "FIBRADIS — Fibras Inmobiliarias",
+                    ["publisher"] = new Dictionary<string, object?>
+                    {
+                        ["@id"] = $"{_baseUrl}/#organization",
+                    },
+                    ["inLanguage"] = "es-MX",
+                },
+                new Dictionary<string, object?>
+                {
+                    ["@type"] = "FinancialService",
+                    ["@id"] = $"{_baseUrl}/#service",
+                    ["name"] = "FIBRADIS — Análisis de FIBRAs Inmobiliarias",
+                    ["url"] = _baseUrl,
+                    ["provider"] = new Dictionary<string, object?>
+                    {
+                        ["@id"] = $"{_baseUrl}/#organization",
+                    },
+                    ["serviceType"] = "Análisis de inversiones inmobiliarias",
+                    ["areaServed"] = new Dictionary<string, object?>
+                    {
+                        ["@type"] = "Country",
+                        ["name"] = "México",
+                    },
+                    ["currenciesAccepted"] = "MXN",
+                    ["audience"] = new Dictionary<string, object?>
+                    {
+                        ["@type"] = "Audience",
+                        ["audienceType"] = "Inversionistas inmobiliarios en México",
+                    },
+                },
+            },
+        };
+
+        return JsonSerializer.Serialize(json, JsonLdOptions);
+    }
+
+    private async Task<string> BuildConoceLasFibrasJsonLdAsync(CancellationToken ct)
+    {
+        var updatedAt = await GetLatestEditorialUpdateAsync(ct);
+        var json = new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "Article",
+            ["@id"] = $"{_baseUrl}/conoce-las-fibras#article",
+            ["headline"] = "¿Qué son las FIBRAs Inmobiliarias? Guía Completa",
+            ["description"] = ConoceDescription,
+            ["url"] = $"{_baseUrl}/conoce-las-fibras",
+            ["inLanguage"] = "es-MX",
+            ["author"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Organization",
+                ["name"] = BrandName,
+                ["url"] = _baseUrl,
+            },
+            ["publisher"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#organization",
+            },
+            ["isPartOf"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#website",
+            },
+        };
+
+        if (updatedAt is not null)
+            json["dateModified"] = updatedAt.Value.ToString("o");
+
+        return JsonSerializer.Serialize(json, JsonLdOptions);
+    }
+
+    private async Task<string> BuildFundamentalesJsonLdAsync(CancellationToken ct)
+    {
+        var latestCapturedAt = await GetLatestFundamentalesCaptureAsync(ct);
+        var json = new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "CollectionPage",
+            ["@id"] = $"{_baseUrl}/fundamentales#page",
+            ["name"] = "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
+            ["description"] = FundamentalesDescription,
+            ["url"] = $"{_baseUrl}/fundamentales",
+            ["about"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Thing",
+                ["name"] = "Comparativa de fundamentales de FIBRAs mexicanas",
+            },
+            ["publisher"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#organization",
+            },
+            ["isPartOf"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#website",
+            },
+        };
+
+        if (latestCapturedAt is not null)
+            json["dateModified"] = latestCapturedAt.Value.ToString("o");
+
+        return JsonSerializer.Serialize(json, JsonLdOptions);
+    }
+
+    private async Task<string> BuildAboutJsonLdAsync(CancellationToken ct)
+    {
+        var contactEmail = await GetContactEmailAsync(ct);
+        var json = new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "AboutPage",
+            ["@id"] = $"{_baseUrl}/acerca#page",
+            ["name"] = "Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS",
+            ["description"] = AboutDescription,
+            ["url"] = $"{_baseUrl}/acerca",
+            ["publisher"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#organization",
+            },
+            ["about"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{_baseUrl}/#organization",
+            },
+        };
+
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+        {
+            json["potentialAction"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ContactAction",
+                ["target"] = new Dictionary<string, object?>
+                {
+                    ["@type"] = "EntryPoint",
+                    ["urlTemplate"] = $"mailto:{contactEmail}",
+                },
+            };
+        }
+
+        return JsonSerializer.Serialize(json, JsonLdOptions);
+    }
+
+    private async Task<string> BuildContactJsonLdAsync(CancellationToken ct)
+    {
+        var contactEmail = await GetContactEmailAsync(ct);
+        var contactPoint = new Dictionary<string, object?>
+        {
+            ["@type"] = "ContactPoint",
+            ["contactType"] = "customer support",
+            ["availableLanguage"] = new[] { "es" },
+            ["areaServed"] = "MX",
+        };
+
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+            contactPoint["email"] = contactEmail;
+
+        var json = new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "ContactPage",
+            ["@id"] = $"{_baseUrl}/contacto#page",
+            ["name"] = "Contacto | FIBRADIS",
+            ["description"] = ContactDescription,
+            ["url"] = $"{_baseUrl}/contacto",
+            ["mainEntity"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Organization",
+                ["name"] = BrandName,
+                ["url"] = _baseUrl,
+                ["contactPoint"] = contactPoint,
+            },
+        };
+
+        return JsonSerializer.Serialize(json, JsonLdOptions);
+    }
+
+    private async Task<string?> GetContactEmailAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IOperationalConfigRepository>();
+        var configRow = await repo.GetAsync(ct);
+        return string.IsNullOrWhiteSpace(configRow.ContactEmail) ? null : configRow.ContactEmail.Trim();
+    }
+
+    private async Task<(string? ContactEmail, IReadOnlyList<string> SameAs)> GetOrganizationContactDataAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IOperationalConfigRepository>();
+        var configRow = await repo.GetAsync(ct);
+        var email = string.IsNullOrWhiteSpace(configRow.ContactEmail) ? null : configRow.ContactEmail.Trim();
+        return (email, ParseSameAs(configRow.OrganizationSameAsJson));
+    }
+
+    private static IReadOnlyList<string> ParseSameAs(string? sameAsJson)
+    {
+        if (string.IsNullOrWhiteSpace(sameAsJson))
+            return Array.Empty<string>();
+
+        try
+        {
+            var urls = JsonSerializer.Deserialize<string?[]>(sameAsJson);
+            if (urls is null || urls.Length == 0)
+                return Array.Empty<string>();
+
+            return urls
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => url!.Trim())
+                .Where(url => Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                    && (uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                        || uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+        catch (JsonException)
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    private async Task<DateTimeOffset?> GetLatestEditorialUpdateAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IEditorialPageRepository>();
+        var pages = await repo.GetAllAsync(ct);
+        return pages.Count == 0 ? null : pages.Max(page => page.UpdatedAt);
+    }
+
+    private async Task<DateTimeOffset?> GetLatestFundamentalesCaptureAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IFundamentalRepository>();
+        var rows = await repo.GetSummaryLatestAsync(ct);
+        return rows.Count == 0 ? null : rows.Max(row => row.Record.CapturedAt);
+    }
+
+    private static string NormalizePath(string path)
+    {
+        var normalized = path.TrimEnd('/').ToLowerInvariant();
+        return normalized.Length == 0 ? "/" : normalized;
     }
 }

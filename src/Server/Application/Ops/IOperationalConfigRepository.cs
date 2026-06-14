@@ -7,6 +7,7 @@ public interface IOperationalConfigRepository
     Task<OperationalConfig> GetAsync(CancellationToken ct = default);
     Task UpdateCetesRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default);
     Task UpdateTiieRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default);
+    Task UpdateOrganizationSameAsAsync(string? organizationSameAsJson, string actor, CancellationToken ct = default);
     Task UpdateAsync(
         decimal? commissionFactor,
         int? avgPeriods,

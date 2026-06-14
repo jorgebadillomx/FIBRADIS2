@@ -142,6 +142,7 @@ export function FibraPage() {
     ? {
         period: fundamentalesDto.period,
         periodsAgo: typeof fundamentalesDto.periodsAgo === 'number' ? fundamentalesDto.periodsAgo : undefined,
+        capturedAt: fundamentalesDto.capturedAt,
         summary: fundamentalesDto.summary ?? null,
         summaryMarkdown: fundamentalesDto.summaryMarkdown ?? null,
         investorTakeaway: fundamentalesDto.investorTakeaway ?? null,

@@ -68,6 +68,34 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task UpdateOrganizationSameAsAsync(string? organizationSameAsJson, string actor, CancellationToken ct = default)
+    {
+        var config = await db.OperationalConfigs.FindAsync([1], ct);
+        if (config is null)
+        {
+            config = new OperationalConfig { Id = 1 };
+            db.OperationalConfigs.Add(config);
+        }
+
+        if (config.OrganizationSameAsJson == organizationSameAsJson)
+            return;
+
+        var now = DateTimeOffset.UtcNow;
+        db.ConfigAuditLogs.Add(new ConfigAuditLog
+        {
+            Actor = actor,
+            ChangedAt = now,
+            FieldName = "organization_same_as_json",
+            PreviousValue = config.OrganizationSameAsJson ?? "null",
+            NewValue = organizationSameAsJson ?? "null",
+        });
+
+        config.OrganizationSameAsJson = organizationSameAsJson;
+        config.UpdatedAt = now;
+        config.UpdatedBy = actor;
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task UpdateAsync(
         decimal? commissionFactor,
         int? avgPeriods,

@@ -13,6 +13,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { DistributionsPage } from '@/pages/DistributionsPage'
 import { EditorialPage } from '@/pages/EditorialPage'
 import { FundamentalsPage } from '@/pages/FundamentalsPage'
+import { SeoOrganizationPage } from '@/pages/SeoOrganizationPage'
 import { SeoFaqPage } from '@/pages/SeoFaqPage'
 import { SeoRedirectsPage } from '@/pages/SeoRedirectsPage'
 import { NewsBodyPage } from '@/pages/NewsBodyPage'
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'ai-config', element: <AiConfigPage /> },
       { path: 'editorial', element: <EditorialPage /> },
+      { path: 'seo/organization', element: <SeoOrganizationPage /> },
       { path: 'seo/faq', element: <SeoFaqPage /> },
       { path: 'seo/redirects', element: <SeoRedirectsPage /> },
       { path: 'noticias', element: <NewsBodyPage /> },

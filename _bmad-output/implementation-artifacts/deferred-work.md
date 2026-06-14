@@ -4,6 +4,15 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 12-4-eeat-autoridad-ymyl (2026-06-14)
+
+- **Email hardcodeado `contacto@fibradis.mx` como fallback + flash en loading** (AcercaPage/ContactoPage/PrivacidadPage) — el spec T5 permite fallback razonable si `ContactEmail` es null; el flash del fallback durante el loading de `useSiteContent` es UX menor. Considerar centralizar el fallback en una constante y un guard `isLoading`.
+- **Tres criterios distintos de dedup de URLs `sameAs`** — `Validate` deduplica por `uri.ToString()` (URL normalizada), `Normalize`/provider por string crudo `OrdinalIgnoreCase`. Borde de normalización (`https://x.com` vs `https://x.com/`), admin-only, baja probabilidad. Unificar el criterio.
+- **PUT de `sameAs` sin límite de número de URLs ni longitud** (columna `nvarchar(max)`) — AdminOps-only; defensa en profundidad para evitar inyectar una lista enorme en el JSON-LD del home.
+- **`twitter:site "@fibradis"` hardcodeado y no verificado** (SpaMetadataMiddleware.cs:167) — pre-existente, fuera del diff; AC-2b se limita a `sameAs`. Deuda YMYL: confirmar/retirar el handle de X junto con las URLs reales de redes sociales pendientes (§Pregunta abierta del story).
+
+---
+
 ## Deferred from: code review of 12-10-redirects-administrables (2026-06-13)
 
 - **Anti-loop solo detecta el par directo A↔B** — `HasReverseLoopAsync` (OpsSeoRedirectsEndpoints.cs:322-334) no rechaza cadenas multi-hop (A→B, B→C, C→A) ni un `ToPath` que ya es `FromPath` activo. El middleware limita a 1 salto por diseño (un solo `FirstOrDefault`, sin chain-following) → AC-5 "limita a 1 salto" cumplido, sin loop de servidor. Detección de cadenas en creación es mejora más allá del spec.

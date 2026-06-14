@@ -2,5 +2,5 @@ namespace Api.Seo;
 
 public interface ISpaMetadataProvider
 {
-    SpaPageMeta? GetMetaForPath(string path);
+    Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default);
 }

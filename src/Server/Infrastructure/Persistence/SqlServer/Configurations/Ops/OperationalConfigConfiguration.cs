@@ -33,6 +33,7 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
         builder.Property(x => x.TermsEnabled).HasColumnName("terms_enabled").HasDefaultValue(false);
         builder.Property(x => x.TermsText).HasColumnName("terms_text");
         builder.Property(x => x.ContactEmail).HasColumnName("contact_email").HasMaxLength(256);
+        builder.Property(x => x.OrganizationSameAsJson).HasColumnName("organization_same_as_json");
 
         builder.HasData(new OperationalConfig
         {

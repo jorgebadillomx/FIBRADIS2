@@ -35,10 +35,20 @@ export function FundamentalesSection({ data }: Props) {
         <div className="rounded-xl border border-border bg-surface-elevated overflow-hidden">
           {/* Period header */}
           {data?.period && (
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
               <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                 {data.period}
               </span>
+              {(() => {
+                if (!data.capturedAt) return null
+                const captured = new Date(data.capturedAt)
+                if (Number.isNaN(captured.getTime())) return null
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    Datos al {captured.toLocaleDateString('es-MX', { dateStyle: 'long' })}
+                  </p>
+                )
+              })()}
             </div>
           )}
 

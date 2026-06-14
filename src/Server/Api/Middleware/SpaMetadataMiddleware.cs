@@ -71,7 +71,7 @@ public partial class SpaMetadataMiddleware(
 
         if (seoMetadata is null || !seoMetadata.IsActive)
         {
-            var meta = metadataProvider.GetMetaForPath(path);
+            var meta = await metadataProvider.GetMetaForPathAsync(path, context.RequestAborted);
             if (meta is null)
             {
                 await next(context);

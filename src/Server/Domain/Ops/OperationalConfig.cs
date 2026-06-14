@@ -18,5 +18,6 @@ public class OperationalConfig
     public bool TermsEnabled { get; set; }
     public string? TermsText { get; set; }
     public string? ContactEmail { get; set; }
+    public string? OrganizationSameAsJson { get; set; }
     public int UniverseDegradationThresholdPct { get; set; } = 30;
 }

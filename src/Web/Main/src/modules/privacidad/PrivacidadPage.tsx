@@ -1,4 +1,15 @@
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
+import { useSiteContent } from '@/shared/hooks/useSiteContent'
+
 export function PrivacidadPage() {
+  const { data: siteContent } = useSiteContent()
+  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibradis.mx'
+
+  usePageTitle(
+    'Aviso de Privacidad | FIBRADIS',
+    'Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.',
+  )
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-playfair text-3xl font-semibold tracking-tight">Aviso de privacidad</h1>
@@ -65,8 +76,8 @@ export function PrivacidadPage() {
           <p className="mt-2">
             El usuario puede solicitar la corrección o eliminación de su cuenta y datos asociados en
             cualquier momento escribiendo a{' '}
-            <a className="text-primary hover:underline" href="mailto:contacto@fibradis.mx">
-              contacto@fibradis.mx
+            <a className="text-primary hover:underline" href={`mailto:${contactEmail}`}>
+              {contactEmail}
             </a>
             . La solicitud será atendida en un plazo máximo de 5 días hábiles.
           </p>

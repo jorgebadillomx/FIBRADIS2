@@ -108,6 +108,9 @@ public class BanxicoSyncJobTests
             return Task.CompletedTask;
         }
 
+        public Task UpdateOrganizationSameAsAsync(string? organizationSameAsJson, string actor, CancellationToken ct = default)
+            => Task.CompletedTask;
+
         public Task UpdateAsync(
             decimal? commissionFactor,
             int? avgPeriods,

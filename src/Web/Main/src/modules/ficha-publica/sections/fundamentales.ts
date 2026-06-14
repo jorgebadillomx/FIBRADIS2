@@ -11,6 +11,7 @@ export interface FundamentalItem {
 export interface FundamentalesData {
   period?: string
   periodsAgo?: number
+  capturedAt?: string | null
   summary?: string | null
   summaryMarkdown?: string | null
   investorTakeaway?: string | null
@@ -26,6 +27,15 @@ export function shouldShowFundamentalesWarning(data?: FundamentalesData): boolea
 
 export function hasFundamentalesItems(data?: FundamentalesData): boolean {
   return (data?.items?.length ?? 0) > 0
+}
+
+export function getLatestCapturedAt(rows: Array<{ capturedAt?: string | null }>): Date | null {
+  return rows.reduce<Date | null>((latest, row) => {
+    if (!row.capturedAt) return latest
+    const capturedAt = new Date(row.capturedAt)
+    if (Number.isNaN(capturedAt.getTime())) return latest
+    return latest === null || capturedAt > latest ? capturedAt : latest
+  }, null)
 }
 
 export function formatFundamentalValue(value: number | null | undefined): number | string {

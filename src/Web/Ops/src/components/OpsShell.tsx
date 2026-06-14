@@ -7,6 +7,7 @@ const navigationItems = [
   { label: 'Catálogo', to: '/catalog', description: 'Agregar, editar y desactivar FIBRAs del universo.' },
   { label: 'AI Config', to: '/ai-config', description: 'Modo, proveedor y disparos manuales.' },
   { label: 'Contenido Editorial', to: '/editorial', description: 'Editar textos educativos de la sección Conoce las FIBRAs.' },
+  { label: 'SEO Organization', to: '/seo/organization', description: 'Gestionar perfiles oficiales verificados para sameAs.' },
   { label: 'SEO FAQ', to: '/seo/faq', description: 'Administrar preguntas frecuentes visibles y JSON-LD.' },
   { label: 'SEO Redirects', to: '/seo/redirects', description: 'Gestionar redirects 301/302 cacheados en memoria.' },
   { label: 'Noticias', to: '/noticias', description: 'Curación de body text y resúmenes IA.' },

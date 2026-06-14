@@ -1,4 +1,15 @@
+import { usePageTitle } from '@/shared/hooks/usePageTitle'
+import { useSiteContent } from '@/shared/hooks/useSiteContent'
+
 export function AcercaPage() {
+  const { data: siteContent } = useSiteContent()
+  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibradis.mx'
+
+  usePageTitle(
+    'Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS',
+    'Conoce la metodología de FIBRADIS: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.',
+  )
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-playfair text-3xl font-semibold tracking-tight">Acerca de FIBRADIS</h1>
@@ -125,8 +136,8 @@ export function AcercaPage() {
           <h2 className="font-semibold text-base text-foreground">Contacto</h2>
           <p className="mt-2">
             Para consultas, reportes de errores o solicitudes relacionadas con datos personales:{' '}
-            <a className="text-primary hover:underline" href="mailto:contacto@fibradis.mx">
-              contacto@fibradis.mx
+            <a className="text-primary hover:underline" href={`mailto:${contactEmail}`}>
+              {contactEmail}
             </a>
           </p>
         </section>

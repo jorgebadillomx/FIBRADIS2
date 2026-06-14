@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFundamentalesSummary, fetchAllFundamentalesPeriods } from '@/api/fundamentalesApi'
 import { fetchFaqItems } from '@/api/faqApi'
-import { formatFundamentalValue } from '@/modules/ficha-publica/sections/fundamentales'
+import { formatFundamentalValue, getLatestCapturedAt } from '@/modules/ficha-publica/sections/fundamentales'
 import { KPI_DEFINITIONS } from '@/shared/lib/kpi-definitions'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
 import { FaqAccordion } from '@/shared/ui/FaqAccordion'
@@ -50,6 +50,11 @@ export function FundamentalesPage() {
           row.name.toLowerCase().includes(fibraFilter.toLowerCase()),
       ),
     [summaryData, fibraFilter],
+  )
+
+  const latestCapturedAt = useMemo(
+    () => getLatestCapturedAt(filteredRows.length > 0 ? filteredRows : summaryData ?? []),
+    [filteredRows, summaryData],
   )
 
   usePageTitle(
@@ -101,6 +106,15 @@ export function FundamentalesPage() {
             </label>
           </div>
         </section>
+
+        {latestCapturedAt ? (
+          <p className="mb-4 text-xs text-muted-foreground">
+            Datos al {latestCapturedAt.toLocaleString('es-MX', {
+              dateStyle: 'long',
+              timeStyle: 'short',
+            })}
+          </p>
+        ) : null}
 
         <section className="overflow-x-auto rounded-2xl border border-border bg-surface-elevated shadow-sm">
           <table className="w-full min-w-[640px] text-sm">

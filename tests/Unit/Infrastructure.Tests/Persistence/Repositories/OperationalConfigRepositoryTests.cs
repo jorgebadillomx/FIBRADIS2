@@ -23,6 +23,7 @@ public class OperationalConfigRepositoryTests
         Assert.Null(config.Cetes28dRateUpdatedAt);
         Assert.Null(config.Tiie28dRate);
         Assert.Null(config.Tiie28dRateUpdatedAt);
+        Assert.Null(config.OrganizationSameAsJson);
     }
 
     [Fact]
@@ -212,6 +213,25 @@ public class OperationalConfigRepositoryTests
         Assert.Equal("contact_email", audit.FieldName);
         Assert.Equal("contacto@fibradis.mx", audit.PreviousValue);
         Assert.Equal("nuevo@fibradis.mx", audit.NewValue);
+    }
+
+    [Fact]
+    public async Task UpdateOrganizationSameAsAsync_UpdatesJsonAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var repo = new OperationalConfigRepository(db);
+
+        await repo.UpdateOrganizationSameAsAsync(
+            """["https://www.youtube.com/@fibradis","https://www.instagram.com/fibradis"]""",
+            "adminops@test.com");
+
+        var config = await db.OperationalConfigs.SingleAsync();
+        var audit = await db.ConfigAuditLogs.SingleAsync();
+
+        Assert.Equal("""["https://www.youtube.com/@fibradis","https://www.instagram.com/fibradis"]""", config.OrganizationSameAsJson);
+        Assert.Equal("organization_same_as_json", audit.FieldName);
+        Assert.Equal("null", audit.PreviousValue);
+        Assert.Equal("""["https://www.youtube.com/@fibradis","https://www.instagram.com/fibradis"]""", audit.NewValue);
     }
 
     private static AppDbContext CreateDbContext(bool ensureCreated = true)

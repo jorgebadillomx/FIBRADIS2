@@ -1,7 +1,11 @@
 using Api.Middleware;
 using Application.Seo;
 using Api.Seo;
+using Application.Fundamentals;
+using Application.Ops;
 using Domain.Seo;
+using Domain.Fundamentals;
+using Domain.Ops;
 using Infrastructure.Seo;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -241,7 +245,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
         var ex = Assert.Throws<InvalidOperationException>(() => new SpaMetadataMiddleware(
             _ => Task.CompletedTask,
-            new SpaMetadataProvider(),
+            new SpaMetadataProvider(BuildConfig(), BuildScopeFactory(null)),
             new SeoDefaultsBuilder(),
             BuildScopeFactory(null),
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
@@ -281,7 +285,8 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
     private sealed class StubProvider(SpaPageMeta meta) : ISpaMetadataProvider
     {
-        public SpaPageMeta? GetMetaForPath(string path) => meta;
+        public Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
+            => Task.FromResult<SpaPageMeta?>(meta);
     }
 
     private static SeoMetadata CreateSeoMetadata(
@@ -318,15 +323,16 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         SeoMetadata? seoMetadata = null)
     {
         var nextCalled = new StrongBox<bool>(false);
+        var scopeFactory = BuildScopeFactory(seoMetadata);
         var middleware = new SpaMetadataMiddleware(
             _ =>
             {
                 nextCalled.Value = true;
                 return Task.CompletedTask;
             },
-            provider ?? new SpaMetadataProvider(),
+            provider ?? new SpaMetadataProvider(BuildConfig(), scopeFactory),
             new SeoDefaultsBuilder(),
-            BuildScopeFactory(seoMetadata),
+            scopeFactory,
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
             BuildConfig());
 
@@ -344,7 +350,82 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var services = new ServiceCollection();
         services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
         services.AddScoped<IFaqRepository>(_ => new StubFaqRepository());
+        services.AddScoped<IOperationalConfigRepository>(_ => new StubOperationalConfigRepository("contacto@fibradis.mx"));
+        services.AddScoped<IEditorialPageRepository>(_ => new StubEditorialPageRepository());
+        services.AddScoped<IFundamentalRepository>(_ => new StubFundamentalRepository());
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+    }
+
+    private sealed class StubOperationalConfigRepository(string? contactEmail) : IOperationalConfigRepository
+    {
+        public Task<Domain.Ops.OperationalConfig> GetAsync(CancellationToken ct = default)
+            => Task.FromResult(new Domain.Ops.OperationalConfig { ContactEmail = contactEmail });
+
+        public Task UpdateCetesRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task UpdateTiieRateAsync(decimal rate, DateTimeOffset updatedAt, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task UpdateOrganizationSameAsAsync(string? organizationSameAsJson, string actor, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
+        public Task UpdateAsync(decimal? commissionFactor, int? avgPeriods, int? newsCadenceMinutes, int? fibraNewsMonths, int? distributionCadenceMinutes, bool? termsEnabled, string? termsText, string? contactEmail, string actor, int? fundamentalsCadenceMinutes = null, int? universeDegradationThresholdPct = null, CancellationToken ct = default)
+            => throw new NotSupportedException();
+    }
+
+    private sealed class StubEditorialPageRepository : IEditorialPageRepository
+    {
+        public Task<IReadOnlyList<Domain.Ops.EditorialPage>> GetAllAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<Domain.Ops.EditorialPage>>(
+                [
+                    new Domain.Ops.EditorialPage
+                    {
+                        Slug = "que-son-las-fibras",
+                        Title = "¿Qué son?",
+                        Content = "x",
+                        Order = 0,
+                        UpdatedAt = new DateTimeOffset(2026, 6, 12, 16, 30, 0, TimeSpan.Zero),
+                    }
+                ]);
+
+        public Task<Domain.Ops.EditorialPage?> GetBySlugAsync(string slug, CancellationToken ct = default)
+            => Task.FromResult<Domain.Ops.EditorialPage?>(null);
+
+        public Task<int> UpdateContentAsync(string slug, string content, CancellationToken ct = default)
+            => throw new NotSupportedException();
+    }
+
+    private sealed class StubFundamentalRepository : IFundamentalRepository
+    {
+        public Task<FundamentalRecord?> GetByIdAsync(Guid id, CancellationToken ct) => Task.FromResult<FundamentalRecord?>(null);
+        public Task<FundamentalRecord?> GetProcessedByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct) => Task.FromResult<FundamentalRecord?>(null);
+        public Task<FundamentalRecord?> GetLatestProcessedByFibraAsync(Guid fibraId, CancellationToken ct) => Task.FromResult<FundamentalRecord?>(null);
+        public Task<IReadOnlyList<string>> GetProcessedPeriodsAsync(Guid fibraId, CancellationToken ct) => Task.FromResult<IReadOnlyList<string>>([]);
+        public Task<IReadOnlyList<FundamentalRecord>> GetByFibraAsync(Guid fibraId, CancellationToken ct) => Task.FromResult<IReadOnlyList<FundamentalRecord>>([]);
+        public Task AddAsync(FundamentalRecord record, CancellationToken ct) => Task.CompletedTask;
+        public Task UpdateStatusAsync(Guid id, string status, string? confirmedBy, DateTimeOffset? confirmedAt, CancellationToken ct) => Task.CompletedTask;
+        public Task UpdatePdfReferenceAsync(Guid id, string pdfReference, CancellationToken ct) => Task.CompletedTask;
+        public Task UpdateMarkdownContentAsync(Guid id, string markdownContent, CancellationToken ct) => Task.CompletedTask;
+        public Task UpdateKpiExtractionAsync(Guid id, KpiExtractionResult result, CancellationToken ct) => Task.CompletedTask;
+        public Task UpdateKpisManualAsync(Guid id, decimal? capRate, decimal? navPerCbfi, decimal? ltv, decimal? noiMargin, decimal? ffoMargin, decimal? quarterlyDistribution, string? summary, CancellationToken ct) => Task.CompletedTask;
+        public Task UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes, CancellationToken ct) => Task.CompletedTask;
+        public Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct) => Task.CompletedTask;
+        public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>(
+                [
+                    (new FundamentalRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        FibraId = Guid.NewGuid(),
+                        Period = "2T2026",
+                        Status = "processed",
+                        CapturedAt = new DateTimeOffset(2026, 6, 13, 8, 45, 0, TimeSpan.Zero),
+                    }, "FUNO11", "Fibra Uno")
+                ]);
+        public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
+        public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryForRecentPeriodsAsync(int count, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
+        public Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>([]);
     }
 
     private sealed class StubFaqRepository : IFaqRepository
