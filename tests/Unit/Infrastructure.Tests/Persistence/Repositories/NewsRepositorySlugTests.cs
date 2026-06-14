@@ -1,4 +1,5 @@
 using Domain.News;
+using Domain.Seo;
 using Infrastructure.Persistence.Repositories.News;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
@@ -174,6 +175,46 @@ public class NewsRepositorySlugTests
 
         Assert.Equal(3, rows.Count);
         Assert.Equal("nota-0", rows[0].Slug); // la más reciente primero
+    }
+
+    [Fact]
+    public async Task GetArticlesForSitemapPageAsync_ExcludesNoindexAndSoftDeletedRows_AndReturnsTotal()
+    {
+        await using var db = CreateDbContext();
+        var now = DateTimeOffset.UtcNow;
+        var visible = CreateArticle("Visible", slug: "visible", publishedAt: now.AddHours(-1));
+        var noindex = CreateArticle("Noindex", slug: "noindex", publishedAt: now.AddHours(-2));
+        var deleted = CreateArticle("Deleted", slug: "deleted", publishedAt: now.AddHours(-3), deletedAt: now);
+
+        db.NewsArticles.AddRange(visible, noindex, deleted);
+        db.SeoMetadata.Add(new SeoMetadata
+        {
+            Id = Guid.NewGuid(),
+            PageType = SeoPageType.News,
+            EntityKey = "noindex",
+            Title = "SEO de prueba",
+            MetaDescription = "Descripción de prueba",
+            CanonicalPath = "/noticias/noindex",
+            OgTitle = "SEO de prueba",
+            OgDescription = "Descripción de prueba",
+            OgType = "article",
+            OgImageUrl = "https://example.com/og.png",
+            OgLocale = "es_MX",
+            TwitterCard = "summary_large_image",
+            RobotsDirectives = "noindex,follow",
+            JsonLd = null,
+            IsActive = true,
+            UpdatedAt = now,
+            UpdatedBy = "test",
+        });
+        await db.SaveChangesAsync();
+
+        var repo = new NewsRepository(db);
+        var (items, total) = await repo.GetArticlesForSitemapPageAsync(page: 1, pageSize: 10);
+
+        Assert.Equal(1, total);
+        Assert.Single(items);
+        Assert.Equal("visible", items[0].Slug);
     }
 
     [Theory]

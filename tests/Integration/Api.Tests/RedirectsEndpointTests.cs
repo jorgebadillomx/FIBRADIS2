@@ -98,9 +98,11 @@ public class RedirectsEndpointTests : IAsyncLifetime
         var deactivateResponse = await _adminClient.PostAsync($"/api/v1/ops/seo/redirects/{created.Id}/deactivate", content: null);
         Assert.Equal(HttpStatusCode.OK, deactivateResponse.StatusCode);
 
+        // Redirect desactivado → /blog ya no se redirige. Como /blog no es una ruta SPA conocida,
+        // el fallback responde 404 (soft-404 de H1: evita index bloat), sirviendo igual el shell.
         var passthroughResponse = await _anonClient.GetAsync("/blog");
         var passthroughBody = await passthroughResponse.Content.ReadAsStringAsync();
-        Assert.Equal(HttpStatusCode.OK, passthroughResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, passthroughResponse.StatusCode);
         Assert.Contains("<html", passthroughBody);
 
         var activateResponse = await _adminClient.PostAsync($"/api/v1/ops/seo/redirects/{created.Id}/activate", content: null);

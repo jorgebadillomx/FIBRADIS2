@@ -66,6 +66,17 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
     }
 
     [Fact]
+    public async Task InjectsMetadata_ForNoticiasPageTwo_WithSelfCanonical_AndRobots()
+    {
+        var (context, nextCalled) = await InvokeAsync("/noticias", queryString: "?page=2");
+        var body = await ReadBodyAsync(context);
+
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/noticias?page=2\" />", body);
+        Assert.Contains("<meta name=\"robots\" content=\"noindex,follow\" />", body);
+    }
+
+    [Fact]
     public async Task InjectsMetadata_ForHome_WithRootCanonical()
     {
         var (context, nextCalled) = await InvokeAsync("/");
@@ -391,6 +402,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
     private async Task<(DefaultHttpContext Context, StrongBox<bool> NextCalled)> InvokeAsync(
         string path,
         string method = "GET",
+        string queryString = "",
         ISpaMetadataProvider? provider = null,
         SeoMetadata? seoMetadata = null,
         IReadOnlyList<(string FullName, string Ticker)>? activeFibras = null,
@@ -413,6 +425,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var context = new DefaultHttpContext();
         context.Request.Method = method;
         context.Request.Path = path;
+        context.Request.QueryString = new QueryString(queryString);
         context.Response.Body = new MemoryStream();
 
         await middleware.InvokeAsync(context);

@@ -92,7 +92,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-14  # code review 12-5 JSON-LD comparador/fundamentales + breadcrumbs → done
+last_updated: 2026-06-14  # code review 12-6 sitemap index + paginación /noticias + llms.txt → done (H1 soft-404 + 4 patches aplicados)
 # story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
@@ -400,7 +400,7 @@ development_status:
   # story 12-5 done — code review pass (3 patches: P1 indentación BuildFibraJsonLd, P2 JSON-LD dinámico+breadcrumb movidos tras guard de placeholder evitando lecturas BD en peticiones que terminan en next(), P3 eliminado breadcrumb de home de un solo ítem (home conserva WebSite) + test actualizado). 2 decisiones resueltas (P3 eliminar breadcrumb home; T5 N/A + T7 diferida). 4 defers (org @id colgante /comparar, guard CanonicalPath vacío, try/catch JSON-LD dinámico, sobrecargas BuildMetaBlock muertas) + 13 dismissed (incl. falsos positivos refutados: doble emisión JSON-LD, regresión breadcrumb ficha, 500 por App:BaseUrl). 581/581 Infrastructure tests verdes. T7 Rich Results manual pendiente como gate de despliegue.
   12-5-jsonld-comparador-fundamentales-breadcrumbs: done  # Ola 2
   # story 12-6 creada — rastreo/indexación: sitemap index escalable + paginación /noticias (noindex,follow N>1) + llms.txt. Google News DESCARTADO por decisión usuario.
-  12-6-rastreo-indexacion-sitemap-index-llms-txt: ready-for-dev  # Ola 1 — expone ~1500 noticias ocultas
+  12-6-rastreo-indexacion-sitemap-index-llms-txt: done  # Ola 1 — expone ~1500 noticias ocultas
   # stories 12-7..12-11 creadas — backlog SEO completo: CWV, enlazado interno, OG images dinámicas, redirects administrables, editor robots por página. GSC/GA4 (12-12) NO creada (decisión usuario: hasta 12-11).
   12-7-core-web-vitals: ready-for-dev                   # Ola 1 — spike primero
   12-8-enlazado-interno-contenido-relacionado: ready-for-dev  # Ola 3

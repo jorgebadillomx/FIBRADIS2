@@ -1,6 +1,7 @@
 using System.Data;
 using Application.News;
 using Domain.News;
+using Domain.Seo;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
 
@@ -349,24 +350,72 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     public async Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
     {
+        var (items, _) = await GetArticlesForSitemapPageAsync(1, limit, ct);
+        return items;
+    }
+
+    public async Task<(IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default)
+    {
         var query = db.NewsArticles
             .AsNoTracking()
-            .Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null)
+            .Where(n => n.Slug != null && n.Status == NewsArticleStatus.Processed && n.DeletedAt == null);
+
+        // Solo las filas SeoMetadata activas aplican (IsActive es el gate activo/soft-delete del
+        // proyecto); debe coincidir con el filtro del endpoint en SeoEndpoints.LoadSitemapVisibilityAsync.
+        if (db.Database.IsRelational())
+        {
+            query = query.Where(n => !db.SeoMetadata.Any(seo =>
+                seo.PageType == SeoPageType.News
+                && seo.IsActive
+                && seo.EntityKey == n.Slug
+                && EF.Functions.Like(seo.RobotsDirectives, "%noindex%")));
+        }
+        else
+        {
+            var noIndexSlugs = await db.SeoMetadata
+                .AsNoTracking()
+                .Where(seo => seo.PageType == SeoPageType.News && seo.IsActive)
+                .Select(seo => new { seo.EntityKey, seo.RobotsDirectives })
+                .ToListAsync(ct);
+
+            var noIndexSlugSet = noIndexSlugs
+                .Where(seo => seo.RobotsDirectives.Contains("noindex", StringComparison.OrdinalIgnoreCase))
+                .Select(seo => seo.EntityKey)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (noIndexSlugSet.Count > 0)
+                query = query.Where(n => !noIndexSlugSet.Contains(n.Slug!));
+        }
+
+        var total = await query.CountAsync(ct);
+
+        // Guard de overflow: page viene de la ruta {page:int} (hasta int.MaxValue). El offset en int
+        // desbordaría con páginas enormes (negativo → SQL rechaza OFFSET) provocando un 500 anónimo.
+        // Calcularlo en long y cortocircuitar fuera de rango evita el overflow y la query inútil.
+        var skip = (long)Math.Max(0, page - 1) * pageSize;
+        if (skip >= total)
+            return ([], total);
+
+        var itemsQuery = query
+            // Tiebreaker determinista: sin él, empates de PublishedAt pueden duplicar/omitir filas
+            // entre sub-sitemaps (consultas independientes) cuando hay más de un page de noticias.
             .OrderByDescending(n => n.PublishedAt)
-            .Take(limit)
+            .ThenByDescending(n => n.Id)
+            .Skip((int)skip)
+            .Take(pageSize)
             .Select(n => new { n.Slug, n.PublishedAt });
 
         // READ UNCOMMITTED evita contención de locks al generar el sitemap; el provider
         // InMemory (tests) no soporta transacciones con isolation level, así que se omite
         if (!db.Database.IsRelational())
         {
-            var rowsNoTx = await query.ToListAsync(ct);
-            return rowsNoTx.Select(r => (r.Slug!, r.PublishedAt)).ToList();
+            var rowsNoTx = await itemsQuery.ToListAsync(ct);
+            return (rowsNoTx.Select(r => (r.Slug!, r.PublishedAt)).ToList(), total);
         }
 
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
-        var rows = await query.ToListAsync(ct);
+        var rows = await itemsQuery.ToListAsync(ct);
         await tx.CommitAsync(ct);
-        return rows.Select(r => (r.Slug!, r.PublishedAt)).ToList();
+        return (rows.Select(r => (r.Slug!, r.PublishedAt)).ToList(), total);
     }
 }

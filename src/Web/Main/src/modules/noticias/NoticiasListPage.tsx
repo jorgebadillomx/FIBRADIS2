@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllFibras } from '@/api/fibrasApi'
 import { fetchNewsPaged } from '@/api/newsApi'
@@ -9,19 +9,21 @@ import { Input } from '@/shared/ui/input'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
+import { buildNoticiasCanonicalPath, buildNoticiasRobotsDirectives } from '@/modules/noticias/noticiasSeo'
 
 const PAGE_SIZE = 20
 
-function toCount(value: number | string | undefined) {
+function toCount(value: number | string | null | undefined) {
   const n = typeof value === 'string' ? Number.parseInt(value, 10) : (value ?? 0)
   return Number.isNaN(n) ? 0 : n
 }
 
 export function NoticiasListPage() {
-  const [page, setPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [fibraId, setFibraId] = useState<string | undefined>()
   const debouncedQuery = useDebouncedValue(query.trim(), 300)
+  const page = Math.max(1, toCount(searchParams.get('page')))
 
   const { data: fibras = [], isError: isFibrasError } = useQuery({
     queryKey: ['fibras', 'all'],
@@ -57,12 +59,32 @@ export function NoticiasListPage() {
   function clearFilters() {
     setQuery('')
     setFibraId(undefined)
-    setPage(1)
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current)
+      next.delete('page')
+      return next
+    }, { replace: true })
+  }
+
+  function setPageInUrl(nextPage: number) {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current)
+      if (nextPage <= 1) {
+        next.delete('page')
+      } else {
+        next.set('page', String(nextPage))
+      }
+      return next
+    }, { replace: true })
   }
 
   usePageTitle(
     'Noticias FIBRAs Inmobiliarias | FIBRADIS',
     'Últimas noticias y novedades sobre el mercado de FIBRAs inmobiliarias mexicanas. Actualización continua desde fuentes especializadas.',
+    {
+      canonicalPath: buildNoticiasCanonicalPath(page),
+      robotsDirectives: buildNoticiasRobotsDirectives(page),
+    },
   )
 
   return (
@@ -93,7 +115,7 @@ export function NoticiasListPage() {
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value)
-                  setPage(1)
+                  setPageInUrl(1)
                 }}
                 placeholder="Ej. FUNO11, ocupación, resultados trimestrales"
                 className="h-10"
@@ -107,7 +129,7 @@ export function NoticiasListPage() {
                 onChange={(event) => {
                   const nextFibraId = event.target.value || undefined
                   setFibraId(nextFibraId)
-                  setPage(1)
+                  setPageInUrl(1)
                 }}
                 disabled={isFibrasError}
                 className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -230,7 +252,7 @@ export function NoticiasListPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                onClick={() => setPageInUrl(Math.max(1, page - 1))}
                 disabled={page <= 1}
               >
                 Página anterior
@@ -244,7 +266,7 @@ export function NoticiasListPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                onClick={() => setPageInUrl(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
               >
                 Página siguiente

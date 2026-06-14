@@ -501,6 +501,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         public Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default) => throw new NotSupportedException();
         public Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<(IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default) => throw new NotSupportedException();
     }
 

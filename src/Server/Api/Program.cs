@@ -3,6 +3,7 @@ using Api.Endpoints.Ops;
 using Api.Endpoints.Private;
 using Api.Endpoints.Public;
 using Api.Middleware;
+using Api.Seo;
 using Application.Ops;
 using Application.Jobs;
 using Hangfire;
@@ -119,7 +120,21 @@ app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("/ops/{**slug}", "ops/index.html");
 app.MapFallback(async ctx =>
 {
-    ctx.Response.Headers.CacheControl = "s-maxage=180, stale-while-revalidate=60";
+    // Soft-404: las rutas que no corresponden a ninguna ruta SPA conocida deben responder 404,
+    // no 200 con el shell. Servir 200 a cualquier path genera index bloat y "soft 404" en GSC.
+    // Las rutas dinámicas (/fibras/{slug}, /noticias/{slug}) ya resolvieron su status en sus
+    // middlewares; aquí solo degradamos paths desconocidos.
+    if (!SpaRouteCatalog.IsKnownSpaRoute(ctx.Request.Path))
+    {
+        ctx.Response.StatusCode = StatusCodes.Status404NotFound;
+        ctx.Response.Headers.CacheControl = "no-cache";
+    }
+    else
+    {
+        ctx.Response.Headers.CacheControl = "s-maxage=180, stale-while-revalidate=60";
+    }
+
+    // El cliente renderiza su propia pantalla NotFound; el status HTTP es el que importa para crawlers.
     await ctx.Response.SendFileAsync(
         app.Environment.WebRootFileProvider.GetFileInfo("index.html"));
 });
