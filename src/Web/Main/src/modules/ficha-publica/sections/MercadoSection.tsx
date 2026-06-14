@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toNum } from '@/shared/lib/format-time'
 import { fetchFibraHistory } from '@/api/fibrasApi'
-import { PriceChart } from '@/shared/ui/price-chart'
+import { PriceChart, PriceChartSkeleton } from '@/shared/ui/price-chart'
 
 const SELECTORS = ['1M', '3M', '6M', '1A'] as const
 type Selector = typeof SELECTORS[number]
@@ -26,6 +26,14 @@ function formatVolume(vol: number): string {
 export function MercadoSection({ ticker, week52High, week52Low, volume }: MercadoSectionProps) {
   const [active, setActive] = useState<Selector>('1M')
   const [period, setPeriod] = useState<'1m' | '3m' | '6m' | '1y'>('1m')
+  // El re-render del chart (recharts) es la interacción con peor INP de la ficha. Marcar el cambio
+  // de período como transición permite que React mantenga el hilo responsivo (story 12-7, T4).
+  const [, startTransition] = useTransition()
+
+  const selectPeriod = (s: Selector) => {
+    setActive(s)
+    startTransition(() => setPeriod(PERIOD_MAP[s]))
+  }
 
   const high = toNum(week52High)
   const low = toNum(week52Low)
@@ -87,10 +95,7 @@ export function MercadoSection({ ticker, week52High, week52Low, volume }: Mercad
               <button
                 key={s}
                 aria-pressed={active === s ? 'true' : 'false'}
-                onClick={() => {
-                  setActive(s)
-                  setPeriod(PERIOD_MAP[s])
-                }}
+                onClick={() => selectPeriod(s)}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   active === s
                     ? 'bg-primary text-primary-foreground shadow-sm'
@@ -105,7 +110,7 @@ export function MercadoSection({ ticker, week52High, week52Low, volume }: Mercad
 
         <div className="p-4">
           {isLoadingHistory ? (
-            <div className="h-72 animate-pulse rounded-xl border border-border bg-muted/20" />
+            <PriceChartSkeleton />
           ) : isHistoryError ? (
             <div className="flex h-72 items-center justify-center rounded-xl border border-border bg-muted/20">
               <p className="text-sm text-muted-foreground">Error al cargar historial de precios</p>

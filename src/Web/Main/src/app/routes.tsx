@@ -23,8 +23,11 @@ const AcercaPage = lazy(() => import('@/modules/acerca/AcercaPage').then(m => ({
 const ContactoPage = lazy(() => import('@/modules/contacto/ContactoPage').then(m => ({ default: m.ContactoPage })))
 const PerfilPage = lazy(() => import('@/modules/perfil/PerfilPage').then(m => ({ default: m.PerfilPage })))
 
+// Reserva la altura del viewport mientras carga el chunk lazy de la ruta. Con min-h-[40vh] el
+// footer quedaba dentro del fold y se desplomaba al renderizar la página (CLS ~0.15 en /fibras/:slug,
+// story 12-7). min-h-screen mantiene el footer fuera del fold, así su desplazamiento no cuenta como CLS.
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[40vh]">
+  <div className="flex min-h-screen items-start justify-center pt-24">
     <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
   </div>
 )

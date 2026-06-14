@@ -322,6 +322,31 @@ public void Calculate_WhenUniverseSizeIsZero_ReturnsSafeFallback()
 
 Origen: retro Épica 7, patrón 1 — tres instancias de división por cero en 7-2 (`difPct`, `calcNuevoAvg`, `calcNuevaPlusvaliaPct`) atrapadas en review, no en dev.
 
+## Core Web Vitals (CWV) — guardrail anti-regresión
+
+Aplica a toda página pública, en especial las **rutas lazy** (`p(<Page/>)` en `routes.tsx`) y las secciones que cargan datos async (ficha de FIBRA, comparador, fundamentales).
+
+### Umbrales "Good" (p75 móvil)
+
+- **LCP** ≤ 2.5 s · **INP** ≤ 200 ms · **CLS** ≤ 0.10
+
+### Reglas no negociables (causas raíz ya detectadas — story 12-7)
+
+1. **El fallback de Suspense de una ruta lazy debe reservar la altura del viewport** (`min-h-screen`), NUNCA `min-h-[40vh]` ni un spinner suelto. Con un fallback corto, el footer queda dentro del fold y se desploma al renderizar el chunk → CLS alto. `PageLoader` en `routes.tsx` ya cumple; cualquier fallback nuevo también debe.
+2. **Los skeletons de carga deben replicar la geometría real del contenido**, no una altura conjeturada. Reusar el mismo componente skeleton entre page-skeleton y section-skeleton (p.ej. `FundamentalesSectionSkeleton`, `PriceChartSkeleton`). Centralizar conteos/anchos en constantes compartidas (`cwv-layout.ts`) usadas por ambos estados. NO usar `min-height` fijo arbitrario.
+3. **Todo elemento que aparezca tras cargar datos debe tener su espacio reservado** mientras carga (p.ej. `IsrCalculatorWidget` se reserva con un placeholder durante la carga de `history`). Un elemento que "pop-in" empuja todo lo que está debajo → CLS.
+4. **Interacciones pesadas (re-render de recharts, filtros sobre tablas grandes) van envueltas en `useTransition`** para no bloquear el hilo principal y degradar INP.
+5. **Fuentes y GTM ya están optimizados** (preconnect + `display=swap` + preload no-bloqueante; GTM diferido a `requestIdleCallback` en `index.html`). No reintroducir `<link rel="stylesheet">` bloqueante de fuentes ni scripts de terceros síncronos.
+
+### Cómo medir (obligatorio antes de marcar `done` una historia que toque CWV)
+
+- **Medir contra el build de PROD, nunca el dev server.** En dev el SPA tarda segundos en montar (ESM sin bundlear + sin shell SSR) y produce un salto blank→render que enmascara el CLS real.
+- Procedimiento: `npm run build`, servir `dist/` con un backend mock en `/api`, y medir con el MCP de Chrome DevTools en emulación **móvil 412×915 + CPU 4x + Slow 4G**.
+- Capturar CLS con `PerformanceObserver({type:'layout-shift', buffered:true})` e INP con `{type:'event', durationThreshold}` interactuando con los controles pesados.
+- Documentar antes/después en el Dev Agent Record. El LCP de campo se valida vía **CrUX/PSI** cuando haya tráfico suficiente (hoy devuelve `n/a`).
+
+Origen: story 12-7 — el CLS dominante de `/fibras/{slug}` (0.18→0.036) era el fallback de Suspense corto, no los skeletons; solo se detectó midiendo contra el build de prod.
+
 ## mem0 — usar SOLO en estos casos
 
 - Tomaste una decisión que contradice o extiende el story file Y afectará historias futuras

@@ -64,6 +64,27 @@ function getYAxisDomain(min: number | null, max: number | null): [number, number
   return [Math.max(0, min - padding), max + padding]
 }
 
+// Reserva la MISMA geometría que <PriceChart/> (3 tarjetas de stats apiladas en móvil + caja
+// del chart de h-72) para que el swap skeleton→chart no provoque layout shift (CLS, story 12-7).
+export function PriceChartSkeleton() {
+  return (
+    <div aria-busy="true" className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="rounded-xl border border-border/80 bg-background px-4 py-3">
+            <div className="h-3 w-24 animate-pulse rounded bg-muted/70" />
+            <div className="mt-1 h-8 w-28 animate-pulse rounded bg-muted/70" />
+            <div className="mt-1 h-3 w-32 animate-pulse rounded bg-muted/70" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-[1.25rem] border border-border/70 bg-linear-to-b from-background via-background to-muted/30 p-3 sm:p-4">
+        <div className="h-72 w-full animate-pulse rounded-xl bg-muted/20" />
+      </div>
+    </div>
+  )
+}
+
 export function PriceChart({ data, periodLabel }: PriceChartProps) {
   const points = buildPriceChartPoints(data)
   const summary = summarizePriceChart(points)
