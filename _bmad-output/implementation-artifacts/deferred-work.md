@@ -4,6 +4,13 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of spec-economatica-discovery-primero (2026-06-13)
+
+- **Contaminación cross-FIBRA vía formas de name-variant** — Al volver `EconomaticaDiscoverySource` universal con formas de fallback, una `NameVariant` normalizada podría coincidir con el código Economatica de OTRA FIBRA, devolviendo PDFs ajenos etiquetados como de esta FIBRA. Amplificado porque Economatica corre PRIMERO + dedup por período suprime a la fuente autoritativa para ese período. Las formas 1-3 (derivadas del ticker propio) NO colisionan; el vector es solo la forma de name-variant (probabilidad baja). **Fix:** filtrar candidatos cuyo filename `{CODE}_RT_...` empiece con el `econTicker` consultado. Requiere fixture HTML para FVIA (los tests actuales reusan el de FHIPO contra una query FVIA, lo que rompería un guard de pertenencia).
+- **Amplificación de tráfico HTTP** — La fuente pasó de 19 tickers en whitelist a universal × hasta `3 + NameVariants.Count` formas por FIBRA, casi todas 404 para FIBRAs ausentes de Economatica (timeout 30s c/u, secuencial). Aceptable en un job de fundamentales que corre cada ~36h, pero crece de ~19 a potencialmente cientos de requests/corrida. **Fix:** cache de URLs 404 por corrida, o límite/short-circuit de formas.
+
+---
+
 ## Deferred from: code review of 12-2-faqpage-schema-y-qa-administrable (2026-06-13)
 
 - **Normalización de case de `entityKey` inconsistente** — El middleware busca FAQ con el path en minúsculas (`SpaMetadataMiddleware.NormalizePath` → `ToLowerInvariant`) y con el ticker en mayúsculas (`FibraProfileMetadataMiddleware` → `ToUpperInvariant`), pero `FaqRepository.NormalizeEntityKey` y `OpsSeoFaqEndpoints.NormalizeEntityKey` solo hacen `Trim()`+`TrimEnd('/')` (sin case-folding). Los destinos por defecto (`PAGE_TARGETS` + seed) usan el case correcto, así que funciona de fábrica; el riesgo es captura manual con case incorrecto desde Ops → la FAQ se guarda pero ni el acordeón ni el JSON-LD la muestran. Requiere decidir normalización por `PageType` consistente con el módulo SEO de 12-1 (in-progress).
