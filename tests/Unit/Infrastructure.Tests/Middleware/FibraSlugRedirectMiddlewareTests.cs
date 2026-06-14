@@ -81,19 +81,6 @@ public class FibraSlugRedirectMiddlewareTests
     }
 
     [Theory]
-    [InlineData("/catalogo")]
-    [InlineData("/CATALOGO")]
-    [InlineData("/catalogo/")]
-    public async Task InvokeAsync_CatalogoPath_Redirects301ToFibras(string path)
-    {
-        var (context, nextCalled) = await InvokeAsync(path);
-
-        Assert.False(nextCalled.Value);
-        Assert.Equal(StatusCodes.Status301MovedPermanently, context.Response.StatusCode);
-        Assert.Equal("/fibras", context.Response.Headers.Location.ToString());
-    }
-
-    [Theory]
     [InlineData("/assets/index-1TzwM6fE.js")]
     [InlineData("/fibras/funo11.json")]
     [InlineData("/api/v1/fibras/FUNO11")]

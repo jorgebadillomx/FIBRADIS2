@@ -1,30 +1,47 @@
 using AngleSharp;
 using Application.Fundamentals;
 using Domain.Catalog;
+using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace Infrastructure.Integrations.PdfDiscovery;
 
-public partial class EconomaticaDiscoverySource(HttpClient http) : IFundamentalsDiscoverySource
+public partial class EconomaticaDiscoverySource(
+    HttpClient http,
+    ILogger<EconomaticaDiscoverySource>? logger = null) : IFundamentalsDiscoverySource
 {
     // HTTP only — SSL cert is expired on www.economatica.mx
     private const string BaseUrl = "http://www.economatica.mx";
 
     public string SourceName => "economatica";
 
-    // Economatica uses the base ticker without the 2-digit series suffix.
-    // NEXT25 has no data on Economatica.
-    public IReadOnlyList<string> SupportedTickers { get; } = [
-        "FUNO11", "DANHOS13", "TERRA13", "FIBRAMQ12", "FMTY14", "FINN13", "FIHO12",
-        "VESTA15", "HCITY17", "EDUCA18", "FIBRAPL14", "FIBRAUP18", "FNOVA17", "FPLUS16",
-        "FSHOP13", "SOMA21", "STORAGE18", "FHIPO14", "FCFE18"
-    ];
+    // Economatica indexes most FIBRAs by a short ticker code. We don't gate by a
+    // whitelist — the source is universal and tries several ticker forms per fibra,
+    // returning empty (without throwing) when none resolve to a report page.
+    public IReadOnlyList<string> SupportedTickers { get; } = [];
 
     public async Task<IReadOnlyList<FundamentalsDiscoveryCandidate>> DiscoverCandidatesAsync(
         Fibra fibra, CancellationToken ct)
     {
-        // Strip 2-digit series suffix: "FHIPO14" → "FHIPO"
-        var econTicker = fibra.Ticker[..^2];
+        // Economatica uses a short ticker code that is usually the BMV ticker without
+        // its 2-digit series suffix (e.g. "FHIPO14" → "FHIPO", "FVIA16" → "FVIA").
+        // We try several forms in order and keep the first that yields PDFs. If a form
+        // 404s or the page has no reports, we move on; if none resolve, return empty
+        // (no throw) so fibras absent from Economatica don't pollute the error log.
+        foreach (var econTicker in BuildTickerForms(fibra))
+        {
+            ct.ThrowIfCancellationRequested();
+            var candidates = await TryFormAsync(fibra, econTicker, ct);
+            if (candidates.Count > 0)
+                return candidates;
+        }
+
+        return [];
+    }
+
+    private async Task<List<FundamentalsDiscoveryCandidate>> TryFormAsync(
+        Fibra fibra, string econTicker, CancellationToken ct)
+    {
         var pageUrl = $"{BaseUrl}/{econTicker}/REPORTES%20TRIMESTRALES/";
 
         string html;
@@ -32,10 +49,19 @@ public partial class EconomaticaDiscoverySource(HttpClient http) : IFundamentals
         {
             html = await GetHtmlAsync(pageUrl, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            throw new InvalidOperationException(
-                $"No se pudo obtener la página de Economatica para {fibra.Ticker}: {ex.Message}", ex);
+            // Genuine caller cancellation → propagate; do not swallow.
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // 404, network failure, or HttpClient timeout (TaskCanceledException without
+            // caller cancellation) → this form didn't resolve; log and try the next form.
+            // Debug level keeps absent fibras out of the PipelineErrorLog while preserving
+            // observability for genuine outages.
+            logger?.LogDebug(ex, "Economatica form '{EconTicker}' did not resolve for {Ticker}", econTicker, fibra.Ticker);
+            return [];
         }
 
         var context = BrowsingContext.New(Configuration.Default);
@@ -65,6 +91,38 @@ public partial class EconomaticaDiscoverySource(HttpClient http) : IFundamentals
 
         return candidates;
     }
+
+    // Ordered, de-duplicated ticker forms to probe on Economatica. Order matters:
+    // the 2-digit-suffix strip is the proven primary; the rest are fallbacks.
+    private static IEnumerable<string> BuildTickerForms(Fibra fibra)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var ticker = fibra.Ticker?.Trim() ?? string.Empty;
+
+        var forms = new List<string>();
+        if (ticker.Length > 2)
+            forms.Add(ticker[..^2]);                       // "FVIA16" → "FVIA"
+        forms.Add(ticker.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')); // strip all trailing digits
+        forms.Add(ticker);                                 // full ticker as-is
+        forms.AddRange((fibra.NameVariants ?? []).Select(NormalizeTickerForm)); // name variants as ticker-like codes
+
+        foreach (var form in forms)
+        {
+            if (!string.IsNullOrWhiteSpace(form) && seen.Add(form))
+                yield return form;
+        }
+    }
+
+    // Reduce a name variant to an uppercase ASCII-alphanumeric code (Economatica paths are
+    // codes, not long names). Accents are stripped: "Fibra Vía" → "FIBRAVIA". Only useful
+    // when a variant happens to be a code; long names won't resolve and are skipped on 404.
+    private static string NormalizeTickerForm(string value)
+        => string.Concat((value ?? string.Empty)
+            .Normalize(System.Text.NormalizationForm.FormD)
+            .Where(ch =>
+                System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch) !=
+                System.Globalization.UnicodeCategory.NonSpacingMark && char.IsLetterOrDigit(ch)))
+            .ToUpperInvariant();
 
     // Parses Economatica filename format: {TICKER}_RT_{YEAR}_{Q}T--{SUFFIX}
     // e.g. "FHIPO_RT_2025_4T--DIS" → "Q4-2025", "FUNO_RT_2014_1T--BYH" → "Q1-2014"
