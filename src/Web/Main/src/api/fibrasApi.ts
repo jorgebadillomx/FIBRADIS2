@@ -58,6 +58,16 @@ export async function fetchFibraHistory(ticker: string, period: '1m' | '3m' | '6
   return data
 }
 
+export type RelatedFibra = components['schemas']['RelatedFibra']
+
+export async function fetchRelatedFibras(ticker: string): Promise<RelatedFibra[]> {
+  const { data, error } = await apiClient.GET('/api/v1/fibras/{ticker}/related', {
+    params: { path: { ticker } },
+  })
+  if (error) return []
+  return data ?? []
+}
+
 export async function fetchFibraByTicker(ticker: string) {
   const { data, error, response } = await apiClient.GET('/api/v1/fibras/{ticker}', {
     params: { path: { ticker } },

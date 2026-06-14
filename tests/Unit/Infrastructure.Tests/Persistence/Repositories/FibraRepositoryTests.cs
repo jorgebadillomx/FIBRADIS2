@@ -129,6 +129,102 @@ public class FibraRepositoryTests
         Assert.DoesNotContain(active, item => item.Ticker == "FUNO11");
     }
 
+    private static Fibra CreateFibraInSector(string ticker, string sector, FibraState state = FibraState.Active)
+    {
+        var f = CreateFibra(ticker, state);
+        f.Sector = sector;
+        return f;
+    }
+
+    [Fact]
+    public async Task GetActiveBySectorAsync_ReturnsSameSector_ExcludingSelf()
+    {
+        await using var db = CreateDbContext();
+        var self = CreateFibraInSector("FUNO11", "Diversificado");
+        db.Fibras.AddRange(
+            self,
+            CreateFibraInSector("FNOVA17", "Diversificado"),
+            CreateFibraInSector("FPLUS16", "Diversificado"));
+        await db.SaveChangesAsync();
+
+        var repo = new FibraRepository(db);
+        var result = await repo.GetActiveBySectorAsync("Diversificado", self.Id, 6, CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.DoesNotContain(result, f => f.Id == self.Id);
+        Assert.All(result, f => Assert.Equal("Diversificado", f.Sector));
+        Assert.Contains(result, f => f.Ticker == "FNOVA17");
+        Assert.Contains(result, f => f.Ticker == "FPLUS16");
+    }
+
+    [Fact]
+    public async Task GetActiveBySectorAsync_ExcludesOtherSectors()
+    {
+        await using var db = CreateDbContext();
+        var self = CreateFibraInSector("FUNO11", "Diversificado");
+        db.Fibras.AddRange(
+            self,
+            CreateFibraInSector("TERRA13", "Industrial"),
+            CreateFibraInSector("DANHOS13", "Comercial"));
+        await db.SaveChangesAsync();
+
+        var repo = new FibraRepository(db);
+        var result = await repo.GetActiveBySectorAsync("Diversificado", self.Id, 6, CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetActiveBySectorAsync_ExcludesInactive()
+    {
+        await using var db = CreateDbContext();
+        var self = CreateFibraInSector("FUNO11", "Diversificado");
+        db.Fibras.AddRange(
+            self,
+            CreateFibraInSector("FNOVA17", "Diversificado"),
+            CreateFibraInSector("FPLUS16", "Diversificado", FibraState.Inactive));
+        await db.SaveChangesAsync();
+
+        var repo = new FibraRepository(db);
+        var result = await repo.GetActiveBySectorAsync("Diversificado", self.Id, 6, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal("FNOVA17", result[0].Ticker);
+    }
+
+    [Fact]
+    public async Task GetActiveBySectorAsync_RespectsCount()
+    {
+        await using var db = CreateDbContext();
+        var self = CreateFibraInSector("FUNO11", "Industrial");
+        db.Fibras.AddRange(
+            self,
+            CreateFibraInSector("TERRA13", "Industrial"),
+            CreateFibraInSector("FMTY14", "Industrial"),
+            CreateFibraInSector("VESTA15", "Industrial"),
+            CreateFibraInSector("NEXT25", "Industrial"));
+        await db.SaveChangesAsync();
+
+        var repo = new FibraRepository(db);
+        var result = await repo.GetActiveBySectorAsync("Industrial", self.Id, 2, CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task GetActiveBySectorAsync_ZeroCountOrEmptySector_ReturnsEmpty()
+    {
+        await using var db = CreateDbContext();
+        var self = CreateFibraInSector("FUNO11", "Diversificado");
+        db.Fibras.AddRange(self, CreateFibraInSector("FNOVA17", "Diversificado"));
+        await db.SaveChangesAsync();
+
+        var repo = new FibraRepository(db);
+
+        Assert.Empty(await repo.GetActiveBySectorAsync("Diversificado", self.Id, 0, CancellationToken.None));
+        Assert.Empty(await repo.GetActiveBySectorAsync("", self.Id, 6, CancellationToken.None));
+    }
+
     [Fact]
     public async Task GetAllAsync_ReturnsAllIncludingInactive()
     {

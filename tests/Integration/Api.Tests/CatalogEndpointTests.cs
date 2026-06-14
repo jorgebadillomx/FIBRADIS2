@@ -111,4 +111,53 @@ public class CatalogEndpointTests(ApiWebFactory factory)
         Assert.True(doc.RootElement.TryGetProperty("domainCode", out _));
         Assert.True(doc.RootElement.TryGetProperty("correlationId", out _));
     }
+
+    [Fact]
+    public async Task GetRelatedFibras_ReturnsOk_SameSectorExcludingSelf()
+    {
+        await EnsureSeededAsync();
+        // FUNO11 es "Diversificado"; comparten sector FNOVA17 y FPLUS16 (seed HasData).
+        var response = await _client.GetAsync("/api/v1/fibras/FUNO11/related");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
+
+        var tickers = doc.RootElement.EnumerateArray()
+            .Select(e => e.GetProperty("ticker").GetString())
+            .ToList();
+
+        Assert.DoesNotContain("FUNO11", tickers);
+        Assert.Contains("FNOVA17", tickers);
+        Assert.Contains("FPLUS16", tickers);
+        Assert.All(doc.RootElement.EnumerateArray(), e =>
+            Assert.Equal("Diversificado", e.GetProperty("sector").GetString()));
+    }
+
+    [Fact]
+    public async Task GetRelatedFibras_EachItemHasCardFields()
+    {
+        await EnsureSeededAsync();
+        var response = await _client.GetAsync("/api/v1/fibras/FUNO11/related");
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var first = doc.RootElement.EnumerateArray().First();
+
+        // Verifica contenido no-vacío, no solo presencia de la propiedad (un null serializado pasaría).
+        foreach (var field in new[] { "ticker", "fullName", "shortName", "sector" })
+        {
+            Assert.True(first.TryGetProperty(field, out var value), $"Falta la propiedad '{field}'");
+            Assert.Equal(JsonValueKind.String, value.ValueKind);
+            Assert.False(string.IsNullOrWhiteSpace(value.GetString()), $"'{field}' no debe estar vacío");
+        }
+    }
+
+    [Fact]
+    public async Task GetRelatedFibras_NonExistentTicker_Returns404()
+    {
+        await EnsureSeededAsync();
+        var response = await _client.GetAsync("/api/v1/fibras/FAKE99/related");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

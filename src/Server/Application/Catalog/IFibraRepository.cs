@@ -19,5 +19,12 @@ public interface IFibraRepository
 
     Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllActiveAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// FIBRAs activas del mismo sector, excluyendo la propia. Para enlazado interno
+    /// "FIBRAs relacionadas" en la ficha (story 12-8). Ordenadas por ticker, máximo <paramref name="count"/>.
+    /// </summary>
+    Task<IReadOnlyList<Domain.Catalog.Fibra>> GetActiveBySectorAsync(
+        string sector, Guid excludeId, int count, CancellationToken ct = default);
+
     Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default);
 }
