@@ -44,6 +44,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserFavorite> UserFavorites => Set<UserFavorite>();
     public DbSet<SeoMetadata> SeoMetadata => Set<SeoMetadata>();
     public DbSet<FaqItem> FaqItems => Set<FaqItem>();
+    public DbSet<UrlRedirect> UrlRedirects => Set<UrlRedirect>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

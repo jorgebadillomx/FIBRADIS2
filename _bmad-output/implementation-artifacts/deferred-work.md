@@ -4,6 +4,16 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 12-10-redirects-administrables (2026-06-13)
+
+- **Anti-loop solo detecta el par directo A↔B** — `HasReverseLoopAsync` (OpsSeoRedirectsEndpoints.cs:322-334) no rechaza cadenas multi-hop (A→B, B→C, C→A) ni un `ToPath` que ya es `FromPath` activo. El middleware limita a 1 salto por diseño (un solo `FirstOrDefault`, sin chain-following) → AC-5 "limita a 1 salto" cumplido, sin loop de servidor. Detección de cadenas en creación es mejora más allá del spec.
+- **`Normalize` pasa `ToPath` a minúsculas** — Corrompería destinos case-sensitive (UrlRedirectPath.cs:24-31). Sin impacto hoy: todos los slugs del proyecto son lowercase. Reconsiderar si se introducen destinos sensibles a mayúsculas.
+- **`Normalize` no decodifica `%xx` ni colapsa `//`/slash inicial** — Una regla creada con esos casos podría no matchear el path entrante (que Kestrel ya decodificó). Borde de baja probabilidad (admin escribe paths ASCII planos). Canonicalización idéntica write/emit como hardening futuro.
+- **`ToPath` puede apuntar a prefijos reservados** (`/api/...`, `/ops/...`) — Solo `FromPath` corre por `IsReservedSource` (OpsSeoRedirectsEndpoints.cs:295). AdminOps es confiable y el spec solo exige no-colisión en `FromPath`; evaluar validar `ToPath` también.
+- **`ValidateRequest` sobrescribe mensajes del mismo campo** — `errors[field] = [...]` en vez de acumular (OpsSeoRedirectsEndpoints.cs:267-302); con dos violaciones del mismo campo solo se reporta la última. La validación sigue rechazando correctamente; solo afecta el detalle del mensaje (UX baja).
+
+---
+
 ## Deferred from: code review of spec-economatica-discovery-primero (2026-06-13)
 
 - **Contaminación cross-FIBRA vía formas de name-variant** — Al volver `EconomaticaDiscoverySource` universal con formas de fallback, una `NameVariant` normalizada podría coincidir con el código Economatica de OTRA FIBRA, devolviendo PDFs ajenos etiquetados como de esta FIBRA. Amplificado porque Economatica corre PRIMERO + dedup por período suprime a la fuente autoritativa para ese período. Las formas 1-3 (derivadas del ticker propio) NO colisionan; el vector es solo la forma de name-variant (probabilidad baja). **Fix:** filtrar candidatos cuyo filename `{CODE}_RT_...` empiece con el `econTicker` consultado. Requiere fixture HTML para FVIA (los tests actuales reusan el de FHIPO contra una query FVIA, lo que rompería un guard de pertenencia).

@@ -56,6 +56,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 // El 301 a la URL slug canónica debe resolverse ANTES de servir HTML (SpaMetadataMiddleware)
+app.UseMiddleware<UrlRedirectMiddleware>();
 app.UseMiddleware<FibraSlugRedirectMiddleware>();
 // /fibras/{slug} dinámico — después del 301 canónico, antes que SpaMetadataMiddleware (que cubre /fibras listado)
 app.UseMiddleware<FibraProfileMetadataMiddleware>();
@@ -110,6 +111,7 @@ app.MapSeo();
 app.MapFaq();
 app.MapOpsNewsManagement();
 app.MapOpsSeoFaq();
+app.MapOpsSeoRedirects();
 
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());

@@ -16,6 +16,7 @@ public class OpenApiEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebF
         Assert.Contains("/api/v1/auth/login", body);
         Assert.Contains("/api/v1/market/indicadores", body);
         Assert.Contains("/api/v1/news/blocklist-terms", body);
+        Assert.Contains("/api/v1/ops/seo/redirects", body);
     }
 
     [Fact]
