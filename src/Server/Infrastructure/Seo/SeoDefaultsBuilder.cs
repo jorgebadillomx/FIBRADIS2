@@ -3,9 +3,13 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using Application.Catalog;
+using Application.Fundamentals;
+using Application.Market;
 using Application.Seo;
 using Domain.Catalog;
+using Domain.Fundamentals;
 using Domain.News;
+using Domain.Market;
 using Domain.Seo;
 
 namespace Infrastructure.Seo;
@@ -71,47 +75,15 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
         Fibra fibra,
         string baseUrl,
         DateTimeOffset updatedAt,
-        string updatedBy = "system")
+        string updatedBy = "system",
+        FibraSeoMarketData? marketData = null)
     {
         var canonicalSlug = FibraSlug.Build(fibra.FullName, fibra.Ticker);
         var canonicalPath = $"/fibras/{canonicalSlug}";
         var title = $"{fibra.FullName} ({fibra.Ticker}){FibraTitleSuffix}";
         var description = BuildFibraDescription(fibra);
 
-        var jsonLd = JsonSerializer.Serialize(new Dictionary<string, object?>
-        {
-            ["@context"] = "https://schema.org",
-            ["@graph"] = new object[]
-            {
-                new Dictionary<string, object?>
-                {
-                    ["@type"] = "FinancialProduct",
-                    ["@id"] = $"{TrimBaseUrl(baseUrl)}{canonicalPath}#product",
-                    ["name"] = fibra.FullName,
-                    ["alternateName"] = fibra.Ticker,
-                    ["description"] = description,
-                    ["url"] = $"{TrimBaseUrl(baseUrl)}{canonicalPath}",
-                    ["provider"] = new Dictionary<string, object?>
-                    {
-                        ["@type"] = "Organization",
-                        ["name"] = BrandName,
-                        ["url"] = TrimBaseUrl(baseUrl),
-                    },
-                    ["category"] = fibra.Sector,
-                    ["additionalType"] = "https://en.wikipedia.org/wiki/Real_estate_investment_trust",
-                },
-                new Dictionary<string, object?>
-                {
-                    ["@type"] = "BreadcrumbList",
-                    ["itemListElement"] = new object[]
-                    {
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 1, ["name"] = "Inicio", ["item"] = $"{TrimBaseUrl(baseUrl)}/" },
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 2, ["name"] = "Fibras Inmobiliarias", ["item"] = $"{TrimBaseUrl(baseUrl)}/fibras" },
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 3, ["name"] = fibra.FullName, ["item"] = $"{TrimBaseUrl(baseUrl)}{canonicalPath}" },
-                    },
-                },
-            },
-        }, JsonLdOptions);
+        var jsonLd = BuildFibraJsonLd(fibra, baseUrl, canonicalPath, description, marketData);
 
         return CreateBase(
             SeoPageType.Fibra,
@@ -262,6 +234,120 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
     }
 
     private static string TrimBaseUrl(string baseUrl) => baseUrl.TrimEnd('/');
+
+    private static string BuildFibraJsonLd(
+        Fibra fibra,
+        string baseUrl,
+        string canonicalPath,
+        string description,
+        FibraSeoMarketData? marketData)
+    {
+        var trimmedBaseUrl = TrimBaseUrl(baseUrl);
+        var productNode = new Dictionary<string, object?>
+        {
+            ["@type"] = "FinancialProduct",
+            ["@id"] = $"{trimmedBaseUrl}{canonicalPath}#product",
+            ["name"] = fibra.FullName,
+            ["alternateName"] = fibra.Ticker,
+            ["description"] = description,
+            ["url"] = $"{trimmedBaseUrl}{canonicalPath}",
+            ["provider"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "Organization",
+                ["name"] = BrandName,
+                ["url"] = trimmedBaseUrl,
+            },
+            ["category"] = fibra.Sector,
+            ["additionalType"] = "https://en.wikipedia.org/wiki/Real_estate_investment_trust",
+        };
+
+        if (marketData is not null)
+        {
+            var snapshot = marketData.LatestSnapshot;
+            var lastPrice = snapshot?.LastPrice;
+
+            if (snapshot is not null)
+                productNode["dateModified"] = snapshot.CapturedAt.ToString("o");
+
+            var additionalProperties = new List<Dictionary<string, object?>>();
+            var asOfDate = marketData.AsOfDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
+            if (lastPrice is > 0m)
+            {
+                // Precio de cotización modelado como PropertyValue, NO como Offer:
+                // un CBFI no es "algo en venta" y la semántica de schema.org Offer es inapropiada
+                // para un precio de mercado (decisión D1 del code review 2026-06-13).
+                additionalProperties.Add(CreatePropertyValue(
+                    "Precio de cotización",
+                    lastPrice.Value,
+                    string.IsNullOrWhiteSpace(fibra.Currency) ? "MXN" : fibra.Currency.Trim()));
+
+                var annualizedYield = YieldCalculator.Calculate(marketData.Distributions, lastPrice, asOfDate);
+                if (annualizedYield is not null)
+                {
+                    additionalProperties.Add(CreatePropertyValue(
+                        "Yield TTM anualizado",
+                        Math.Round(annualizedYield.Value * 100m, 2, MidpointRounding.AwayFromZero),
+                        "%"));
+                }
+
+                if (marketData.QuarterlyDistribution is > 0m)
+                {
+                    additionalProperties.Add(CreatePropertyValue(
+                        "Yield decretado",
+                        Math.Round(marketData.QuarterlyDistribution.Value * 4m / lastPrice.Value * 100m, 2, MidpointRounding.AwayFromZero),
+                        "%"));
+                }
+
+                if (snapshot?.Week52High is > 0m)
+                {
+                    additionalProperties.Add(CreatePropertyValue(
+                        "Variación vs máximo 52 semanas",
+                        Math.Round((lastPrice.Value - snapshot.Week52High.Value) / snapshot.Week52High.Value * 100m, 2, MidpointRounding.AwayFromZero),
+                        "%"));
+                }
+
+                if (snapshot?.Week52Low is > 0m)
+                {
+                    additionalProperties.Add(CreatePropertyValue(
+                        "Variación vs mínimo 52 semanas",
+                        Math.Round((lastPrice.Value - snapshot.Week52Low.Value) / snapshot.Week52Low.Value * 100m, 2, MidpointRounding.AwayFromZero),
+                        "%"));
+                }
+            }
+
+            if (additionalProperties.Count > 0)
+                productNode["additionalProperty"] = additionalProperties;
+        }
+
+        return JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = new object[]
+            {
+                productNode,
+                new Dictionary<string, object?>
+                {
+                    ["@type"] = "BreadcrumbList",
+                    ["itemListElement"] = new object[]
+                    {
+                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 1, ["name"] = "Inicio", ["item"] = $"{trimmedBaseUrl}/" },
+                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 2, ["name"] = "Fibras Inmobiliarias", ["item"] = $"{trimmedBaseUrl}/fibras" },
+                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 3, ["name"] = fibra.FullName, ["item"] = $"{trimmedBaseUrl}{canonicalPath}" },
+                    },
+                },
+            },
+        }, JsonLdOptions);
+    }
+
+    private static Dictionary<string, object?> CreatePropertyValue(string name, decimal value, string unitText)
+        => new()
+        {
+            ["@type"] = "PropertyValue",
+            ["name"] = name,
+            ["value"] = value,
+            ["unitText"] = unitText,
+        };
 
     private static string BuildFibraDescription(Fibra fibra)
     {

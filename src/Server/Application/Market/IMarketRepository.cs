@@ -12,6 +12,9 @@ public interface IMarketRepository
     Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default);
     Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default);
 
+    /// <summary>Último snapshot <c>Processed</c> de una FIBRA específica (consulta dirigida, no carga el universo).</summary>
+    Task<PriceSnapshot?> GetLatestProcessedSnapshotAsync(Guid fibraId, CancellationToken ct = default);
+
     Task<IReadOnlyList<DailySnapshot>> GetDailySnapshotsAsync(Guid fibraId, int days, CancellationToken ct = default);
     Task<IReadOnlyDictionary<Guid, IReadOnlyList<DailySnapshot>>> GetDailySnapshotsByFibrasAsync(
         IReadOnlyList<Guid> fibraIds, int days, CancellationToken ct = default);

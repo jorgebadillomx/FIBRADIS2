@@ -111,6 +111,23 @@ public class YieldCalculatorTests
     }
 
     [Fact]
+    public void Calculate_FutureDatedDistributions_AreIgnored()
+    {
+        // Una distribución con fecha futura (error de captura / aviso anticipado) NO debe contar
+        // en el TTM (trailing twelve months): solo pagos ya realizados.
+        var dists = new[]
+        {
+            Dist("FUNO11", Today.AddDays(-90), 0.384m),  // ya pagada → cuenta
+            Dist("FUNO11", Today.AddDays(30),  0.390m),  // futura → se ignora
+        };
+
+        var result = YieldCalculator.Calculate(dists, 21.50m, Today);
+
+        Assert.NotNull(result);
+        Assert.Equal(Math.Round(0.384m / 21.50m, 4), result!.Value);
+    }
+
+    [Fact]
     public void Calculate_DistributionsOutsideOneYear_AreIgnored()
     {
         var dists = new[]

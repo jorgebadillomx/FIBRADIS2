@@ -1,7 +1,11 @@
 using Api.Middleware;
 using Application.Catalog;
+using Application.Fundamentals;
+using Application.Market;
 using Application.Seo;
 using Domain.Catalog;
+using Domain.Fundamentals;
+using Domain.Market;
 using Domain.Seo;
 using Infrastructure.Seo;
 using Microsoft.AspNetCore.Hosting;
@@ -66,7 +70,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_FibraSlugPath_InjectsMetadata()
     {
-        var (context, nextCalled) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra());
+        var (context, nextCalled) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
@@ -75,7 +79,24 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         Assert.Contains("<title>Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11\" />", body);
         Assert.Contains("\"@type\":\"FinancialProduct\"", body);
+        // Precio modelado como PropertyValue (no Offer) — decisión D1 code review
+        Assert.DoesNotContain("\"@type\":\"Offer\"", body);
+        Assert.Contains("\"name\":\"Precio de cotización\",\"value\":21.5", body);
+        Assert.Contains("\"unitText\":\"MXN\"", body);
         Assert.Contains("<div id=\"root\"></div>", body);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_FibraSlugPath_AddsLiveFinancialProperties_WhenJsonLdNotOverridden()
+    {
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), marketData: CreateMarketData());
+        var body = await ReadBodyAsync(context);
+
+        Assert.Contains("\"dateModified\"", body);
+        Assert.Contains("\"name\":\"Yield TTM anualizado\"", body);
+        Assert.Contains("\"name\":\"Yield decretado\"", body);
+        Assert.Contains("\"name\":\"Variación vs máximo 52 semanas\"", body);
+        Assert.Contains("\"name\":\"Variación vs mínimo 52 semanas\"", body);
     }
 
     [Fact]
@@ -123,9 +144,10 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
             description: "Descripción SEO manual para Fibra Uno.",
             canonicalPath: "/fibras/fibra-uno-funo11",
             ogImageUrl: "https://cdn.example.com/funo11.png",
-            jsonLd: """{"@type":"FinancialProduct","name":"Fibra Uno SEO"}""");
+            jsonLd: """{"@type":"FinancialProduct","name":"Fibra Uno SEO"}""",
+            jsonLdIsOverridden: true);
 
-        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), seoMetadata: seoMetadata);
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), seoMetadata: seoMetadata, marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
         Assert.Contains("<title>SEO manual de Fibra Uno</title>", body);
@@ -144,7 +166,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
             canonicalPath: "/fibras/fibra-uno-funo11",
             isActive: false);
 
-        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), seoMetadata: seoMetadata);
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), seoMetadata: seoMetadata, marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
         Assert.Contains("<title>Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias</title>", body);
@@ -154,7 +176,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_EmptySector_OmitsSectorClause()
     {
-        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(sector: ""));
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(sector: ""), marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
         Assert.Contains("y distribuciones. Cotiza en la BMV.", body);
@@ -165,7 +187,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     public async Task InvokeAsync_LongSector_TruncatesAtWordBoundary()
     {
         var longSector = string.Join(' ', Enumerable.Repeat("comercial", 30));
-        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(sector: longSector));
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(sector: longSector), marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
         var description = ExtractMetaContent(body, "description");
@@ -179,7 +201,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_InjectedHtml_ContainsExactlyOneTitle()
     {
-        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra());
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
         Assert.DoesNotContain("<title>Fibras Inmobiliarias</title>", body);
@@ -189,7 +211,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_SetsCacheControlNoCache()
     {
-        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra());
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), marketData: CreateMarketData());
 
         Assert.Equal("no-cache", context.Response.Headers.CacheControl);
     }
@@ -197,7 +219,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_UnknownTicker_PassesThrough()
     {
-        var (_, nextCalled) = await InvokeAsync("/fibras/inexistente-xxxx99", article: null);
+        var (_, nextCalled) = await InvokeAsync("/fibras/inexistente-xxxx99", article: null, marketData: CreateMarketData());
 
         Assert.True(nextCalled.Value);
     }
@@ -205,8 +227,8 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_FibrasListPath_PassesThrough()
     {
-        var (_, exactNext) = await InvokeAsync("/fibras", CreateFibra());
-        var (_, trailingNext) = await InvokeAsync("/fibras/", CreateFibra());
+        var (_, exactNext) = await InvokeAsync("/fibras", CreateFibra(), marketData: CreateMarketData());
+        var (_, trailingNext) = await InvokeAsync("/fibras/", CreateFibra(), marketData: CreateMarketData());
 
         Assert.True(exactNext.Value);
         Assert.True(trailingNext.Value);
@@ -215,7 +237,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [Fact]
     public async Task InvokeAsync_ApiPath_PassesThrough()
     {
-        var (_, nextCalled) = await InvokeAsync("/api/v1/fibras/fibra-uno-funo11", CreateFibra());
+        var (_, nextCalled) = await InvokeAsync("/api/v1/fibras/fibra-uno-funo11", CreateFibra(), marketData: CreateMarketData());
 
         Assert.True(nextCalled.Value);
     }
@@ -226,7 +248,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
     [InlineData("DELETE")]
     public async Task InvokeAsync_NonGetOrHead_PassesThrough(string method)
     {
-        var (_, nextCalled) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), method);
+        var (_, nextCalled) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), method, marketData: CreateMarketData());
 
         Assert.True(nextCalled.Value);
     }
@@ -237,7 +259,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         var htmlSinComentario = IndexHtmlTemplate.Replace("<!-- prerender-meta -->", string.Empty);
         File.WriteAllText(Path.Combine(_webRootPath, "index.html"), htmlSinComentario);
 
-        var (_, nextCalled) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra());
+        var (_, nextCalled) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), marketData: CreateMarketData());
 
         Assert.True(nextCalled.Value);
     }
@@ -261,7 +283,8 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         string path,
         Fibra? article,
         string method = "GET",
-        SeoMetadata? seoMetadata = null)
+        SeoMetadata? seoMetadata = null,
+        FibraSeoMarketData? marketData = null)
     {
         var nextCalled = new StrongBox<bool>(false);
         var middleware = new FibraProfileMetadataMiddleware(
@@ -273,7 +296,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
             BuildConfig(),
             new SeoDefaultsBuilder(),
-            BuildScopeFactory(article, seoMetadata));
+            BuildScopeFactory(article, seoMetadata, marketData));
 
         var context = new DefaultHttpContext();
         context.Request.Method = method;
@@ -290,6 +313,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         string canonicalPath,
         string? ogImageUrl = null,
         string? jsonLd = null,
+        bool jsonLdIsOverridden = false,
         bool isActive = true) => new()
     {
         Id = Guid.NewGuid(),
@@ -306,18 +330,57 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         TwitterCard = "summary_large_image",
         RobotsDirectives = "index,follow",
         JsonLd = jsonLd,
+        JsonLdIsOverridden = jsonLdIsOverridden,
         IsActive = isActive,
         UpdatedAt = DateTimeOffset.UtcNow,
         UpdatedBy = "adminops@test.com",
     };
 
-    private static IServiceScopeFactory BuildScopeFactory(Fibra? fibra, SeoMetadata? seoMetadata = null)
+    private static IServiceScopeFactory BuildScopeFactory(Fibra? fibra, SeoMetadata? seoMetadata = null, FibraSeoMarketData? marketData = null)
     {
         var services = new ServiceCollection();
         services.AddScoped<IFibraRepository>(_ => new StubFibraRepository(fibra));
         services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
         services.AddScoped<IFaqRepository>(_ => new StubFaqRepository());
+        services.AddScoped<IMarketRepository>(_ => new StubMarketRepository(marketData));
+        services.AddScoped<IFundamentalRepository>(_ => new StubFundamentalRepository(marketData));
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+    }
+
+    private static FibraSeoMarketData CreateMarketData()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return new FibraSeoMarketData(
+            new PriceSnapshot
+            {
+                FibraId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+                Ticker = "FUNO11",
+                LastPrice = 21.50m,
+                Week52High = 28.10m,
+                Week52Low = 20.80m,
+                CapturedAt = new DateTimeOffset(2026, 6, 13, 11, 30, 0, TimeSpan.Zero),
+                Status = MarketDataStatus.Processed,
+            },
+            [
+                new Distribution
+                {
+                    FibraId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+                    Ticker = "FUNO11",
+                    PaymentDate = today.AddDays(-20),
+                    AmountPerUnit = 0.52m,
+                    Currency = "MXN",
+                },
+                new Distribution
+                {
+                    FibraId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+                    Ticker = "FUNO11",
+                    PaymentDate = today.AddDays(-110),
+                    AmountPerUnit = 0.47m,
+                    Currency = "MXN",
+                },
+            ],
+            0.67m,
+            today);
     }
 
     private sealed class StubFaqRepository : IFaqRepository
@@ -394,6 +457,129 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         public Task<IReadOnlyList<Fibra>> GetAllAsync(CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
+    private sealed class StubMarketRepository(FibraSeoMarketData? marketData) : IMarketRepository
+    {
+        public Task AddPriceSnapshotAsync(PriceSnapshot snapshot, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<PriceSnapshot>> GetLastSnapshotsAsync(Guid fibraId, int count, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<PriceSnapshot>>([]);
+
+        public Task<bool> UpsertDailySnapshotAsync(DailySnapshot snapshot, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<DateOnly?> GetLatestDailySnapshotDateAsync(Guid fibraId, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task DeleteAllDailySnapshotsAsync(CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task DeleteOldPriceSnapshotsAsync(DateOnly cutoff, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<PriceSnapshot>>(marketData?.LatestSnapshot is null ? [] : [marketData.LatestSnapshot]);
+
+        public Task<PriceSnapshot?> GetLatestProcessedSnapshotAsync(Guid fibraId, CancellationToken ct = default)
+            => Task.FromResult(marketData?.LatestSnapshot);
+
+        public Task<IReadOnlyList<DailySnapshot>> GetDailySnapshotsAsync(Guid fibraId, int days, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyDictionary<Guid, IReadOnlyList<DailySnapshot>>> GetDailySnapshotsByFibrasAsync(IReadOnlyList<Guid> fibraIds, int days, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<Distribution>> GetDistributionsAsync(Guid fibraId, int? maxDays = null, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<Distribution>>(marketData?.Distributions ?? []);
+
+        public Task<IReadOnlyList<Distribution>> GetDistributionsByFibrasAsync(IReadOnlyList<Guid> fibraIds, int days, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> GetWeek52AvgByFibrasAsync(IReadOnlyList<Guid> fibraIds, int days = 365, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<int> GetDistributionCountAsync(CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyCollection<Guid>> GetFibraIdsWithDistributionsAsync(CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<Distribution?> GetDistributionByIdAsync(Guid id, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<Distribution>> GetDistributionsByRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task AddDistributionAsync(Distribution dist, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<bool> UpsertDistributionAsync(Distribution dist, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<bool> UpdateDistributionAmountAsync(Guid fibraId, DateOnly paymentDate, decimal amount, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<bool> UpdateDistributionBreakdownAsync(Guid fibraId, DateOnly paymentDate, DateOnly? exDate, decimal? taxable, decimal? capital, string? avisoUrl, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<bool> DeleteDistributionAsync(Guid id, CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
+    private sealed class StubFundamentalRepository(FibraSeoMarketData? marketData) : IFundamentalRepository
+    {
+        public Task<FundamentalRecord?> GetByIdAsync(Guid id, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<FundamentalRecord?> GetProcessedByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<FundamentalRecord?> GetLatestProcessedByFibraAsync(Guid fibraId, CancellationToken ct)
+        {
+            if (marketData?.QuarterlyDistribution is null)
+                return Task.FromResult<FundamentalRecord?>(null);
+
+            return Task.FromResult<FundamentalRecord?>(new FundamentalRecord
+            {
+                Id = Guid.NewGuid(),
+                FibraId = fibraId,
+                Period = "Q1-2026",
+                Status = "processed",
+                ProcessingMode = "manual",
+                QuarterlyDistribution = marketData.QuarterlyDistribution,
+                CapturedAt = DateTimeOffset.UtcNow,
+            });
+        }
+
+        public Task<IReadOnlyList<string>> GetProcessedPeriodsAsync(Guid fibraId, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<FundamentalRecord>> GetByFibraAsync(Guid fibraId, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task AddAsync(FundamentalRecord record, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task UpdateStatusAsync(Guid id, string status, string? confirmedBy, DateTimeOffset? confirmedAt, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task UpdatePdfReferenceAsync(Guid id, string pdfReference, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task UpdateMarkdownContentAsync(Guid id, string markdownContent, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task UpdateKpiExtractionAsync(Guid id, KpiExtractionResult result, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task UpdateKpisManualAsync(Guid id, decimal? capRate, decimal? navPerCbfi, decimal? ltv, decimal? noiMargin, decimal? ffoMargin, decimal? quarterlyDistribution, string? summary, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default)
+        {
+            if (marketData?.QuarterlyDistribution is null)
+                return Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
+
+            var record = new FundamentalRecord
+            {
+                Id = Guid.NewGuid(),
+                FibraId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+                Period = "Q1-2026",
+                Status = "processed",
+                ProcessingMode = "manual",
+                QuarterlyDistribution = marketData.QuarterlyDistribution,
+                CapturedAt = DateTimeOffset.UtcNow,
+            };
+
+            return Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>(
+                [(record, "FUNO11", "Fibra Uno")]);
+        }
+
+        public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryForRecentPeriodsAsync(int count, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default) => throw new NotSupportedException();
     }
 
     private sealed class StubSeoMetadataRepository(SeoMetadata? seoMetadata) : ISeoMetadataRepository

@@ -1,6 +1,9 @@
 using Domain.Catalog;
+using Domain.Fundamentals;
 using Domain.News;
+using Domain.Market;
 using Domain.Seo;
+using Application.Seo;
 using Infrastructure.Seo;
 using System.Text.Json;
 
@@ -129,6 +132,254 @@ public class SeoDefaultsBuilderTests
         Assert.Contains("\"@type\":\"BreadcrumbList\"", result.JsonLd);
         Assert.Contains("\"description\":\"Análisis de Fibra Uno (FUNO11): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones. Sector Industrial en la BMV.\"", result.JsonLd);
         Assert.Equal("system", result.UpdatedBy);
+    }
+
+    // Convención §Testing Funciones de Cálculo Financiero: el caso denominador = 0 va ANTES que
+    // cualquier otro escenario. lastPrice = 0 → sin precio, sin yields, sin variaciones, SIN excepción
+    // (todas las divisiones por precio están protegidas por `lastPrice is > 0m`).
+    [Fact]
+    public void BuildFibra_WithZeroPrice_OmitsPriceAndYieldProperties_NoDivisionByZero()
+    {
+        var fibra = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FUNO11",
+            FullName = "Fibra Uno",
+            ShortName = "Fibra Uno",
+            Sector = "Industrial",
+            Market = "BMV",
+            Currency = "MXN",
+            State = FibraState.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        var marketData = new FibraSeoMarketData(
+            new PriceSnapshot
+            {
+                FibraId = fibra.Id,
+                Ticker = fibra.Ticker,
+                LastPrice = 0m,
+                Week52High = 28.10m,
+                Week52Low = 20.80m,
+                CapturedAt = new DateTimeOffset(2026, 6, 13, 11, 30, 0, TimeSpan.Zero),
+                Status = MarketDataStatus.Processed,
+            },
+            new List<Distribution>
+            {
+                new()
+                {
+                    FibraId = fibra.Id,
+                    Ticker = fibra.Ticker,
+                    PaymentDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-20),
+                    AmountPerUnit = 0.52m,
+                    Currency = "MXN",
+                },
+            },
+            0.67m,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var result = _builder.BuildFibra(
+            fibra,
+            "https://fibrasinmobiliarias.com",
+            Now,
+            "system",
+            marketData);
+
+        using var document = JsonDocument.Parse(result.JsonLd!);
+        var product = document.RootElement
+            .GetProperty("@graph")
+            .EnumerateArray()
+            .First(node => node.GetProperty("@type").GetString() == "FinancialProduct");
+
+        Assert.False(product.TryGetProperty("offers", out _));
+        Assert.False(product.TryGetProperty("additionalProperty", out _));
+        Assert.Equal("2026-06-13T11:30:00.0000000+00:00", product.GetProperty("dateModified").GetString());
+    }
+
+    [Fact]
+    public void BuildFibra_WithLiveData_AddsFinancialProductFields_WithExactOutput()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var fibra = new Fibra
+        {
+            Id = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+            Ticker = "FUNO11",
+            FullName = "Fibra Uno",
+            ShortName = "Fibra Uno",
+            Sector = "Industrial",
+            Market = "BMV",
+            Currency = "MXN",
+            State = FibraState.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        var marketData = new FibraSeoMarketData(
+            new PriceSnapshot
+            {
+                FibraId = fibra.Id,
+                Ticker = fibra.Ticker,
+                LastPrice = 21.50m,
+                Week52High = 28.10m,
+                Week52Low = 20.80m,
+                CapturedAt = new DateTimeOffset(2026, 6, 13, 11, 30, 0, TimeSpan.Zero),
+                Status = MarketDataStatus.Processed,
+            },
+            new List<Distribution>
+            {
+                new()
+                {
+                    FibraId = fibra.Id,
+                    Ticker = fibra.Ticker,
+                    PaymentDate = today.AddDays(-20),
+                    AmountPerUnit = 0.52m,
+                    Currency = "MXN",
+                },
+                new()
+                {
+                    FibraId = fibra.Id,
+                    Ticker = fibra.Ticker,
+                    PaymentDate = today.AddDays(-110),
+                    AmountPerUnit = 0.47m,
+                    Currency = "MXN",
+                },
+            },
+            0.67m,
+            today);
+
+        var result = _builder.BuildFibra(
+            fibra,
+            "https://fibrasinmobiliarias.com",
+            new DateTimeOffset(2026, 6, 13, 12, 0, 0, TimeSpan.Zero),
+            "system",
+            marketData);
+
+        using var document = JsonDocument.Parse(result.JsonLd!);
+        var product = document.RootElement
+            .GetProperty("@graph")
+            .EnumerateArray()
+            .First(node => node.GetProperty("@type").GetString() == "FinancialProduct");
+
+        // Precio modelado como PropertyValue (no Offer) — decisión D1 code review.
+        Assert.False(product.TryGetProperty("offers", out _));
+        Assert.Equal("2026-06-13T11:30:00.0000000+00:00", product.GetProperty("dateModified").GetString());
+
+        var additional = product.GetProperty("additionalProperty").EnumerateArray().ToArray();
+        Assert.Equal(5, additional.Length);
+        Assert.Equal("Precio de cotización", additional[0].GetProperty("name").GetString());
+        Assert.Equal(21.50m, additional[0].GetProperty("value").GetDecimal());
+        Assert.Equal("MXN", additional[0].GetProperty("unitText").GetString());
+        Assert.Equal("Yield TTM anualizado", additional[1].GetProperty("name").GetString());
+        Assert.Equal(4.60m, additional[1].GetProperty("value").GetDecimal());
+        Assert.Equal("Yield decretado", additional[2].GetProperty("name").GetString());
+        Assert.Equal(12.47m, additional[2].GetProperty("value").GetDecimal());
+        Assert.Equal("Variación vs máximo 52 semanas", additional[3].GetProperty("name").GetString());
+        Assert.Equal(-23.49m, additional[3].GetProperty("value").GetDecimal());
+        Assert.Equal("Variación vs mínimo 52 semanas", additional[4].GetProperty("name").GetString());
+        Assert.Equal(3.37m, additional[4].GetProperty("value").GetDecimal());
+    }
+
+    [Fact]
+    public void BuildFibra_WithoutPrice_OmitsOffersAndYieldProperties()
+    {
+        var fibra = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "MQ",
+            FullName = "Mq",
+            ShortName = "Mq",
+            Sector = "",
+            Market = "BMV",
+            Currency = "MXN",
+            State = FibraState.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        var marketData = new FibraSeoMarketData(
+            new PriceSnapshot
+            {
+                FibraId = fibra.Id,
+                Ticker = fibra.Ticker,
+                LastPrice = null,
+                CapturedAt = new DateTimeOffset(2026, 6, 13, 11, 30, 0, TimeSpan.Zero),
+                Status = MarketDataStatus.Processed,
+            },
+            [],
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var result = _builder.BuildFibra(
+            fibra,
+            "https://fibrasinmobiliarias.com",
+            Now,
+            "system",
+            marketData);
+
+        using var document = JsonDocument.Parse(result.JsonLd!);
+        var product = document.RootElement
+            .GetProperty("@graph")
+            .EnumerateArray()
+            .First(node => node.GetProperty("@type").GetString() == "FinancialProduct");
+
+        Assert.False(product.TryGetProperty("offers", out _));
+        Assert.False(product.TryGetProperty("additionalProperty", out _));
+        Assert.Equal("2026-06-13T11:30:00.0000000+00:00", product.GetProperty("dateModified").GetString());
+    }
+
+    [Fact]
+    public void BuildFibra_WithoutDistributions_OmitsYieldTtm_ButKeepsPriceAndDateModified()
+    {
+        var fibra = new Fibra
+        {
+            Id = Guid.NewGuid(),
+            Ticker = "FUNO11",
+            FullName = "Fibra Uno",
+            ShortName = "Fibra Uno",
+            Sector = "Industrial",
+            Market = "BMV",
+            Currency = "MXN",
+            State = FibraState.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        var marketData = new FibraSeoMarketData(
+            new PriceSnapshot
+            {
+                FibraId = fibra.Id,
+                Ticker = fibra.Ticker,
+                LastPrice = 21.50m,
+                Week52High = 28.10m,
+                Week52Low = 20.80m,
+                CapturedAt = new DateTimeOffset(2026, 6, 13, 11, 30, 0, TimeSpan.Zero),
+                Status = MarketDataStatus.Processed,
+            },
+            [],
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var result = _builder.BuildFibra(
+            fibra,
+            "https://fibrasinmobiliarias.com",
+            Now,
+            "system",
+            marketData);
+
+        using var document = JsonDocument.Parse(result.JsonLd!);
+        var product = document.RootElement
+            .GetProperty("@graph")
+            .EnumerateArray()
+            .First(node => node.GetProperty("@type").GetString() == "FinancialProduct");
+
+        // Precio modelado como PropertyValue (no Offer) — decisión D1 code review.
+        Assert.False(product.TryGetProperty("offers", out _));
+        Assert.Equal("2026-06-13T11:30:00.0000000+00:00", product.GetProperty("dateModified").GetString());
+
+        var additional = product.GetProperty("additionalProperty").EnumerateArray().ToArray();
+        Assert.Equal("Precio de cotización", additional[0].GetProperty("name").GetString());
+        Assert.Equal(21.50m, additional[0].GetProperty("value").GetDecimal());
+        Assert.DoesNotContain(additional, property => property.GetProperty("name").GetString() == "Yield TTM anualizado");
+        Assert.DoesNotContain(additional, property => property.GetProperty("name").GetString() == "Yield decretado");
+        Assert.Contains(additional, property => property.GetProperty("name").GetString() == "Variación vs máximo 52 semanas");
+        Assert.Contains(additional, property => property.GetProperty("name").GetString() == "Variación vs mínimo 52 semanas");
     }
 
     [Fact]

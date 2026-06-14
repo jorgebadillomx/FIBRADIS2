@@ -21,7 +21,8 @@ public interface ISeoDefaultsBuilder
         Fibra fibra,
         string baseUrl,
         DateTimeOffset updatedAt,
-        string updatedBy = "system");
+        string updatedBy = "system",
+        FibraSeoMarketData? marketData = null);
 
     SeoMetadata BuildNews(
         NewsArticle article,

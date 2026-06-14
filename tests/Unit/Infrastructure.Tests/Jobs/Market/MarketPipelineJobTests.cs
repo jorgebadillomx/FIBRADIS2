@@ -307,6 +307,9 @@ internal sealed class FakeMarketRepository : IMarketRepository
     public Task<IReadOnlyList<PriceSnapshot>> GetLatestSnapshotPerFibraAsync(CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<PriceSnapshot>>([]);
 
+    public Task<PriceSnapshot?> GetLatestProcessedSnapshotAsync(Guid fibraId, CancellationToken ct = default)
+        => Task.FromResult<PriceSnapshot?>(null);
+
     public Task<IReadOnlyList<DailySnapshot>> GetDailySnapshotsAsync(Guid fibraId, int days, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<DailySnapshot>>([]);
 

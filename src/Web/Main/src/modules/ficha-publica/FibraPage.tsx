@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFibraByTicker, fetchFibraHistory, fetchMarketSnapshots } from '@/api/fibrasApi'
@@ -28,6 +28,17 @@ import { KPI_DEFINITIONS, type KpiKey } from '@/shared/lib/kpi-definitions'
 const FIBRA_BRAND_SUFFIX =
   ' en FIBRADIS — precio en tiempo real, distribuciones, fundamentales y score de inversión.'
 const FIBRA_MAX_DESC = 160
+
+// Desplaza los headings del markdown de "Descripción" +1 (h1→h2, h2→h3, …) para que el <h1>
+// del título de la ficha sea el único de la página (jerarquía correcta — fix H2 auditoría SEO 2026-06-13).
+const DESCRIPTION_MARKDOWN_COMPONENTS: Components = {
+  h1: ({ node, ...props }) => <h2 {...props} />,
+  h2: ({ node, ...props }) => <h3 {...props} />,
+  h3: ({ node, ...props }) => <h4 {...props} />,
+  h4: ({ node, ...props }) => <h5 {...props} />,
+  h5: ({ node, ...props }) => <h6 {...props} />,
+  h6: ({ node, ...props }) => <h6 {...props} />,
+}
 
 function buildFibraDescription(fibra: { fullName: string; ticker: string; sector?: string | null }): string {
   const sector = fibra.sector ? ` · ${fibra.sector}` : ''
@@ -340,7 +351,7 @@ export function FibraPage() {
               <SectionHeader title={SECTION_TITLES.descripcion} />
               <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="prose prose-slate max-w-none text-sm leading-7">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={DESCRIPTION_MARKDOWN_COMPONENTS}>
                     {fibra!.description}
                   </ReactMarkdown>
                 </div>

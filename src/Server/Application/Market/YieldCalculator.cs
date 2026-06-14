@@ -13,8 +13,11 @@ public static class YieldCalculator
             return null;
 
         var cutoff = today.AddDays(-365);
+        // TTM = trailing twelve months: solo pagos YA realizados. Acotar el extremo superior a
+        // `today` evita que una distribución con fecha futura (error de captura o aviso anticipado)
+        // infle el yield.
         var inYear = distributions
-            .Where(d => d.PaymentDate >= cutoff)
+            .Where(d => d.PaymentDate >= cutoff && d.PaymentDate <= today)
             .OrderBy(d => d.PaymentDate)
             .ToList();
 

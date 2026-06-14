@@ -77,6 +77,12 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             .ToListAsync(ct);
     }
 
+    public async Task<PriceSnapshot?> GetLatestProcessedSnapshotAsync(Guid fibraId, CancellationToken ct = default)
+        => await db.PriceSnapshots
+            .Where(p => p.FibraId == fibraId && p.Status == MarketDataStatus.Processed)
+            .OrderByDescending(p => p.CapturedAt)
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyList<DailySnapshot>> GetDailySnapshotsAsync(Guid fibraId, int days, CancellationToken ct = default)
     {
         var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-days);

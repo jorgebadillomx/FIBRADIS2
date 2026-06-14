@@ -4,8 +4,11 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using Application.Catalog;
+using Application.Fundamentals;
+using Application.Market;
 using Application.Seo;
 using Domain.Catalog;
+using Domain.Fundamentals;
 using Domain.Seo;
 
 namespace Api.Middleware;
@@ -153,9 +156,17 @@ public partial class FibraProfileMetadataMiddleware(
                 faqJsonLdBlock = SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems));
         }
 
+        FibraSeoMarketData? liveMarketData = null;
+
         if (seoMetadata is null || !seoMetadata.IsActive)
         {
-            seoMetadata = seoDefaultsBuilder.BuildFibra(fibra, _baseUrl, DateTimeOffset.UtcNow, "system");
+            liveMarketData = await GetLiveMarketDataAsync(metadataScope.ServiceProvider, context, fibra);
+            seoMetadata = seoDefaultsBuilder.BuildFibra(fibra, _baseUrl, DateTimeOffset.UtcNow, "system", liveMarketData);
+        }
+        else if (!seoMetadata.JsonLdIsOverridden)
+        {
+            liveMarketData = await GetLiveMarketDataAsync(metadataScope.ServiceProvider, context, fibra);
+            seoMetadata.JsonLd = seoDefaultsBuilder.BuildFibra(fibra, _baseUrl, DateTimeOffset.UtcNow, "system", liveMarketData).JsonLd;
         }
 
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
@@ -164,6 +175,30 @@ public partial class FibraProfileMetadataMiddleware(
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.Headers.CacheControl = "no-cache";
         await context.Response.WriteAsync(html, context.RequestAborted);
+    }
+
+    private static async Task<FibraSeoMarketData> GetLiveMarketDataAsync(IServiceProvider services, HttpContext context, Fibra fibra)
+    {
+        // Consultas dirigidas por FIBRA (no cargar el universo completo por request);
+        // reusamos el scope/DbContext del metadata lookup y leemos en secuencia (regla EF Core).
+        var marketRepo = services.GetRequiredService<IMarketRepository>();
+        var fundamentalRepo = services.GetRequiredService<IFundamentalRepository>();
+
+        var snapshot = await marketRepo.GetLatestProcessedSnapshotAsync(fibra.Id, context.RequestAborted);
+        var distributions = await marketRepo.GetDistributionsAsync(fibra.Id, maxDays: 365, context.RequestAborted);
+        var fundamental = await fundamentalRepo.GetLatestProcessedByFibraAsync(fibra.Id, context.RequestAborted);
+
+        // La ventana TTM se mide contra la fecha del precio (CapturedAt), no contra el reloj del
+        // request: así el yield es consistente con el precio publicado aunque el pipeline esté atrasado.
+        var asOfDate = snapshot is not null
+            ? DateOnly.FromDateTime(snapshot.CapturedAt.UtcDateTime)
+            : DateOnly.FromDateTime(DateTime.UtcNow);
+
+        return new FibraSeoMarketData(
+            snapshot,
+            distributions,
+            fundamental?.QuarterlyDistribution,
+            asOfDate);
     }
 
     private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
