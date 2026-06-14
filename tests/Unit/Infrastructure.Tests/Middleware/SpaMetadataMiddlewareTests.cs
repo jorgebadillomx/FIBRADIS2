@@ -528,6 +528,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         public Task<Domain.Catalog.Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllAsync(CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllActiveAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Domain.Catalog.Fibra>> GetActiveBySectorAsync(string sector, Guid excludeId, int count, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Domain.Catalog.Fibra>>([]);
         public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<(string FullName, string Ticker)>>(activeFibras);
     }

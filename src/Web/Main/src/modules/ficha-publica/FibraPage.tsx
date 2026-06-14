@@ -18,6 +18,7 @@ import { FundamentalesSection, FundamentalesSectionSkeleton } from './sections/F
 import { DistribucionesSection } from './sections/DistribucionesSection'
 import { NoticiasSection } from './sections/NoticiasSection'
 import { ReportesSection } from './sections/ReportesSection'
+import { FibrasRelacionadasSection } from './sections/FibrasRelacionadasSection'
 import { IsrCalculatorWidget } from './IsrCalculatorWidget'
 import { FreshnessBadge } from '@/shared/ui/freshness-badge'
 import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
@@ -544,6 +545,9 @@ export function FibraPage() {
               reportsUrl={fibra!.reportsUrl ?? null}
             />
           </section>
+
+          {/* Enlazado interno: FIBRAs del mismo sector (story 12-8). Below-the-fold; se oculta si no hay pares. */}
+          <FibrasRelacionadasSection ticker={fibra!.ticker} />
         </div>
       </div>
     </>

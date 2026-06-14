@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { useQuery } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
@@ -135,11 +136,43 @@ export function ConoceLasFibrasPage() {
               {faqQuery.error.message}
             </div>
           ) : null}
+
+          {/* Enlazado interno pillar→spoke (story 12-8). Bloque fijo (no depende del markdown
+              editable) para garantizar que el contenido educativo enlace a páginas reales. */}
+          <nav
+            aria-label="Explora las FIBRAs"
+            className="mt-10 rounded-[1.75rem] border border-border bg-surface-elevated p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] md:p-8"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary/80">Explora las FIBRAs</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Aplica lo aprendido: revisa el catálogo, compara emisoras y analiza sus fundamentales.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {SPOKE_LINKS.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="group rounded-2xl border border-border bg-background px-4 py-3 transition-colors hover:border-primary/40 hover:bg-muted/40"
+                >
+                  <span className="block text-sm font-semibold text-foreground group-hover:text-primary">
+                    {link.title}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{link.description}</span>
+                </Link>
+              ))}
+            </div>
+          </nav>
         </div>
       </section>
     </>
   )
 }
+
+const SPOKE_LINKS = [
+  { to: '/fibras', title: 'Catálogo de FIBRAs', description: 'Todas las emisoras listadas con su precio y datos.' },
+  { to: '/fundamentales', title: 'Fundamentales', description: 'Compara KPIs como Cap Rate, LTV y NOI entre FIBRAs.' },
+  { to: '/comparar', title: 'Comparador', description: 'Enfrenta varias FIBRAs lado a lado.' },
+] as const
 
 function EditorialSkeleton() {
   return (

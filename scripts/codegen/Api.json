@@ -2506,6 +2506,48 @@
         }
       }
     },
+    "/api/v1/fibras/{ticker}/related": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RelatedFibra"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/market/snapshots": {
       "get": {
         "tags": [
@@ -9634,6 +9676,29 @@
         "type": "object",
         "properties": {
           "accessToken": {
+            "type": "string"
+          }
+        }
+      },
+      "RelatedFibra": {
+        "required": [
+          "ticker",
+          "fullName",
+          "shortName",
+          "sector"
+        ],
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "sector": {
             "type": "string"
           }
         }

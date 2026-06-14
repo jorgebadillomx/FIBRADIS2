@@ -2898,6 +2898,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fibras/{ticker}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    ticker: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RelatedFibra"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/snapshots": {
         parameters: {
             query?: never;
@@ -5929,6 +5975,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/seo/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OrganizationSameAsDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateOrganizationSameAsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OrganizationSameAsDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/seo/redirects": {
         parameters: {
             query?: never;
@@ -6918,6 +7067,12 @@ export interface components {
             aiSummary: null | string;
             aiAnalysis: null | components["schemas"]["NewsAiAnalysisDto"];
         };
+        OrganizationSameAsDto: {
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy: null | string;
+            sameAs: string[];
+        };
         PagedResultOfAiCallLogDto: {
             items: components["schemas"]["AiCallLogDto"][];
             /** Format: int32 */
@@ -7158,6 +7313,12 @@ export interface components {
         RefreshResponse: {
             accessToken: string;
         };
+        RelatedFibra: {
+            ticker: string;
+            fullName: string;
+            shortName: string;
+            sector: string;
+        };
         SetAiProviderRequest: {
             provider: string;
             modelId: string;
@@ -7232,6 +7393,9 @@ export interface components {
             contactEmail?: null | string;
             /** Format: int32 */
             universeDegradationThresholdPct?: null | number | string;
+        };
+        UpdateOrganizationSameAsRequest: {
+            sameAs: null | string[];
         };
         UpdatePaymentRequest: {
             /** Format: double */

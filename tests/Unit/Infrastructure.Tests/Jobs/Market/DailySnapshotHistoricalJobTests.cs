@@ -285,6 +285,9 @@ internal sealed class FakeHistoricalFibraRepository(IReadOnlyList<Fibra> fibras)
     public Task<IReadOnlyList<Fibra>> GetAllActiveAsync(CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<Fibra>>(fibras.Where(f => f.State == FibraState.Active).ToList());
 
+    public Task<IReadOnlyList<Fibra>> GetActiveBySectorAsync(string sector, Guid excludeId, int count, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<Fibra>>([]);
+
     public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
         => throw new NotImplementedException();
 }
