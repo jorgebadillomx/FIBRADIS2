@@ -155,6 +155,7 @@ public partial class NewsMetadataMiddleware(
         // Sustituir el <title> estático evita títulos duplicados en el HTML servido
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
         SeoMetadata? seoMetadata;
+        string breadcrumbJsonLdBlock = string.Empty;
         var seoRepo = scope.ServiceProvider.GetRequiredService<ISeoMetadataRepository>();
         var entityKey = article.Slug ?? article.Id.ToString();
         seoMetadata = await seoRepo.GetAsync(SeoPageType.News, entityKey, context.RequestAborted);
@@ -170,7 +171,16 @@ public partial class NewsMetadataMiddleware(
             ? SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems))
             : string.Empty;
 
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, faqJsonLdBlock));
+        breadcrumbJsonLdBlock = SeoJsonLd.BuildScriptBlock(
+            seoDefaultsBuilder.BuildBreadcrumbListJsonLd(
+                _baseUrl,
+                [
+                    new SeoBreadcrumbItem("Inicio", "/"),
+                    new SeoBreadcrumbItem("Noticias", "/noticias"),
+                    new SeoBreadcrumbItem(article.Title, seoMetadata.CanonicalPath),
+                ]));
+
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado varía por artículo y deploy — forzar revalidación
@@ -178,7 +188,7 @@ public partial class NewsMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null)
     {
         var encodedTitle = Encoder.Encode(metadata.Title);
         var encodedDescription = Encoder.Encode(metadata.MetaDescription);
@@ -216,6 +226,9 @@ public partial class NewsMetadataMiddleware(
         var jsonLdBlock = SeoJsonLd.BuildScriptBlock(metadata.JsonLd);
         if (jsonLdBlock.Length > 0)
             block.Append($"\n    {jsonLdBlock}");
+
+        if (!string.IsNullOrWhiteSpace(breadcrumbJsonLdBlock))
+            block.Append($"\n    {breadcrumbJsonLdBlock}");
 
         if (!string.IsNullOrWhiteSpace(extraJsonLdBlock))
             block.Append($"\n    {extraJsonLdBlock}");

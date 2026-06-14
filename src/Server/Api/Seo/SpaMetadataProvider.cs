@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Text.Unicode;
 using Application.Fundamentals;
 using Application.Ops;
+using Application.Seo;
+using Domain.Fundamentals;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +12,7 @@ namespace Api.Seo;
 
 public class SpaMetadataProvider(
     IConfiguration config,
+    ISeoDefaultsBuilder seoDefaultsBuilder,
     IServiceScopeFactory scopeFactory) : ISpaMetadataProvider
 {
     private const string BrandName = "FIBRADIS";
@@ -59,7 +62,8 @@ public class SpaMetadataProvider(
             "/comparar" => new SpaPageMeta(
                 "Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS",
                 "Compara hasta 4 FIBRAs inmobiliarias en precio, yield, fundamentales y score de oportunidad. Toma mejores decisiones de inversión.",
-                "/comparar"),
+                "/comparar",
+                BuildCompareJsonLd()),
             "/fibras" => new SpaPageMeta(
                 "FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | FIBRADIS",
                 "Directorio completo de FIBRAs inmobiliarias en México con descripción, sector, precio y datos fundamentales de cada fideicomiso.",
@@ -122,6 +126,9 @@ public class SpaMetadataProvider(
             },
             ["description"] = CalculadoraDescription,
         }, JsonLdOptions);
+
+    private string BuildCompareJsonLd()
+        => seoDefaultsBuilder.BuildComparePageJsonLd(Array.Empty<(string FullName, string Ticker)>(), _baseUrl);
 
     private async Task<string> BuildHomepageJsonLdAsync(CancellationToken ct)
     {
@@ -235,37 +242,10 @@ public class SpaMetadataProvider(
         return JsonSerializer.Serialize(json, JsonLdOptions);
     }
 
-    private async Task<string> BuildFundamentalesJsonLdAsync(CancellationToken ct)
-    {
-        var latestCapturedAt = await GetLatestFundamentalesCaptureAsync(ct);
-        var json = new Dictionary<string, object?>
-        {
-            ["@context"] = "https://schema.org",
-            ["@type"] = "CollectionPage",
-            ["@id"] = $"{_baseUrl}/fundamentales#page",
-            ["name"] = "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
-            ["description"] = FundamentalesDescription,
-            ["url"] = $"{_baseUrl}/fundamentales",
-            ["about"] = new Dictionary<string, object?>
-            {
-                ["@type"] = "Thing",
-                ["name"] = "Comparativa de fundamentales de FIBRAs mexicanas",
-            },
-            ["publisher"] = new Dictionary<string, object?>
-            {
-                ["@id"] = $"{_baseUrl}/#organization",
-            },
-            ["isPartOf"] = new Dictionary<string, object?>
-            {
-                ["@id"] = $"{_baseUrl}/#website",
-            },
-        };
-
-        if (latestCapturedAt is not null)
-            json["dateModified"] = latestCapturedAt.Value.ToString("o");
-
-        return JsonSerializer.Serialize(json, JsonLdOptions);
-    }
+    private Task<string> BuildFundamentalesJsonLdAsync(CancellationToken ct)
+        => Task.FromResult(seoDefaultsBuilder.BuildFundamentalesPageJsonLd(
+            Array.Empty<(FundamentalRecord Record, string Ticker, string ShortName)>(),
+            _baseUrl));
 
     private async Task<string> BuildAboutJsonLdAsync(CancellationToken ct)
     {
@@ -387,14 +367,6 @@ public class SpaMetadataProvider(
         var repo = scope.ServiceProvider.GetRequiredService<IEditorialPageRepository>();
         var pages = await repo.GetAllAsync(ct);
         return pages.Count == 0 ? null : pages.Max(page => page.UpdatedAt);
-    }
-
-    private async Task<DateTimeOffset?> GetLatestFundamentalesCaptureAsync(CancellationToken ct)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<IFundamentalRepository>();
-        var rows = await repo.GetSummaryLatestAsync(ct);
-        return rows.Count == 0 ? null : rows.Max(row => row.Record.CapturedAt);
     }
 
     private static string NormalizePath(string path)

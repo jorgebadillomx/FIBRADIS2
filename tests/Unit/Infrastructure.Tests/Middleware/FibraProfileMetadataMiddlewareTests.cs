@@ -79,6 +79,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         Assert.Contains("<title>Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11\" />", body);
         Assert.Contains("\"@type\":\"FinancialProduct\"", body);
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
         // Precio modelado como PropertyValue (no Offer) — decisión D1 code review
         Assert.DoesNotContain("\"@type\":\"Offer\"", body);
         Assert.Contains("\"name\":\"Precio de cotización\",\"value\":21.5", body);

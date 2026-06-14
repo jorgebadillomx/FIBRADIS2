@@ -1,4 +1,5 @@
 using Api.Middleware;
+using Application.Catalog;
 using Application.Seo;
 using Api.Seo;
 using Application.Fundamentals;
@@ -12,6 +13,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Infrastructure.Tests.Middleware;
 
@@ -59,6 +62,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         Assert.Contains("<meta property=\"og:url\" content=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<script type=\"application/ld+json\">", body);
         Assert.Contains("\"@type\":\"SoftwareApplication\"", body);
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
     }
 
     [Fact]
@@ -73,6 +77,74 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         Assert.Contains("<meta name=\"description\"", body);
         Assert.Contains("<meta property=\"og:title\"", body);
         Assert.Contains("<meta property=\"og:description\"", body);
+        // La home conserva su JSON-LD (WebSite) pero NO emite BreadcrumbList:
+        // un breadcrumb de un solo ítem no aporta jerarquía (decisión code review 12-5)
+        Assert.Contains("<script type=\"application/ld+json\">", body);
+        Assert.DoesNotContain("\"@type\":\"BreadcrumbList\"", body);
+    }
+
+    [Fact]
+    public async Task InjectsMetadata_ForComparar_WithLiveItemList_AndBreadcrumbs()
+    {
+        var (context, nextCalled) = await InvokeAsync(
+            "/comparar",
+            activeFibras:
+            [
+                ("Fibra Uno", "FUNO11"),
+                ("Fibra Macquarie", "FIBRAMQ12"),
+            ]);
+
+        var body = await ReadBodyAsync(context);
+
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<title>Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS</title>", body);
+        Assert.Contains("\"@type\":\"WebApplication\"", body);
+        Assert.Contains("\"@type\":\"ItemList\"", body);
+        Assert.Contains("https://fibrasinmobiliarias.com/fibras/fibra-macquarie-fibramq12", body);
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
+    }
+
+    [Fact]
+    public async Task InjectsMetadata_ForFundamentales_WithLiveDataset_AndBreadcrumbs()
+    {
+        var (context, nextCalled) = await InvokeAsync(
+            "/fundamentales",
+            fundamentalRows:
+            [
+                (
+                    new FundamentalRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        FibraId = Guid.NewGuid(),
+                        Period = "2T2026",
+                        Status = "processed",
+                        CapturedAt = new DateTimeOffset(2026, 6, 10, 14, 0, 0, TimeSpan.Zero),
+                    },
+                    "FUNO11",
+                    "Fibra Uno"),
+                (
+                    new FundamentalRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        FibraId = Guid.NewGuid(),
+                        Period = "2T2026",
+                        Status = "processed",
+                        CapturedAt = new DateTimeOffset(2026, 6, 13, 8, 45, 0, TimeSpan.Zero),
+                    },
+                    "DANHOS13",
+                    "Danhos"),
+            ]);
+
+        var body = await ReadBodyAsync(context);
+
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<title>Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS</title>", body);
+        using var document = JsonDocument.Parse(ExtractJsonLdBlocks(body).Single(block => block.Contains("\"@type\":\"Dataset\"", StringComparison.Ordinal)));
+        var dataset = document.RootElement.GetProperty("@graph").EnumerateArray().Single(node => node.GetProperty("@type").GetString() == "Dataset");
+        Assert.Equal("FIBRAs cubiertas", dataset.GetProperty("variableMeasured")[5].GetProperty("name").GetString());
+        Assert.Equal(2, dataset.GetProperty("variableMeasured")[5].GetProperty("value").GetInt32());
+        Assert.Equal("2026-06-13T08:45:00.0000000+00:00", dataset.GetProperty("dateModified").GetString());
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
     }
 
     [Fact]
@@ -245,7 +317,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
         var ex = Assert.Throws<InvalidOperationException>(() => new SpaMetadataMiddleware(
             _ => Task.CompletedTask,
-            new SpaMetadataProvider(BuildConfig(), BuildScopeFactory(null)),
+            new SpaMetadataProvider(BuildConfig(), new SeoDefaultsBuilder(), BuildScopeFactory(null)),
             new SeoDefaultsBuilder(),
             BuildScopeFactory(null),
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
@@ -320,17 +392,19 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         string path,
         string method = "GET",
         ISpaMetadataProvider? provider = null,
-        SeoMetadata? seoMetadata = null)
+        SeoMetadata? seoMetadata = null,
+        IReadOnlyList<(string FullName, string Ticker)>? activeFibras = null,
+        IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>? fundamentalRows = null)
     {
         var nextCalled = new StrongBox<bool>(false);
-        var scopeFactory = BuildScopeFactory(seoMetadata);
+        var scopeFactory = BuildScopeFactory(seoMetadata, activeFibras, fundamentalRows);
         var middleware = new SpaMetadataMiddleware(
             _ =>
             {
                 nextCalled.Value = true;
                 return Task.CompletedTask;
             },
-            provider ?? new SpaMetadataProvider(BuildConfig(), scopeFactory),
+            provider ?? new SpaMetadataProvider(BuildConfig(), new SeoDefaultsBuilder(), scopeFactory),
             new SeoDefaultsBuilder(),
             scopeFactory,
             new FakeWebHostEnvironment { WebRootPath = _webRootPath },
@@ -345,14 +419,20 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         return (context, nextCalled);
     }
 
-    private static IServiceScopeFactory BuildScopeFactory(SeoMetadata? seoMetadata)
+    private static IServiceScopeFactory BuildScopeFactory(
+        SeoMetadata? seoMetadata,
+        IReadOnlyList<(string FullName, string Ticker)>? activeFibras = null,
+        IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>? fundamentalRows = null)
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(BuildConfig());
         services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
+        services.AddScoped<IFibraRepository>(_ => new StubFibraRepository(activeFibras ?? []));
         services.AddScoped<IFaqRepository>(_ => new StubFaqRepository());
         services.AddScoped<IOperationalConfigRepository>(_ => new StubOperationalConfigRepository("contacto@fibradis.mx"));
         services.AddScoped<IEditorialPageRepository>(_ => new StubEditorialPageRepository());
-        services.AddScoped<IFundamentalRepository>(_ => new StubFundamentalRepository());
+        services.AddScoped<IFundamentalRepository>(_ => new StubFundamentalRepository(fundamentalRows ?? []));
+        services.AddSingleton<ISeoDefaultsBuilder, SeoDefaultsBuilder>();
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 
@@ -398,6 +478,13 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
     private sealed class StubFundamentalRepository : IFundamentalRepository
     {
+        private readonly IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)> _rows;
+
+        public StubFundamentalRepository(IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)> rows)
+        {
+            _rows = rows;
+        }
+
         public Task<FundamentalRecord?> GetByIdAsync(Guid id, CancellationToken ct) => Task.FromResult<FundamentalRecord?>(null);
         public Task<FundamentalRecord?> GetProcessedByFibraAndPeriodAsync(Guid fibraId, string period, CancellationToken ct) => Task.FromResult<FundamentalRecord?>(null);
         public Task<FundamentalRecord?> GetLatestProcessedByFibraAsync(Guid fibraId, CancellationToken ct) => Task.FromResult<FundamentalRecord?>(null);
@@ -412,20 +499,24 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         public Task UpdateFieldNotesAsync(Guid id, Dictionary<string, string?> notes, CancellationToken ct) => Task.CompletedTask;
         public Task SoftDeleteAsync(Guid id, string deletedBy, CancellationToken ct) => Task.CompletedTask;
         public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryLatestAsync(CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>(
-                [
-                    (new FundamentalRecord
-                    {
-                        Id = Guid.NewGuid(),
-                        FibraId = Guid.NewGuid(),
-                        Period = "2T2026",
-                        Status = "processed",
-                        CapturedAt = new DateTimeOffset(2026, 6, 13, 8, 45, 0, TimeSpan.Zero),
-                    }, "FUNO11", "Fibra Uno")
-                ]);
+            => Task.FromResult(_rows);
         public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryByPeriodAsync(string period, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
         public Task<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>> GetSummaryForRecentPeriodsAsync(int count, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)>>([]);
         public Task<IReadOnlyList<string>> GetAllProcessedPeriodsAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>([]);
+    }
+
+    private sealed class StubFibraRepository(IReadOnlyList<(string FullName, string Ticker)> activeFibras) : IFibraRepository
+    {
+        public Task AddAsync(Domain.Catalog.Fibra fibra, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task UpdateAsync(Domain.Catalog.Fibra fibra, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<(IReadOnlyList<Domain.Catalog.Fibra> Items, int Total)> GetActivePagedAsync(FibraFilter filter, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Domain.Catalog.Fibra?> GetByTickerAsync(string ticker, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Domain.Catalog.Fibra?> GetByIdAsync(Guid id, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Domain.Catalog.Fibra>> GetAllActiveAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<(string FullName, string Ticker)>> GetAllActiveForSitemapAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<(string FullName, string Ticker)>>(activeFibras);
     }
 
     private sealed class StubFaqRepository : IFaqRepository
@@ -474,6 +565,14 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         }
 
         return count;
+    }
+
+    private static IReadOnlyList<string> ExtractJsonLdBlocks(string body)
+    {
+        const string pattern = "<script type=\"application/ld\\+json\">(?<json>.*?)</script>";
+        return Regex.Matches(body, pattern, RegexOptions.Singleline)
+            .Select(match => match.Groups["json"].Value)
+            .ToArray();
     }
 
     private sealed class StrongBox<T>(T value)

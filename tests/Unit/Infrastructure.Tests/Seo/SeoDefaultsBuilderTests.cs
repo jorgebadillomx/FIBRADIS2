@@ -98,6 +98,30 @@ public class SeoDefaultsBuilderTests
     }
 
     [Fact]
+    public void BuildBreadcrumbListJsonLd_UsesExactHierarchy()
+    {
+        var json = _builder.BuildBreadcrumbListJsonLd(
+            "https://fibrasinmobiliarias.com/",
+            [
+                new SeoBreadcrumbItem("Inicio", "/"),
+                new SeoBreadcrumbItem("Comparar", "/comparar"),
+                new SeoBreadcrumbItem("Detalle", "/comparar/segmento"),
+            ]);
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("BreadcrumbList", root.GetProperty("@type").GetString());
+        var items = root.GetProperty("itemListElement").EnumerateArray().ToArray();
+        Assert.Equal(3, items.Length);
+        Assert.Equal("Inicio", items[0].GetProperty("name").GetString());
+        Assert.Equal("https://fibrasinmobiliarias.com/", items[0].GetProperty("item").GetString());
+        Assert.Equal(2, items[1].GetProperty("position").GetInt32());
+        Assert.Equal("https://fibrasinmobiliarias.com/comparar", items[1].GetProperty("item").GetString());
+        Assert.Equal("https://fibrasinmobiliarias.com/comparar/segmento", items[2].GetProperty("item").GetString());
+    }
+
+    [Fact]
     public void BuildFibra_BuildsCleanDescription_WithExactOutput()
     {
         var fibra = new Fibra
@@ -129,9 +153,116 @@ public class SeoDefaultsBuilderTests
         Assert.Equal("website", result.OgType);
         Assert.Equal("https://fibrasinmobiliarias.com/og-image.png", result.OgImageUrl);
         Assert.Contains("\"@type\":\"FinancialProduct\"", result.JsonLd);
-        Assert.Contains("\"@type\":\"BreadcrumbList\"", result.JsonLd);
         Assert.Contains("\"description\":\"Análisis de Fibra Uno (FUNO11): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones. Sector Industrial en la BMV.\"", result.JsonLd);
+        Assert.DoesNotContain("BreadcrumbList", result.JsonLd);
         Assert.Equal("system", result.UpdatedBy);
+    }
+
+    [Fact]
+    public void BuildComparePageJsonLd_UsesActiveFibras_WithExactOutput()
+    {
+        var json = _builder.BuildComparePageJsonLd(
+            [
+                ("Fibra Uno", "FUNO11"),
+                ("Fibra Macquarie", "FIBRAMQ12"),
+            ],
+            "https://fibrasinmobiliarias.com");
+
+        using var document = JsonDocument.Parse(json);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        var app = graph.Single(node => node.GetProperty("@type").GetString() == "WebApplication");
+        Assert.Equal("Comparador de FIBRAs", app.GetProperty("name").GetString());
+        Assert.Equal("https://fibrasinmobiliarias.com/comparar", app.GetProperty("url").GetString());
+
+        var itemList = graph.Single(node => node.GetProperty("@type").GetString() == "ItemList");
+        Assert.Equal(2, itemList.GetProperty("numberOfItems").GetInt32());
+        var items = itemList.GetProperty("itemListElement").EnumerateArray().ToArray();
+        Assert.Equal("Fibra Macquarie", items[0].GetProperty("name").GetString());
+        Assert.Equal("https://fibrasinmobiliarias.com/fibras/fibra-macquarie-fibramq12", items[0].GetProperty("item").GetString());
+        Assert.Equal("Fibra Uno", items[1].GetProperty("name").GetString());
+        Assert.Equal("https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11", items[1].GetProperty("item").GetString());
+    }
+
+    [Fact]
+    public void BuildComparePageJsonLd_ReturnsStaticMinimumWhenNoFibers()
+    {
+        var json = _builder.BuildComparePageJsonLd([], "https://fibrasinmobiliarias.com");
+
+        using var document = JsonDocument.Parse(json);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        Assert.Single(graph);
+        Assert.Equal("WebApplication", graph[0].GetProperty("@type").GetString());
+        Assert.Equal("Comparador de FIBRAs", graph[0].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void BuildFundamentalesPageJsonLd_UsesSummary_WithExactOutput()
+    {
+        var rows = new List<(FundamentalRecord Record, string Ticker, string ShortName)>
+        {
+            (
+                new FundamentalRecord
+                {
+                    Id = Guid.NewGuid(),
+                    FibraId = Guid.NewGuid(),
+                    Period = "2T2026",
+                    Status = "processed",
+                    CapRate = 8.75m,
+                    NavPerCbfi = 27.10m,
+                    Ltv = 34.20m,
+                    NoiMargin = 71.40m,
+                    FfoMargin = 63.80m,
+                    CapturedAt = new DateTimeOffset(2026, 6, 10, 14, 0, 0, TimeSpan.Zero),
+                },
+                "FUNO11",
+                "Fibra Uno"),
+            (
+                new FundamentalRecord
+                {
+                    Id = Guid.NewGuid(),
+                    FibraId = Guid.NewGuid(),
+                    Period = "2T2026",
+                    Status = "processed",
+                    CapRate = 9.10m,
+                    NavPerCbfi = 31.50m,
+                    Ltv = 29.80m,
+                    NoiMargin = 68.10m,
+                    FfoMargin = 60.20m,
+                    CapturedAt = new DateTimeOffset(2026, 6, 13, 8, 45, 0, TimeSpan.Zero),
+                },
+                "DANHOS13",
+                "Danhos"),
+        };
+
+        var json = _builder.BuildFundamentalesPageJsonLd(rows, "https://fibrasinmobiliarias.com");
+
+        using var document = JsonDocument.Parse(json);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        var dataset = graph.Single(node => node.GetProperty("@type").GetString() == "Dataset");
+        Assert.Equal("https://fibrasinmobiliarias.com/fundamentales#dataset", dataset.GetProperty("@id").GetString());
+        Assert.Equal("2026-06-13T08:45:00.0000000+00:00", dataset.GetProperty("dateModified").GetString());
+
+        var variables = dataset.GetProperty("variableMeasured").EnumerateArray().ToArray();
+        Assert.Equal(6, variables.Length);
+        Assert.Equal("Cap Rate", variables[0].GetProperty("name").GetString());
+        Assert.Equal("NAV por CBFI", variables[1].GetProperty("name").GetString());
+        Assert.Equal("FIBRAs cubiertas", variables[5].GetProperty("name").GetString());
+        Assert.Equal(2, variables[5].GetProperty("value").GetInt32());
+    }
+
+    [Fact]
+    public void BuildFundamentalesPageJsonLd_ReturnsStaticMinimumWhenNoRows()
+    {
+        var json = _builder.BuildFundamentalesPageJsonLd([], "https://fibrasinmobiliarias.com");
+
+        using var document = JsonDocument.Parse(json);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        Assert.Contains(graph, node => node.GetProperty("@type").GetString() == "Dataset");
+        Assert.DoesNotContain("BreadcrumbList", json);
     }
 
     // Convención §Testing Funciones de Cálculo Financiero: el caso denominador = 0 va ANTES que

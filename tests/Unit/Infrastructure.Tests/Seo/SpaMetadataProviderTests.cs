@@ -5,6 +5,7 @@ using Domain.Fundamentals;
 using Domain.Ops;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Infrastructure.Seo;
 using System.Text.Json;
 
 namespace Infrastructure.Tests.Seo;
@@ -178,7 +179,22 @@ public class SpaMetadataProviderTests
     }
 
     [Fact]
-    public async Task Fundamentals_HasCollectionPageJsonLd_WithLatestCapturedAt()
+    public async Task Compare_HasWebApplicationJsonLd()
+    {
+        var provider = CreateProvider();
+        var meta = await provider.GetMetaForPathAsync("/comparar");
+
+        Assert.NotNull(meta);
+        Assert.NotNull(meta!.JsonLd);
+        using var document = JsonDocument.Parse(meta.JsonLd);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        Assert.Contains(graph, element => element.GetProperty("@type").GetString() == "WebApplication");
+        Assert.DoesNotContain("BreadcrumbList", meta.JsonLd);
+    }
+
+    [Fact]
+    public async Task Fundamentals_HasDatasetJsonLd()
     {
         var provider = CreateProvider(
             fundamentalsRows:
@@ -212,8 +228,10 @@ public class SpaMetadataProviderTests
         Assert.NotNull(meta);
         Assert.NotNull(meta!.JsonLd);
         using var document = JsonDocument.Parse(meta.JsonLd);
-        Assert.Equal("CollectionPage", document.RootElement.GetProperty("@type").GetString());
-        Assert.Equal("2026-06-13T08:45:00.0000000+00:00", document.RootElement.GetProperty("dateModified").GetString());
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        Assert.Contains(graph, element => element.GetProperty("@type").GetString() == "Dataset");
+        Assert.DoesNotContain("BreadcrumbList", meta.JsonLd);
     }
 
     [Fact]
@@ -239,7 +257,8 @@ public class SpaMetadataProviderTests
     [Theory]
     [InlineData("/noticias")]
     [InlineData("/fibras")]
-    [InlineData("/comparar")]
+    [InlineData("/calendario")]
+    [InlineData("/privacidad")]
     public async Task ContentRoutes_HaveNoJsonLd(string path)
     {
         var provider = CreateProvider();
@@ -263,6 +282,7 @@ public class SpaMetadataProviderTests
         var provider = services.BuildServiceProvider();
         return new SpaMetadataProvider(
             BuildConfig(),
+            new SeoDefaultsBuilder(),
             provider.GetRequiredService<IServiceScopeFactory>());
     }
 

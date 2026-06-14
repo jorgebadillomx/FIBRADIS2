@@ -23,6 +23,10 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
     private const string OgLocale = "es_MX";
     private const string TwitterCard = "summary_large_image";
     private const string DefaultRobotsDirectives = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+    private const string CompareDescription =
+        "Compara hasta 4 FIBRAs mexicanas lado a lado en precio, yield, fundamentales y score de oportunidad público.";
+    private const string FundamentalsDescription =
+        "Dataset con las métricas fundamentales más recientes de FIBRAs mexicanas: Cap Rate, NAV por CBFI, LTV, NOI Margin y FFO Margin.";
     private const int NewsMaxDescriptionLength = 160;
     private const int NewsMinDescriptionLength = 120;
     private const int FibraMaxDescriptionLength = 155;
@@ -48,6 +52,30 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRunRegex();
+
+    public string BuildBreadcrumbListJsonLd(string baseUrl, IReadOnlyList<SeoBreadcrumbItem> items)
+    {
+        var breadcrumbItems = items
+            .Where(item => !string.IsNullOrWhiteSpace(item.Name) && !string.IsNullOrWhiteSpace(item.Path))
+            .Select((item, index) => new Dictionary<string, object?>
+            {
+                ["@type"] = "ListItem",
+                ["position"] = index + 1,
+                ["name"] = item.Name.Trim(),
+                ["item"] = $"{TrimBaseUrl(baseUrl)}{NormalizeRoutePath(item.Path)}",
+            })
+            .ToArray();
+
+        if (breadcrumbItems.Length == 0)
+            return string.Empty;
+
+        return JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "BreadcrumbList",
+            ["itemListElement"] = breadcrumbItems,
+        }, JsonLdOptions);
+    }
 
     public SeoMetadata BuildStaticPage(
         SeoPageType pageType,
@@ -151,6 +179,132 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
             ogImageUrl: article.ImageUrl ?? $"{TrimBaseUrl(baseUrl)}{OgImagePath}");
     }
 
+    public string BuildComparePageJsonLd(
+        IReadOnlyList<(string FullName, string Ticker)> fibras,
+        string baseUrl)
+    {
+        var trimmedBaseUrl = TrimBaseUrl(baseUrl);
+        var activeFibras = fibras
+            .Where(fibra => !string.IsNullOrWhiteSpace(fibra.FullName) && !string.IsNullOrWhiteSpace(fibra.Ticker))
+            .OrderBy(fibra => fibra.Ticker, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var appNode = new Dictionary<string, object?>
+        {
+            ["@type"] = "WebApplication",
+            ["@id"] = $"{trimmedBaseUrl}/comparar#app",
+            ["name"] = "Comparador de FIBRAs",
+            ["url"] = $"{trimmedBaseUrl}/comparar",
+            ["applicationCategory"] = "FinanceApplication",
+            ["operatingSystem"] = "Web",
+            ["provider"] = new Dictionary<string, object?>
+            {
+                ["@id"] = $"{trimmedBaseUrl}/#organization",
+            },
+            ["description"] = CompareDescription,
+        };
+
+        var graph = new List<object?> { appNode };
+
+        if (activeFibras.Length > 0)
+        {
+            graph.Add(new Dictionary<string, object?>
+            {
+                ["@type"] = "ItemList",
+                ["name"] = "FIBRAs comparables",
+                ["numberOfItems"] = activeFibras.Length,
+                ["itemListOrder"] = "https://schema.org/ItemListOrderAscending",
+                ["itemListElement"] = activeFibras
+                    .Select((fibra, index) =>
+                    {
+                        var itemUrl = $"{trimmedBaseUrl}/fibras/{FibraSlug.Build(fibra.FullName, fibra.Ticker)}";
+                        return new Dictionary<string, object?>
+                        {
+                            ["@type"] = "ListItem",
+                            ["position"] = index + 1,
+                            ["name"] = fibra.FullName,
+                            ["item"] = itemUrl,
+                        };
+                    })
+                    .ToArray(),
+            });
+        }
+
+        return JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = graph.ToArray(),
+        }, JsonLdOptions);
+    }
+
+    public string BuildFundamentalesPageJsonLd(
+        IReadOnlyList<(FundamentalRecord Record, string Ticker, string ShortName)> rows,
+        string baseUrl)
+    {
+        var trimmedBaseUrl = TrimBaseUrl(baseUrl);
+        var summaryRows = rows
+            .Where(row => row.Record is not null && !string.IsNullOrWhiteSpace(row.Ticker))
+            .ToArray();
+
+        var coveredCount = summaryRows
+            .Select(row => row.Ticker)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        var latestCapturedAt = summaryRows.Length > 0
+            ? summaryRows.Max(row => row.Record.CapturedAt)
+            : (DateTimeOffset?)null;
+
+        var organizationNode = new Dictionary<string, object?>
+        {
+            ["@type"] = "Organization",
+            ["@id"] = $"{trimmedBaseUrl}/#organization",
+            ["name"] = BrandName,
+            ["url"] = trimmedBaseUrl,
+            ["logo"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ImageObject",
+                ["url"] = $"{trimmedBaseUrl}/logo.png",
+                ["width"] = 512,
+                ["height"] = 512,
+            },
+        };
+
+        var variableMeasured = new List<Dictionary<string, object?>>
+        {
+            new() { ["@type"] = "PropertyValue", ["name"] = "Cap Rate" },
+            new() { ["@type"] = "PropertyValue", ["name"] = "NAV por CBFI" },
+            new() { ["@type"] = "PropertyValue", ["name"] = "LTV" },
+            new() { ["@type"] = "PropertyValue", ["name"] = "NOI Margin" },
+            new() { ["@type"] = "PropertyValue", ["name"] = "FFO Margin" },
+            new() { ["@type"] = "PropertyValue", ["name"] = "FIBRAs cubiertas", ["value"] = coveredCount },
+        };
+
+        var datasetNode = new Dictionary<string, object?>
+        {
+            ["@type"] = "Dataset",
+            ["@id"] = $"{trimmedBaseUrl}/fundamentales#dataset",
+            ["name"] = "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
+            ["description"] = coveredCount > 0
+                ? $"Dataset comparativo con métricas fundamentales de {coveredCount} FIBRAs mexicanas."
+                : FundamentalsDescription,
+            ["url"] = $"{trimmedBaseUrl}/fundamentales",
+            ["creator"] = new Dictionary<string, object?> { ["@id"] = $"{trimmedBaseUrl}/#organization" },
+            ["publisher"] = new Dictionary<string, object?> { ["@id"] = $"{trimmedBaseUrl}/#organization" },
+            ["measurementTechnique"] = "Comparativa de fundamentales de FIBRAs mexicanas",
+            ["variableMeasured"] = variableMeasured.ToArray(),
+        };
+
+        if (latestCapturedAt is not null)
+            datasetNode["dateModified"] = latestCapturedAt.Value.ToString("o");
+
+        return JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = new object[] { organizationNode, datasetNode },
+        }, JsonLdOptions);
+    }
+
     public string BuildFaqPageJsonLd(IReadOnlyList<FaqItem> items)
     {
         var mainEntity = items
@@ -230,6 +384,16 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
         if (normalized.Length == 0)
             return normalized;
 
+        return normalized == "/" ? "/" : normalized.TrimEnd('/');
+    }
+
+    private static string NormalizeRoutePath(string path)
+    {
+        var normalized = path.Trim();
+        if (normalized.Length == 0)
+            return "/";
+
+        normalized = normalized.StartsWith('/') ? normalized : $"/{normalized}";
         return normalized == "/" ? "/" : normalized.TrimEnd('/');
     }
 
@@ -326,16 +490,6 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
             ["@graph"] = new object[]
             {
                 productNode,
-                new Dictionary<string, object?>
-                {
-                    ["@type"] = "BreadcrumbList",
-                    ["itemListElement"] = new object[]
-                    {
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 1, ["name"] = "Inicio", ["item"] = $"{trimmedBaseUrl}/" },
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 2, ["name"] = "Fibras Inmobiliarias", ["item"] = $"{trimmedBaseUrl}/fibras" },
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 3, ["name"] = fibra.FullName, ["item"] = $"{trimmedBaseUrl}{canonicalPath}" },
-                    },
-                },
             },
         }, JsonLdOptions);
     }

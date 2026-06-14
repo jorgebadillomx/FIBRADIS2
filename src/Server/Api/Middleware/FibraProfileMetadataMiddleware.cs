@@ -141,6 +141,7 @@ public partial class FibraProfileMetadataMiddleware(
         }
 
         SeoMetadata? seoMetadata;
+        string breadcrumbJsonLdBlock = string.Empty;
         string faqJsonLdBlock = string.Empty;
         using var metadataScope = scopeFactory.CreateScope();
         {
@@ -169,8 +170,17 @@ public partial class FibraProfileMetadataMiddleware(
             seoMetadata.JsonLd = seoDefaultsBuilder.BuildFibra(fibra, _baseUrl, DateTimeOffset.UtcNow, "system", liveMarketData).JsonLd;
         }
 
+        breadcrumbJsonLdBlock = SeoJsonLd.BuildScriptBlock(
+            seoDefaultsBuilder.BuildBreadcrumbListJsonLd(
+                _baseUrl,
+                [
+                    new SeoBreadcrumbItem("Inicio", "/"),
+                    new SeoBreadcrumbItem("Fibras Inmobiliarias", "/fibras"),
+                    new SeoBreadcrumbItem(fibra.FullName, seoMetadata.CanonicalPath),
+                ]));
+
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, faqJsonLdBlock));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.Headers.CacheControl = "no-cache";
@@ -201,7 +211,7 @@ public partial class FibraProfileMetadataMiddleware(
             asOfDate);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null)
     {
         var encodedTitle = Encoder.Encode(metadata.Title);
         var encodedDescription = Encoder.Encode(metadata.MetaDescription);
@@ -228,6 +238,7 @@ public partial class FibraProfileMetadataMiddleware(
             .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
             .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")
             .Append(SeoJsonLd.BuildScriptBlock(metadata.JsonLd))
+            .Append(string.IsNullOrWhiteSpace(breadcrumbJsonLdBlock) ? string.Empty : $"\n    {breadcrumbJsonLdBlock}")
             .Append(string.IsNullOrWhiteSpace(extraJsonLdBlock) ? string.Empty : $"\n    {extraJsonLdBlock}")
             .ToString();
     }

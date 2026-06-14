@@ -83,6 +83,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         Assert.Contains("<meta property=\"og:url\" content=\"https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25\" />", body);
         Assert.Contains("<script type=\"application/ld+json\">", body);
         Assert.Contains("\"@type\":\"NewsArticle\"", body);
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
         // el offset "+00:00" puede emitirse escapado (+) según el encoder — no asertarlo literal
         Assert.Contains("\"datePublished\":\"2026-06-10T12:00:00.0000000", body);
         // el resto del documento queda intacto

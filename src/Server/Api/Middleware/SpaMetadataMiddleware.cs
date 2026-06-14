@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
+using Application.Catalog;
+using Application.Fundamentals;
 using Application.Seo;
 using Api.Seo;
 using Domain.Seo;
@@ -62,6 +64,7 @@ public partial class SpaMetadataMiddleware(
         var pageType = normalizedPath == "/" ? SeoPageType.Home : SeoPageType.StaticPage;
 
         SeoMetadata? seoMetadata;
+        string breadcrumbJsonLdBlock = string.Empty;
         string faqJsonLdBlock = string.Empty;
         using var scope = scopeFactory.CreateScope();
         {
@@ -125,6 +128,14 @@ public partial class SpaMetadataMiddleware(
             return;
         }
 
+        // Recién aquí (confirmado el placeholder) se componen breadcrumb y JSON-LD dinámico:
+        // hacerlo antes del guard gastaría lecturas a BD en peticiones que terminan en next()
+        breadcrumbJsonLdBlock = BuildBreadcrumbJsonLdBlock(normalizedPath);
+        if (!seoMetadata.JsonLdIsOverridden && (normalizedPath == "/comparar" || normalizedPath == "/fundamentales"))
+        {
+            seoMetadata.JsonLd = await BuildDynamicJsonLdAsync(scope.ServiceProvider, normalizedPath, context.RequestAborted);
+        }
+
         // Sustituir el <title> estático evita títulos duplicados en el HTML servido
         // (Google tomaría el primero, el genérico) — extensión de CA-3 aprobada por el usuario
         var faqRepo = scope.ServiceProvider.GetRequiredService<IFaqRepository>();
@@ -133,7 +144,7 @@ public partial class SpaMetadataMiddleware(
             faqJsonLdBlock = SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildFaqPageJsonLd(faqItems));
 
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, faqJsonLdBlock));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado cambia por deploy y pierde el ETag/304 de StaticFiles;
@@ -142,7 +153,7 @@ public partial class SpaMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? extraJsonLdBlock = null)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null)
     {
         var title = Encoder.Encode(metadata.Title);
         var description = Encoder.Encode(metadata.MetaDescription);
@@ -173,10 +184,71 @@ public partial class SpaMetadataMiddleware(
         if (jsonLdBlock.Length > 0)
             block.Append($"\n    {jsonLdBlock}");
 
+        if (!string.IsNullOrWhiteSpace(breadcrumbJsonLdBlock))
+            block.Append($"\n    {breadcrumbJsonLdBlock}");
+
         if (!string.IsNullOrWhiteSpace(extraJsonLdBlock))
             block.Append($"\n    {extraJsonLdBlock}");
 
         return block.ToString();
+    }
+
+    private string BuildBreadcrumbJsonLdBlock(string normalizedPath)
+    {
+        IReadOnlyList<SeoBreadcrumbItem> items = normalizedPath switch
+        {
+            // Home no lleva BreadcrumbList: un breadcrumb de un solo ítem no aporta jerarquía y
+            // Google Rich Results lo ignora; la home ya emite WebSite (decisión code review 12-5)
+            "/calculadora" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Calculadora", "/calculadora") },
+            "/comparar" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Comparar", "/comparar") },
+            "/fibras" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Fibras Inmobiliarias", "/fibras") },
+            "/noticias" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Noticias", "/noticias") },
+            "/conoce-las-fibras" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Conoce las FIBRAs", "/conoce-las-fibras") },
+            "/calendario" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Calendario", "/calendario") },
+            "/fundamentales" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Fundamentales", "/fundamentales") },
+            "/privacidad" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Privacidad", "/privacidad") },
+            "/acerca" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Acerca", "/acerca") },
+            "/contacto" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Contacto", "/contacto") },
+            _ => Array.Empty<SeoBreadcrumbItem>(),
+        };
+
+        return SeoJsonLd.BuildScriptBlock(seoDefaultsBuilder.BuildBreadcrumbListJsonLd(_baseUrl, items));
+    }
+
+    private static async Task<string> BuildDynamicJsonLdAsync(IServiceProvider services, string normalizedPath, CancellationToken ct)
+    {
+        return normalizedPath switch
+        {
+            "/comparar" => await BuildCompareJsonLdAsync(services, ct),
+            "/fundamentales" => await BuildFundamentalesJsonLdAsync(services, ct),
+            _ => string.Empty,
+        };
+    }
+
+    private static async Task<string> BuildCompareJsonLdAsync(IServiceProvider services, CancellationToken ct)
+    {
+        var fibraRepo = services.GetRequiredService<IFibraRepository>();
+        var fibras = await fibraRepo.GetAllActiveForSitemapAsync(ct);
+        var builder = services.GetRequiredService<ISeoDefaultsBuilder>();
+        var config = services.GetRequiredService<IConfiguration>();
+        var baseUrl = !string.IsNullOrWhiteSpace(config["App:BaseUrl"])
+            ? config["App:BaseUrl"]!.TrimEnd('/')
+            : throw new InvalidOperationException("App:BaseUrl es requerido para JSON-LD dinámico de /comparar.");
+
+        return builder.BuildComparePageJsonLd(fibras, baseUrl);
+    }
+
+    private static async Task<string> BuildFundamentalesJsonLdAsync(IServiceProvider services, CancellationToken ct)
+    {
+        var fundamentalRepo = services.GetRequiredService<IFundamentalRepository>();
+        var rows = await fundamentalRepo.GetSummaryLatestAsync(ct);
+        var builder = services.GetRequiredService<ISeoDefaultsBuilder>();
+        var config = services.GetRequiredService<IConfiguration>();
+        var baseUrl = !string.IsNullOrWhiteSpace(config["App:BaseUrl"])
+            ? config["App:BaseUrl"]!.TrimEnd('/')
+            : throw new InvalidOperationException("App:BaseUrl es requerido para JSON-LD dinámico de /fundamentales.");
+
+        return builder.BuildFundamentalesPageJsonLd(rows, baseUrl);
     }
 
     private static string NormalizePath(string path)

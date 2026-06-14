@@ -67,3 +67,10 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 - **`TruncateWithEllipsis` sin guard `cut>=1`** — `text[cut-1]` con `maxLength<4` lanzaría IndexOutOfRange. No alcanzable hoy (solo se invoca con 160); añadir guard si se reutiliza.
 - **Caracteres de control sin sanitizar** — `Title`/`OgImageUrl`/`CanonicalPath` no neutralizan whitespace de control (`HtmlEncoder` no lo hace). Relevante cuando AC-3 permita edición libre desde Ops.
 - **`UpsertAsync` no-override no reactiva `IsActive=false`** — sin ruta de regen que reactive una fila desactivada manualmente. Confirmar si es el comportamiento deseado al implementar el flujo de escritura.
+
+## From: code review of 12-5-jsonld-comparador-fundamentales-breadcrumbs (2026-06-14)
+
+- **Referencia `@id` colgante a `#organization` en `/comparar`** — `WebApplication.provider` apunta a un nodo `Organization` que la página `/comparar` nunca define en su markup (sí lo define `/fundamentales`). Inconsistencia de completitud de structured data; considerar definir el nodo o referenciar uno global resoluble.
+- **Ítem hoja del breadcrumb descartado en silencio si `CanonicalPath` vacío** — el filtro de `BuildBreadcrumbListJsonLd` elimina ítems con `Path` vacío, produciendo un breadcrumb sin la página actual. Hoy no disparable (canonical siempre seteado en ficha/noticia); añadir guard/aserción defensiva.
+- **Sin try/catch en lecturas de BD del JSON-LD dinámico** — una falla transitoria de BD (`GetAllActiveForSitemapAsync`/`GetSummaryLatestAsync`) devuelve 500 en `/comparar` y `/fundamentales` en vez de servir el shell; el mínimo estático no se usa como fallback. Gap de resiliencia transversal del pipeline SEO (la lectura de `SeoMetadata` ya es sin guard).
+- **Sobrecargas muertas `BuildMetaBlock(Fibra,…)` / `BuildMetaBlock(NewsArticle,…)`** — aún cargan `BreadcrumbList` inline sin call sites. Eliminar para evitar doble breadcrumb si un futuro caller las reutiliza (duplica deferral de 12-1, sigue pendiente).
