@@ -4,6 +4,15 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 13-1-reorganizacion-menus-navegacion (2026-06-15)
+
+- Dropdowns desktop de Main con `role="menu"` sin navegación por flechas (patrón APG incompleto). AC2 se cumple literalmente (click/Escape/click-fuera); mejora de a11y, no bloqueante.
+- SEO/internal-linking: las 3 rutas públicas movidas al dropdown "Más" (`/conoce-las-fibras`, `/calendario`, `/calculadora`) salen del DOM cuando el dropdown está cerrado (`{open ? … : null}`). Siguen indexables vía sitemap (`SeoEndpoints.cs`) y metadata server-side (`SpaMetadataProvider.cs`), pero pierden el enlace interno site-wide del header que antes existía. Tradeoff de diseño del decluttering del nav.
+- Estado `checking`: el drawer móvil de Main muestra "Iniciar sesión" para un usuario autenticado durante la revalidación de sesión (flicker). Patrón de auth pre-existente.
+- Drawer de Ops abre vía `onClick` manual (botón fuera de `DialogTrigger`) con retorno de foco manual (`previousOpenRef`); diverge del patrón de Main pero funciona. Consistencia/robustez.
+
+---
+
 ## Deferred from: code review of 12-11-editor-robots-directives-por-pagina (2026-06-15)
 
 - **TOCTOU / last-write-wins en el PUT sin concurrencia optimista** (OpsSeoEndpoints.cs:72-81 + SeoMetadataRepository.cs:54-90) — `GetByIdAsync` (AsNoTracking) seguido de `UpsertAsync(overrideMode:true)` reescribe TODA la fila desde el snapshot leído; dos editores concurrentes producen last-write-wins silencioso sin token de concurrencia. Aceptable en Ops single-writer; el diseño proviene de 12-1. Reconsiderar si se habilita edición multi-usuario.
