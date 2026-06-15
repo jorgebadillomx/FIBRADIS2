@@ -1,8 +1,12 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Application.Auth;
+using Application.Catalog;
+using Application.News;
 using Application.Seo;
 using Api.Seo;
 using Domain.Seo;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SharedApiContracts.Seo;
 
@@ -10,6 +14,9 @@ namespace Api.Endpoints.Ops;
 
 public static class OpsSeoEndpoints
 {
+    private const int MaxTitleLength = 120;
+    private const int MaxDescriptionLength = 160;
+
     public static IEndpointRouteBuilder MapOpsSeo(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/ops/seo")
@@ -76,16 +83,22 @@ public static class OpsSeoEndpoints
             if (validation.Count > 0)
                 return Results.ValidationProblem(validation);
 
-            if (!SeoRobotsDirectives.TryNormalize(request.RobotsDirectives, out var normalizedRobotsDirectives, out var robotsErrors))
-                return Results.ValidationProblem(robotsErrors);
+            // robots solo se procesa si viene en el request (edición de robots de 12-11). Otros
+            // campos pueden editarse sin tocar robots.
+            string? normalizedRobotsDirectives = null;
+            if (request.RobotsDirectives is not null)
+            {
+                if (!SeoRobotsDirectives.TryNormalize(request.RobotsDirectives, out var normalized, out var robotsErrors))
+                    return Results.ValidationProblem(robotsErrors);
+                normalizedRobotsDirectives = normalized;
+            }
 
             var logger = loggerFactory.CreateLogger("OpsSeoEndpoints");
             var current = await repo.GetByIdAsync(id, ct);
             if (current is null)
                 return Results.NotFound();
 
-            current.RobotsDirectives = normalizedRobotsDirectives;
-            current.RobotsDirectivesIsOverridden = true;
+            ApplyOverrides(current, request, normalizedRobotsDirectives);
             current.UpdatedAt = DateTimeOffset.UtcNow;
             current.UpdatedBy = GetActor(ctx, emailEncryptor, logger);
 
@@ -107,18 +120,213 @@ public static class OpsSeoEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 
+        // Backfill idempotente (AC-7): crea filas SeoMetadata faltantes para páginas fijas, fibras
+        // activas y las últimas 100 noticias por CapturedAt. Re-ejecutarlo no duplica ni pisa
+        // overrides (salta las claves ya existentes). Devuelve conteo por tipo.
+        group.MapPost("/backfill", async (
+            ISeoMetadataRepository seoRepo,
+            ISeoDefaultsBuilder seoDefaults,
+            ISpaMetadataProvider spaProvider,
+            IFibraRepository fibraRepo,
+            INewsRepository newsRepo,
+            IConfiguration config,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
+        {
+            var baseUrl = config["App:BaseUrl"];
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                return Results.Problem(
+                    "App:BaseUrl no está configurado; el backfill no puede generar URLs canónicas absolutas.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            baseUrl = baseUrl.TrimEnd('/');
+            var logger = loggerFactory.CreateLogger("OpsSeoBackfill");
+            var now = DateTimeOffset.UtcNow;
+            var staticPages = 0;
+            var fibras = 0;
+            var news = 0;
+
+            // ── Páginas fijas ──
+            foreach (var path in spaProvider.KnownPaths)
+            {
+                var entityKey = path;
+                if (await seoRepo.ExistsAsync(SeoPageType.StaticPage, entityKey, ct))
+                    continue;
+
+                try
+                {
+                    // GetMetaForPathAsync compone JSON-LD leyendo OperationalConfig/EditorialPage;
+                    // un fallo en una página no debe abortar el backfill completo (se salta y sigue).
+                    var meta = await spaProvider.GetMetaForPathAsync(path, ct);
+                    if (meta is null)
+                        continue;
+
+                    var metadata = seoDefaults.BuildStaticPage(
+                        SeoPageType.StaticPage, entityKey, meta.Title, meta.Description,
+                        meta.CanonicalPath, meta.JsonLd, baseUrl, now);
+                    await seoRepo.UpsertAsync(metadata, overrideMode: false, ct);
+                    staticPages++;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Backfill SEO falló para la página fija {Path}; se omite", path);
+                }
+            }
+
+            // ── Fibras activas ──
+            foreach (var fibra in await fibraRepo.GetAllActiveAsync(ct))
+            {
+                var entityKey = fibra.Ticker.Trim().ToUpperInvariant();
+                if (await seoRepo.ExistsAsync(SeoPageType.Fibra, entityKey, ct))
+                    continue;
+
+                await seoRepo.UpsertAsync(seoDefaults.BuildFibra(fibra, baseUrl, now), overrideMode: false, ct);
+                fibras++;
+            }
+
+            // ── Últimas 100 noticias por CapturedAt ──
+            foreach (var article in await newsRepo.GetLatestByCapturedAtAsync(100, ct))
+            {
+                var entityKey = article.Slug ?? article.Id.ToString();
+                if (await seoRepo.ExistsAsync(SeoPageType.News, entityKey, ct))
+                    continue;
+
+                await seoRepo.UpsertAsync(seoDefaults.BuildNews(article, baseUrl, now), overrideMode: false, ct);
+                news++;
+            }
+
+            logger.LogInformation(
+                "Ops SEO backfill creó {StaticPages} páginas fijas, {Fibras} fibras y {News} noticias",
+                staticPages, fibras, news);
+
+            return Results.Ok(new SeoBackfillResultDto(staticPages, fibras, news));
+        })
+        .Produces<SeoBackfillResultDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
         return app;
+    }
+
+    // Aplica solo los campos provistos (no null) y marca su flag de override. og:title sigue la
+    // regla "og:title == title": si se edita Title, OgTitle se alinea y también se marca override.
+    private static void ApplyOverrides(SeoMetadata current, UpdateSeoMetadataRequest request, string? normalizedRobotsDirectives)
+    {
+        if (request.Title is not null)
+        {
+            current.Title = request.Title.Trim();
+            current.TitleIsOverridden = true;
+            current.OgTitle = current.Title;
+            current.OgTitleIsOverridden = true;
+        }
+
+        if (request.MetaDescription is not null)
+        {
+            current.MetaDescription = request.MetaDescription.Trim();
+            current.MetaDescriptionIsOverridden = true;
+            current.OgDescription = current.MetaDescription;
+            current.OgDescriptionIsOverridden = true;
+        }
+
+        if (request.CanonicalPath is not null)
+        {
+            current.CanonicalPath = request.CanonicalPath.Trim();
+            current.CanonicalPathIsOverridden = true;
+        }
+
+        if (request.OgImageUrl is not null)
+        {
+            current.OgImageUrl = request.OgImageUrl.Trim();
+            current.OgImageUrlIsOverridden = true;
+        }
+
+        if (request.OgType is not null)
+        {
+            current.OgType = request.OgType.Trim();
+            current.OgTypeIsOverridden = true;
+        }
+
+        if (request.TwitterCard is not null)
+        {
+            current.TwitterCard = request.TwitterCard.Trim();
+            current.TwitterCardIsOverridden = true;
+        }
+
+        if (request.JsonLd is not null)
+        {
+            current.JsonLd = string.IsNullOrWhiteSpace(request.JsonLd) ? null : request.JsonLd.Trim();
+            current.JsonLdIsOverridden = true;
+        }
+
+        if (normalizedRobotsDirectives is not null)
+        {
+            current.RobotsDirectives = normalizedRobotsDirectives;
+            current.RobotsDirectivesIsOverridden = true;
+        }
+
+        if (request.IsActive is not null)
+            current.IsActive = request.IsActive.Value;
     }
 
     private static Dictionary<string, string[]> ValidateRequest(UpdateSeoMetadataRequest request)
     {
-        var errors = new Dictionary<string, string[]>();
-        var value = request.RobotsDirectives?.Trim();
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
 
-        if (value is { Length: > 256 })
+        // robots: el techo 256 lo valida también TryNormalize; aquí se mantiene por compatibilidad.
+        if (request.RobotsDirectives?.Trim() is { Length: > 256 })
             errors["robotsDirectives"] = ["El campo robotsDirectives no puede superar 256 caracteres."];
 
+        // Title: techo 120 = límite duro de columna nvarchar(120).
+        if (request.Title?.Trim() is { Length: > MaxTitleLength })
+            errors["title"] = [$"El campo title no puede superar {MaxTitleLength} caracteres."];
+
+        // MetaDescription: techo 160 duro (400). El piso 120 es solo objetivo de los defaults
+        // auto-generados; en edición manual es warning no bloqueante (T5).
+        if (request.MetaDescription?.Trim() is { Length: > MaxDescriptionLength })
+            errors["metaDescription"] = [$"El campo metaDescription no puede superar {MaxDescriptionLength} caracteres."];
+
+        // CanonicalPath: ruta relativa (el dominio lo antepone App:BaseUrl) — debe empezar con '/'.
+        if (!string.IsNullOrWhiteSpace(request.CanonicalPath) && !request.CanonicalPath.Trim().StartsWith('/'))
+            errors["canonicalPath"] = ["canonicalPath debe ser una ruta relativa que comience con '/'."];
+
+        // OgImageUrl: URL absoluta http/https (guard SSRF) o ruta relativa.
+        if (!string.IsNullOrWhiteSpace(request.OgImageUrl) && !IsValidImageUrl(request.OgImageUrl.Trim()))
+            errors["ogImageUrl"] = ["ogImageUrl debe ser una URL http/https o una ruta relativa que comience con '/'."];
+
+        // JsonLd: si viene no vacío, debe ser JSON parseable.
+        if (!string.IsNullOrWhiteSpace(request.JsonLd) && !IsParseableJson(request.JsonLd))
+            errors["jsonLd"] = ["jsonLd debe ser un JSON válido."];
+
         return errors;
+    }
+
+    private static bool IsValidImageUrl(string value)
+    {
+        if (value.StartsWith('/'))
+            return true;
+
+        return Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    private static bool IsParseableJson(string value)
+    {
+        try
+        {
+            using var _ = JsonDocument.Parse(value);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static bool TryParsePageType(string? value, out SeoPageType pageType)
@@ -143,7 +351,21 @@ public static class OpsSeoEndpoints
         metadata.RobotsDirectivesIsOverridden,
         metadata.IsActive,
         metadata.UpdatedAt,
-        metadata.UpdatedBy);
+        metadata.UpdatedBy,
+        metadata.OgTitle,
+        metadata.OgDescription,
+        metadata.OgType,
+        metadata.OgImageUrl,
+        metadata.OgLocale,
+        metadata.TwitterCard,
+        metadata.JsonLd,
+        metadata.TitleIsOverridden,
+        metadata.MetaDescriptionIsOverridden,
+        metadata.CanonicalPathIsOverridden,
+        metadata.OgImageUrlIsOverridden,
+        metadata.OgTypeIsOverridden,
+        metadata.TwitterCardIsOverridden,
+        metadata.JsonLdIsOverridden);
 
     private static string GetActor(HttpContext ctx, IEmailEncryptor emailEncryptor, ILogger logger)
     {

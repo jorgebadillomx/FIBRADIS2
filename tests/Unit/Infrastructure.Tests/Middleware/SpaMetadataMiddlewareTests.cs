@@ -370,6 +370,8 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
     {
         public Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
             => Task.FromResult<SpaPageMeta?>(meta);
+
+        public IReadOnlyList<string> KnownPaths { get; } = ["/"];
     }
 
     private static SeoMetadata CreateSeoMetadata(

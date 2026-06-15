@@ -13,6 +13,7 @@ public interface INewsRepository
     Task UpdateSummaryAsync(Guid id, string? summary, NewsArticleStatus status, CancellationToken ct = default);
     Task UpdateAiAnalysisAsync(Guid id, string? analysisJson, string? summary, NewsArticleStatus status, CancellationToken ct = default);
     Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default);
+    Task<IReadOnlyList<NewsArticle>> GetLatestByCapturedAtAsync(int count, CancellationToken ct = default);
     Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, int months, CancellationToken ct = default);
     Task<IReadOnlyList<NewsArticle>> GetRelatedAsync(Guid excludeId, int count, CancellationToken ct = default);
     Task<IReadOnlyList<(Guid Id, string Ticker)>> GetLinkedFibrasAsync(Guid articleId, CancellationToken ct = default);

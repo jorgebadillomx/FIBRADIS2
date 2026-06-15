@@ -1,13 +1,25 @@
 using System.Data;
 using Application.News;
+using Application.Seo;
 using Domain.News;
 using Domain.Seo;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Persistence.Repositories.News;
 
-public class NewsRepository(AppDbContext db) : INewsRepository
+// Las dependencias SEO son opcionales (= null) para que la auto-población (AC-5 de 12-1) ocurra
+// en producción (DI las resuelve) sin romper los `new NewsRepository(db)` de los unit tests que
+// no ejercitan SEO. Si faltan deps o App:BaseUrl, el auto-llenado se omite silenciosamente: el
+// endpoint de backfill (AC-7) es la red de recuperación idempotente.
+public class NewsRepository(
+    AppDbContext db,
+    ISeoMetadataRepository? seoMetadata = null,
+    ISeoDefaultsBuilder? seoDefaults = null,
+    IConfiguration? configuration = null,
+    ILogger<NewsRepository>? logger = null) : INewsRepository
 {
     public async Task<bool> ExistsByUrlAsync(string url, CancellationToken ct = default)
         => await db.NewsArticles.AnyAsync(n => n.Url == url, ct);
@@ -57,6 +69,9 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             try
             {
                 await db.SaveChangesAsync(ct);
+                // Auto-llenado SEO tras conocer el slug definitivo (AC-5). Se hace después del save
+                // del artículo para usar el slug final como EntityKey; el upsert es idempotente.
+                await PopulateSeoAsync(article, ct);
                 return;
             }
             catch (DbUpdateException ex) when (retry < 3 && IsSlugUniqueViolation(ex))
@@ -68,6 +83,71 @@ public class NewsRepository(AppDbContext db) : INewsRepository
 
     private static bool IsSlugUniqueViolation(DbUpdateException ex)
         => ex.InnerException?.Message.Contains("IX_NewsArticle_Slug", StringComparison.OrdinalIgnoreCase) == true;
+
+    private string? ResolveBaseUrl()
+    {
+        var baseUrl = configuration?["App:BaseUrl"];
+        return string.IsNullOrWhiteSpace(baseUrl) ? null : baseUrl.TrimEnd('/');
+    }
+
+    private async Task PopulateSeoAsync(NewsArticle article, CancellationToken ct)
+    {
+        if (seoMetadata is null || seoDefaults is null)
+            return;
+
+        var baseUrl = ResolveBaseUrl();
+        if (baseUrl is null)
+            return;
+
+        try
+        {
+            var metadata = seoDefaults.BuildNews(article, baseUrl, DateTimeOffset.UtcNow);
+            // overrideMode:false ⇒ regeneración que respeta flags de override (no pisa ediciones
+            // manuales si la fila ya existe por una ejecución previa).
+            await seoMetadata.UpsertAsync(metadata, overrideMode: false, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex,
+                "Auto-llenado SEO falló para la noticia {Slug}; recuperable vía POST /api/v1/ops/seo/backfill",
+                article.Slug ?? article.Id.ToString());
+        }
+    }
+
+    // Regenera la fila SEO de una noticia tras enriquecimiento IA (headline/summary cambian la
+    // description/JSON-LD). El slug NO cambia en estos updates, así que la EntityKey es estable.
+    private async Task RegenerateSeoAsync(Guid id, CancellationToken ct)
+    {
+        if (seoMetadata is null || seoDefaults is null)
+            return;
+
+        var baseUrl = ResolveBaseUrl();
+        if (baseUrl is null)
+            return;
+
+        var article = await db.NewsArticles.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (article is null)
+            return;
+
+        try
+        {
+            var metadata = seoDefaults.BuildNews(article, baseUrl, DateTimeOffset.UtcNow);
+            await seoMetadata.UpsertAsync(metadata, overrideMode: false, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex,
+                "Regeneración SEO falló para la noticia {ArticleId}; recuperable vía backfill", id);
+        }
+    }
 
     public Task<NewsArticle?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.NewsArticles.FindAsync([id], ct).AsTask();
@@ -89,6 +169,8 @@ public class NewsRepository(AppDbContext db) : INewsRepository
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(article => article.AiSummary, summary)
                 .SetProperty(article => article.Status, status), ct);
+
+        await RegenerateSeoAsync(id, ct);
     }
 
     public async Task UpdateAiAnalysisAsync(Guid id, string? analysisJson, string? summary, NewsArticleStatus status, CancellationToken ct = default)
@@ -99,6 +181,8 @@ public class NewsRepository(AppDbContext db) : INewsRepository
                 .SetProperty(article => article.AiAnalysisJson, analysisJson)
                 .SetProperty(article => article.AiSummary, summary)
                 .SetProperty(article => article.Status, status), ct);
+
+        await RegenerateSeoAsync(id, ct);
     }
 
     public async Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
@@ -109,6 +193,16 @@ public class NewsRepository(AppDbContext db) : INewsRepository
                     || n.Status == NewsArticleStatus.Processed
                     || n.Status == NewsArticleStatus.Partial))
             .OrderByDescending(n => n.PublishedAt)
+            .Take(count)
+            .ToListAsync(ct);
+
+    // Backfill SEO (AC-7): últimas N noticias por fecha de captura (CapturedAt), sin exigir
+    // AiAnalysisJson — el backfill debe cubrir también noticias aún no enriquecidas por IA.
+    public async Task<IReadOnlyList<NewsArticle>> GetLatestByCapturedAtAsync(int count, CancellationToken ct = default)
+        => await db.NewsArticles
+            .Where(n => n.DeletedAt == null)
+            .OrderByDescending(n => n.CapturedAt)
+            .ThenByDescending(n => n.Id)
             .Take(count)
             .ToListAsync(ct);
 
