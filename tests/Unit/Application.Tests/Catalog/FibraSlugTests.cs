@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Application.Catalog;
 
 namespace Application.Tests.Catalog;
@@ -10,38 +11,28 @@ public class FibraSlugTests
         Assert.Equal("fibra-uno-funo11", FibraSlug.Build("Fibra Uno", "FUNO11"));
     }
 
-    // Tabla de la historia 11.3 — debe coincidir 1:1 con fibra-slug.test.ts (paridad C# ↔ TS)
-    [Theory]
-    [InlineData("Fibra Uno", "FUNO11", "fibra-uno-funo11")]
-    [InlineData("Fibra Macquarie", "FIBRAMQ12", "fibra-macquarie-fibramq12")]
-    [InlineData("Fibra Hotel City Express", "HCITY17", "fibra-hotel-city-express-hcity17")]
-    [InlineData("CFE Fibra E", "FCFE18", "cfe-fibra-e-fcfe18")]
-    [InlineData("Fibra҃uno", "FUNO11", "fibrauno-funo11")] // Mn fuera de U+0300-036F — paridad con \p{Mn} del TS/mjs
-    public void Build_CatalogExamples_MatchExpectedSlugs(string fullName, string ticker, string expected)
-    {
-        Assert.Equal(expected, FibraSlug.Build(fullName, ticker));
-    }
-
+    // Corpus de paridad COMPARTIDO con fibra-slug.test.ts (TS). Fuente única:
+    // src/Web/Main/src/shared/lib/slug-parity.fixture.json (vinculado como Content en el .csproj).
+    // Ambos lenguajes verifican el MISMO archivo ⇒ no puede haber drift silencioso entre
+    // FibraSlug.Build (C#) y buildFibraSlug (TS). Cubre acentos, eñes, puntuación (S.A.→s-a),
+    // marcas combinantes fuera de U+0300-036F, espacios/guiones múltiples y nombre vacío.
     [Fact]
-    public void Build_NameWithAccents_NormalizesAccents()
+    public void Build_MatchesSharedParityFixture()
     {
-        Assert.Equal("fibra-proximamente-nu11", FibraSlug.Build("Fibra Próximamente", "NU11"));
-        Assert.Equal("fibra-montana-test1", FibraSlug.Build("Fibra Montaña", "TEST1"));
-    }
+        var path = Path.Combine(AppContext.BaseDirectory, "slug-parity.fixture.json");
+        Assert.True(File.Exists(path), $"No se encontró el fixture de paridad en {path}");
 
-    [Fact]
-    public void Build_NameWithSpecialChars_StripsNonAlphanumeric()
-    {
-        // puntuación colapsa a UN guión — misma semántica que el regex [^a-z0-9]+ del TS
-        Assert.Equal("fibra-plus-s-a-fplus16", FibraSlug.Build("Fibra Plus, S.A.", "FPLUS16"));
-        Assert.Equal("fibra-test-x99", FibraSlug.Build("  Fibra -- Test!  ", "X99"));
-    }
+        var fixture = JsonSerializer.Deserialize<ParityFixture>(
+            File.ReadAllText(path),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-    [Fact]
-    public void Build_EmptyName_ReturnsTickerOnly()
-    {
-        Assert.Equal("funo11", FibraSlug.Build("", "FUNO11"));
-        Assert.Equal("funo11", FibraSlug.Build("   ", "FUNO11"));
+        Assert.NotNull(fixture);
+        Assert.NotEmpty(fixture!.Cases);
+
+        foreach (var c in fixture.Cases)
+        {
+            Assert.Equal(c.Expected, FibraSlug.Build(c.FullName, c.Ticker));
+        }
     }
 
     [Fact]
@@ -49,4 +40,7 @@ public class FibraSlugTests
     {
         Assert.Equal("terrafina-tera20", FibraSlug.Build("Terrafina", "TERA20"));
     }
+
+    private sealed record ParityFixture(List<ParityCase> Cases);
+    private sealed record ParityCase(string FullName, string Ticker, string Expected);
 }

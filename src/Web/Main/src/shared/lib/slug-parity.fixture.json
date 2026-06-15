@@ -1,0 +1,17 @@
+{
+  "_comment": "Corpus de paridad del slug de FIBRA. Fuente única consumida por fibra-slug.test.ts (TS) y FibraSlugTests.cs (C#) para garantizar que buildFibraSlug == FibraSlug.Build. Editar aquí actualiza ambos lenguajes. NO cambiar 'expected' de filas existentes sin verificar que no rompe slugs/URLs en producción.",
+  "cases": [
+    { "fullName": "Fibra Uno", "ticker": "FUNO11", "expected": "fibra-uno-funo11" },
+    { "fullName": "Fibra Macquarie", "ticker": "FIBRAMQ12", "expected": "fibra-macquarie-fibramq12" },
+    { "fullName": "Fibra Hotel City Express", "ticker": "HCITY17", "expected": "fibra-hotel-city-express-hcity17" },
+    { "fullName": "CFE Fibra E", "ticker": "FCFE18", "expected": "cfe-fibra-e-fcfe18" },
+    { "fullName": "Fibra Próximamente", "ticker": "NU11", "expected": "fibra-proximamente-nu11" },
+    { "fullName": "Fibra Montaña", "ticker": "TEST1", "expected": "fibra-montana-test1" },
+    { "fullName": "Fibra Plus, S.A.", "ticker": "FPLUS16", "expected": "fibra-plus-s-a-fplus16" },
+    { "fullName": "  Fibra -- Test!  ", "ticker": "X99", "expected": "fibra-test-x99" },
+    { "fullName": "Fibra҃uno", "ticker": "FUNO11", "expected": "fibrauno-funo11" },
+    { "fullName": "Terrafina", "ticker": "TERA20", "expected": "terrafina-tera20" },
+    { "fullName": "", "ticker": "FUNO11", "expected": "funo11" },
+    { "fullName": "   ", "ticker": "SOMA21", "expected": "soma21" }
+  ]
+}
