@@ -6161,6 +6161,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/seo/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeoBackfillResultDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/seo/organization": {
         parameters: {
             query?: never;
@@ -7505,6 +7567,14 @@ export interface components {
             shortName: string;
             sector: string;
         };
+        SeoBackfillResultDto: {
+            /** Format: int32 */
+            staticPages: number | string;
+            /** Format: int32 */
+            fibras: number | string;
+            /** Format: int32 */
+            news: number | string;
+        };
         SeoMetadataDto: {
             /** Format: uuid */
             id: string;
@@ -7519,6 +7589,20 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             updatedBy: string;
+            ogTitle: string;
+            ogDescription: string;
+            ogType: string;
+            ogImageUrl: string;
+            ogLocale: string;
+            twitterCard: string;
+            jsonLd: null | string;
+            titleIsOverridden: boolean;
+            metaDescriptionIsOverridden: boolean;
+            canonicalPathIsOverridden: boolean;
+            ogImageUrlIsOverridden: boolean;
+            ogTypeIsOverridden: boolean;
+            twitterCardIsOverridden: boolean;
+            jsonLdIsOverridden: boolean;
         };
         SetAiProviderRequest: {
             provider: string;
@@ -7606,6 +7690,13 @@ export interface components {
         };
         UpdateSeoMetadataRequest: {
             robotsDirectives: null | string;
+            title?: null | string;
+            metaDescription?: null | string;
+            canonicalPath?: null | string;
+            ogImageUrl?: null | string;
+            ogType?: null | string;
+            twitterCard?: null | string;
+            jsonLd?: null | string;
         };
         UpsertFaqItemRequest: {
             pageType: string;

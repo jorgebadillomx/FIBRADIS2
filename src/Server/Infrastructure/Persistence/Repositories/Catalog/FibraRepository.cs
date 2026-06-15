@@ -1,12 +1,22 @@
 using System.Data;
 using Application.Catalog;
+using Application.Seo;
 using Domain.Catalog;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Persistence.Repositories.Catalog;
 
-public class FibraRepository(AppDbContext db) : IFibraRepository
+// Deps SEO opcionales (= null): auto-población (AC-5 de 12-1) en producción vía DI sin romper
+// los `new FibraRepository(db)` de los unit tests. Backfill (AC-7) es la red de recuperación.
+public class FibraRepository(
+    AppDbContext db,
+    ISeoMetadataRepository? seoMetadata = null,
+    ISeoDefaultsBuilder? seoDefaults = null,
+    IConfiguration? configuration = null,
+    ILogger<FibraRepository>? logger = null) : IFibraRepository
 {
     public async Task AddAsync(Fibra fibra, CancellationToken ct = default)
     {
@@ -19,12 +29,47 @@ public class FibraRepository(AppDbContext db) : IFibraRepository
 
         db.Fibras.Add(fibra);
         await db.SaveChangesAsync(ct);
+        await PopulateSeoAsync(fibra, ct);
     }
 
     public async Task UpdateAsync(Fibra fibra, CancellationToken ct = default)
     {
         db.Fibras.Update(fibra);
         await db.SaveChangesAsync(ct);
+        // Regen tras editar FullName/Sector (cambian title/description/JSON-LD); respeta overrides.
+        await PopulateSeoAsync(fibra, ct);
+    }
+
+    private string? ResolveBaseUrl()
+    {
+        var baseUrl = configuration?["App:BaseUrl"];
+        return string.IsNullOrWhiteSpace(baseUrl) ? null : baseUrl.TrimEnd('/');
+    }
+
+    private async Task PopulateSeoAsync(Fibra fibra, CancellationToken ct)
+    {
+        if (seoMetadata is null || seoDefaults is null)
+            return;
+
+        var baseUrl = ResolveBaseUrl();
+        if (baseUrl is null)
+            return;
+
+        try
+        {
+            var metadata = seoDefaults.BuildFibra(fibra, baseUrl, DateTimeOffset.UtcNow);
+            await seoMetadata.UpsertAsync(metadata, overrideMode: false, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex,
+                "Auto-llenado/regen SEO falló para la FIBRA {Ticker}; recuperable vía POST /api/v1/ops/seo/backfill",
+                fibra.Ticker);
+        }
     }
 
     public async Task<bool> ExistsByTickerAsync(string ticker, CancellationToken ct = default)

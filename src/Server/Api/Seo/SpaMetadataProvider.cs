@@ -43,6 +43,14 @@ public class SpaMetadataProvider(
         : throw new InvalidOperationException(
             "App:BaseUrl es requerido por SpaMetadataProvider para construir canonical/og:url absolutos.");
 
+    // Fuente de verdad de las rutas fijas para el seed/backfill. Debe reflejar exactamente los
+    // casos del switch de GetMetaForPathAsync (excluye /herramientas, ruta privada tras 11-6).
+    public IReadOnlyList<string> KnownPaths { get; } =
+    [
+        "/", "/calculadora", "/comparar", "/fibras", "/noticias", "/conoce-las-fibras",
+        "/calendario", "/fundamentales", "/privacidad", "/acerca", "/contacto",
+    ];
+
     public async Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
     {
         var normalizedPath = NormalizePath(path);

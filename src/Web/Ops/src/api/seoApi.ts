@@ -6,6 +6,7 @@ const apiClient = createPathBasedClient<paths>({ baseUrl: '' })
 
 export type SeoMetadataDto = components['schemas']['SeoMetadataDto']
 export type UpdateSeoMetadataRequest = components['schemas']['UpdateSeoMetadataRequest']
+export type SeoBackfillResultDto = components['schemas']['SeoBackfillResultDto']
 
 export type SeoMetadataQuery = {
   pageType?: string
@@ -62,6 +63,20 @@ export async function updateSeoMetadata(id: string, request: UpdateSeoMetadataRe
 
   if (error || !data) {
     throw new Error(getOpsApiErrorMessage(error, `Error al actualizar SEO: ${JSON.stringify(error)}`))
+  }
+
+  return data
+}
+
+export async function backfillSeoMetadata(): Promise<SeoBackfillResultDto> {
+  assertOpsAccessToken()
+
+  const { data, error } = await apiClient['/api/v1/ops/seo/backfill'].POST({
+    headers: getOpsAuthHeaders(),
+  })
+
+  if (error || !data) {
+    throw new Error(getOpsApiErrorMessage(error, `Error al ejecutar el backfill SEO: ${JSON.stringify(error)}`))
   }
 
   return data

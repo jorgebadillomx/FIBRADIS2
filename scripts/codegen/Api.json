@@ -5382,6 +5382,55 @@
         }
       }
     },
+    "/api/v1/ops/seo/backfill": {
+      "post": {
+        "tags": [
+          "OpsSeo"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeoBackfillResultDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/seo/organization": {
       "get": {
         "tags": [
@@ -9895,6 +9944,40 @@
           }
         }
       },
+      "SeoBackfillResultDto": {
+        "required": [
+          "staticPages",
+          "fibras",
+          "news"
+        ],
+        "type": "object",
+        "properties": {
+          "staticPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fibras": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "news": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "SeoMetadataDto": {
         "required": [
           "id",
@@ -9907,7 +9990,21 @@
           "robotsDirectivesIsOverridden",
           "isActive",
           "updatedAt",
-          "updatedBy"
+          "updatedBy",
+          "ogTitle",
+          "ogDescription",
+          "ogType",
+          "ogImageUrl",
+          "ogLocale",
+          "twitterCard",
+          "jsonLd",
+          "titleIsOverridden",
+          "metaDescriptionIsOverridden",
+          "canonicalPathIsOverridden",
+          "ogImageUrlIsOverridden",
+          "ogTypeIsOverridden",
+          "twitterCardIsOverridden",
+          "jsonLdIsOverridden"
         ],
         "type": "object",
         "properties": {
@@ -9945,6 +10042,51 @@
           },
           "updatedBy": {
             "type": "string"
+          },
+          "ogTitle": {
+            "type": "string"
+          },
+          "ogDescription": {
+            "type": "string"
+          },
+          "ogType": {
+            "type": "string"
+          },
+          "ogImageUrl": {
+            "type": "string"
+          },
+          "ogLocale": {
+            "type": "string"
+          },
+          "twitterCard": {
+            "type": "string"
+          },
+          "jsonLd": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "titleIsOverridden": {
+            "type": "boolean"
+          },
+          "metaDescriptionIsOverridden": {
+            "type": "boolean"
+          },
+          "canonicalPathIsOverridden": {
+            "type": "boolean"
+          },
+          "ogImageUrlIsOverridden": {
+            "type": "boolean"
+          },
+          "ogTypeIsOverridden": {
+            "type": "boolean"
+          },
+          "twitterCardIsOverridden": {
+            "type": "boolean"
+          },
+          "jsonLdIsOverridden": {
+            "type": "boolean"
           }
         }
       },
@@ -10345,6 +10487,48 @@
         "type": "object",
         "properties": {
           "robotsDirectives": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "metaDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canonicalPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ogImageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ogType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "twitterCard": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "jsonLd": {
             "type": [
               "null",
               "string"

@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Filter, Search, ShieldAlert, Sparkles, SlidersHorizontal, Save } from 'lucide-react'
-import { fetchSeoMetadata, fetchSeoMetadataRow, updateSeoMetadata, type SeoMetadataDto } from '@/api/seoApi'
+import { CheckCircle2, DatabaseBackup, Filter, Search, ShieldAlert, Sparkles, SlidersHorizontal, Save } from 'lucide-react'
+import {
+  backfillSeoMetadata,
+  fetchSeoMetadata,
+  fetchSeoMetadataRow,
+  updateSeoMetadata,
+  type SeoMetadataDto,
+} from '@/api/seoApi'
 import {
   ROBOTS_PRESETS,
   buildRobotsDirectives,
@@ -43,13 +49,39 @@ function canUsePreset(draft: RobotsDirectivesDraft, presetValue: string): boolea
   return buildRobotsDirectives(draft) === presetValue
 }
 
+type ContentDraft = {
+  title: string
+  metaDescription: string
+  ogImageUrl: string
+  jsonLd: string
+}
+
+function createContentDraft(row: SeoMetadataDto): ContentDraft {
+  return {
+    title: row.title ?? '',
+    metaDescription: row.metaDescription ?? '',
+    ogImageUrl: row.ogImageUrl ?? '',
+    jsonLd: row.jsonLd ?? '',
+  }
+}
+
+function OverrideBadge() {
+  return (
+    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+      override
+    </span>
+  )
+}
+
 export function SeoPage() {
   const queryClient = useQueryClient()
   const [pageType, setPageType] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<RobotsDirectivesDraft>(() => createDefaultRobotsDraft())
+  const [contentDraft, setContentDraft] = useState<ContentDraft | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [backfillResult, setBackfillResult] = useState<string | null>(null)
   // Última fila cuyo draft se inicializó: evita que un refetch en segundo plano (misma fila,
   // referencia nueva) reinicie el draft y descarte ediciones no guardadas.
   const initializedIdRef = useRef<string | null>(null)
@@ -83,6 +115,7 @@ export function SeoPage() {
       initializedIdRef.current = null
       setSelectedId(null)
       setDraft(createDefaultRobotsDraft())
+      setContentDraft(null)
       return
     }
 
@@ -92,6 +125,7 @@ export function SeoPage() {
     if (initializedIdRef.current !== selectedRow.id) {
       initializedIdRef.current = selectedRow.id
       setDraft(parseRobotsDirectives(selectedRow.robotsDirectives))
+      setContentDraft(createContentDraft(selectedRow))
       setFeedback(null)
     }
   }, [selectedRow])
@@ -102,9 +136,46 @@ export function SeoPage() {
       setSelectedId(row.id)
       initializedIdRef.current = row.id
       setDraft(parseRobotsDirectives(row.robotsDirectives))
+      setContentDraft(createContentDraft(row))
       setFeedback(null)
       await queryClient.invalidateQueries({ queryKey: ['ops', 'seo', 'robots'] })
     },
+  })
+
+  const backfillMutation = useMutation({
+    mutationFn: backfillSeoMetadata,
+    onSuccess: async (result) => {
+      setBackfillResult(
+        `Backfill: ${result.staticPages} páginas fijas, ${result.fibras} fibras y ${result.news} noticias creadas.`,
+      )
+      await queryClient.invalidateQueries({ queryKey: ['ops', 'seo', 'robots'] })
+    },
+    onError: () => setBackfillResult(null),
+  })
+
+  const contentMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedRow || !contentDraft) {
+        throw new Error('Selecciona una fila SEO antes de guardar contenido.')
+      }
+
+      return updateSeoMetadata(selectedRow.id, {
+        robotsDirectives: null,
+        title: contentDraft.title,
+        metaDescription: contentDraft.metaDescription,
+        ogImageUrl: contentDraft.ogImageUrl,
+        jsonLd: contentDraft.jsonLd,
+      })
+    },
+    onSuccess: async (row) => {
+      setFeedback('Contenido SEO guardado. Los campos editados quedan marcados como override.')
+      setSelectedId(row.id)
+      initializedIdRef.current = row.id
+      setContentDraft(createContentDraft(row))
+      setDraft(parseRobotsDirectives(row.robotsDirectives))
+      await queryClient.invalidateQueries({ queryKey: ['ops', 'seo', 'robots'] })
+    },
+    onError: () => setFeedback(null),
   })
 
   const saveMutation = useMutation({
@@ -160,17 +231,41 @@ export function SeoPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
-            <p className="font-semibold">Salida segura</p>
-            <p className="mt-1 leading-6">
-              Vacío o recomendado equivale a indexable. Nunca se persiste `noindex` por omisión.
-            </p>
+          <div className="flex flex-col gap-3">
+            <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+              <p className="font-semibold">Salida segura</p>
+              <p className="mt-1 leading-6">
+                Vacío o recomendado equivale a indexable. Nunca se persiste `noindex` por omisión.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => backfillMutation.mutate()}
+              disabled={backfillMutation.isPending}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <DatabaseBackup className="h-4 w-4" />
+              {backfillMutation.isPending ? 'Generando filas...' : 'Backfill de contenido existente'}
+            </button>
           </div>
         </div>
 
         {feedback ? (
           <p className="mt-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
             {feedback}
+          </p>
+        ) : null}
+
+        {backfillResult ? (
+          <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {backfillResult}
+          </p>
+        ) : null}
+
+        {backfillMutation.isError ? (
+          <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            No se pudo ejecutar el backfill: {backfillMutation.error.message}
           </p>
         ) : null}
       </section>
@@ -466,6 +561,106 @@ export function SeoPage() {
                     </p>
                   </div>
                 </div>
+
+                {contentDraft ? (
+                  <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-base font-semibold text-slate-950">Contenido SEO</h3>
+                      <p className="text-xs text-slate-500">
+                        Editar un campo lo marca como override (la regeneración automática ya no lo pisa).
+                      </p>
+                    </div>
+
+                    <label className="block space-y-1.5">
+                      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Title
+                        {selectedRow.titleIsOverridden ? <OverrideBadge /> : null}
+                      </span>
+                      <input
+                        value={contentDraft.title}
+                        maxLength={120}
+                        onChange={(event) => {
+                          setContentDraft({ ...contentDraft, title: event.target.value })
+                          setFeedback(null)
+                        }}
+                        className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-600"
+                      />
+                    </label>
+
+                    <label className="block space-y-1.5">
+                      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Meta description ({contentDraft.metaDescription.length}/160)
+                        {selectedRow.metaDescriptionIsOverridden ? <OverrideBadge /> : null}
+                      </span>
+                      <textarea
+                        value={contentDraft.metaDescription}
+                        maxLength={160}
+                        rows={3}
+                        onChange={(event) => {
+                          setContentDraft({ ...contentDraft, metaDescription: event.target.value })
+                          setFeedback(null)
+                        }}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-teal-600"
+                      />
+                      {contentDraft.metaDescription.length > 0 && contentDraft.metaDescription.length < 120 ? (
+                        <span className="text-xs text-amber-600">
+                          Bajo el piso recomendado de 120 caracteres (no bloquea el guardado).
+                        </span>
+                      ) : null}
+                    </label>
+
+                    <label className="block space-y-1.5">
+                      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        og:image URL
+                        {selectedRow.ogImageUrlIsOverridden ? <OverrideBadge /> : null}
+                      </span>
+                      <input
+                        value={contentDraft.ogImageUrl}
+                        onChange={(event) => {
+                          setContentDraft({ ...contentDraft, ogImageUrl: event.target.value })
+                          setFeedback(null)
+                        }}
+                        placeholder="https://… o /ruta-relativa"
+                        className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-600"
+                      />
+                    </label>
+
+                    <label className="block space-y-1.5">
+                      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        JSON-LD
+                        {selectedRow.jsonLdIsOverridden ? <OverrideBadge /> : null}
+                      </span>
+                      <textarea
+                        value={contentDraft.jsonLd}
+                        rows={6}
+                        onChange={(event) => {
+                          setContentDraft({ ...contentDraft, jsonLd: event.target.value })
+                          setFeedback(null)
+                        }}
+                        placeholder='{"@context":"https://schema.org",…}'
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 outline-none transition focus:border-teal-600"
+                      />
+                    </label>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => contentMutation.mutate()}
+                        disabled={contentMutation.isPending}
+                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Save className="h-4 w-4" />
+                        {contentMutation.isPending ? 'Guardando...' : 'Guardar contenido SEO'}
+                      </button>
+                    </div>
+
+                    {contentMutation.isError ? (
+                      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        No se pudo guardar el contenido: {contentMutation.error.message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             )}
           </section>

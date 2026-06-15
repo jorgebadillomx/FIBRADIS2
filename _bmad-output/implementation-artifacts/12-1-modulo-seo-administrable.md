@@ -1,6 +1,6 @@
 # Story 12.1: Módulo SEO administrable desde Ops (fundación)
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -47,49 +47,49 @@ so that **el equipo controle el SEO sin redeploy, cada página nueva nazca con m
 
 ## Tasks / Subtasks
 
-- [ ] **T1 — Dominio + EF + migración (AC-1, AC-2)**
-  - [ ] Crear `src/Server/Domain/Seo/SeoMetadata.cs` (POCO, sin atributos EF) con los campos de §"Modelo de datos 2026" y `src/Server/Domain/Seo/SeoPageType.cs` (enum).
-  - [ ] Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Seo/SeoMetadataConfiguration.cs` (`IEntityTypeConfiguration`, `ToTable("SeoMetadata", schema: "seo")`, columnas `snake_case` vía `HasColumnName`, índice único `(PageType, EntityKey)`, `PageType` como `string`/`int` consistente con convenciones de otros enums del repo — verificar cómo mapea `FibraState`/`NewsArticleStatus`).
-  - [ ] Agregar `DbSet<SeoMetadata>` en `src/Server/Infrastructure/Persistence/SqlServer/AppDbContext.cs` (la config se auto-descubre vía `ApplyConfigurationsFromAssembly`, no registrar manualmente).
-  - [ ] `dotnet ef migrations add AddSeoModule --project src/Server/Infrastructure --startup-project src/Server/Api` (si los DLLs están bloqueados por la API corriendo, agregar `--configuration Release`). Verificar que emite `EnsureSchema("seo")`. Correr `dotnet ef migrations list` y `database update`.
-- [ ] **T2 — Repositorio (AC-1, AC-6, AC-7)**
-  - [ ] `src/Server/Application/Seo/ISeoMetadataRepository.cs` (namespace `Application.Seo`): `GetAsync(PageType, entityKey, ct)`, `GetAllAsync(filtros, ct)`, `UpsertAsync(...)` o `AddAsync`+`UpdateAsync`, `ExistsAsync`. Métodos para backfill batch.
-  - [ ] `src/Server/Infrastructure/Persistence/Repositories/Seo/SeoMetadataRepository.cs` (primary-ctor `AppDbContext db`). Queries **secuenciales** (regla: EF Core nunca `Task.WhenAll`). En `Upsert`, respetar flags de override: solo escribir campos cuyo `*_IsOverridden == false` en la ruta de auto-regeneración (parámetro explícito `overrideMode`).
-  - [ ] Registrar `AddScoped<ISeoMetadataRepository, SeoMetadataRepository>()` en `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs`.
-- [ ] **T3 — Servicio compartido de defaults (AC-5, AC-9)**
-  - [ ] Crear `src/Server/Application/Seo/ISeoDefaultsBuilder.cs` + impl (capa Application o Infrastructure según dónde viva la lógica de `BuildMetaBlock`). Debe producir `SeoMetadata` para `News`, `Fibra` y `StaticPage` reusando **la misma lógica** que hoy tienen `NewsMetadataMiddleware.BuildMetaBlock` (NewsMetadataMiddleware.cs:163-236) y `FibraProfileMetadataMiddleware.BuildMetaBlock` (FibraProfileMetadataMiddleware.cs:143-211): mismos title/description/canonical/og/json-ld, mismo strip Markdown, mismo piso 120 / techo 160.
-  - [ ] **Refactor crítico (anti-divergencia):** extraer la generación de meta a este servicio y hacer que **los middlewares lo consuman** (vía el repo: fila de BD si existe, defaults del builder si no). Evitar tres copias de `BuildMetaBlock` divergentes (deuda ya señalada en el análisis de Épica 11).
-- [ ] **T4 — Conectar middlewares a la BD con fallback (AC-4)**
-  - [ ] `SpaMetadataMiddleware`: resolver `GetMetaForPath` → primero `ISeoMetadataRepository.GetAsync(StaticPage, normalizedPath)`; si null/IsActive=false → `ISpaMetadataProvider` (diccionario actual). Mantener normalización de path (`TrimEnd('/').ToLowerInvariant()`, vacío→`/`).
-  - [ ] `FibraProfileMetadataMiddleware`: tras resolver `fibra` por ticker → `GetAsync(Fibra, fibra.Ticker)`; si null → `BuildMetaBlock(fibra)` actual.
-  - [ ] `NewsMetadataMiddleware`: tras resolver `article` → `GetAsync(News, article.Slug ?? article.Id)`; si null → `BuildMetaBlock(article)` actual. **Mantener el soft-404** cuando el artículo no existe o `DeletedAt != null`.
-  - [ ] Conservar TODAS las reglas de `convenciones-fibradis.md §Middleware`: GET/HEAD, guard `<!-- prerender-meta -->`, guard ≤256 chars, encoding `HtmlEncoder` (meta) vs `JavaScriptEncoder`/`JsonSerializer` (JSON-LD), `Cache-Control: no-cache`, eliminación del `<title>` estático vía `[GeneratedRegex]`.
-  - [ ] El middleware es Singleton y el repo es Scoped → resolver vía `IServiceScopeFactory.CreateScope()` (patrón ya usado en `NewsMetadataMiddleware.cs:105`).
-- [ ] **T5 — DTOs + endpoints Ops + auditoría (AC-3)**
-  - [ ] DTOs en `src/Server/SharedApiContracts/Seo/` (`sealed record`): `SeoMetadataDto`, `UpdateSeoMetadataRequest`, `SeoBackfillResultDto`.
-  - [ ] `src/Server/Api/Endpoints/Ops/OpsSeoEndpoints.cs`: `MapOpsSeo` con grupo `/api/v1/ops/seo` `.RequireAuthorization("AdminOps")`. `GET /` (lista + filtros), `GET /{pageType}/{entityKey}`, `PUT /{pageType}/{entityKey}` (marca overrides de campos cambiados), `POST /backfill` (AC-7).
-  - [ ] Auditoría: usar el helper `GetActor(HttpContext, IEmailEncryptor, ILogger)` (copiar verbatim de `OpsCatalogEndpoints.cs:400-413`) y registrar la acción. **Decisión de auditoría:** usar el patrón de log estructurado (catalog) salvo que se requiera recuperabilidad campo-a-campo; documentar la elección en Dev Agent Record. (El modelo OperationalConfig + ConfigAuditLog está disponible si se quiere tabla de auditoría.)
-  - [ ] Validación manual `Dictionary<string,string[]>` → `Results.ValidationProblem` (400). Validar `JsonLd` parseable (si viene no vacío), URLs http/https-only (guard SSRF como `AddOptionalUrl`). **Description: techo 160 = rechazo duro (400); piso 120 = *warning* no bloqueante** en la edición manual de Ops (páginas simples como `/contacto` no deben forzarse a rellenar). El piso 120 sigue siendo objetivo duro solo para los **defaults auto-generados** (AC-9, test `Descriptions_AreBetween120And160Chars`), no para el override manual.
-  - [ ] `app.MapOpsSeo();` en `src/Server/Api/Program.cs` (junto a `MapOpsCatalog`/`MapOpsConfig`).
-- [ ] **T6 — Auto-llenado al crear (AC-5, AC-6)**
-  - [ ] En `NewsRepository.AddWithLinksAsync` (NewsRepository.cs:36, tras `article.Slug ??= …` línea 38): construir y persistir la fila SEO vía `ISeoDefaultsBuilder` + repo. **Mismo `SaveChangesAsync`/transacción** que el artículo cuando sea posible; manejar colisión idempotente.
-  - [ ] En `FibraRepository.AddAsync` (FibraRepository.cs:11): ídem para fibra.
-  - [ ] Re-proceso/edición: en los puntos donde la IA actualiza `AiAnalysisJson`/`AiSummary` de una noticia o donde el PUT de fibra cambia `FullName`/`Sector`, invocar el upsert en modo `overrideMode = regenerate` (solo campos sin override). Identificar esos puntos y documentarlos (no introducir regeneración silenciosa que pise overrides).
-- [ ] **T7 — Backfill endpoint (AC-7)**
-  - [ ] Implementar `POST /api/v1/ops/seo/backfill` idempotente: últimas 100 noticias por `CapturedAt` (usar/añadir query en `INewsRepository` análoga a `GetLatestAsync` pero ordenada por `CapturedAt`), todas las fibras activas (`IFibraRepository.GetAllActiveForSitemapAsync` o equivalente), y seed de las 10 páginas fijas desde `SpaMetadataProvider.Routes`. Saltar las que ya tienen fila. Devolver `SeoBackfillResultDto { staticPages, fibras, news }`.
-  - [ ] Patrón a copiar: `OpsNewsManagementEndpoints.cs:15-62` (backfill-slugs idempotente con DTO de conteo).
-- [ ] **T8 — Sitemap respeta noindex (AC-8)**
-  - [ ] En `SeoEndpoints.BuildSitemapXml`, excluir URLs cuya fila `SeoMetadata.RobotsDirectives` contenga `noindex`. Si no hay fila → comportamiento actual (incluir). Mantener TTL 1h del `IMemoryCache`.
-- [ ] **T9 — OpenAPI + cliente tipado + SPA Ops (AC-3)**
-  - [ ] `dotnet build FIBRADIS.slnx` (emite `scripts/codegen/Api.json`) → `npm run codegen:api` (regenera `src/Web/SharedApiClient/schema.d.ts`).
-  - [ ] `src/Web/Ops/src/api/seoApi.ts` (patrón `configApi.ts`/`catalogApi.ts`: `createPathBasedClient<paths>`, `assertOpsAccessToken()`, `getOpsAuthHeaders()`, `getOpsApiErrorMessage`).
-  - [ ] `src/Web/Ops/src/pages/SeoPage.tsx` + `src/Web/Ops/src/modules/seo/SeoTable.tsx` + `SeoForm.tsx` (TanStack Query: `useQuery(['ops-seo'])`, `useMutation` + `invalidateQueries`; React Hook Form sin resolvers). Filtro por `PageType`, búsqueda, edición con indicador visual de campos override. Botón "Backfill" que llama el endpoint y muestra los conteos.
-  - [ ] Ruta `{ path: 'seo', element: <SeoPage /> }` en `src/Web/Ops/src/main.tsx` (dentro de children de `OpsShell`) y entrada en `navigationItems` de `src/Web/Ops/src/components/OpsShell.tsx`. Cuidar `noUnusedLocals` (todo import usado).
-- [ ] **T10 — Tests (AC-9)**
-  - [ ] Unit: `tests/Unit/Infrastructure.Tests/Persistence/Repositories/Seo/SeoMetadataRepositoryTests.cs` (upsert respeta overrides; get por clave; backfill no duplica). Unit del `SeoDefaultsBuilder` con **valores exactos** esperados (title/description para una noticia y una fibra de ejemplo) — gate "tests con valores exactos en Dev Notes".
-  - [ ] Por-middleware: `Descriptions_AreBetween120And160Chars` para defaults; test de fallback (sin fila → HTML actual) y override (con fila → valores BD).
-  - [ ] Integration: `tests/Integration/Api.Tests/Ops/SeoEndpointTests.cs` (200 con `adminops@test.com`; 401 sin token; 403 con usuario Main). Correr con `-m:1` (serial).
-  - [ ] Comandos: `dotnet test tests/Unit/`, `dotnet test tests/Integration/ -m:1`, `npm run build` (Ops, 0 errores TS). Registrar resultados en Dev Agent Record.
+- [x] **T1 — Dominio + EF + migración (AC-1, AC-2)**
+  - [x] Crear `src/Server/Domain/Seo/SeoMetadata.cs` (POCO, sin atributos EF) con los campos de §"Modelo de datos 2026" y `src/Server/Domain/Seo/SeoPageType.cs` (enum).
+  - [x] Crear `src/Server/Infrastructure/Persistence/SqlServer/Configurations/Seo/SeoMetadataConfiguration.cs` (`IEntityTypeConfiguration`, `ToTable("SeoMetadata", schema: "seo")`, columnas `snake_case` vía `HasColumnName`, índice único `(PageType, EntityKey)`, `PageType` como `string`/`int` consistente con convenciones de otros enums del repo — verificar cómo mapea `FibraState`/`NewsArticleStatus`).
+  - [x] Agregar `DbSet<SeoMetadata>` en `src/Server/Infrastructure/Persistence/SqlServer/AppDbContext.cs` (la config se auto-descubre vía `ApplyConfigurationsFromAssembly`, no registrar manualmente).
+  - [x] `dotnet ef migrations add AddSeoModule --project src/Server/Infrastructure --startup-project src/Server/Api` (si los DLLs están bloqueados por la API corriendo, agregar `--configuration Release`). Verificar que emite `EnsureSchema("seo")`. Correr `dotnet ef migrations list` y `database update`.
+- [x] **T2 — Repositorio (AC-1, AC-6, AC-7)**
+  - [x] `src/Server/Application/Seo/ISeoMetadataRepository.cs` (namespace `Application.Seo`): `GetAsync(PageType, entityKey, ct)`, `GetAllAsync(filtros, ct)`, `UpsertAsync(...)` o `AddAsync`+`UpdateAsync`, `ExistsAsync`. Métodos para backfill batch.
+  - [x] `src/Server/Infrastructure/Persistence/Repositories/Seo/SeoMetadataRepository.cs` (primary-ctor `AppDbContext db`). Queries **secuenciales** (regla: EF Core nunca `Task.WhenAll`). En `Upsert`, respetar flags de override: solo escribir campos cuyo `*_IsOverridden == false` en la ruta de auto-regeneración (parámetro explícito `overrideMode`).
+  - [x] Registrar `AddScoped<ISeoMetadataRepository, SeoMetadataRepository>()` en `src/Server/Api/CompositionRoot/ApiServiceExtensions.cs`.
+- [x] **T3 — Servicio compartido de defaults (AC-5, AC-9)**
+  - [x] Crear `src/Server/Application/Seo/ISeoDefaultsBuilder.cs` + impl (capa Application o Infrastructure según dónde viva la lógica de `BuildMetaBlock`). Debe producir `SeoMetadata` para `News`, `Fibra` y `StaticPage` reusando **la misma lógica** que hoy tienen `NewsMetadataMiddleware.BuildMetaBlock` (NewsMetadataMiddleware.cs:163-236) y `FibraProfileMetadataMiddleware.BuildMetaBlock` (FibraProfileMetadataMiddleware.cs:143-211): mismos title/description/canonical/og/json-ld, mismo strip Markdown, mismo piso 120 / techo 160.
+  - [x] **Refactor crítico (anti-divergencia):** extraer la generación de meta a este servicio y hacer que **los middlewares lo consuman** (vía el repo: fila de BD si existe, defaults del builder si no). Evitar tres copias de `BuildMetaBlock` divergentes (deuda ya señalada en el análisis de Épica 11).
+- [x] **T4 — Conectar middlewares a la BD con fallback (AC-4)**
+  - [x] `SpaMetadataMiddleware`: resolver `GetMetaForPath` → primero `ISeoMetadataRepository.GetAsync(StaticPage, normalizedPath)`; si null/IsActive=false → `ISpaMetadataProvider` (diccionario actual). Mantener normalización de path (`TrimEnd('/').ToLowerInvariant()`, vacío→`/`).
+  - [x] `FibraProfileMetadataMiddleware`: tras resolver `fibra` por ticker → `GetAsync(Fibra, fibra.Ticker)`; si null → `BuildMetaBlock(fibra)` actual.
+  - [x] `NewsMetadataMiddleware`: tras resolver `article` → `GetAsync(News, article.Slug ?? article.Id)`; si null → `BuildMetaBlock(article)` actual. **Mantener el soft-404** cuando el artículo no existe o `DeletedAt != null`.
+  - [x] Conservar TODAS las reglas de `convenciones-fibradis.md §Middleware`: GET/HEAD, guard `<!-- prerender-meta -->`, guard ≤256 chars, encoding `HtmlEncoder` (meta) vs `JavaScriptEncoder`/`JsonSerializer` (JSON-LD), `Cache-Control: no-cache`, eliminación del `<title>` estático vía `[GeneratedRegex]`.
+  - [x] El middleware es Singleton y el repo es Scoped → resolver vía `IServiceScopeFactory.CreateScope()` (patrón ya usado en `NewsMetadataMiddleware.cs:105`).
+- [x] **T5 — DTOs + endpoints Ops + auditoría (AC-3)**
+  - [x] DTOs en `src/Server/SharedApiContracts/Seo/` (`sealed record`): `SeoMetadataDto`, `UpdateSeoMetadataRequest`, `SeoBackfillResultDto`.
+  - [x] `src/Server/Api/Endpoints/Ops/OpsSeoEndpoints.cs`: `MapOpsSeo` con grupo `/api/v1/ops/seo` `.RequireAuthorization("AdminOps")`. `GET /` (lista + filtros), `GET /{pageType}/{entityKey}`, `PUT /{pageType}/{entityKey}` (marca overrides de campos cambiados), `POST /backfill` (AC-7).
+  - [x] Auditoría: usar el helper `GetActor(HttpContext, IEmailEncryptor, ILogger)` (copiar verbatim de `OpsCatalogEndpoints.cs:400-413`) y registrar la acción. **Decisión de auditoría:** usar el patrón de log estructurado (catalog) salvo que se requiera recuperabilidad campo-a-campo; documentar la elección en Dev Agent Record. (El modelo OperationalConfig + ConfigAuditLog está disponible si se quiere tabla de auditoría.)
+  - [x] Validación manual `Dictionary<string,string[]>` → `Results.ValidationProblem` (400). Validar `JsonLd` parseable (si viene no vacío), URLs http/https-only (guard SSRF como `AddOptionalUrl`). **Description: techo 160 = rechazo duro (400); piso 120 = *warning* no bloqueante** en la edición manual de Ops (páginas simples como `/contacto` no deben forzarse a rellenar). El piso 120 sigue siendo objetivo duro solo para los **defaults auto-generados** (AC-9, test `Descriptions_AreBetween120And160Chars`), no para el override manual.
+  - [x] `app.MapOpsSeo();` en `src/Server/Api/Program.cs` (junto a `MapOpsCatalog`/`MapOpsConfig`).
+- [x] **T6 — Auto-llenado al crear (AC-5, AC-6)**
+  - [x] En `NewsRepository.AddWithLinksAsync` (NewsRepository.cs:36, tras `article.Slug ??= …` línea 38): construir y persistir la fila SEO vía `ISeoDefaultsBuilder` + repo. **Mismo `SaveChangesAsync`/transacción** que el artículo cuando sea posible; manejar colisión idempotente.
+  - [x] En `FibraRepository.AddAsync` (FibraRepository.cs:11): ídem para fibra.
+  - [x] Re-proceso/edición: en los puntos donde la IA actualiza `AiAnalysisJson`/`AiSummary` de una noticia o donde el PUT de fibra cambia `FullName`/`Sector`, invocar el upsert en modo `overrideMode = regenerate` (solo campos sin override). Identificar esos puntos y documentarlos (no introducir regeneración silenciosa que pise overrides).
+- [x] **T7 — Backfill endpoint (AC-7)**
+  - [x] Implementar `POST /api/v1/ops/seo/backfill` idempotente: últimas 100 noticias por `CapturedAt` (usar/añadir query en `INewsRepository` análoga a `GetLatestAsync` pero ordenada por `CapturedAt`), todas las fibras activas (`IFibraRepository.GetAllActiveForSitemapAsync` o equivalente), y seed de las 10 páginas fijas desde `SpaMetadataProvider.Routes`. Saltar las que ya tienen fila. Devolver `SeoBackfillResultDto { staticPages, fibras, news }`.
+  - [x] Patrón a copiar: `OpsNewsManagementEndpoints.cs:15-62` (backfill-slugs idempotente con DTO de conteo).
+- [x] **T8 — Sitemap respeta noindex (AC-8)**
+  - [x] En `SeoEndpoints.BuildSitemapXml`, excluir URLs cuya fila `SeoMetadata.RobotsDirectives` contenga `noindex`. Si no hay fila → comportamiento actual (incluir). Mantener TTL 1h del `IMemoryCache`.
+- [x] **T9 — OpenAPI + cliente tipado + SPA Ops (AC-3)**
+  - [x] `dotnet build FIBRADIS.slnx` (emite `scripts/codegen/Api.json`) → `npm run codegen:api` (regenera `src/Web/SharedApiClient/schema.d.ts`).
+  - [x] `src/Web/Ops/src/api/seoApi.ts` (patrón `configApi.ts`/`catalogApi.ts`: `createPathBasedClient<paths>`, `assertOpsAccessToken()`, `getOpsAuthHeaders()`, `getOpsApiErrorMessage`).
+  - [x] `src/Web/Ops/src/pages/SeoPage.tsx` + `src/Web/Ops/src/modules/seo/SeoTable.tsx` + `SeoForm.tsx` (TanStack Query: `useQuery(['ops-seo'])`, `useMutation` + `invalidateQueries`; React Hook Form sin resolvers). Filtro por `PageType`, búsqueda, edición con indicador visual de campos override. Botón "Backfill" que llama el endpoint y muestra los conteos.
+  - [x] Ruta `{ path: 'seo', element: <SeoPage /> }` en `src/Web/Ops/src/main.tsx` (dentro de children de `OpsShell`) y entrada en `navigationItems` de `src/Web/Ops/src/components/OpsShell.tsx`. Cuidar `noUnusedLocals` (todo import usado).
+- [x] **T10 — Tests (AC-9)**
+  - [x] Unit: `tests/Unit/Infrastructure.Tests/Persistence/Repositories/Seo/SeoMetadataRepositoryTests.cs` (upsert respeta overrides; get por clave; backfill no duplica). Unit del `SeoDefaultsBuilder` con **valores exactos** esperados (title/description para una noticia y una fibra de ejemplo) — gate "tests con valores exactos en Dev Notes".
+  - [x] Por-middleware: `Descriptions_AreBetween120And160Chars` para defaults; test de fallback (sin fila → HTML actual) y override (con fila → valores BD).
+  - [x] Integration: `tests/Integration/Api.Tests/Ops/SeoEndpointTests.cs` (200 con `adminops@test.com`; 401 sin token; 403 con usuario Main). Correr con `-m:1` (serial).
+  - [x] Comandos: `dotnet test tests/Unit/`, `dotnet test tests/Integration/ -m:1`, `npm run build` (Ops, 0 errores TS). Registrar resultados en Dev Agent Record.
 
 ## Dev Notes
 
@@ -200,7 +200,7 @@ Fuente: `src/Server/Api/Seo/SpaMetadataProvider.cs:86-136` — 10 rutas: `/`, `/
 
 Para cada endpoint de escritura nuevo (`POST`/`PUT`) y componente interactivo:
 
-- [ ] **TOCTOU doble-request**: `PUT`/`POST backfill` y el auto-llenado en create → ¿dos requests en paralelo? Para el upsert con índice único `(PageType,EntityKey)`: capturar `DbUpdateException` y resolver idempotente (no 500). El auto-llenado dentro de `AddWithLinksAsync`/`AddAsync` debe tolerar fila ya existente.
+- [x] **TOCTOU doble-request**: `PUT`/`POST backfill` y el auto-llenado en create → ¿dos requests en paralelo? Para el upsert con índice único `(PageType,EntityKey)`: capturar `DbUpdateException` y resolver idempotente (no 500). El auto-llenado dentro de `AddWithLinksAsync`/`AddAsync` debe tolerar fila ya existente.
 - [ ] **Auth-gating de componentes UI**: la página SEO y el botón "Backfill" viven en Ops (ya tras `OpsLoginGate`); endpoints `.RequireAuthorization("AdminOps")`. Verificar 401/403 con test de integración.
 - [ ] **SSRF en URLs**: `OgImageUrl`/`CanonicalPath`/`JsonLd` editables ⇒ validar esquema http/https-only y no permitir inyección en el HTML (encoding ya cubre meta; JSON-LD validado como JSON parseable).
 - [ ] **Denominador cero**: N/A (sin funciones de cálculo financiero en esta historia).
@@ -275,11 +275,26 @@ GPT-5 Codex
 - `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj --filter Seo`
 
 ### Completion Notes List
+
+**Primera fase (2026-06-13, GPT-5 Codex) — T1–T4:**
 - Se implementó el núcleo del módulo SEO administrable: `seo.SeoMetadata`, `SeoPageType`, configuración EF, migración `AddSeoModule` y aplicación a SQL Server.
 - Se agregó `ISeoMetadataRepository` y `SeoMetadataRepository` con upsert idempotente y respeto de flags de override.
 - Se agregó `ISeoDefaultsBuilder` / `SeoDefaultsBuilder` y se conectaron `SpaMetadataMiddleware`, `FibraProfileMetadataMiddleware` y `NewsMetadataMiddleware` a lookup en BD con fallback al builder.
 - Se añadieron pruebas unitarias para modelo, repositorio, builder y cobertura de override/fallback en middlewares.
-- Queda pendiente el alcance Ops/UI/backfill/sitemap de la historia.
+
+**Segunda fase (2026-06-15, Claude Opus 4.8) — T5–T10 (cierre de la historia):**
+- **AC-5/AC-6 (T6) — Auto-llenado y regeneración.** `NewsRepository` y `FibraRepository` reciben deps SEO **opcionales** (`ISeoMetadataRepository`, `ISeoDefaultsBuilder`, `IConfiguration`, `ILogger`): DI las resuelve en producción; los `new XRepository(db)` de los unit tests siguen compilando (auto-llenado se omite si faltan deps o `App:BaseUrl`). Al crear noticia (`AddWithLinksAsync`, tras el slug definitivo) y fibra (`AddAsync`) se inserta la fila SEO vía `UpsertAsync(overrideMode:false)`. La regeneración tras enriquecimiento IA de noticia (`UpdateSummaryAsync`/`UpdateAiAnalysisAsync`) y edición de fibra (`UpdateAsync`) respeta overrides. El auto-llenado es best-effort (try/catch + warning); el backfill es la red de recuperación.
+- **AC-3/AC-6 (T5) — PUT full-field.** `UpdateSeoMetadataRequest` ampliado a Title/MetaDescription/CanonicalPath/OgImageUrl/OgType/TwitterCard/JsonLd/IsActive (todos nullable: null = no cambiar). El PUT aplica solo los campos provistos y marca su `*_IsOverridden`; mantiene `og:title == title` y `og:description == metaDescription`. Validación: Title ≤120, MetaDescription ≤160 (duro 400; piso 120 warning no bloqueante), CanonicalPath relativo, OgImageUrl http/https o relativo (guard SSRF), JsonLd parseable. Auditoría vía `GetActor` (igual que robots de 12-11). `SeoMetadataDto` ampliado con el set completo + flags de override.
+- **AC-7 (T7) — Backfill.** `POST /api/v1/ops/seo/backfill` idempotente: páginas fijas (`ISpaMetadataProvider.KnownPaths`, nueva propiedad), fibras activas (`GetAllActiveAsync`) y últimas 100 noticias por `CapturedAt` (nueva query `INewsRepository.GetLatestByCapturedAtAsync`, sin filtro `AiAnalysisJson`). Salta claves existentes (no duplica ni pisa overrides), resiliente por-página, devuelve `SeoBackfillResultDto{staticPages,fibras,news}`.
+- **AC-8 (T8) — Sitemap noindex.** Verificado ya implementado por historia hermana: `NewsRepository.GetArticlesForSitemapPageAsync` y `SeoEndpoints.LoadSitemapVisibilityAsync` excluyen filas `IsActive && noindex`.
+- **AC-3/AC-7 (T9) — UI Ops.** `SeoPage.tsx`: botón "Backfill de contenido existente" con conteos; sección "Contenido SEO" para editar Title/MetaDescription/OgImageUrl/JsonLd con badges de override por campo y contador 120/160. `seoApi.ts` + codegen regenerado (`schema.d.ts`).
+- **AC-9 (T10) — Tests.** Unit `SeoAutoPopulationTests` (4): auto-llenado news/fibra, skip sin deps, regen-respeta-override en fibra. Integration `SeoBackfillEndpointTests` (5): backfill auth 401/403, crea filas + idempotencia, PUT full-field + overrides, validación description >160 y JSON-LD inválido → 400. (El regen tras update IA de noticias no es unit-testeable con InMemory por `ExecuteUpdateAsync`; la mecánica queda cubierta por el test de fibra.)
+
+**Resultados de validación (2026-06-15):**
+- `dotnet build FIBRADIS.slnx -c Release`: 0 errores, 0 advertencias.
+- Unit: Infrastructure 637/637, Application 139/139, Domain 8/8.
+- Integration Api.Tests: 327/329 (2 fallos **pre-existentes ajenos a 12-1**: `DashboardEndpointTests` espera 4 pipelines hardcodeados [hoy 7 por jobs de épicas posteriores]; `CalculadoraEndpointTests` espera "Q2-2026" — depende de la fecha del sistema 2026-06-15 y datos seed). Ninguno toca el módulo SEO.
+- Ops frontend: `tsc -b && vite build` verde.
 
 ### File List
 - `src/Server/Application/Seo/ISeoDefaultsBuilder.cs`
@@ -304,6 +319,21 @@ GPT-5 Codex
 - `tests/Unit/Infrastructure.Tests/Persistence/Repositories/Seo/SeoMetadataRepositoryTests.cs`
 - `tests/Unit/Infrastructure.Tests/Seo/SeoDefaultsBuilderTests.cs`
 - `tests/Unit/Infrastructure.Tests/Seo/SeoMetadataModelTests.cs`
+
+**Segunda fase (T5–T10), 2026-06-15 — crear:**
+- `src/Server/SharedApiContracts/Seo/SeoBackfillResultDto.cs`
+- `tests/Unit/Infrastructure.Tests/Seo/SeoAutoPopulationTests.cs`
+- `tests/Integration/Api.Tests/Ops/SeoBackfillEndpointTests.cs`
+
+**Segunda fase (T5–T10), 2026-06-15 — modificar:**
+- `src/Server/Api/Endpoints/Ops/OpsSeoEndpoints.cs` (PUT full-field + validación + endpoint backfill + ToDto ampliado)
+- `src/Server/Api/Seo/ISpaMetadataProvider.cs` + `SpaMetadataProvider.cs` (propiedad `KnownPaths`)
+- `src/Server/Application/News/INewsRepository.cs` + `Infrastructure/Persistence/Repositories/News/NewsRepository.cs` (auto-llenado/regen + `GetLatestByCapturedAtAsync`)
+- `src/Server/Infrastructure/Persistence/Repositories/Catalog/FibraRepository.cs` (auto-llenado/regen)
+- `src/Server/SharedApiContracts/Seo/SeoMetadataDto.cs` (campos full + flags override) + `UpdateSeoMetadataRequest.cs` (campos editables)
+- `src/Web/SharedApiClient/schema.d.ts` (codegen)
+- `src/Web/Ops/src/api/seoApi.ts` (backfill) + `src/Web/Ops/src/pages/SeoPage.tsx` (botón backfill + editor de contenido)
+- Test doubles actualizados: `NewsMetadataMiddlewareTests`, `SpaMetadataMiddlewareTests`, `NewsPipelineJobTests`, `AiModeOpsEndpointTests` (nuevos miembros de interfaz)
 
 ## Senior Developer Review (AI)
 
@@ -355,4 +385,28 @@ GPT-5 Codex
 - **D1** — `Title`/`OgTitle` ampliados a `nvarchar(120)` (config + migración `AddSeoModule` + snapshot + Designer); test del modelo actualizado.
 
 **Build verde (0 advertencias) · 540/540 Infrastructure.Tests verdes.** La historia permanece `in-progress`: faltan AC-3/5/7/8 y los integration tests de AC-9 (tasks T5–T9).
+
+## Senior Developer Review (AI) — Pasada 2 (T5–T10)
+
+**Fecha:** 2026-06-15 · **Modo:** full (spec + convenciones) · **Target:** `git diff main` (commit 2542da9, cierre T5–T10)
+**Reviewers:** Blind Hunter · Edge Case Hunter · Acceptance Auditor (3 capas paralelas, mismo modelo)
+
+15 hallazgos triados: 5 patch (aplicados), 5 defer, 1 dismiss; el resto fusionados/duplicados.
+
+### Review Findings
+
+- [x] [Review][Patch] PUT no validaba longitud de `OgType`/`TwitterCard` (nvarchar(32)), `OgImageUrl` (512) ni `CanonicalPath` (256) → `DbUpdateException`/500 en vez de 400 [src/Server/Api/Endpoints/Ops/OpsSeoEndpoints.cs ValidateRequest] — **aplicado**: guards de longitud + tests de integración (`OgType` 33 chars → 400).
+- [x] [Review][Patch] `Title`/`MetaDescription` provistos pero vacíos tras trim marcaban override con `""` → `<title>` vacío permanente (auto-regen ya no lo repone) [OpsSeoEndpoints.cs ValidateRequest] — **aplicado**: rechazo 400 si quedan vacíos + test.
+- [x] [Review][Patch] `IsActive=false` vía PUT creaba callejón sin salida (el listado solo muestra filas activas) y anulaba overrides silenciosamente [OpsSeoEndpoints.cs ApplyOverrides + UpdateSeoMetadataRequest] — **aplicado**: `IsActive` removido del PUT (la des/activación se maneja por seed/migración hasta que el listado soporte inactivas).
+- [x] [Review][Patch] Backfill de fibras y noticias sin try/catch por-ítem: un fallo abortaba todo el backfill (las páginas fijas sí lo tenían) [OpsSeoEndpoints.cs backfill] — **aplicado**: try/catch por-ítem con warning, paridad con páginas fijas.
+- [x] [Review][Patch] `RegenerateSeoAsync` no filtraba `DeletedAt==null` → regeneraba fila SEO activa para noticias borradas [NewsRepository.cs RegenerateSeoAsync] — **aplicado**: filtro `DeletedAt==null` en la re-lectura.
+- [x] [Review][Defer] Cambio de slug de noticia (`UpdateSlugAsync`) deja huérfano un override SEO existente — casi inalcanzable: el slug se fija con `??=` al crear, `UpdateSlugAsync` solo aplica a artículos legacy sin slug que no tienen fila SEO previa por clave-slug. Migración de clave es compleja; se difiere.
+- [x] [Review][Defer] Auto-llenado/regen fuera de la transacción del contenido (T6 pedía "mismo SaveChangesAsync cuando sea posible") — decisión deliberada: tras el save del artículo (para conocer el slug final), best-effort con warning; el backfill idempotente es la red de recuperación.
+- [x] [Review][Defer] Sin test del regen tras update IA de noticias — `UpdateSummaryAsync`/`UpdateAiAnalysisAsync` usan `ExecuteUpdateAsync`, no soportado por el provider InMemory de los tests. La mecánica regen-respeta-override queda cubierta por el test de `UpdateAsync` de fibra.
+- [x] [Review][Defer] `GetMetaForPathAsync` baja a minúsculas pero `NormalizeEntityKey` no — hoy todas las `KnownPaths` están en minúsculas, así que no hay desajuste; documentar al añadir rutas con mayúsculas.
+- [x] [Review][Defer] Backfill no atómico (sin transacción global) — mitigado por el try/catch por-ítem (P4): el backfill es idempotente y reanudable; un fallo parcial no corrompe datos.
+
+**Descartado (falso positivo):** `UpsertAsync` tras carrera devuelve `existing.Id` mientras el endpoint hace `ToDto(current)` — en la ruta PUT `current` se carga por id existente, así que `current.Id == existing.Id`; no hay desajuste.
+
+**Resolución (2026-06-15):** los 5 patches aplicados. Build `FIBRADIS.slnx -c Release` 0/0. Unit SEO 4/4, integration SEO 12/12 (7 backfill/PUT incl. 2 nuevos de validación + 5 robots). Ops frontend verde. Los 2 fallos de Api.Tests (Dashboard/Calculadora) son pre-existentes y ajenos (confirmados en `main`).
 

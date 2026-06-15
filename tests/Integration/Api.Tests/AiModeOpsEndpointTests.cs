@@ -482,6 +482,9 @@ public class AiModeOpsEndpointTests
         public Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
             => throw new NotSupportedException();
 
+        public Task<IReadOnlyList<NewsArticle>> GetLatestByCapturedAtAsync(int count, CancellationToken ct = default)
+            => throw new NotSupportedException();
+
         public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, int months, CancellationToken ct = default)
             => throw new NotSupportedException();
 

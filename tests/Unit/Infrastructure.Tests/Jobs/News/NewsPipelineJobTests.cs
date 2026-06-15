@@ -373,6 +373,9 @@ internal sealed class FakeNewsRepository : INewsRepository
     public Task<IReadOnlyList<NewsArticle>> GetLatestAsync(int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
 
+    public Task<IReadOnlyList<NewsArticle>> GetLatestByCapturedAtAsync(int count, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
+
     public Task<IReadOnlyList<NewsArticle>> GetLatestForFibraAsync(Guid fibraId, int count, int months, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<NewsArticle>>([]);
 
