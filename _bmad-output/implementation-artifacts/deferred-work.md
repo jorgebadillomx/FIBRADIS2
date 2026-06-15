@@ -4,6 +4,16 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 12-9-og-images-dinamicas (2026-06-14)
+
+- **Overflow horizontal en primera línea de `WrapText`** (OgImageRenderer.cs) — una palabra única más ancha que la caja se dibuja sin truncar (solo `lines[^1]` pasa por `TruncateLine`). Borde raro (FullName de un solo token largo). Truncar/clipear todas las líneas como hardening visual.
+- **Sin clip vertical en `DrawWrappedText`** (OgImageRenderer.cs) — no respeta `bounds.Bottom`; un título de 2 líneas más alto de lo previsto puede solapar el pill del ticker. Cosmético.
+- **Test de integración `GetPngDimensions` sin guard de longitud** (tests/Integration/Api.Tests/OgImageEndpointTests.cs) — con bytes vacíos lanza `ArgumentOutOfRangeException` en vez de aserción limpia. Ligado al patch de PNG vacío; replicar el guard `bytes.Length >= 24` que sí tiene el unit test.
+- **`asOfDate` desde `snapshot.CapturedAt` futuro infla yield TTM** (OgImageEndpoints.cs:64 / OgImageRenderer.cs:62) — un CapturedAt futuro ensancha la ventana de `YieldCalculator` (upper bound `<= today` controlado por el dato). Requiere snapshot corrupto/futuro; clamp a `DateTime.UtcNow` como defensa.
+- **Tests faltantes: renderer exception→fallback y rendering de acentos es-MX** — AC-5 cubierto en agregado vía integración; sin test automatizado del branch `catch`→fallback ni del rendering de glifos acentuados. Deuda de test (esp. relevante por el riesgo de fuentes en Linux).
+
+---
+
 ## Deferred from: code review of 12-4-eeat-autoridad-ymyl (2026-06-14)
 
 - **Email hardcodeado `contacto@fibradis.mx` como fallback + flash en loading** (AcercaPage/ContactoPage/PrivacidadPage) — el spec T5 permite fallback razonable si `ContactEmail` es null; el flash del fallback durante el loading de `useSiteContent` es UX menor. Considerar centralizar el fallback en una constante y un guard `isLoading`.

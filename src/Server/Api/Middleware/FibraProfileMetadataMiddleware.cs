@@ -158,6 +158,7 @@ public partial class FibraProfileMetadataMiddleware(
         }
 
         FibraSeoMarketData? liveMarketData = null;
+        var dynamicOgImageUrl = $"{_baseUrl}/og/fibras/{fibra.Ticker.Trim().ToUpperInvariant()}.png";
 
         if (seoMetadata is null || !seoMetadata.IsActive)
         {
@@ -169,6 +170,9 @@ public partial class FibraProfileMetadataMiddleware(
             liveMarketData = await GetLiveMarketDataAsync(metadataScope.ServiceProvider, context, fibra);
             seoMetadata.JsonLd = seoDefaultsBuilder.BuildFibra(fibra, _baseUrl, DateTimeOffset.UtcNow, "system", liveMarketData).JsonLd;
         }
+
+        if (!seoMetadata.OgImageUrlIsOverridden)
+            seoMetadata.OgImageUrl = dynamicOgImageUrl;
 
         breadcrumbJsonLdBlock = SeoJsonLd.BuildScriptBlock(
             seoDefaultsBuilder.BuildBreadcrumbListJsonLd(

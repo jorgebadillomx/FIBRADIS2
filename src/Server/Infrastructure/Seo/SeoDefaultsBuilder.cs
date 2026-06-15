@@ -110,6 +110,7 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
         var canonicalPath = $"/fibras/{canonicalSlug}";
         var title = $"{fibra.FullName} ({fibra.Ticker}){FibraTitleSuffix}";
         var description = BuildFibraDescription(fibra);
+        var ogImageUrl = BuildFibraOgImageUrl(baseUrl, fibra.Ticker);
 
         var jsonLd = BuildFibraJsonLd(fibra, baseUrl, canonicalPath, description, marketData);
 
@@ -123,7 +124,8 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
             baseUrl,
             updatedAt,
             updatedBy,
-            ogType: "website");
+            ogType: "website",
+            ogImageUrl: ogImageUrl);
     }
 
     public SeoMetadata BuildNews(
@@ -398,6 +400,9 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
     }
 
     private static string TrimBaseUrl(string baseUrl) => baseUrl.TrimEnd('/');
+
+    private static string BuildFibraOgImageUrl(string baseUrl, string ticker)
+        => $"{TrimBaseUrl(baseUrl)}/og/fibras/{ticker.Trim().ToUpperInvariant()}.png";
 
     private static string BuildFibraJsonLd(
         Fibra fibra,

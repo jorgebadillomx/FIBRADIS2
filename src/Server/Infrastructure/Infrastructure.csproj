@@ -5,6 +5,9 @@
     <PackageReference Include="ClosedXML" />
     <PackageReference Include="CsvHelper" />
     <PackageReference Include="PdfPig" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     <PackageReference Include="YahooQuotesApi" />
@@ -14,6 +17,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>

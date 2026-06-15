@@ -78,6 +78,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         Assert.DoesNotContain("<!-- prerender-meta -->", body);
         Assert.Contains("<title>Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11\" />", body);
+        Assert.Contains("<meta property=\"og:image\" content=\"https://fibrasinmobiliarias.com/og/fibras/FUNO11.png\" />", body);
         Assert.Contains("\"@type\":\"FinancialProduct\"", body);
         Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
         // Precio modelado como PropertyValue (no Offer) — decisión D1 code review
@@ -145,6 +146,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
             description: "Descripción SEO manual para Fibra Uno.",
             canonicalPath: "/fibras/fibra-uno-funo11",
             ogImageUrl: "https://cdn.example.com/funo11.png",
+            ogImageUrlIsOverridden: true,
             jsonLd: """{"@type":"FinancialProduct","name":"Fibra Uno SEO"}""",
             jsonLdIsOverridden: true);
 
@@ -156,6 +158,22 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         Assert.Contains("<meta property=\"og:image\" content=\"https://cdn.example.com/funo11.png\" />", body);
         Assert.Contains("\"Fibra Uno SEO\"", body);
         Assert.DoesNotContain("Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias", body);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_SeoRepositoryRow_WithoutOgOverride_UsesDynamicOgImage()
+    {
+        var seoMetadata = CreateSeoMetadata(
+            title: "SEO de Fibra Uno",
+            description: "Descripción SEO de Fibra Uno.",
+            canonicalPath: "/fibras/fibra-uno-funo11",
+            ogImageUrl: "https://cdn.example.com/funo11.png");
+
+        var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), seoMetadata: seoMetadata, marketData: CreateMarketData());
+        var body = await ReadBodyAsync(context);
+
+        Assert.Contains("<meta property=\"og:image\" content=\"https://fibrasinmobiliarias.com/og/fibras/FUNO11.png\" />", body);
+        Assert.DoesNotContain("https://cdn.example.com/funo11.png", body);
     }
 
     [Fact]
@@ -313,6 +331,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         string description,
         string canonicalPath,
         string? ogImageUrl = null,
+        bool ogImageUrlIsOverridden = false,
         string? jsonLd = null,
         bool jsonLdIsOverridden = false,
         bool isActive = true) => new()
@@ -327,6 +346,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         OgDescription = description,
         OgType = "website",
         OgImageUrl = ogImageUrl ?? "https://fibrasinmobiliarias.com/og-image.png",
+        OgImageUrlIsOverridden = ogImageUrlIsOverridden,
         OgLocale = "es_MX",
         TwitterCard = "summary_large_image",
         RobotsDirectives = "index,follow",

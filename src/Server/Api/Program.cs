@@ -109,6 +109,7 @@ app.MapOpportunities();
 app.MapOpsUsers();
 app.MapAccount();
 app.MapSeo();
+app.MapOgImages();
 app.MapFaq();
 app.MapOpsNewsManagement();
 app.MapOpsSeoFaq();

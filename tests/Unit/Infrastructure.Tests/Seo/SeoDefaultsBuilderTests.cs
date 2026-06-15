@@ -151,7 +151,7 @@ public class SeoDefaultsBuilderTests
         Assert.Equal("Análisis de Fibra Uno (FUNO11): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones. Sector Industrial en la BMV.", result.MetaDescription);
         Assert.Equal("/fibras/fibra-uno-funo11", result.CanonicalPath);
         Assert.Equal("website", result.OgType);
-        Assert.Equal("https://fibrasinmobiliarias.com/og-image.png", result.OgImageUrl);
+        Assert.Equal("https://fibrasinmobiliarias.com/og/fibras/FUNO11.png", result.OgImageUrl);
         Assert.Contains("\"@type\":\"FinancialProduct\"", result.JsonLd);
         Assert.Contains("\"description\":\"Análisis de Fibra Uno (FUNO11): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones. Sector Industrial en la BMV.\"", result.JsonLd);
         Assert.DoesNotContain("BreadcrumbList", result.JsonLd);

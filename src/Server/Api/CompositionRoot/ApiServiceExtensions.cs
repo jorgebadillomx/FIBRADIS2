@@ -112,6 +112,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IFaqRepository, FaqRepository>();
         builder.Services.AddScoped<IRedirectRepository, RedirectRepository>();
         builder.Services.AddSingleton<ISeoDefaultsBuilder, SeoDefaultsBuilder>();
+        builder.Services.AddSingleton<IOgImageRenderer, OgImageRenderer>();
         builder.Services.AddScoped<IOpportunityWeightsRepository, OpportunityWeightsRepository>();
         builder.Services.AddScoped<IUserFavoritesRepository, UserFavoritesRepository>();
         builder.Services.AddScoped<IPortfolioUploadService, PortfolioUploadService>();

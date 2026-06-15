@@ -30,6 +30,16 @@ RUN dotnet publish src/Server/Api -c Release --no-restore -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
+# Dependencias nativas de SkiaSharp (libSkiaSharp.so) + fuentes con cobertura
+# Latin/es-MX (acentos y ñ) para el renderer de OG images (story 12-9).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libfontconfig1 \
+        libfreetype6 \
+        fonts-dejavu-core \
+        fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
 # Binarios del API
 COPY --from=api-build /app/publish .
 
