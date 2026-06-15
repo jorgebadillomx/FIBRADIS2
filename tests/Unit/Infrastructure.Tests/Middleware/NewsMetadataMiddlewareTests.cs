@@ -515,6 +515,9 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
                     ? seoMetadata
                     : null);
 
+        public Task<SeoMetadata?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => Task.FromResult(seoMetadata is not null && seoMetadata.Id == id ? seoMetadata : null);
+
         public Task<IReadOnlyList<SeoMetadata>> GetAllAsync(SeoMetadataQuery? query = null, CancellationToken ct = default)
             => throw new NotSupportedException();
 

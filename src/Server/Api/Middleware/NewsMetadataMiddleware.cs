@@ -180,7 +180,7 @@ public partial class NewsMetadataMiddleware(
                     new SeoBreadcrumbItem(article.Title, seoMetadata.CanonicalPath),
                 ]));
 
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock, seoMetadata.RobotsDirectives));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // El HTML inyectado varía por artículo y deploy — forzar revalidación
@@ -188,7 +188,7 @@ public partial class NewsMetadataMiddleware(
         await context.Response.WriteAsync(html, context.RequestAborted);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null, string? robotsDirectives = null)
     {
         var encodedTitle = Encoder.Encode(metadata.Title);
         var encodedDescription = Encoder.Encode(metadata.MetaDescription);
@@ -221,6 +221,7 @@ public partial class NewsMetadataMiddleware(
              .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
              .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
              .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
+             .Append(string.IsNullOrWhiteSpace(robotsDirectives) ? string.Empty : $"<meta name=\"robots\" content=\"{Encoder.Encode(robotsDirectives)}\" />\n    ")
              .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />");
 
         var jsonLdBlock = SeoJsonLd.BuildScriptBlock(metadata.JsonLd);

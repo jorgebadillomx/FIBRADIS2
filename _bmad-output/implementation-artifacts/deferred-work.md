@@ -4,6 +4,14 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 12-11-editor-robots-directives-por-pagina (2026-06-15)
+
+- **TOCTOU / last-write-wins en el PUT sin concurrencia optimista** (OpsSeoEndpoints.cs:72-81 + SeoMetadataRepository.cs:54-90) — `GetByIdAsync` (AsNoTracking) seguido de `UpsertAsync(overrideMode:true)` reescribe TODA la fila desde el snapshot leído; dos editores concurrentes producen last-write-wins silencioso sin token de concurrencia. Aceptable en Ops single-writer; el diseño proviene de 12-1. Reconsiderar si se habilita edición multi-usuario.
+- **Rutas estáticas sin fila en BD no son editables desde el editor** (SeoPage.tsx / SeoEndpoints.cs) — el editor solo lista filas existentes (`GetAllAsync`); las rutas estáticas servidas por default (sin fila) no aparecen y no se pueden marcar `noindex` desde Ops. Cobertura/scope; depende de que 12-1 siembre filas para esas rutas.
+- **Contradicciones semánticas menores no detectadas** (SeoRobotsDirectives.cs) — `nosnippet`+`max-snippet:N` y `noindex`+`max-image-preview` se persisten tal cual sin marcarse como contradicción. No requerido por AC-3 (solo valida index/noindex y follow/nofollow).
+
+---
+
 ## Deferred from: code review of 12-9-og-images-dinamicas (2026-06-14)
 
 - **Overflow horizontal en primera línea de `WrapText`** (OgImageRenderer.cs) — una palabra única más ancha que la caja se dibuja sin truncar (solo `lines[^1]` pasa por `TruncateLine`). Borde raro (FullName de un solo token largo). Truncar/clipear todas las líneas como hardening visual.

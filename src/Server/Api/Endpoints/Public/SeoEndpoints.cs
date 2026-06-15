@@ -42,12 +42,13 @@ public static class SeoEndpoints
             IFibraRepository fibraRepo,
             INewsRepository newsRepo,
             ISeoMetadataRepository seoRepo,
+            SeoSitemapCacheState cacheState,
             IConfiguration config,
             IMemoryCache cache,
             HttpContext httpContext,
             CancellationToken ct) =>
         {
-            var xml = await GetOrCreateCachedAsync(cache, SitemapIndexCacheKey, async () =>
+            var xml = await GetOrCreateCachedAsync(cache, cacheState.WithVersion(SitemapIndexCacheKey), async () =>
             {
                 var baseUrl = GetBaseUrl(config);
                 var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
@@ -67,12 +68,13 @@ public static class SeoEndpoints
 
         app.MapMethods("/sitemap-static.xml", GetAndHead, async (
             ISeoMetadataRepository seoRepo,
+            SeoSitemapCacheState cacheState,
             IConfiguration config,
             IMemoryCache cache,
             HttpContext httpContext,
             CancellationToken ct) =>
         {
-            var xml = await GetOrCreateCachedAsync(cache, SitemapStaticCacheKey, async () =>
+            var xml = await GetOrCreateCachedAsync(cache, cacheState.WithVersion(SitemapStaticCacheKey), async () =>
             {
                 var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
                 var staticRoutes = GetVisibleStaticRoutes(visibility);
@@ -88,12 +90,13 @@ public static class SeoEndpoints
         app.MapMethods("/sitemap-fibras.xml", GetAndHead, async (
             IFibraRepository fibraRepo,
             ISeoMetadataRepository seoRepo,
+            SeoSitemapCacheState cacheState,
             IConfiguration config,
             IMemoryCache cache,
             HttpContext httpContext,
             CancellationToken ct) =>
         {
-            var xml = await GetOrCreateCachedAsync(cache, SitemapFibrasCacheKey, async () =>
+            var xml = await GetOrCreateCachedAsync(cache, cacheState.WithVersion(SitemapFibrasCacheKey), async () =>
             {
                 var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
                 var fibras = await GetVisibleFibraPathsAsync(fibraRepo, visibility, ct);
@@ -110,6 +113,7 @@ public static class SeoEndpoints
             int page,
             INewsRepository newsRepo,
             ISeoMetadataRepository seoRepo,
+            SeoSitemapCacheState cacheState,
             IConfiguration config,
             IMemoryCache cache,
             HttpContext httpContext,
@@ -121,7 +125,7 @@ public static class SeoEndpoints
             // Solo se cachea XML no vacío. Las páginas fuera de rango devuelven 404 sin cachear:
             // cachear vacíos permitiría (a) crecimiento ilimitado del caché al enumerar páginas
             // arbitrarias y (b) un 404 rancio que contradiga al índice tras publicar noticias.
-            var cacheKey = $"sitemap-noticias-{page}";
+            var cacheKey = cacheState.WithVersion($"sitemap-noticias-{page}");
             if (!cache.TryGetValue(cacheKey, out string? xml) || string.IsNullOrEmpty(xml))
             {
                 var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);

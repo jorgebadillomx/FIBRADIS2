@@ -17,6 +17,11 @@ public class SeoMetadataRepository(AppDbContext db) : ISeoMetadataRepository
                 ct);
     }
 
+    public async Task<SeoMetadata?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await db.SeoMetadata
+            .AsNoTracking()
+            .FirstOrDefaultAsync(metadata => metadata.Id == id, ct);
+
     public async Task<IReadOnlyList<SeoMetadata>> GetAllAsync(SeoMetadataQuery? query = null, CancellationToken ct = default)
     {
         var dbQuery = db.SeoMetadata.AsNoTracking().AsQueryable();

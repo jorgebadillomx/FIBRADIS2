@@ -9,6 +9,7 @@ const navigationItems = [
   { label: 'Contenido Editorial', to: '/editorial', description: 'Editar textos educativos de la sección Conoce las FIBRAs.' },
   { label: 'SEO Organization', to: '/seo/organization', description: 'Gestionar perfiles oficiales verificados para sameAs.' },
   { label: 'SEO FAQ', to: '/seo/faq', description: 'Administrar preguntas frecuentes visibles y JSON-LD.' },
+  { label: 'SEO Robots', to: '/seo/robots', description: 'Editar robots por página con presets y validación.' },
   { label: 'SEO Redirects', to: '/seo/redirects', description: 'Gestionar redirects 301/302 cacheados en memoria.' },
   { label: 'Noticias', to: '/noticias', description: 'Curación de body text y resúmenes IA.' },
   { label: 'Blocklist', to: '/blocklist', description: 'Términos excluidos del pipeline RSS.' },
