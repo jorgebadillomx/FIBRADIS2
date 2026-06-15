@@ -113,7 +113,17 @@ Cuando una ruta cambia de pública a privada (por ejemplo, `/herramientas` pasa 
 
 deben ir en el **mismo deploy**. Si se activa el auth guard sin retirar la ruta del sitemap, Google la crawlea con 401, la marca como no indexable y la elimina del índice — forzando un ciclo de re-crawl innecesario y degradando el coverage report en GSC.
 
-Origen: retro Épica 11 — las reglas de encoding, longitud y og:title se redescubrieron como patches en review de 11-2 y luego en 11-4 (`NewsMetadataMiddleware`). Son transversales al patrón, no específicas de cada historia.
+### SEO administrable (escritura desde Ops)
+
+Aplica a cualquier endpoint que **persista o edite** metadata SEO desde Ops (`OpsSeoEndpoints` y futuros). Las reglas de render de arriba siguen vigentes; estas cubren la superficie de escritura que introdujo la Épica 12 (12-1).
+
+- **Validar longitud contra el límite de columna en el endpoint, no en la BD**: cada campo editable debe rechazarse con `400 ValidationProblem` si excede el `HasMaxLength` de su columna. Si no se valida, el `SaveChangesAsync` lanza `DbUpdateException` → `500` anónimo en vez de un error de validación accionable. Límites actuales de `seo.SeoMetadata`: `Title`/`OgTitle` 120, `MetaDescription`/`OgDescription` 160, `CanonicalPath`/`RobotsDirectives` 256, `OgImageUrl` 512, `OgType`/`TwitterCard` 32, `OgLocale` 16.
+- **Re-encodar el JSON-LD al render, aunque venga de BD**: el JSON-LD almacenado pudo editarse a mano desde Ops, así que NO es confiable. El render debe re-serializarlo con el helper compartido (`SeoJsonLd` → `JsonSerializer` + `JavaScriptEncoder`) y omitir el bloque ante JSON inválido (try/catch). Nunca inyectar el string crudo de BD en el `<script type="application/ld+json">`.
+- **Rechazar campos requeridos vacíos en edición manual**: un campo `IsRequired` (Title, MetaDescription, …) provisto pero vacío tras `Trim()` debe dar `400`. Persistir `""` Y marcar su flag de override deja la fila con un valor vacío permanente que la regeneración automática (`overrideMode:false`) ya no repone → `<title>` vacío servido en producción.
+- **Override por campo**: editar un campo marca su `*_IsOverridden = true`; la regeneración automática (auto-llenado al crear / regen tras update) solo escribe campos NO marcados (`overrideMode:false`). La edición manual SIEMPRE gana. Mantener `og:title == title` y `og:description == metaDescription` también al editar (si se edita Title, alinear y marcar OgTitle).
+- **Coordinación listado ↔ `IsActive`**: si el editor solo lista filas activas (`Where(IsActive)`), NO exponer la edición de `IsActive` en el PUT — desactivar una fila la volvería inalcanzable para reactivarla y anularía sus overrides en silencio (el middleware cae al fallback). Habilitar el toggle solo cuando el listado soporte filas inactivas.
+
+Origen: retro Épica 11 — las reglas de encoding, longitud y og:title se redescubrieron como patches en review de 11-2 y luego en 11-4 (`NewsMetadataMiddleware`). Son transversales al patrón, no específicas de cada historia. **Épica 12 (12-1)** extendió el patrón al SEO editable desde Ops: las reglas de "SEO administrable" de arriba salieron de patches de code review (longitud por columna, re-encoding de JSON-LD de BD, rechazo de vacíos, override por campo).
 
 ## EF Core — nunca `Task.WhenAll` con el mismo DbContext
 

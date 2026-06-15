@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace Application.Catalog;
 
 /// <summary>
@@ -7,30 +5,17 @@ namespace Application.Catalog;
 /// (ej. "Fibra Uno" + "FUNO11" → "fibra-uno-funo11"). El ticker SIEMPRE va al final
 /// como último segmento — permite resolver la fibra extrayendo el texto después del
 /// último guión, sin columna Slug en BD ni migración.
+///
+/// La estrategia de slugify vive en <see cref="SlugHelper.SlugifyToHyphens"/> (fuente única
+/// compartida); esta clase solo compone <c>{slug}-{ticker}</c>. La paridad con el frontend
+/// (<c>fibra-slug.ts</c>) se verifica con el corpus <c>slug-parity.fixture.json</c>.
 /// </summary>
-public static partial class FibraSlug
+public static class FibraSlug
 {
     public static string Build(string fullName, string ticker)
     {
-        var namePart = Slugify(fullName);
+        var namePart = SlugHelper.SlugifyToHyphens(fullName);
         var tickerPart = ticker.ToLowerInvariant();
         return string.IsNullOrEmpty(namePart) ? tickerPart : $"{namePart}-{tickerPart}";
     }
-
-    // DEBE producir exactamente el mismo resultado que buildFibraSlug en
-    // src/Web/Main/src/shared/lib/fibra-slug.ts — si divergen, el 301 del
-    // middleware y la canonicalización client-side entran en loop de redirecciones.
-    // Por eso los runs de no-alfanuméricos colapsan a UN guión (semántica del
-    // regex TS [^a-z0-9]+), en vez de espacios→guión + strip del resto.
-    private static string Slugify(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return string.Empty;
-
-        var clean = SlugHelper.NormalizeText(text);
-        return NonAlphanumericRuns().Replace(clean, "-").Trim('-');
-    }
-
-    [GeneratedRegex("[^a-z0-9]+")]
-    private static partial Regex NonAlphanumericRuns();
 }

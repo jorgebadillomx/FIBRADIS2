@@ -415,6 +415,8 @@ development_status:
   12-10-redirects-administrables: done                  # Backlog
   # story 12-11 done — code review pass (1 decisión→patch: GET filtra IsActive, editor solo lista filas activas; 6 patches: P1 GET sin pageType 400→200 "Todos", P2 onError save/refresh, P3 useRef guard no pisa draft en refetch, P4 round-trip preserva noarchive/nosnippet/noimageindex, P5 tests AC-6 follow+nofollow/max-* inválidos/all/none, P6 parseRobotsDirectives('') consistente sin override verboso). 3 defers (TOCTOU single-writer, rutas estáticas sin fila, contradicciones semánticas) + 8 dismissed. 9 frontend + 16 unit + 5 integration verdes.
   12-11-editor-robots-directives-por-pagina: done  # Backlog
+  # epic-12-retrospective done — 2026-06-15 (epic-12-retro-2026-06-15.md): 11/11 done, ~50 patches, 3 BLOCKERs atrapados en review. Lección central: dependencia ficticia (12-1 fundación quedó incompleta toda la épica). 4 action items: A1 extender checklist SEO a superficies editables, A2 ESCALAR consolidación triple slugify (2 épicas pendiente), A3 review verifica tests (no confiar en "tests verdes"), A4 sin dependencias ficticias en planeación. Seguimiento Épica 11: A3/A4 done (11-5/11-6), A1 parcial, A2 no hecho.
+  epic-12-retrospective: done
 
   # ── Épica 13: UX / Navegación e Información Arquitectónica ────────────────
   # epic-13 creada — reorganización de IA de navegación. Surgió de feedback del usuario: los menús "ya no caben, son muchos elementos".

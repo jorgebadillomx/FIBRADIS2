@@ -1,38 +1,27 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { buildFibraSlug, extractTickerFromSlug } from './fibra-slug.ts'
+
+// Corpus de paridad COMPARTIDO con FibraSlugTests.cs (C#). Fuente única: slug-parity.fixture.json.
+// Si buildFibraSlug (TS) y FibraSlug.Build (C#) divergen sobre este corpus, el 301 del middleware
+// y la canonicalización client-side entran en loop de redirecciones.
+const parityFixture = JSON.parse(
+  readFileSync(new URL('./slug-parity.fixture.json', import.meta.url), 'utf-8'),
+) as { cases: { fullName: string; ticker: string; expected: string }[] }
 
 test('buildFibraSlug genera slug básico con ticker al final', () => {
   assert.equal(buildFibraSlug('Fibra Uno', 'FUNO11'), 'fibra-uno-funo11')
 })
 
-// Tabla de la historia 11.3 — debe coincidir 1:1 con FibraSlugTests.cs (paridad C# ↔ TS)
-test('buildFibraSlug coincide con los ejemplos del catálogo', () => {
-  assert.equal(buildFibraSlug('Fibra Uno', 'FUNO11'), 'fibra-uno-funo11')
-  assert.equal(buildFibraSlug('Fibra Macquarie', 'FIBRAMQ12'), 'fibra-macquarie-fibramq12')
-  assert.equal(buildFibraSlug('Fibra Hotel City Express', 'HCITY17'), 'fibra-hotel-city-express-hcity17')
-  assert.equal(buildFibraSlug('CFE Fibra E', 'FCFE18'), 'cfe-fibra-e-fcfe18')
-})
-
-test('buildFibraSlug normaliza acentos y eñes', () => {
-  assert.equal(buildFibraSlug('Fibra Próximamente', 'NU11'), 'fibra-proximamente-nu11')
-  assert.equal(buildFibraSlug('Fibra Montaña', 'TEST1'), 'fibra-montana-test1')
-})
-
-test('buildFibraSlug colapsa puntuación a un guión (paridad con C#)', () => {
-  assert.equal(buildFibraSlug('Fibra Plus, S.A.', 'FPLUS16'), 'fibra-plus-s-a-fplus16')
-  assert.equal(buildFibraSlug('  Fibra -- Test!  ', 'X99'), 'fibra-test-x99')
-})
-
-test('buildFibraSlug elimina marcas combinantes fuera de U+0300-036F (paridad con C#)', () => {
-  // U+0483 (titlo cirílico) es Nonspacing_Mark fuera del rango clásico de acentos —
-  // C# la elimina vía UnicodeCategory.NonSpacingMark; debe dar el mismo slug aquí
-  assert.equal(buildFibraSlug('Fibra҃uno', 'FUNO11'), 'fibrauno-funo11')
-})
-
-test('buildFibraSlug con nombre vacío devuelve solo el ticker', () => {
-  assert.equal(buildFibraSlug('', 'FUNO11'), 'funo11')
-  assert.equal(buildFibraSlug('   ', 'FUNO11'), 'funo11')
+test('buildFibraSlug coincide 1:1 con el corpus de paridad compartido (C# ↔ TS)', () => {
+  for (const { fullName, ticker, expected } of parityFixture.cases) {
+    assert.equal(
+      buildFibraSlug(fullName, ticker),
+      expected,
+      `slug de "${fullName}" + "${ticker}" debe ser "${expected}"`,
+    )
+  }
 })
 
 test('extractTickerFromSlug extrae el último segmento en mayúsculas', () => {

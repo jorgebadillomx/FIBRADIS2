@@ -25,4 +25,10 @@
     <ProjectReference Include="../../../src/Server/Application/Application.csproj" />
   </ItemGroup>
 
+  <!-- Corpus de paridad de slug compartido con el frontend (fibra-slug.test.ts lo consume desde su
+       ubicación original). Fuente única para verificar FibraSlug.Build == buildFibraSlug. -->
+  <ItemGroup>
+    <Content Include="..\..\..\src\Web\Main\src\shared\lib\slug-parity.fixture.json" Link="slug-parity.fixture.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -7,6 +7,15 @@ namespace Application.News;
 /// Genera slugs URL-safe a partir del título de un artículo de noticias
 /// (ej. "FUNO11 reporta resultados del 2T25" → "funo11-reporta-resultados-del-2t25").
 /// La unicidad NO se resuelve aquí — ver <c>INewsRepository.GenerateUniqueSlugAsync</c>.
+///
+/// DIVERGENCIA INTENCIONAL vs <see cref="Catalog.FibraSlug"/> / <see cref="Catalog.SlugHelper.SlugifyToHyphens"/>:
+/// noticias usa la forma "espacio→guión, luego elimina el resto de no-alfanuméricos" (no
+/// "colapsa runs a un guión"). Ej: "S.A." → "sa" aquí vs "s-a" en FibraSlug. Esto NO se unifica
+/// a propósito: los slugs de noticias están <b>persistidos</b> en BD (columna Slug) y cambiarlos
+/// rompería URLs ya indexadas y dispararía 301s. A diferencia de la fibra (slug derivado en C# y
+/// TS), el slug de noticia se genera solo en backend y se busca por el valor almacenado, así que
+/// no hay riesgo de loop de redirección entre lenguajes. Comparte <see cref="Catalog.SlugHelper.NormalizeText"/>
+/// (la normalización Unicode) con el resto; solo difiere la estrategia de reemplazo.
 /// </summary>
 public static partial class SlugGenerator
 {
