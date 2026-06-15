@@ -106,6 +106,8 @@ public partial class SpaMetadataMiddleware(
         if (normalizedPath == "/noticias" && noticiasPage > 1)
             seoMetadata.CanonicalPath = $"/noticias?page={noticiasPage}";
 
+        robotsDirectives ??= seoMetadata.RobotsDirectives;
+
         var indexPath = env.WebRootPath is { Length: > 0 }
             ? Path.Combine(env.WebRootPath, "index.html")
             : null;

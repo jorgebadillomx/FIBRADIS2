@@ -113,6 +113,7 @@ app.MapOgImages();
 app.MapFaq();
 app.MapOpsNewsManagement();
 app.MapOpsSeoFaq();
+app.MapOpsSeo();
 app.MapOpsSeoOrganization();
 app.MapOpsSeoRedirects();
 

@@ -184,7 +184,7 @@ public partial class FibraProfileMetadataMiddleware(
                 ]));
 
         html = TitleTagRegex().Replace(html, string.Empty, count: 1);
-        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock));
+        html = html.Replace(PrerenderMetaComment, BuildMetaBlock(seoMetadata, _baseUrl, breadcrumbJsonLdBlock, faqJsonLdBlock, seoMetadata.RobotsDirectives));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.Headers.CacheControl = "no-cache";
@@ -215,7 +215,7 @@ public partial class FibraProfileMetadataMiddleware(
             asOfDate);
     }
 
-    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null)
+    private static string BuildMetaBlock(SeoMetadata metadata, string baseUrl, string? breadcrumbJsonLdBlock = null, string? extraJsonLdBlock = null, string? robotsDirectives = null)
     {
         var encodedTitle = Encoder.Encode(metadata.Title);
         var encodedDescription = Encoder.Encode(metadata.MetaDescription);
@@ -240,6 +240,7 @@ public partial class FibraProfileMetadataMiddleware(
             .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
             .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
             .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
+            .Append(string.IsNullOrWhiteSpace(robotsDirectives) ? string.Empty : $"<meta name=\"robots\" content=\"{Encoder.Encode(robotsDirectives)}\" />\n    ")
             .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")
             .Append(SeoJsonLd.BuildScriptBlock(metadata.JsonLd))
             .Append(string.IsNullOrWhiteSpace(breadcrumbJsonLdBlock) ? string.Empty : $"\n    {breadcrumbJsonLdBlock}")

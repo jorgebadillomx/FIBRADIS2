@@ -92,7 +92,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-15  # 12-9 OG images → done (code review: BLOCKER portabilidad Linux SkiaSharp + 5 fixes; 190 unit + 2 integration verdes)
+last_updated: 2026-06-15  # 12-11 editor robots → done (code review: 1 decisión + 6 patches; 9 frontend + 16 unit + 5 integration verdes)
 # story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
@@ -411,7 +411,8 @@ development_status:
   12-9-og-images-dinamicas: done                 # Ola 3
   # story 12-10 done — code review pass (3 patches: P1 open-redirect IsInternalPath endurecido vs backslash/control chars, P2 tests faltantes Security Checklist+AC-6 (rechazo ToPath externo 400 + emisión pública 302 + 31 unit tests UrlRedirectPath), P3 middleware delega bypass de prefijos reservados a IsReservedSource). 5 defers + 3 dismissed. 31 Application + 28 Infra + 8 integration verdes.
   12-10-redirects-administrables: done                  # Backlog
-  12-11-editor-robots-directives-por-pagina: ready-for-dev  # Backlog
+  # story 12-11 done — code review pass (1 decisión→patch: GET filtra IsActive, editor solo lista filas activas; 6 patches: P1 GET sin pageType 400→200 "Todos", P2 onError save/refresh, P3 useRef guard no pisa draft en refetch, P4 round-trip preserva noarchive/nosnippet/noimageindex, P5 tests AC-6 follow+nofollow/max-* inválidos/all/none, P6 parseRobotsDirectives('') consistente sin override verboso). 3 defers (TOCTOU single-writer, rutas estáticas sin fila, contradicciones semánticas) + 8 dismissed. 9 frontend + 16 unit + 5 integration verdes.
+  12-11-editor-robots-directives-por-pagina: done  # Backlog
 
   # ── Épica 13: UX / Navegación e Información Arquitectónica ────────────────
   # epic-13 creada — reorganización de IA de navegación. Surgió de feedback del usuario: los menús "ya no caben, son muchos elementos".

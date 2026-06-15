@@ -15,6 +15,7 @@ import { EditorialPage } from '@/pages/EditorialPage'
 import { FundamentalsPage } from '@/pages/FundamentalsPage'
 import { SeoOrganizationPage } from '@/pages/SeoOrganizationPage'
 import { SeoFaqPage } from '@/pages/SeoFaqPage'
+import { SeoPage } from '@/pages/SeoPage'
 import { SeoRedirectsPage } from '@/pages/SeoRedirectsPage'
 import { NewsBodyPage } from '@/pages/NewsBodyPage'
 import { AiCallLogsPage } from '@/pages/AiCallLogsPage'
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
       { path: 'editorial', element: <EditorialPage /> },
       { path: 'seo/organization', element: <SeoOrganizationPage /> },
       { path: 'seo/faq', element: <SeoFaqPage /> },
+      { path: 'seo/robots', element: <SeoPage /> },
       { path: 'seo/redirects', element: <SeoRedirectsPage /> },
       { path: 'noticias', element: <NewsBodyPage /> },
       { path: 'blocklist', element: <BlocklistPage /> },
