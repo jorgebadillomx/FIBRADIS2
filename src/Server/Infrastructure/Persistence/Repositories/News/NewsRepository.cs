@@ -129,7 +129,10 @@ public class NewsRepository(
         if (baseUrl is null)
             return;
 
-        var article = await db.NewsArticles.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, ct);
+        // Filtra DeletedAt: una noticia borrada (soft-delete) no debe regenerar una fila SEO activa
+        // — su página ya no es indexable. Si fue borrada, no se regenera nada.
+        var article = await db.NewsArticles.AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == id && a.DeletedAt == null, ct);
         if (article is null)
             return;
 

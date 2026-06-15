@@ -1,6 +1,6 @@
 # Story 12.1: Módulo SEO administrable desde Ops (fundación)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -385,4 +385,28 @@ GPT-5 Codex
 - **D1** — `Title`/`OgTitle` ampliados a `nvarchar(120)` (config + migración `AddSeoModule` + snapshot + Designer); test del modelo actualizado.
 
 **Build verde (0 advertencias) · 540/540 Infrastructure.Tests verdes.** La historia permanece `in-progress`: faltan AC-3/5/7/8 y los integration tests de AC-9 (tasks T5–T9).
+
+## Senior Developer Review (AI) — Pasada 2 (T5–T10)
+
+**Fecha:** 2026-06-15 · **Modo:** full (spec + convenciones) · **Target:** `git diff main` (commit 2542da9, cierre T5–T10)
+**Reviewers:** Blind Hunter · Edge Case Hunter · Acceptance Auditor (3 capas paralelas, mismo modelo)
+
+15 hallazgos triados: 5 patch (aplicados), 5 defer, 1 dismiss; el resto fusionados/duplicados.
+
+### Review Findings
+
+- [x] [Review][Patch] PUT no validaba longitud de `OgType`/`TwitterCard` (nvarchar(32)), `OgImageUrl` (512) ni `CanonicalPath` (256) → `DbUpdateException`/500 en vez de 400 [src/Server/Api/Endpoints/Ops/OpsSeoEndpoints.cs ValidateRequest] — **aplicado**: guards de longitud + tests de integración (`OgType` 33 chars → 400).
+- [x] [Review][Patch] `Title`/`MetaDescription` provistos pero vacíos tras trim marcaban override con `""` → `<title>` vacío permanente (auto-regen ya no lo repone) [OpsSeoEndpoints.cs ValidateRequest] — **aplicado**: rechazo 400 si quedan vacíos + test.
+- [x] [Review][Patch] `IsActive=false` vía PUT creaba callejón sin salida (el listado solo muestra filas activas) y anulaba overrides silenciosamente [OpsSeoEndpoints.cs ApplyOverrides + UpdateSeoMetadataRequest] — **aplicado**: `IsActive` removido del PUT (la des/activación se maneja por seed/migración hasta que el listado soporte inactivas).
+- [x] [Review][Patch] Backfill de fibras y noticias sin try/catch por-ítem: un fallo abortaba todo el backfill (las páginas fijas sí lo tenían) [OpsSeoEndpoints.cs backfill] — **aplicado**: try/catch por-ítem con warning, paridad con páginas fijas.
+- [x] [Review][Patch] `RegenerateSeoAsync` no filtraba `DeletedAt==null` → regeneraba fila SEO activa para noticias borradas [NewsRepository.cs RegenerateSeoAsync] — **aplicado**: filtro `DeletedAt==null` en la re-lectura.
+- [x] [Review][Defer] Cambio de slug de noticia (`UpdateSlugAsync`) deja huérfano un override SEO existente — casi inalcanzable: el slug se fija con `??=` al crear, `UpdateSlugAsync` solo aplica a artículos legacy sin slug que no tienen fila SEO previa por clave-slug. Migración de clave es compleja; se difiere.
+- [x] [Review][Defer] Auto-llenado/regen fuera de la transacción del contenido (T6 pedía "mismo SaveChangesAsync cuando sea posible") — decisión deliberada: tras el save del artículo (para conocer el slug final), best-effort con warning; el backfill idempotente es la red de recuperación.
+- [x] [Review][Defer] Sin test del regen tras update IA de noticias — `UpdateSummaryAsync`/`UpdateAiAnalysisAsync` usan `ExecuteUpdateAsync`, no soportado por el provider InMemory de los tests. La mecánica regen-respeta-override queda cubierta por el test de `UpdateAsync` de fibra.
+- [x] [Review][Defer] `GetMetaForPathAsync` baja a minúsculas pero `NormalizeEntityKey` no — hoy todas las `KnownPaths` están en minúsculas, así que no hay desajuste; documentar al añadir rutas con mayúsculas.
+- [x] [Review][Defer] Backfill no atómico (sin transacción global) — mitigado por el try/catch por-ítem (P4): el backfill es idempotente y reanudable; un fallo parcial no corrompe datos.
+
+**Descartado (falso positivo):** `UpsertAsync` tras carrera devuelve `existing.Id` mientras el endpoint hace `ToDto(current)` — en la ruta PUT `current` se carga por id existente, así que `current.Id == existing.Id`; no hay desajuste.
+
+**Resolución (2026-06-15):** los 5 patches aplicados. Build `FIBRADIS.slnx -c Release` 0/0. Unit SEO 4/4, integration SEO 12/12 (7 backfill/PUT incl. 2 nuevos de validación + 5 robots). Ops frontend verde. Los 2 fallos de Api.Tests (Dashboard/Calculadora) son pre-existentes y ajenos (confirmados en `main`).
 

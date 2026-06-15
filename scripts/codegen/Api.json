@@ -10533,12 +10533,6 @@
               "null",
               "string"
             ]
-          },
-          "isActive": {
-            "type": [
-              "null",
-              "boolean"
-            ]
           }
         }
       },

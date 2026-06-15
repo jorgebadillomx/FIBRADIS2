@@ -16,6 +16,9 @@ public static class OpsSeoEndpoints
 {
     private const int MaxTitleLength = 120;
     private const int MaxDescriptionLength = 160;
+    private const int MaxCanonicalPathLength = 256;
+    private const int MaxOgImageUrlLength = 512;
+    private const int MaxShortFieldLength = 32; // og_type / twitter_card (nvarchar(32))
 
     public static IEndpointRouteBuilder MapOpsSeo(this IEndpointRouteBuilder app)
     {
@@ -186,8 +189,19 @@ public static class OpsSeoEndpoints
                 if (await seoRepo.ExistsAsync(SeoPageType.Fibra, entityKey, ct))
                     continue;
 
-                await seoRepo.UpsertAsync(seoDefaults.BuildFibra(fibra, baseUrl, now), overrideMode: false, ct);
-                fibras++;
+                try
+                {
+                    await seoRepo.UpsertAsync(seoDefaults.BuildFibra(fibra, baseUrl, now), overrideMode: false, ct);
+                    fibras++;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Backfill SEO falló para la FIBRA {Ticker}; se omite", entityKey);
+                }
             }
 
             // ── Últimas 100 noticias por CapturedAt ──
@@ -197,8 +211,19 @@ public static class OpsSeoEndpoints
                 if (await seoRepo.ExistsAsync(SeoPageType.News, entityKey, ct))
                     continue;
 
-                await seoRepo.UpsertAsync(seoDefaults.BuildNews(article, baseUrl, now), overrideMode: false, ct);
-                news++;
+                try
+                {
+                    await seoRepo.UpsertAsync(seoDefaults.BuildNews(article, baseUrl, now), overrideMode: false, ct);
+                    news++;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Backfill SEO falló para la noticia {EntityKey}; se omite", entityKey);
+                }
             }
 
             logger.LogInformation(
@@ -271,8 +296,11 @@ public static class OpsSeoEndpoints
             current.RobotsDirectivesIsOverridden = true;
         }
 
-        if (request.IsActive is not null)
-            current.IsActive = request.IsActive.Value;
+        // IsActive NO se edita desde este PUT: el listado solo muestra filas activas (decisión de
+        // 12-11), así que desactivar una fila la volvería inalcanzable para reactivarla y, además,
+        // anularía silenciosamente los overrides editados (el middleware cae al fallback). La
+        // (des)activación se maneja por seed/migración; reintroducirla aquí requiere que el listado
+        // soporte filas inactivas primero.
     }
 
     private static Dictionary<string, string[]> ValidateRequest(UpdateSeoMetadataRequest request)
@@ -283,22 +311,56 @@ public static class OpsSeoEndpoints
         if (request.RobotsDirectives?.Trim() is { Length: > 256 })
             errors["robotsDirectives"] = ["El campo robotsDirectives no puede superar 256 caracteres."];
 
-        // Title: techo 120 = límite duro de columna nvarchar(120).
-        if (request.Title?.Trim() is { Length: > MaxTitleLength })
-            errors["title"] = [$"El campo title no puede superar {MaxTitleLength} caracteres."];
+        // Title: campo requerido (columna IsRequired). Si se provee, no puede quedar vacío tras trim
+        // (marcaría override con "" y la regeneración nunca lo repondría → <title> vacío). Techo 120.
+        if (request.Title is not null)
+        {
+            var title = request.Title.Trim();
+            if (title.Length == 0)
+                errors["title"] = ["El campo title no puede quedar vacío."];
+            else if (title.Length > MaxTitleLength)
+                errors["title"] = [$"El campo title no puede superar {MaxTitleLength} caracteres."];
+        }
 
-        // MetaDescription: techo 160 duro (400). El piso 120 es solo objetivo de los defaults
-        // auto-generados; en edición manual es warning no bloqueante (T5).
-        if (request.MetaDescription?.Trim() is { Length: > MaxDescriptionLength })
-            errors["metaDescription"] = [$"El campo metaDescription no puede superar {MaxDescriptionLength} caracteres."];
+        // MetaDescription: si se provee, no puede quedar vacía tras trim. Techo 160 duro (400); el
+        // piso 120 es solo objetivo de los defaults auto-generados (warning no bloqueante en edición).
+        if (request.MetaDescription is not null)
+        {
+            var description = request.MetaDescription.Trim();
+            if (description.Length == 0)
+                errors["metaDescription"] = ["El campo metaDescription no puede quedar vacío."];
+            else if (description.Length > MaxDescriptionLength)
+                errors["metaDescription"] = [$"El campo metaDescription no puede superar {MaxDescriptionLength} caracteres."];
+        }
 
-        // CanonicalPath: ruta relativa (el dominio lo antepone App:BaseUrl) — debe empezar con '/'.
-        if (!string.IsNullOrWhiteSpace(request.CanonicalPath) && !request.CanonicalPath.Trim().StartsWith('/'))
-            errors["canonicalPath"] = ["canonicalPath debe ser una ruta relativa que comience con '/'."];
+        // CanonicalPath: ruta relativa (el dominio lo antepone App:BaseUrl) — debe empezar con '/' y
+        // respetar el techo de columna nvarchar(256) (de lo contrario el upsert lanzaría 500).
+        if (!string.IsNullOrWhiteSpace(request.CanonicalPath))
+        {
+            var canonical = request.CanonicalPath.Trim();
+            if (!canonical.StartsWith('/'))
+                errors["canonicalPath"] = ["canonicalPath debe ser una ruta relativa que comience con '/'."];
+            else if (canonical.Length > MaxCanonicalPathLength)
+                errors["canonicalPath"] = [$"canonicalPath no puede superar {MaxCanonicalPathLength} caracteres."];
+        }
 
-        // OgImageUrl: URL absoluta http/https (guard SSRF) o ruta relativa.
-        if (!string.IsNullOrWhiteSpace(request.OgImageUrl) && !IsValidImageUrl(request.OgImageUrl.Trim()))
-            errors["ogImageUrl"] = ["ogImageUrl debe ser una URL http/https o una ruta relativa que comience con '/'."];
+        // OgImageUrl: URL absoluta http/https (guard SSRF) o ruta relativa, techo nvarchar(512).
+        if (!string.IsNullOrWhiteSpace(request.OgImageUrl))
+        {
+            var ogImageUrl = request.OgImageUrl.Trim();
+            if (!IsValidImageUrl(ogImageUrl))
+                errors["ogImageUrl"] = ["ogImageUrl debe ser una URL http/https o una ruta relativa que comience con '/'."];
+            else if (ogImageUrl.Length > MaxOgImageUrlLength)
+                errors["ogImageUrl"] = [$"ogImageUrl no puede superar {MaxOgImageUrlLength} caracteres."];
+        }
+
+        // OgType / TwitterCard: columnas nvarchar(32); sin este guard un valor largo provocaría
+        // DbUpdateException (500) en lugar de un 400 validado.
+        if (request.OgType?.Trim() is { Length: > MaxShortFieldLength })
+            errors["ogType"] = [$"El campo ogType no puede superar {MaxShortFieldLength} caracteres."];
+
+        if (request.TwitterCard?.Trim() is { Length: > MaxShortFieldLength })
+            errors["twitterCard"] = [$"El campo twitterCard no puede superar {MaxShortFieldLength} caracteres."];
 
         // JsonLd: si viene no vacío, debe ser JSON parseable.
         if (!string.IsNullOrWhiteSpace(request.JsonLd) && !IsParseableJson(request.JsonLd))

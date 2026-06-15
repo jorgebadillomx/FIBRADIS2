@@ -12,5 +12,4 @@ public record UpdateSeoMetadataRequest(
     string? OgImageUrl = null,
     string? OgType = null,
     string? TwitterCard = null,
-    string? JsonLd = null,
-    bool? IsActive = null);
+    string? JsonLd = null);

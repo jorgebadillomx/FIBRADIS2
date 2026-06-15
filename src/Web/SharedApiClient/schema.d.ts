@@ -7697,7 +7697,6 @@ export interface components {
             ogType?: null | string;
             twitterCard?: null | string;
             jsonLd?: null | string;
-            isActive?: null | boolean;
         };
         UpsertFaqItemRequest: {
             pageType: string;

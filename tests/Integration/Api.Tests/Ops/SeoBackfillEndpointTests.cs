@@ -122,6 +122,40 @@ public class SeoBackfillEndpointTests
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task PutOpsSeo_EmptyTitle_ReturnsBadRequest()
+    {
+        using var factory = new ApiWebFactory();
+        await factory.SeedUsersAsync();
+
+        var adminClient = await CreateAuthenticatedClientAsync(factory, "adminops@test.com", "ops123");
+        var row = await SeedStaticRowAsync(factory);
+
+        // Title provisto pero vacío tras trim: marcaría override con "" → <title> vacío permanente.
+        var request = new UpdateSeoMetadataRequest(RobotsDirectives: null, Title: "   ");
+
+        var response = await adminClient.PutAsJsonAsync($"/api/v1/ops/seo/{row.Id}", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutOpsSeo_OgTypeTooLong_ReturnsBadRequest()
+    {
+        using var factory = new ApiWebFactory();
+        await factory.SeedUsersAsync();
+
+        var adminClient = await CreateAuthenticatedClientAsync(factory, "adminops@test.com", "ops123");
+        var row = await SeedStaticRowAsync(factory);
+
+        // OgType excede nvarchar(32): sin guard de validación sería DbUpdateException/500.
+        var request = new UpdateSeoMetadataRequest(RobotsDirectives: null, OgType: new string('x', 33));
+
+        var response = await adminClient.PutAsJsonAsync($"/api/v1/ops/seo/{row.Id}", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private static async Task<HttpClient> CreateAuthenticatedClientAsync(ApiWebFactory factory, string email, string password)
     {
         var loginClient = factory.CreateClient();
