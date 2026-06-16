@@ -31,16 +31,22 @@ test('buildMainMobileSections hides Mi inversión for anonymous users and expose
   )
 
   assert.equal(
-    anonymousSections.some((section) => section.items.some((item) => 'to' in item && MAIN_INVESTMENT_LINKS.some((link) => link.to === item.to))),
+    anonymousSections.some((section) =>
+      section.items.some(
+        (item) => 'to' in item && item.to !== '/portafolio' && MAIN_INVESTMENT_LINKS.some((link) => link.to === item.to),
+      ),
+    ),
     false,
   )
   assert.equal(
-    authenticatedSections.some((section) => section.items.some((item) => 'to' in item && MAIN_INVESTMENT_LINKS.some((link) => link.to === item.to))),
+    authenticatedSections.some((section) =>
+      section.items.some((item) => 'to' in item && MAIN_INVESTMENT_LINKS.some((link) => link.to === item.to)),
+    ),
     true,
   )
 })
 
-test('authenticated mobile menu keeps the account actions and anonymous menu keeps the login link', () => {
+test('authenticated mobile menu keeps the account actions and anonymous menu keeps the Portafolio CTA', () => {
   const anonymousSections = buildMainMobileSections('anonymous')
   const authenticatedSections = buildMainMobileSections('authenticated')
 
@@ -49,7 +55,7 @@ test('authenticated mobile menu keeps the account actions and anonymous menu kee
 
   assert.ok(anonymousAccountSection)
   assert.ok(authenticatedAccountSection)
-  assert.deepEqual(anonymousAccountSection?.items.map((item) => item.label), ['Iniciar sesión'])
+  assert.deepEqual(anonymousAccountSection?.items.map((item) => item.label), ['Portafolio'])
   assert.deepEqual(authenticatedAccountSection?.items.map((item) => item.label), ['Mi perfil', 'Cerrar sesión'])
 })
 

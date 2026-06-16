@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router'
 import { PublicLayout } from '@/shared/layouts/PublicLayout'
 import { HomePage } from '@/modules/home/HomePage'
 import { ProtectedRoute } from '@/modules/auth/ProtectedRoute'
+import { PortafolioRoute } from '@/modules/portafolio/PortafolioRoute'
 import { NotFound } from '@/shared/layouts/NotFound'
 
 const FibraPage = lazy(() => import('@/modules/ficha-publica/FibraPage').then(m => ({ default: m.FibraPage })))
@@ -15,7 +16,6 @@ const CatalogoPage = lazy(() => import('@/modules/catalogo/CatalogoPage').then(m
 const ComparadorPage = lazy(() => import('@/modules/comparador/ComparadorPage').then(m => ({ default: m.ComparadorPage })))
 const HerramientasPage = lazy(() => import('@/modules/herramientas/HerramientasPage').then(m => ({ default: m.HerramientasPage })))
 const CalculadoraPage = lazy(() => import('@/modules/calculadora/CalculadoraPage').then(m => ({ default: m.CalculadoraPage })))
-const PortafolioPage = lazy(() => import('@/modules/portafolio/PortafolioPage').then(m => ({ default: m.PortafolioPage })))
 const OportunidadesPage = lazy(() => import('@/modules/oportunidades/OportunidadesPage').then(m => ({ default: m.OportunidadesPage })))
 const LoginPage = lazy(() => import('@/modules/auth/LoginPage').then(m => ({ default: m.LoginPage })))
 const PrivacidadPage = lazy(() => import('@/modules/privacidad/PrivacidadPage').then(m => ({ default: m.PrivacidadPage })))
@@ -51,6 +51,7 @@ export const routes: RouteObject[] = [
       { path: '/conoce-las-fibras', element: p(<ConoceLasFibrasPage />) },
       { path: '/noticias/:slug', element: p(<NoticiaPage />) },
       { path: '/fundamentales', element: p(<FundamentalesPage />) },
+      { path: '/portafolio', element: <PortafolioRoute /> },
       { path: '/login', element: p(<LoginPage />) },
       { path: '/privacidad', element: p(<PrivacidadPage />) },
       { path: '/acerca', element: p(<AcercaPage />) },
@@ -58,7 +59,6 @@ export const routes: RouteObject[] = [
       {
         element: <ProtectedRoute />,
         children: [
-          { path: '/portafolio', element: p(<PortafolioPage />) },
           { path: '/oportunidades', element: p(<OportunidadesPage />) },
           { path: '/herramientas', element: p(<HerramientasPage />) },
           { path: '/perfil', element: p(<PerfilPage />) },

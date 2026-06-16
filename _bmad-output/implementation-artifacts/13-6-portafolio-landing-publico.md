@@ -1,6 +1,6 @@
 # Story 13.6: `/portafolio` público (landing SEO + login) y botón "Portafolio"
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -70,27 +70,38 @@ Follow-up de la Épica 13 (navegación). Decisión de producto/SEO sobre el punt
 
 ## Tasks / Subtasks
 
-- [ ] **T1 — Botón "Portafolio"** (AC: 1, 2, 3)
-  - [ ] Desktop (`PublicLayout.tsx`): `<Link>` anónimo `Iniciar sesión`/`/login` → `Portafolio`/`/portafolio` (conservar clases/estilo).
-  - [ ] Móvil (`public-navigation.ts`, `buildMainMobileSections`): entrada anónima de "Cuenta" → `{ label: 'Portafolio', to: '/portafolio' }`.
-- [ ] **T2 — `/portafolio` ruta pública dual** (AC: 4, 5, 8)
-  - [ ] `routes.tsx`: mover `/portafolio` fuera de `<ProtectedRoute>` a rutas públicas. Dejar `/oportunidades`, `/herramientas`, `/perfil`, `/reportes` protegidas.
-  - [ ] Crear `PortafolioRoute` (conmutador por `status`): `authenticated` → `PortafolioPage` (lazy, intacto); `anonymous` → `PortafolioLanding`; `checking` → loader.
-- [ ] **T3 — Extraer `LoginForm` reutilizable** (AC: 7)
-  - [ ] Extraer formulario + lógica de `LoginPage.tsx` a `modules/auth/LoginForm.tsx`. `LoginPage` lo consume sin cambiar su comportamiento observable.
-- [ ] **T4 — `PortafolioLanding`** (AC: 6, 7, 12)
-  - [ ] Crear `modules/portafolio/PortafolioLanding.tsx`: hero + overview de capacidades (incluida **Reportes**, ver 13-5) + `LoginForm` embebido + enlaces internos. `usePageTitle` alineado a la metadata SSR. Estático, sin fetches en vivo.
-- [ ] **T5 — SEO backend** (AC: 9, 10, 11)
-  - [ ] `SpaMetadataProvider.cs`: const `PortafolioDescription` (120–160), `/portafolio` en `KnownPaths`, `case "/portafolio"` con JSON-LD.
-  - [ ] `SeoEndpoints.cs`: `/portafolio` en `StaticRoutes`.
-  - [ ] `SpaMetadataMiddleware.cs`: breadcrumb `Inicio → Portafolio`.
-- [ ] **T6 — Tests** (AC: 13)
-  - [ ] Backend: extender `SpaMetadataProviderTests.cs` (mover `/portafolio` a conocidas; longitud; tipo JSON-LD). `dotnet test`.
-  - [ ] Frontend: extender tests de nav (CTA móvil = Portafolio). `npm run test --workspace=src/Web/Main`.
-  - [ ] Builds Main + backend verdes.
-- [ ] **T7 — Verificación manual a11y/responsive/SEO** (AC: 8, 12)
-  - [ ] Dev server: botón "Portafolio", `/portafolio` anónimo (landing+login) vs autenticado (dashboard), login embebido → dashboard sin recargar, sin scroll horizontal en 375/768/1024/1440.
-  - [ ] Confirmar `/portafolio` en `sitemap.xml`/`sitemap-static.xml` y `<title>`/canonical/JSON-LD server-side en el HTML servido (curl al shell).
+- [x] **T1 — Botón "Portafolio"** (AC: 1, 2, 3)
+  - [x] Desktop (`PublicLayout.tsx`): `<Link>` anónimo `Iniciar sesión`/`/login` → `Portafolio`/`/portafolio` (conservar clases/estilo).
+  - [x] Móvil (`public-navigation.ts`, `buildMainMobileSections`): entrada anónima de "Cuenta" → `{ label: 'Portafolio', to: '/portafolio' }`.
+- [x] **T2 — `/portafolio` ruta pública dual** (AC: 4, 5, 8)
+  - [x] `routes.tsx`: mover `/portafolio` fuera de `<ProtectedRoute>` a rutas públicas. Dejar `/oportunidades`, `/herramientas`, `/perfil`, `/reportes` protegidas.
+  - [x] Crear `PortafolioRoute` (conmutador por `status`): `authenticated` → `PortafolioPage` (lazy, intacto); `anonymous` → `PortafolioLanding`; `checking` → loader.
+- [x] **T3 — Extraer `LoginForm` reutilizable** (AC: 7)
+  - [x] Extraer formulario + lógica de `LoginPage.tsx` a `modules/auth/LoginForm.tsx`. `LoginPage` lo consume sin cambiar su comportamiento observable.
+- [x] **T4 — `PortafolioLanding`** (AC: 6, 7, 12)
+  - [x] Crear `modules/portafolio/PortafolioLanding.tsx`: hero + overview de capacidades (incluida **Reportes**, ver 13-5) + `LoginForm` embebido + enlaces internos. `usePageTitle` alineado a la metadata SSR. Estático, sin fetches en vivo.
+- [x] **T5 — SEO backend** (AC: 9, 10, 11)
+  - [x] `SpaMetadataProvider.cs`: const `PortafolioDescription` (120–160), `/portafolio` en `KnownPaths`, `case "/portafolio"` con JSON-LD.
+  - [x] `SeoEndpoints.cs`: `/portafolio` en `StaticRoutes`.
+  - [x] `SpaMetadataMiddleware.cs`: breadcrumb `Inicio → Portafolio`.
+- [x] **T6 — Tests** (AC: 13)
+  - [x] Backend: extender `SpaMetadataProviderTests.cs` (mover `/portafolio` a conocidas; longitud; tipo JSON-LD). `dotnet test`.
+  - [x] Frontend: extender tests de nav (CTA móvil = Portafolio). `npm run test --workspace=src/Web/Main`.
+  - [x] Builds Main + backend verdes.
+- [x] **T7 — Verificación manual a11y/responsive/SEO** (AC: 8, 12)
+  - [x] Dev server: botón "Portafolio", `/portafolio` anónimo (landing+login) vs autenticado (dashboard), login embebido → dashboard sin recargar, sin scroll horizontal en 375/768/1024/1440.
+  - [x] Confirmar `/portafolio` en `sitemap.xml`/`sitemap-static.xml` y `<title>`/canonical/JSON-LD server-side en el HTML servido (curl al shell).
+
+### Review Findings
+
+> Code review 2026-06-16 (bmad-code-review). Capas: Blind Hunter + Edge Case Hunter + Acceptance Auditor. AC: 13/13 cumplidos a nivel de código; tests verdes (frontend 9/9, backend SEO 176/176). Triaje: 1 decision-needed, 2 patch, 3 defer, 3 descartados.
+
+- [x] [Review][Patch] "FIBRADIS" en copy VISIBLE de usuario → cambiado a "Fibras Inmobiliarias" (H1 hero, `PortafolioDescription` 120–160 ✓154, `PAGE_DESCRIPTION` sincronizada, `name` del ItemList). Sufijo `… | FIBRADIS` del `<title>` conservado (AC-9/13-7). — El H1 del hero `Todo lo que hace FIBRADIS…` ([PortafolioLanding.tsx:96](../../src/Web/Main/src/modules/portafolio/PortafolioLanding.tsx#L96)), el `name` del ItemList `Capacidades de FIBRADIS` y la `PortafolioDescription` `Tu entrada pública a FIBRADIS` ([SpaMetadataProvider.cs:29](../../src/Server/Api/Seo/SpaMetadataProvider.cs#L29)) contradicen la regla de marca. Corregir el copy de cuerpo + meta description + name del ItemList a "Fibras Inmobiliarias"; **conservar** el sufijo `… | FIBRADIS` del `<title>` (lo manda AC-9 y lo barre 13-7). Mantener `PortafolioDescription` en 120–160 chars y sincronizar `PAGE_DESCRIPTION` del frontend.
+- [x] [Review][Patch] `resolveLoginRedirect` endurecido: rechaza `/\evil` (protocol-relative con backslash) y caracteres de control; tests añadidos [login-redirect.ts:7](../../src/Web/Main/src/modules/auth/login-redirect.ts#L7) — la validación pasaba `/\evil.example` (algunos navegadores normalizan `\`→`/` → protocol-relative). Verificado: hoy NO explotable (el valor solo fluye a `navigate()` de react-router, nunca a `window.location`) y es validación pre-existente preservada por AC-7; pero es el control anti-open-redirect citado en el Security Checklist y el endurecimiento es barato (normalizar `\`→`/` o rechazar 2º char `/`|`\`).
+- [x] [Review][Patch] Anclas `#login` ahora re-scrollean en re-clic vía `onClick={handleHashAnchorClick}` (`scrollIntoView`, honra `prefers-reduced-motion`) [PortafolioLanding.tsx:113](../../src/Web/Main/src/modules/portafolio/PortafolioLanding.tsx#L113) — el router no tiene manejo de hash/ScrollRestoration; antes el primer clic scrolleaba pero re-clics con la URL ya en `#login` no disparaban scroll.
+- [x] [Review][Defer] JSON-LD ItemList apunta a rutas privadas `/reportes` y `/oportunidades` [SpaMetadataProvider.cs](../../src/Server/Api/Seo/SpaMetadataProvider.cs) — deferred: rutas no están en sitemap y el riesgo SEO es marginal; las tarjetas del landing ya usan `#login`.
+- [x] [Review][Defer] JSON-LD `CollectionPage`/`BreadcrumbList` del shell persiste en DOM para usuario autenticado (dashboard) [PortafolioLanding.tsx](../../src/Web/Main/src/modules/portafolio/PortafolioLanding.tsx) — deferred: `usePageTitle` no gestiona `ld+json`; sin impacto SEO (crawler nunca autenticado).
+- [x] [Review][Defer] Literales de título/description duplicados frontend (`PortafolioLanding`) vs backend (`SpaMetadataProvider`) — deferred: patrón pre-existente en todas las páginas; hoy coinciden carácter a carácter, riesgo solo de drift futuro.
 
 ## Dev Notes
 
@@ -130,10 +141,10 @@ Follow-up de la Épica 13 (navegación). Decisión de producto/SEO sobre el punt
 
 ### Security Checklist — completar antes del primer commit
 
-- [ ] **TOCTOU doble-request:** N/A — sin endpoints de escritura nuevos (reusa `login()`).
-- [ ] **Auth-gating de componentes UI:** `PortafolioPage` solo con `status === 'authenticated'` (vía `PortafolioRoute`); sin datos privados para anónimos ni server-side. Verificado por AC-8 y T7.
-- [ ] **Denominador cero:** N/A.
-- [ ] **Open redirect:** preservar la validación de `?redirect=` en `LoginForm` (solo rutas internas, rechazar `//`).
+- [x] **TOCTOU doble-request:** N/A — sin endpoints de escritura nuevos (reusa `login()`).
+- [x] **Auth-gating de componentes UI:** `PortafolioPage` solo con `status === 'authenticated'` (vía `PortafolioRoute`); sin datos privados para anónimos ni server-side. Verificado por AC-8 y T7.
+- [x] **Denominador cero:** N/A.
+- [x] **Open redirect:** preservar la validación de `?redirect=` en `LoginForm` (solo rutas internas, rechazar `//`).
 
 ### Project Structure Notes
 
@@ -166,8 +177,46 @@ El runner de Main es **`node:test` sin DOM** — los tests validan estructuras d
 
 ### Agent Model Used
 
+GPT-5
+
 ### Debug Log References
+
+- `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj` — passed (639 tests).
+- `npm run test --workspace=src/Web/Main` — passed (174 tests).
+- `dotnet build src/Server/Api/Api.csproj` — passed.
+- `npm run build --workspace=src/Web/Main` — passed.
+- `Invoke-WebRequest http://127.0.0.1:5265/portafolio` — passed (200; title/canonical/CollectionPage/BreadcrumbList present).
+- `Invoke-WebRequest http://127.0.0.1:5265/sitemap-static.xml` — passed (200; `/portafolio` present).
 
 ### Completion Notes List
 
+- 2026-06-16: Implemented public dual `/portafolio` flow with reusable login form, public landing, SEO metadata, breadcrumb and sitemap updates, plus nav CTA changes.
+- 2026-06-16: Added manual HTTP verification for `/portafolio` shell metadata and `sitemap-static.xml` coverage.
+
 ### File List
+
+- _bmad-output/implementation-artifacts/13-6-portafolio-landing-publico.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- src/Server/Api/Endpoints/Public/SeoEndpoints.cs
+- src/Server/Api/Middleware/SpaMetadataMiddleware.cs
+- src/Server/Api/Seo/SpaMetadataProvider.cs
+- src/Web/Main/package.json
+- src/Web/Main/src/app/routes.tsx
+- src/Web/Main/src/modules/auth/LoginForm.tsx
+- src/Web/Main/src/modules/auth/LoginPage.tsx
+- src/Web/Main/src/modules/auth/login-redirect.test.ts
+- src/Web/Main/src/modules/auth/login-redirect.ts
+- src/Web/Main/src/modules/portafolio/PortafolioLanding.tsx
+- src/Web/Main/src/modules/portafolio/PortafolioRoute.tsx
+- src/Web/Main/src/modules/portafolio/portafolio-route.test.ts
+- src/Web/Main/src/modules/portafolio/portafolio-route.ts
+- src/Web/Main/src/shared/layouts/PublicLayout.test.ts
+- src/Web/Main/src/shared/layouts/PublicLayout.tsx
+- src/Web/Main/src/shared/layouts/public-navigation.ts
+- tests/Unit/Infrastructure.Tests/Endpoints/SeoEndpointsTests.cs
+- tests/Unit/Infrastructure.Tests/Middleware/SpaMetadataMiddlewareTests.cs
+- tests/Unit/Infrastructure.Tests/Seo/SpaMetadataProviderTests.cs
+
+### Change Log
+
+- 2026-06-16: Added backend SEO metadata, sitemap and breadcrumb support for `/portafolio`, and updated story tracking to review.

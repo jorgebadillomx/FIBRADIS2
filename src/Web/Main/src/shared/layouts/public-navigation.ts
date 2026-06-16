@@ -46,9 +46,10 @@ export function buildMainMobileSections(
 
   sections.push({
     title: 'Cuenta',
-    items: status === 'authenticated'
-      ? [...MAIN_ACCOUNT_LINKS, { label: 'Cerrar sesión', onClick: onLogout }]
-      : [{ label: 'Iniciar sesión', to: '/login' }],
+    items:
+      status === 'authenticated'
+        ? [...MAIN_ACCOUNT_LINKS, { label: 'Cerrar sesión', onClick: onLogout }]
+        : [{ label: 'Portafolio', to: '/portafolio' }],
   })
 
   return sections

@@ -197,13 +197,16 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
     }
 
     [Fact]
-    public async Task PassesThrough_ForUnknownPath()
+    public async Task InjectsMetadata_ForPortafolio()
     {
         var (context, nextCalled) = await InvokeAsync("/portafolio");
         var body = await ReadBodyAsync(context);
 
-        Assert.True(nextCalled.Value);
-        Assert.Equal(string.Empty, body);
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<title>Portafolio de FIBRAs, reportes y login | FIBRADIS</title>", body);
+        Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/portafolio\" />", body);
+        Assert.Contains("\"@type\":\"CollectionPage\"", body);
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
     }
 
     [Fact]

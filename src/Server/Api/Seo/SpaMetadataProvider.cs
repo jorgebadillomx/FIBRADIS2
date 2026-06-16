@@ -26,6 +26,8 @@ public class SpaMetadataProvider(
         "Próximas asambleas, distribuciones y eventos corporativos de FIBRAs inmobiliarias mexicanas. Mantente informado para tus decisiones.";
     private const string FundamentalesDescription =
         "Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.";
+    private const string PortafolioDescription =
+        "Tu entrada pública a Fibras Inmobiliarias: explora portafolio, reportes, oportunidades, herramientas, fundamentales, noticias y catálogo, o inicia sesión.";
     private const string PrivacyDescription =
         "Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.";
     private const string AboutDescription =
@@ -48,7 +50,7 @@ public class SpaMetadataProvider(
     public IReadOnlyList<string> KnownPaths { get; } =
     [
         "/", "/calculadora", "/comparar", "/fibras", "/noticias", "/conoce-las-fibras",
-        "/calendario", "/fundamentales", "/privacidad", "/acerca", "/contacto",
+        "/calendario", "/fundamentales", "/portafolio", "/privacidad", "/acerca", "/contacto",
     ];
 
     public async Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
@@ -94,6 +96,11 @@ public class SpaMetadataProvider(
                 FundamentalesDescription,
                 "/fundamentales",
                 await BuildFundamentalesJsonLdAsync(ct)),
+            "/portafolio" => new SpaPageMeta(
+                "Portafolio de FIBRAs, reportes y login | FIBRADIS",
+                PortafolioDescription,
+                "/portafolio",
+                BuildPortafolioJsonLd()),
             "/privacidad" => new SpaPageMeta(
                 "Aviso de Privacidad | FIBRADIS",
                 PrivacyDescription,
@@ -254,6 +261,90 @@ public class SpaMetadataProvider(
         => Task.FromResult(seoDefaultsBuilder.BuildFundamentalesPageJsonLd(
             Array.Empty<(FundamentalRecord Record, string Ticker, string ShortName)>(),
             _baseUrl));
+
+    private string BuildPortafolioJsonLd()
+        => JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = new object[]
+            {
+                new Dictionary<string, object?>
+                {
+                    ["@type"] = "CollectionPage",
+                    ["@id"] = $"{_baseUrl}/portafolio#page",
+                    ["name"] = "Portafolio de FIBRAs, reportes y login | FIBRADIS",
+                    ["description"] = PortafolioDescription,
+                    ["url"] = $"{_baseUrl}/portafolio",
+                    ["isPartOf"] = new Dictionary<string, object?>
+                    {
+                        ["@id"] = $"{_baseUrl}/#website",
+                    },
+                    ["publisher"] = new Dictionary<string, object?>
+                    {
+                        ["@id"] = $"{_baseUrl}/#organization",
+                    },
+                    ["mainEntity"] = new Dictionary<string, object?>
+                    {
+                        ["@type"] = "ItemList",
+                        ["name"] = "Capacidades de Fibras Inmobiliarias",
+                        ["numberOfItems"] = 7,
+                        ["itemListOrder"] = "https://schema.org/ItemListOrderAscending",
+                        ["itemListElement"] = new object[]
+                        {
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 1,
+                                ["name"] = "Portafolio",
+                                ["url"] = $"{_baseUrl}/portafolio",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 2,
+                                ["name"] = "Reportes trimestrales",
+                                ["url"] = $"{_baseUrl}/reportes",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 3,
+                                ["name"] = "Oportunidades y ranking",
+                                ["url"] = $"{_baseUrl}/oportunidades",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 4,
+                                ["name"] = "Herramientas y calculadora",
+                                ["url"] = $"{_baseUrl}/calculadora",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 5,
+                                ["name"] = "Fundamentales comparativos",
+                                ["url"] = $"{_baseUrl}/fundamentales",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 6,
+                                ["name"] = "Noticias",
+                                ["url"] = $"{_baseUrl}/noticias",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 7,
+                                ["name"] = "Catálogo de FIBRAs",
+                                ["url"] = $"{_baseUrl}/fibras",
+                            },
+                        },
+                    },
+                },
+            },
+        }, JsonLdOptions);
 
     private async Task<string> BuildAboutJsonLdAsync(CancellationToken ct)
     {
