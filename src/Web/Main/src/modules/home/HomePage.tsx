@@ -5,7 +5,7 @@ import { NewsSection } from './NewsSection'
 
 export function HomePage() {
   usePageTitle(
-    'FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS',
+    'FIBRAs Inmobiliarias — Análisis y Herramientas | Fibras Inmobiliarias',
     'Plataforma de análisis de FIBRAs inmobiliarias mexicanas. Precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades.',
   )
 

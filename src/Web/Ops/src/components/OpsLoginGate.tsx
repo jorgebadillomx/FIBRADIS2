@@ -140,7 +140,7 @@ export function OpsLoginGate({ children }: Props) {
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.14),_transparent_42%),linear-gradient(180deg,_#f8fafc_0%,_#e7f3ef_100%)] px-6 py-12 text-foreground">
         <div className="w-full max-w-md rounded-3xl border border-border/80 bg-white/95 p-8 shadow-xl shadow-teal-950/8">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">AdminOps</p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Acceso a FIBRADIS Ops</h1>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Acceso a Fibras Inmobiliarias Ops</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Inicia sesión como AdminOps para usar el sitio Ops.
           </p>
@@ -151,7 +151,7 @@ export function OpsLoginGate({ children }: Props) {
               <input
                 className="h-11 rounded-xl border border-border bg-white px-4 text-sm font-normal outline-none transition focus:border-teal-600"
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="adminops@fibradis.mx"
+                placeholder="adminops@fibrasinmobiliarias.com"
                 type="email"
                 value={email}
               />

@@ -53,7 +53,7 @@ export function CatalogoPage() {
   const hasFilters = search || sector || market
 
   usePageTitle(
-    'FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | FIBRADIS',
+    'FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | Fibras Inmobiliarias',
     'Directorio completo de FIBRAs inmobiliarias en México con descripción, sector, precio y datos fundamentales de cada fideicomiso.',
   )
 

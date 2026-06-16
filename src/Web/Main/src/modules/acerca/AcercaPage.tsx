@@ -3,16 +3,16 @@ import { useSiteContent } from '@/shared/hooks/useSiteContent'
 
 export function AcercaPage() {
   const { data: siteContent } = useSiteContent()
-  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibradis.mx'
+  const contactEmail = siteContent?.contactEmail?.trim() || 'portafoliodefibras@gmail.com'
 
   usePageTitle(
-    'Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS',
-    'Conoce la metodología de FIBRADIS: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.',
+    'Sobre Fibras Inmobiliarias — Metodología y Fuentes de Datos | Fibras Inmobiliarias',
+    'Conoce la metodología de Fibras Inmobiliarias: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.',
   )
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
-      <h1 className="font-playfair text-3xl font-semibold tracking-tight">Acerca de FIBRADIS</h1>
+      <h1 className="font-playfair text-3xl font-semibold tracking-tight">Acerca de Fibras Inmobiliarias</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Plataforma independiente de análisis de FIBRAs inmobiliarias en México
       </p>
@@ -22,7 +22,7 @@ export function AcercaPage() {
         <section>
           <h2 className="font-semibold text-base text-foreground">Misión</h2>
           <p className="mt-2">
-            FIBRADIS nació en 2023 con un objetivo: centralizar en un solo lugar los datos dispersos
+            Fibras Inmobiliarias nació en 2023 con un objetivo: centralizar en un solo lugar los datos dispersos
             de las FIBRAs mexicanas y hacerlos accesibles para el inversionista individual. Consolidamos
             precios en tiempo real, distribuciones históricas, métricas fundamentales y noticias del
             sector inmobiliario bursátil en una plataforma gratuita e independiente. No recibimos
@@ -31,9 +31,9 @@ export function AcercaPage() {
         </section>
 
         <section>
-          <h2 className="font-semibold text-base text-foreground">¿Qué es FIBRADIS?</h2>
+          <h2 className="font-semibold text-base text-foreground">¿Qué es Fibras Inmobiliarias?</h2>
           <p className="mt-2">
-            FIBRADIS es una plataforma de análisis independiente dedicada a las FIBRAs (Fideicomisos de
+            Fibras Inmobiliarias es una plataforma de análisis independiente dedicada a las FIBRAs (Fideicomisos de
             Inversión en Bienes Raíces) que cotizan en la Bolsa Mexicana de Valores. Consolida en un
             solo lugar precios en tiempo real, distribuciones históricas, métricas fundamentales y
             noticias del sector inmobiliario bursátil mexicano.
@@ -126,7 +126,7 @@ export function AcercaPage() {
         <section>
           <h2 className="font-semibold text-base text-foreground">Aviso</h2>
           <p className="mt-2">
-            La información publicada en FIBRADIS es de referencia y orientativa. No constituye asesoría
+            La información publicada en Fibras Inmobiliarias es de referencia y orientativa. No constituye asesoría
             de inversión, recomendación de compra o venta de valores, ni ningún servicio regulado por
             la CNBV. Consulte a un asesor financiero certificado antes de tomar decisiones de inversión.
           </p>

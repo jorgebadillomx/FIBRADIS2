@@ -29,7 +29,7 @@ import { PriceChartSkeleton } from '@/shared/ui/price-chart'
 import { FIBRA_PAGE_LOADING_COUNTS, FIBRA_PAGE_LOADING_TABS, FIBRA_HEADER_LOADING_SHELL } from './cwv-layout'
 
 const FIBRA_BRAND_SUFFIX =
-  ' en FIBRADIS — precio en tiempo real, distribuciones, fundamentales y score de inversión.'
+  ' en Fibras Inmobiliarias — precio en tiempo real, distribuciones, fundamentales y score de inversión.'
 const FIBRA_MAX_DESC = 160
 
 // Desplaza los headings del markdown de "Descripción" +1 (h1→h2, h2→h3, …) para que el <h1>

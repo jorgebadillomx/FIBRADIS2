@@ -26,7 +26,7 @@ public partial class NewsMetadataMiddleware(
     private const string PrerenderMetaComment = "<!-- prerender-meta -->";
     // El sufijo mide >120 chars por sí solo: garantiza el piso de la meta description
     // (checklist SSR/SEO 120-160) aun con snippets cortos o vacíos
-    private const string BrandDescriptionSuffix = " — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.";
+    private const string BrandDescriptionSuffix = " — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.";
     private const int MaxDescriptionLength = 160;
     private const int MinDescriptionLength = 120;
     private const int MaxSlugLength = 256;
@@ -206,7 +206,7 @@ public partial class NewsMetadataMiddleware(
 
         block.Append($"\n    <meta property=\"og:image\" content=\"{ogImage}\" />");
         block.Append($"\n    <meta property=\"og:locale\" content=\"{Encoder.Encode(metadata.OgLocale)}\" />");
-        block.Append("\n    <meta property=\"og:site_name\" content=\"FIBRADIS\" />");
+        block.Append("\n    <meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />");
         // Solo el OG default tiene dimensiones conocidas (1200×630). Las imágenes propias de
         // artículo (article.ImageUrl) son de tamaño arbitrario: emitir width/height para ellas
         // sería mentir. Comparación exacta contra el default — no por sufijo de nombre.
@@ -214,11 +214,11 @@ public partial class NewsMetadataMiddleware(
         {
             block.Append("\n    <meta property=\"og:image:width\" content=\"1200\" />");
             block.Append("\n    <meta property=\"og:image:height\" content=\"630\" />");
-            block.Append("\n    <meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />");
+            block.Append("\n    <meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />");
         }
 
         block.Append($"\n    <meta name=\"twitter:card\" content=\"{Encoder.Encode(metadata.TwitterCard)}\" />\n    ")
-             .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+             .Append("<meta name=\"twitter:site\" content=\"@fibrasinmobiliarias\" />\n    ")
              .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
              .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
              .Append(string.IsNullOrWhiteSpace(robotsDirectives) ? string.Empty : $"<meta name=\"robots\" content=\"{Encoder.Encode(robotsDirectives)}\" />\n    ")
@@ -242,7 +242,7 @@ public partial class NewsMetadataMiddleware(
         var aiAnalysis = TryDeserializeAnalysis(article.AiAnalysisJson);
 
         var headline = aiAnalysis?.Headline ?? article.Title;
-        var title = $"{headline} — Noticias | FIBRADIS";
+        var title = $"{headline} — Noticias | Fibras Inmobiliarias";
         // Misma cadena de fallback que el cliente (NoticiaPage): summaryMarkdown ?? aiSummary ?? snippet
         var description = BuildDescription(aiAnalysis?.SummaryMarkdown ?? article.AiSummary ?? article.Snippet ?? string.Empty);
 
@@ -263,7 +263,7 @@ public partial class NewsMetadataMiddleware(
             ["publisher"] = new Dictionary<string, object?>
             {
                 ["@type"] = "Organization",
-                ["name"] = "FIBRADIS",
+                ["name"] = "Fibras Inmobiliarias",
                 ["url"] = baseUrl,
                 ["logo"] = new Dictionary<string, object?>
                 {
@@ -293,16 +293,16 @@ public partial class NewsMetadataMiddleware(
         var ogImage = article.ImageUrl ?? $"{baseUrl}/og-image.png";
         block.Append($"\n    <meta property=\"og:image\" content=\"{Encoder.Encode(ogImage)}\" />");
         block.Append("\n    <meta property=\"og:locale\" content=\"es_MX\" />");
-        block.Append("\n    <meta property=\"og:site_name\" content=\"FIBRADIS\" />");
+        block.Append("\n    <meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />");
         if (article.ImageUrl is null)
         {
             block.Append("\n    <meta property=\"og:image:width\" content=\"1200\" />");
             block.Append("\n    <meta property=\"og:image:height\" content=\"630\" />");
-            block.Append("\n    <meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />");
+            block.Append("\n    <meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />");
         }
 
         block.Append("\n    <meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
-             .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+             .Append("<meta name=\"twitter:site\" content=\"@fibrasinmobiliarias\" />\n    ")
              .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
              .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
              .Append($"<meta name=\"twitter:image\" content=\"{Encoder.Encode(ogImage)}\" />");

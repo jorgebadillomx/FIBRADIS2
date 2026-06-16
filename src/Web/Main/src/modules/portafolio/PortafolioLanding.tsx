@@ -17,7 +17,7 @@ function handleHashAnchorClick(event: MouseEvent<HTMLAnchorElement>) {
   target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' })
 }
 
-const PAGE_TITLE = 'Portafolio de FIBRAs, reportes y login | FIBRADIS'
+const PAGE_TITLE = 'Portafolio de FIBRAs, reportes y login | Fibras Inmobiliarias'
 const PAGE_DESCRIPTION =
   'Tu entrada pública a Fibras Inmobiliarias: explora portafolio, reportes, oportunidades, herramientas, fundamentales, noticias y catálogo, o inicia sesión.'
 

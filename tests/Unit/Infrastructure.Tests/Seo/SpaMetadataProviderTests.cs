@@ -31,7 +31,7 @@ public class SpaMetadataProviderTests
         var meta = await provider.GetMetaForPathAsync(path);
 
         Assert.NotNull(meta);
-        Assert.EndsWith("| FIBRADIS", meta!.Title);
+        Assert.EndsWith("| Fibras Inmobiliarias", meta!.Title);
         Assert.Equal(NormalizePath(path), meta.CanonicalPath);
     }
 
@@ -126,6 +126,7 @@ public class SpaMetadataProviderTests
         Assert.Contains("\"@type\":\"Organization\"", meta.JsonLd);
         Assert.Contains("\"@type\":\"WebSite\"", meta.JsonLd);
         Assert.Contains("\"@type\":\"FinancialService\"", meta.JsonLd);
+        Assert.Contains("\"name\":\"Fibras Inmobiliarias\"", meta.JsonLd);
         Assert.Contains("\"email\":\"equipo@fibradis.mx\"", meta.JsonLd);
         Assert.DoesNotContain("twitter.com", meta.JsonLd, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("linkedin.com", meta.JsonLd, StringComparison.OrdinalIgnoreCase);
@@ -290,7 +291,7 @@ public class SpaMetadataProviderTests
     }
 
     private static SpaMetadataProvider CreateProvider(
-        string? contactEmail = "contacto@fibradis.mx",
+        string? contactEmail = "portafoliodefibras@gmail.com",
         string? sameAsJson = null,
         IReadOnlyList<EditorialPage>? editorialPages = null,
         IReadOnlyList<Tuple<FundamentalRecord, string, string>>? fundamentalsRows = null)

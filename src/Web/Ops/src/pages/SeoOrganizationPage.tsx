@@ -102,7 +102,7 @@ export function SeoOrganizationPage() {
                 className="min-h-[18rem] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm leading-6 text-slate-900 outline-none transition focus:border-teal-600"
                 id="same-as"
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder="https://youtube.com/@fibradis"
+                placeholder="https://youtube.com/@fibrasinmobiliarias"
                 value={draft}
               />
               <p className="text-xs leading-5 text-slate-500">

@@ -3,11 +3,11 @@ import { useSiteContent } from '@/shared/hooks/useSiteContent'
 
 export function PrivacidadPage() {
   const { data: siteContent } = useSiteContent()
-  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibradis.mx'
+  const contactEmail = siteContent?.contactEmail?.trim() || 'portafoliodefibras@gmail.com'
 
   usePageTitle(
-    'Aviso de Privacidad | FIBRADIS',
-    'Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.',
+    'Aviso de Privacidad | Fibras Inmobiliarias',
+    'Aviso de privacidad de Fibras Inmobiliarias: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.',
   )
 
   return (

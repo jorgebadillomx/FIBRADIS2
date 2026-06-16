@@ -72,7 +72,7 @@ export function FundamentalesPage() {
   }
 
   usePageTitle(
-    'Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS',
+    'Fundamentales FIBRAs — Cap Rate, NAV, NOI | Fibras Inmobiliarias',
     'Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.',
   )
 

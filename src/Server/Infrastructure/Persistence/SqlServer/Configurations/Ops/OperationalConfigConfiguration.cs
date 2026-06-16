@@ -47,7 +47,7 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
             UpdatedBy = "system",
             TermsEnabled = false,
-            ContactEmail = "contacto@fibradis.mx",
+            ContactEmail = "portafoliodefibras@gmail.com",
         });
     }
 }

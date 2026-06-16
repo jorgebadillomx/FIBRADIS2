@@ -73,7 +73,7 @@ public class SeoDefaultsBuilderTests
         var result = _builder.BuildStaticPage(
             SeoPageType.Home,
             "/",
-            "FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS",
+            "FIBRAs Inmobiliarias — Análisis y Herramientas | Fibras Inmobiliarias",
             "Plataforma de análisis de FIBRAs inmobiliarias mexicanas. Precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades.",
             "/",
             "{\"@type\":\"Organization\"}",
@@ -83,7 +83,7 @@ public class SeoDefaultsBuilderTests
 
         Assert.Equal(SeoPageType.Home, result.PageType);
         Assert.Equal("/", result.EntityKey);
-        Assert.Equal("FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS", result.Title);
+        Assert.Equal("FIBRAs Inmobiliarias — Análisis y Herramientas | Fibras Inmobiliarias", result.Title);
         Assert.Equal(result.Title, result.OgTitle);
         Assert.Equal("Plataforma de análisis de FIBRAs inmobiliarias mexicanas. Precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades.", result.MetaDescription);
         Assert.Equal("/", result.CanonicalPath);
@@ -146,7 +146,7 @@ public class SeoDefaultsBuilderTests
 
         Assert.Equal(SeoPageType.Fibra, result.PageType);
         Assert.Equal("FUNO11", result.EntityKey);
-        Assert.Equal("Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias", result.Title);
+        Assert.Equal("Fibra Uno (FUNO11) | Fibras Inmobiliarias", result.Title);
         Assert.Equal(result.Title, result.OgTitle);
         Assert.Equal("Análisis de Fibra Uno (FUNO11): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones. Sector Industrial en la BMV.", result.MetaDescription);
         Assert.Equal("/fibras/fibra-uno-funo11", result.CanonicalPath);
@@ -538,15 +538,15 @@ public class SeoDefaultsBuilderTests
 
         Assert.Equal(SeoPageType.News, result.PageType);
         Assert.Equal("funo11-reporta-resultados-del-2t25", result.EntityKey);
-        Assert.Equal("FUNO11 reporta resultados del 2T25 — Noticias | FIBRADIS", result.Title);
+        Assert.Equal("FUNO11 reporta resultados del 2T25 — Noticias | Fibras Inmobiliarias", result.Title);
         Assert.Equal(result.Title, result.OgTitle);
-        Assert.Equal("Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.", result.MetaDescription);
+        Assert.Equal("Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.", result.MetaDescription);
         Assert.Equal("/noticias/funo11-reporta-resultados-del-2t25", result.CanonicalPath);
         Assert.Equal("article", result.OgType);
         Assert.Equal("https://fibrasinmobiliarias.com/og-image.png", result.OgImageUrl);
         Assert.Contains("\"@type\":\"NewsArticle\"", result.JsonLd);
         Assert.Contains("\"headline\":\"FUNO11 reporta resultados del 2T25\"", result.JsonLd);
-        Assert.Contains("\"description\":\"Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.\"", result.JsonLd);
+        Assert.Contains("\"description\":\"Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.\"", result.JsonLd);
         Assert.Equal("system", result.UpdatedBy);
     }
 

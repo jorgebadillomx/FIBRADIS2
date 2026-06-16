@@ -13,7 +13,7 @@ const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 // Espejo de NewsMetadataMiddleware.BuildDescription (SSR) — la hidratación no debe cambiar la description
 const BRAND_DESCRIPTION_SUFFIX =
-  ' — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.'
+  ' — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.'
 const MAX_DESCRIPTION_LENGTH = 160
 const MIN_DESCRIPTION_LENGTH = 120
 
@@ -72,7 +72,7 @@ export function NoticiaPage() {
   const summaryContent = aiAnalysis?.summaryMarkdown ?? article?.aiSummary ?? article?.snippet ?? null
   const displayTitle = aiAnalysis?.headline ?? article?.title
   // Mismo formato que NewsMetadataMiddleware (SSR) — la hidratación no debe cambiar el title
-  const pageTitle = displayTitle ? `${displayTitle} — Noticias | FIBRADIS` : DEFAULT_TITLE
+  const pageTitle = displayTitle ? `${displayTitle} — Noticias | Fibras Inmobiliarias` : DEFAULT_TITLE
   const pageDescription = buildDescription(summaryContent)
 
   usePageTitle(pageTitle, pageDescription)

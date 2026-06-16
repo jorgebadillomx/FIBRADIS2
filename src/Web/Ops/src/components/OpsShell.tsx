@@ -14,7 +14,7 @@ export function OpsNavigationPanel({
     <div className="flex flex-col gap-4">
       <div className="border-b border-white/10 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-teal-300">AdminOps</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">FIBRADIS Ops</h1>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Fibras Inmobiliarias Ops</h1>
         <p className="mt-2 text-sm leading-6 text-slate-300">
           Centro operativo para navegar módulos, ajustar prompts y diagnosticar fallas con contexto claro.
         </p>
@@ -99,7 +99,7 @@ export function OpsShell() {
         <header className="flex items-center justify-between rounded-[1.75rem] border border-white/70 bg-white/82 px-4 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-teal-600">AdminOps</p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">FIBRADIS Ops</h1>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Fibras Inmobiliarias Ops</h1>
           </div>
           <Dialog open={mobileDrawerOpen} onOpenChange={handleDrawerOpenChange}>
             <button

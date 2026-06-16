@@ -1,4 +1,4 @@
-# FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas
+# Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas
 
 > Plataforma de análisis de FIBRAs (Real Estate Investment Trusts) del mercado mexicano.
 > Datos de precios en tiempo real, distribuciones históricas, fundamentales (Cap Rate, NAV, NOI)
@@ -47,9 +47,9 @@ Cotizan en la Bolsa Mexicana de Valores (BMV) y están obligadas a distribuir al
 resultado fiscal anual. Sus CBFIs (Certificados Bursátiles Fiduciarios Inmobiliarios) son el
 instrumento de inversión.
 
-## Acerca de FIBRADIS
+## Acerca de Fibras Inmobiliarias
 
-FIBRADIS es una plataforma independiente de análisis de FIBRAs inmobiliarias mexicanas.
+Fibras Inmobiliarias es una plataforma independiente de análisis de FIBRAs inmobiliarias mexicanas.
 No es un asesor de inversiones registrado. La información se proporciona con fines educativos
 e informativos únicamente.
 

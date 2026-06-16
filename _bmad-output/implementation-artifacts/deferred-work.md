@@ -173,3 +173,8 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 - **Sin test del regen tras update IA de noticias** — `UpdateSummaryAsync`/`UpdateAiAnalysisAsync` usan `ExecuteUpdateAsync`, no soportado por el provider InMemory de los tests (unit e integration). La mecánica regen-respeta-override queda cubierta por el test de `UpdateAsync` de fibra. Cubrir con provider relacional/Testcontainers en el futuro.
 - **`GetMetaForPathAsync` baja a minúsculas pero `NormalizeEntityKey` no** — sin desajuste hoy (todas las `KnownPaths` en minúsculas); normalizar/documentar al añadir rutas fijas con mayúsculas.
 - **Backfill SEO no atómico** — sin transacción global; mitigado por try/catch por-ítem (idempotente y reanudable). Un fallo parcial no corrompe datos pero el conteo devuelto puede ser parcial.
+
+## Deferred from: code review of 13-7-rebranding-fibras-inmobiliarias-y-contacto (2026-06-16)
+
+- **Migración sobrescribe ContactEmail editado en Ops** — `20260616171543_RebrandContactEmail.cs` hace `UpdateData(id=1, contact_email=gmail)` sin condición. Si un operador ya hubiera personalizado el correo desde Ops, la migración lo pisa al aplicarse. Riesgo bajo pre-lanzamiento; inherente a los seeds `HasData`. Revisitar si el correo se personaliza antes de aplicar la migración en prod.
+- **Fallback de `mailto` en footer usa `??` sin `.trim()`** — `PublicLayout.tsx:445` usa `siteContent?.contactEmail ?? 'portafoliodefibras@gmail.com'`; un `contactEmail` = "" (cadena vacía) produciría `mailto:` vacío. Acerca/Contacto/Privacidad usan el patrón más robusto `?.trim() || …`. Pre-existente; este story solo cambió el literal del fallback. Unificar al patrón `?.trim() ||` cuando se toque el footer.
