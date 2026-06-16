@@ -36,7 +36,10 @@ export const MAIN_INVESTMENT_LINKS: NavLinkItem[] = [
 
 export const MAIN_ACCOUNT_LINKS: MenuEntry[] = [{ label: 'Mi perfil', to: '/perfil' }]
 
-export function buildMainMobileSections(status: PublicLayoutStatus): MobileSection[] {
+export function buildMainMobileSections(
+  status: PublicLayoutStatus,
+  onLogout: () => void = () => undefined,
+): MobileSection[] {
   const sections: MobileSection[] = [
     { title: 'Navegar', items: MAIN_PRIMARY_LINKS },
     { title: 'Más', items: MAIN_MORE_LINKS },
@@ -49,7 +52,7 @@ export function buildMainMobileSections(status: PublicLayoutStatus): MobileSecti
   sections.push({
     title: 'Cuenta',
     items: status === 'authenticated'
-      ? [...MAIN_ACCOUNT_LINKS, { label: 'Cerrar sesión', onClick: () => undefined }]
+      ? [...MAIN_ACCOUNT_LINKS, { label: 'Cerrar sesión', onClick: onLogout }]
       : [{ label: 'Iniciar sesión', to: '/login' }],
   })
 

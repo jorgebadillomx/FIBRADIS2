@@ -190,10 +190,10 @@ GPT-5
 
 ### Patches
 
-- [ ] [Review][Patch] Drawer móvil de Ops sin `DialogTitle` → Radix sin nombre accesible/warning (AC12) [src/Web/Ops/src/components/OpsShell.tsx]
-- [ ] [Review][Patch] `prefers-reduced-motion` no respetado en la animación de apertura de los `DialogContent` (AC13) [src/Web/Main/src/shared/layouts/PublicLayout.tsx, src/Web/Ops/src/components/OpsShell.tsx]
-- [ ] [Review][Patch] Logout no-op latente: `{ label: 'Cerrar sesión', onClick: () => undefined }` — `MobileSection` ignora `entry.onClick` y dispara `onLogout` para cualquier botón; código muerto frágil [src/Web/Main/src/shared/layouts/public-navigation.ts:52]
-- [ ] [Review][Patch] Target táctil del botón hamburguesa de Main `h-9 w-9` (36px) < 44px (AC5/AC13); el de Ops `h-10 w-10` (40px) también por debajo [src/Web/Main/src/shared/layouts/PublicLayout.tsx]
+- [x] [Review][Patch] Drawer móvil de Ops sin `DialogTitle` → resuelto: `DialogTitle`+`DialogDescription` sr-only agregados (AC12) [src/Web/Ops/src/components/OpsShell.tsx]
+- [x] [Review][Patch] `prefers-reduced-motion` no respetado → resuelto: `motion-reduce:animate-none motion-reduce:transition-none` en overlay+content de ambos `dialog.tsx` (AC13) [src/Web/Main/src/shared/ui/dialog.tsx, src/Web/Ops/src/shared/ui/dialog.tsx]
+- [x] [Review][Patch] Logout no-op latente → resuelto: `buildMainMobileSections(status, onLogout)` cablea el handler real en la entrada; `MobileSection` ahora invoca `item.onClick()` [src/Web/Main/src/shared/layouts/public-navigation.ts]
+- [x] [Review][Patch] Target táctil hamburguesa → resuelto: Main `h-9 w-9`→`h-11 w-11` (hamburguesa + cerrar), Ops `h-10 w-10`→`h-11 w-11` (44px) (AC5/AC13) [src/Web/Main/src/shared/layouts/PublicLayout.tsx, src/Web/Ops/src/components/OpsShell.tsx]
 
 ### Deferred
 

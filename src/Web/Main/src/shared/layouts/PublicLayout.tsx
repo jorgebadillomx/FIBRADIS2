@@ -117,12 +117,10 @@ function MobileSection({
   title,
   items,
   onNavigate,
-  onLogout,
 }: {
   title: string
   items: MenuEntry[]
   onNavigate: () => void
-  onLogout: () => void
 }) {
   return (
     <section className="space-y-2">
@@ -146,7 +144,7 @@ function MobileSection({
               className="flex min-h-11 w-full items-center rounded-lg px-3 py-3 text-left text-foreground transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
               onClick={() => {
                 onNavigate()
-                onLogout()
+                item.onClick()
               }}
               type="button"
             >
@@ -168,14 +166,13 @@ export function MobileMenuContent({
   onNavigate: () => void
   onLogout: () => void
 }) {
-  const sections = buildMainMobileSections(status)
+  const sections = buildMainMobileSections(status, onLogout)
 
   return (
     <nav aria-label="Navegación móvil" className="space-y-5 text-sm">
       {sections.map((section) => (
         <MobileSection
           key={section.title}
-          onLogout={onLogout}
           onNavigate={onNavigate}
           title={section.title}
           items={section.items}
@@ -310,7 +307,7 @@ export function PublicLayout() {
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer md:hidden"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer md:hidden"
                 aria-label="Abrir navegación"
                 aria-expanded={mobileMenuOpen}
               >
@@ -333,7 +330,7 @@ export function PublicLayout() {
                     <DialogClose asChild>
                       <button
                         type="button"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
                         aria-label="Cerrar navegación"
                       >
                         <X className="size-4" />

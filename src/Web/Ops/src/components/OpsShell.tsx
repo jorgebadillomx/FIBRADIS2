@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { Menu } from 'lucide-react'
-import { Dialog, DialogContent } from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/dialog'
 import { cn } from '@/shared/lib/utils'
 import { OPS_NAVIGATION_SECTIONS } from './ops-navigation'
 
@@ -105,7 +105,7 @@ export function OpsShell() {
             <button
               ref={drawerButtonRef}
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-800 transition-colors duration-150 hover:border-teal-500 hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white cursor-pointer"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-800 transition-colors duration-150 hover:border-teal-500 hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white cursor-pointer"
               aria-label="Abrir navegación de Ops"
               aria-expanded={mobileDrawerOpen}
               onClick={() => handleDrawerOpenChange(true)}
@@ -113,6 +113,10 @@ export function OpsShell() {
               <Menu className="size-5" />
             </button>
             <DialogContent className="left-0 top-0 h-dvh w-[min(88vw,20rem)] translate-x-0 translate-y-0 rounded-none rounded-r-[2rem] border-r border-slate-200 bg-slate-950/98 p-0 text-slate-50 shadow-2xl">
+              <DialogTitle className="sr-only">Navegación de Ops</DialogTitle>
+              <DialogDescription className="sr-only">
+                Accede a los módulos operativos, de datos, contenido, SEO, IA y sistema.
+              </DialogDescription>
               <div className="flex h-full flex-col p-5">
                 <OpsNavigationPanel onNavigate={handleNavigate} />
               </div>
