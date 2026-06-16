@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { Menu } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/dialog'
@@ -132,7 +132,15 @@ export function OpsShell() {
 
         <div className="min-w-0 flex-1">
           <div className="rounded-[2rem] border border-white/70 bg-white/78 px-4 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur md:px-6 md:py-6">
-            <Outlet />
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-24 text-sm text-slate-500">
+                  Cargando módulo…
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </div>
         </div>
       </div>

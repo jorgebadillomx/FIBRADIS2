@@ -1,27 +1,28 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { OpsLoginGate } from '@/components/OpsLoginGate'
 import { OpsShell } from '@/components/OpsShell'
-import { AiConfigPage } from '@/pages/AiConfigPage'
-import { AiPromptsPage } from '@/pages/AiPromptsPage'
-import { BlocklistPage } from '@/pages/BlocklistPage'
-import { CatalogPage } from '@/pages/CatalogPage'
-import { ConfigPage } from '@/pages/ConfigPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { DistributionsPage } from '@/pages/DistributionsPage'
-import { EditorialPage } from '@/pages/EditorialPage'
-import { FundamentalsPage } from '@/pages/FundamentalsPage'
-import { SeoOrganizationPage } from '@/pages/SeoOrganizationPage'
-import { SeoFaqPage } from '@/pages/SeoFaqPage'
-import { SeoPage } from '@/pages/SeoPage'
-import { SeoRedirectsPage } from '@/pages/SeoRedirectsPage'
-import { NewsBodyPage } from '@/pages/NewsBodyPage'
-import { AiCallLogsPage } from '@/pages/AiCallLogsPage'
-import { PipelineLogsPage } from '@/pages/PipelineLogsPage'
-import { UsersPage } from '@/pages/UsersPage'
 import './index.css'
+
+const AiConfigPage = lazy(() => import('@/pages/AiConfigPage').then((m) => ({ default: m.AiConfigPage })))
+const AiPromptsPage = lazy(() => import('@/pages/AiPromptsPage').then((m) => ({ default: m.AiPromptsPage })))
+const BlocklistPage = lazy(() => import('@/pages/BlocklistPage').then((m) => ({ default: m.BlocklistPage })))
+const CatalogPage = lazy(() => import('@/pages/CatalogPage').then((m) => ({ default: m.CatalogPage })))
+const ConfigPage = lazy(() => import('@/pages/ConfigPage').then((m) => ({ default: m.ConfigPage })))
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const DistributionsPage = lazy(() => import('@/pages/DistributionsPage').then((m) => ({ default: m.DistributionsPage })))
+const EditorialPage = lazy(() => import('@/pages/EditorialPage').then((m) => ({ default: m.EditorialPage })))
+const FundamentalsPage = lazy(() => import('@/pages/FundamentalsPage').then((m) => ({ default: m.FundamentalsPage })))
+const SeoOrganizationPage = lazy(() => import('@/pages/SeoOrganizationPage').then((m) => ({ default: m.SeoOrganizationPage })))
+const SeoFaqPage = lazy(() => import('@/pages/SeoFaqPage').then((m) => ({ default: m.SeoFaqPage })))
+const SeoPage = lazy(() => import('@/pages/SeoPage').then((m) => ({ default: m.SeoPage })))
+const SeoRedirectsPage = lazy(() => import('@/pages/SeoRedirectsPage').then((m) => ({ default: m.SeoRedirectsPage })))
+const NewsBodyPage = lazy(() => import('@/pages/NewsBodyPage').then((m) => ({ default: m.NewsBodyPage })))
+const AiCallLogsPage = lazy(() => import('@/pages/AiCallLogsPage').then((m) => ({ default: m.AiCallLogsPage })))
+const PipelineLogsPage = lazy(() => import('@/pages/PipelineLogsPage').then((m) => ({ default: m.PipelineLogsPage })))
+const UsersPage = lazy(() => import('@/pages/UsersPage').then((m) => ({ default: m.UsersPage })))
 
 const queryClient = new QueryClient()
 const basename = import.meta.env.PROD ? '/ops' : '/'
