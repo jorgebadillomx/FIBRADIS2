@@ -423,7 +423,8 @@ development_status:
   # story 13-1 creada — Main: nav de hasta 10 enlaces → ≤4 directos + dropdowns "Más" y "Mi inversión" (auth), menú móvil Dialog agrupado; Ops: sidebar de 13 ítems planos → 5 secciones con encabezado (Operación/Datos/Contenido/IA/Sistema) + descripción a tooltip + drawer hamburguesa en <1024px (hoy se apila completo arriba del contenido). Sin cambio de rutas. Reusa patrón dropdown/dialog existente (no shadcn add).
   epic-13: in-progress
   # 13-1 code review (2026-06-15): nav extraído a rama v2 desde main (la rama vieja arrastraba 12-1 duplicada); re-integrados los 4 ítems SEO de Épica 12 en nueva sección "SEO" (6 secciones/17 ítems, deviación de AC-7). Pendiente: 4 patches (DialogTitle drawer Ops, prefers-reduced-motion, logout no-op, target táctil) + decisión AC14 (tests no renderizan componentes). Tests Main 162 + Ops 12 verdes; builds verdes.
-  13-1-reorganizacion-menus-navegacion: in-progress
+  # 13-1 done (2026-06-15) — merge a main por decisión del usuario. Nav Main reorganizado + Ops 6 secciones/drawer; tests Main 162 + Ops 12 verdes, builds verdes. PENDIENTE: decisión de review AC14 (los tests validan datos/funciones puras, no montan componentes — toolchain Main sin jsdom/RTL).
+  13-1-reorganizacion-menus-navegacion: done
   # ── Historias derivadas de la revisión de UI 2026-06-13 (localhost:5173, MCP chrome-devtools + design-system/fibradis/MASTER.md) ──
   # story 13-2 cancelada (2026-06-13, decisión usuario) — la repetición del precio entre el header sticky y la tarjeta hero de FibraPage es un patrón defendible (barra persistente + bloque de entrada), sin impacto funcional ni a11y; el carrusel superior muestra OTRAS fibras (no redundante). No justifica una historia.
   13-2-jerarquia-encabezado-ficha-fibra: cancelled
