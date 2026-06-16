@@ -69,7 +69,7 @@ Aplica a cualquier historia que entregue rutas accesibles sin autenticación (Ho
 Antes de marcar `done`, verificar:
 
 - [ ] La ruta responde 200 en hit directo (no solo desde la SPA navegando)
-- [ ] `<title>Nombre de la página — FIBRADIS</title>` presente en el componente
+- [ ] `<title>Nombre de la página | Fibras Inmobiliarias</title>` presente en el componente — **marca visible = "Fibras Inmobiliarias"; NUNCA "FIBRADIS" en títulos/meta/copy/og/JSON-LD** (decisión 2026-06-15, story 13-7)
 - [ ] `<meta name="description" content="..."/>` con descripción útil de 120-160 chars — **verificar con contador** (`"tu texto".length` en consola del navegador o en el editor)
 - [ ] `<meta property="og:title" content="..."/>` — mismo texto que `<title>`
 - [ ] `<meta property="og:description" content="..."/>` — mismo o similar a description
@@ -127,7 +127,7 @@ Origen: retro Épica 11 — las reglas de encoding, longitud y og:title se redes
 
 ## EF Core — nunca `Task.WhenAll` con el mismo DbContext
 
-El `DbContext` es Scoped (una instancia por request) y **no es thread-safe**. Ejecutar queries en paralelo sobre la misma instancia lanza `InvalidOperationException` en PostgreSQL real, aunque pase sin error con el proveedor InMemory usado en tests.
+El `DbContext` es Scoped (una instancia por request) y **no es thread-safe**. Ejecutar queries en paralelo sobre la misma instancia lanza `InvalidOperationException` en el proveedor real (SQL Server; también PostgreSQL), aunque pase sin error con el proveedor InMemory usado en tests.
 
 ```csharp
 // MAL — causa 500 en producción, pasa en tests InMemory
