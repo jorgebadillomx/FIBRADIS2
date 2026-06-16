@@ -5,7 +5,7 @@
 # story 6-7 done — code review pass (4 patches: P1 EmailEncryptor key base64-decode vs SHA256-hash, P2 AuthService login order null→disabled→pwd, P3 password inputs type=password, P4 generateStrongPassword crypto.getRandomValues+Fisher-Yates). 4 defers (D1 ChangePasswordAsync no revoca tokens, D2 SetUserActiveAsync sin guard último AdminOps, D3 toggleActiveMutation sin onError, D4 PaymentCell sin onError). 25/25 unit tests verdes
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
-# last_updated: 2026-06-14
+# last_updated: 2026-06-15
 # story 11-2 done — code review pass (6 patches middleware: guard prerender-meta, GET/HEAD, HTML-encoding+escape JSON-LD, Cache-Control no-cache, BaseUrl fail-fast, catch IOException; /herramientas al provider resolviendo deuda 10-2 og:url fibradis.mx; meta client-side retirada de Calculadora/Herramientas + canonicals incorrectos de Home/Calendario; FibraPage canonical corregido; prerender.mjs LEGACY). 5 defers + huérfana /calculadora diferida (funcionalidad posterior). 377/377 + 272/272 + 105/105 verdes
 # story 11-2 review — SpaMetadataMiddleware inyecta title/description/canonical/og/JSON-LD server-side en 8 rutas públicas (sustituye title estático, extensión CA-3 aprobada); static shell /calculadora literal (badge próximamente, decisión usuario); App:BaseUrl configurable; 45 tests nuevos, 834 tests verdes (unit+integration+frontend)
 # story 11-4 creada — slug URLs + metadata SSR dinámica para /noticias/:slug, OpsNewsManagement backfill, NewsMetadataMiddleware independiente de 11.2
@@ -422,7 +422,9 @@ development_status:
   # epic-13 creada — reorganización de IA de navegación. Surgió de feedback del usuario: los menús "ya no caben, son muchos elementos".
   # story 13-1 creada — Main: nav de hasta 10 enlaces → ≤4 directos + dropdowns "Más" y "Mi inversión" (auth), menú móvil Dialog agrupado; Ops: sidebar de 13 ítems planos → 5 secciones con encabezado (Operación/Datos/Contenido/IA/Sistema) + descripción a tooltip + drawer hamburguesa en <1024px (hoy se apila completo arriba del contenido). Sin cambio de rutas. Reusa patrón dropdown/dialog existente (no shadcn add).
   epic-13: in-progress
-  13-1-reorganizacion-menus-navegacion: ready-for-dev
+  # 13-1 code review (2026-06-15): nav extraído a rama v2 desde main (la rama vieja arrastraba 12-1 duplicada); re-integrados los 4 ítems SEO de Épica 12 en nueva sección "SEO" (6 secciones/17 ítems, deviación de AC-7). Pendiente: 4 patches (DialogTitle drawer Ops, prefers-reduced-motion, logout no-op, target táctil) + decisión AC14 (tests no renderizan componentes). Tests Main 162 + Ops 12 verdes; builds verdes.
+  # 13-1 done (2026-06-15) — merge a main por decisión del usuario. Nav Main reorganizado + Ops 6 secciones/drawer; tests Main 162 + Ops 12 verdes, builds verdes. PENDIENTE: decisión de review AC14 (los tests validan datos/funciones puras, no montan componentes — toolchain Main sin jsdom/RTL).
+  13-1-reorganizacion-menus-navegacion: done
   # ── Historias derivadas de la revisión de UI 2026-06-13 (localhost:5173, MCP chrome-devtools + design-system/fibradis/MASTER.md) ──
   # story 13-2 cancelada (2026-06-13, decisión usuario) — la repetición del precio entre el header sticky y la tarjeta hero de FibraPage es un patrón defendible (barra persistente + bloque de entrada), sin impacto funcional ni a11y; el carrusel superior muestra OTRAS fibras (no redundante). No justifica una historia.
   13-2-jerarquia-encabezado-ficha-fibra: cancelled
