@@ -1,6 +1,6 @@
 # Story 13.1: Reorganización de menús de navegación (Main + Ops)
 
-Status: in-progress
+Status: done
 
 <!-- REABIERTA 2026-06-15: ver "Adenda 2026-06-15 — Revertir desplegable público 'Más'" al final. La primera entrega (dropdowns Main + secciones Ops) ya se fusionó a main (merge --no-ff). -->
 > **Nota:** la primera entrega está **fusionada a `main`**. Esta reapertura agrega SOLO el alcance de la adenda al final del archivo.
@@ -165,10 +165,12 @@ GPT-5
 - Ops quedó reorganizado en `OpsShell.tsx` con data compartida en `ops-navigation.ts`, secciones agrupadas y drawer móvil responsive.
 - Los tests de navegación quedaron en `PublicLayout.test.ts` y `tests/ops/OpsShell.test.ts`, alineados con la nueva estructura de datos.
 - La verificación manual confirmó sin scroll horizontal y comportamiento correcto de `aria-expanded`, cierre por `Escape` y retorno de foco.
+- Adenda 2026-06-15 aplicada: el nav público volvió a plano, se eliminó el grupo "Más" desktop/móvil, y el header de Main se compactó en `md` para absorber los 7 enlaces directos sin overflow visible.
 
 ### Change Log
 
 - 2026-06-15: reordenación de navegación Main y Ops completada, tests actualizados, build y verificación browser validados; story movida a `review`.
+- 2026-06-15: adenda de 13-1 aplicada sobre Main público: revertido "Más", restaurado el orden plano `Conoce las FIBRAs/Fibras/Comparar/Noticias/Calculadora/Calendario/Fundamentales`, tests y build Main verdes.
 
 ### File List
 
@@ -227,7 +229,28 @@ A5. **Sin regresión de enlazado interno:** los 3 enlaces ex-"Más" quedan en el
 
 ### Tasks (adenda)
 
-- [ ] **TA1 — Revertir "Más" en `public-navigation.ts`** (A1, A2, A4, A5)
-- [ ] **TA2 — Quitar `DesktopMenu` "Más" en `PublicLayout.tsx`** (A1, A5) — limpiar estado/refs/imports muertos; conservar "Mi inversión" y cuenta.
-- [ ] **TA3 — Tests de nav** (sin "Más", orden plano A2, "Mi inversión" intacto) + build Main verde.
+- [x] **TA1 — Revertir "Más" en `public-navigation.ts`** (A1, A2, A4, A5)
+- [x] **TA2 — Quitar `DesktopMenu` "Más" en `PublicLayout.tsx`** (A1, A5) — limpiar estado/refs/imports muertos; conservar "Mi inversión" y cuenta.
+- [x] **TA3 — Tests de nav** (sin "Más", orden plano A2, "Mi inversión" intacto) + build Main verde.
 - [ ] **TA4 — Verificación manual** (desktop/móvil, sin scroll horizontal 375/768/1024/1440).
+
+### Review Findings (code review adenda 2026-06-15 — revertir "Más")
+
+Cobertura adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor. Auditor confirma A1–A5 y TA3 cumplidos al 100% (orden A2 idéntico al history pre-13.1 commit `8235ac5`, rutas intactas, sin regresión SEO/sitemap).
+
+#### Decisiones requeridas
+
+- [x] [Review][Decision] **RESUELTO (Opción 1 — patch aplicado) — GlobalSearch inaccesible en 768–1023px (regresión introducida por la adenda).** Para absorber los 7 enlaces planos sin overflow, el contenedor del buscador de escritorio cambió de `md:flex` a `lg:flex` (PublicLayout.tsx:365), pero el botón hamburguesa —única vía hacia el buscador móvil dentro del `Dialog`— seguía `md:hidden`, dejando el rango `md` (768–1023px) sin ninguna forma de invocar GlobalSearch. **Fix:** por debajo de `lg` toda la navegación (enlaces + buscador + cuenta) vive en el drawer; en `lg+` se muestra inline. Cambios: hamburguesa `md:hidden`→`lg:hidden`, nav `md:flex`→`lg:flex` (+ limpieza de clases de compactación `text-xs/gap-2` ahora muertas, y trigger "Mi inversión" `text-xs`→`text-sm`). Tests 162/162 verdes, build Main limpio. [PublicLayout.tsx:291,339,359]
+
+#### Deferred
+
+- [x] [Review][Defer] **TA4 verificación manual responsive pendiente — riesgo de overflow del header en `md` autenticado** [PublicLayout.tsx:339] — la adenda reintroduce 7 enlaces planos + trigger "Mi inversión" en `md` con `gap-2 text-xs` y `whitespace-nowrap` (sin truncado/wrap); es justo el escenario de overflow que motivó la 13.1 original. No cubierto por el test suite (node:test sin DOM). TA4 sigue `[ ]`. — deferred, requiere verificación visual en navegador
+- [x] [Review][Defer] **Tests de navegación validan datos/funciones puras, no render (AC14 heredado)** [PublicLayout.test.ts] — la decisión AC14 sigue pendiente; los breakpoints `md`/`lg` (donde vive la regresión del buscador) no tienen red de seguridad automatizada. La adenda no empeora esto. — deferred, deuda pre-existente del toolchain
+
+#### Dismissed (5)
+
+- Referencia colgante a `MAIN_MORE_LINKS` (Blind HIGH) — refutado: `tsc --noEmit` limpio y grep en `src/Web/Main` devuelve cero referencias residuales.
+- "Conoce las FIBRAs" como primer enlace — es exactamente el orden exigido por A2.
+- `text-xs` en botón "Iniciar sesión" / contraste — compactación deliberada; `h-9` conserva el control, el tamaño de fuente no afecta contraste.
+- Duplicación de array literal + optional chaining en tests — nitpicks de calidad de test, no funcionales.
+- Inconsistencia tipográfica del trigger "Mi inversión" — el propio Blind Hunter la retractó (sí recibió `text-xs lg:text-sm`).

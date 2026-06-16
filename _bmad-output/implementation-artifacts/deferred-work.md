@@ -13,6 +13,13 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 13-1-reorganizacion-menus-navegacion adenda "revertir Más" (2026-06-15)
+
+- TA4 verificación manual responsive pendiente: la adenda reintroduce 7 enlaces planos + trigger "Mi inversión" en breakpoint `md` (768–1023px) con `gap-2 text-xs` y `whitespace-nowrap`, sin truncado/wrap. Es el escenario de overflow horizontal que motivó la 13.1 original; no cubierto por el test suite (node:test sin DOM). Requiere verificación visual en 375/768/1024/1440. [PublicLayout.tsx:339]
+- Tests de navegación validan datos/funciones puras (`MAIN_PRIMARY_LINKS`, `buildMainMobileSections`, `shouldCloseMenuOnEscape`), no render de componentes. La decisión AC14 sigue pendiente; los breakpoints `md`/`lg` donde vive la regresión del buscador no tienen cobertura automatizada. Deuda pre-existente del toolchain, no empeorada por la adenda. [PublicLayout.test.ts]
+
+---
+
 ## Deferred from: code review of 12-11-editor-robots-directives-por-pagina (2026-06-15)
 
 - **TOCTOU / last-write-wins en el PUT sin concurrencia optimista** (OpsSeoEndpoints.cs:72-81 + SeoMetadataRepository.cs:54-90) — `GetByIdAsync` (AsNoTracking) seguido de `UpsertAsync(overrideMode:true)` reescribe TODA la fila desde el snapshot leído; dos editores concurrentes producen last-write-wins silencioso sin token de concurrencia. Aceptable en Ops single-writer; el diseño proviene de 12-1. Reconsiderar si se habilita edición multi-usuario.

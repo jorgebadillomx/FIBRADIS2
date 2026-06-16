@@ -16,16 +16,13 @@ export type MobileSection = {
 }
 
 export const MAIN_PRIMARY_LINKS: NavLinkItem[] = [
+  { label: 'Conoce las FIBRAs', to: '/conoce-las-fibras' },
   { label: 'Fibras', to: '/fibras' },
   { label: 'Comparar', to: '/comparar' },
   { label: 'Noticias', to: '/noticias' },
-  { label: 'Fundamentales', to: '/fundamentales' },
-]
-
-export const MAIN_MORE_LINKS: NavLinkItem[] = [
-  { label: 'Conoce las FIBRAs', to: '/conoce-las-fibras' },
-  { label: 'Calendario', to: '/calendario' },
   { label: 'Calculadora', to: '/calculadora' },
+  { label: 'Calendario', to: '/calendario' },
+  { label: 'Fundamentales', to: '/fundamentales' },
 ]
 
 export const MAIN_INVESTMENT_LINKS: NavLinkItem[] = [
@@ -40,10 +37,7 @@ export function buildMainMobileSections(
   status: PublicLayoutStatus,
   onLogout: () => void = () => undefined,
 ): MobileSection[] {
-  const sections: MobileSection[] = [
-    { title: 'Navegar', items: MAIN_PRIMARY_LINKS },
-    { title: 'Más', items: MAIN_MORE_LINKS },
-  ]
+  const sections: MobileSection[] = [{ title: 'Navegar', items: MAIN_PRIMARY_LINKS }]
 
   if (status === 'authenticated') {
     sections.push({ title: 'Mi inversión', items: MAIN_INVESTMENT_LINKS })

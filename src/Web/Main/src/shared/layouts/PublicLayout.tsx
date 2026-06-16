@@ -20,7 +20,6 @@ import {
 import { cn } from '@/shared/lib/utils'
 import {
   MAIN_INVESTMENT_LINKS,
-  MAIN_MORE_LINKS,
   MAIN_PRIMARY_LINKS,
   type MenuEntry,
   type NavLinkItem,
@@ -187,29 +186,25 @@ export function PublicLayout() {
   const navigate = useNavigate()
   const { data: siteContent } = useSiteContent()
   const { data: profile } = useProfile()
-  const [moreOpen, setMoreOpen] = useState(false)
   const [investmentOpen, setInvestmentOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const moreMenuRef = useRef<HTMLDivElement>(null)
   const investmentMenuRef = useRef<HTMLDivElement>(null)
   const accountMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!moreOpen && !investmentOpen && !accountOpen) return
+    if (!investmentOpen && !accountOpen) return
 
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node
-      const refs = [moreMenuRef, investmentMenuRef, accountMenuRef]
+      const refs = [investmentMenuRef, accountMenuRef]
       if (refs.some((ref) => ref.current?.contains(target))) return
-      setMoreOpen(false)
       setInvestmentOpen(false)
       setAccountOpen(false)
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (shouldCloseMenuOnEscape(event.key)) {
-        setMoreOpen(false)
         setInvestmentOpen(false)
         setAccountOpen(false)
       }
@@ -222,7 +217,7 @@ export function PublicLayout() {
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [accountOpen, investmentOpen, moreOpen])
+  }, [accountOpen, investmentOpen])
 
   const showTermsModal =
     status === 'authenticated' &&
@@ -231,27 +226,14 @@ export function PublicLayout() {
     Boolean(siteContent.termsText)
 
   function closeDesktopMenus() {
-    setMoreOpen(false)
     setInvestmentOpen(false)
     setAccountOpen(false)
-  }
-
-  function toggleMoreMenu() {
-    setMoreOpen((value) => {
-      const next = !value
-      if (next) {
-        setInvestmentOpen(false)
-        setAccountOpen(false)
-      }
-      return next
-    })
   }
 
   function toggleInvestmentMenu() {
     setInvestmentOpen((value) => {
       const next = !value
       if (next) {
-        setMoreOpen(false)
         setAccountOpen(false)
       }
       return next
@@ -262,7 +244,6 @@ export function PublicLayout() {
     setAccountOpen((value) => {
       const next = !value
       if (next) {
-        setMoreOpen(false)
         setInvestmentOpen(false)
       }
       return next
@@ -307,7 +288,7 @@ export function PublicLayout() {
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer md:hidden"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer lg:hidden"
                 aria-label="Abrir navegación"
                 aria-expanded={mobileMenuOpen}
               >
@@ -355,7 +336,7 @@ export function PublicLayout() {
 
           <nav
             aria-label="Navegación principal"
-            className="hidden md:flex min-w-0 items-center gap-3 text-sm text-muted-foreground lg:gap-4"
+            className="hidden lg:flex min-w-0 items-center gap-4 text-sm text-muted-foreground"
           >
             {MAIN_PRIMARY_LINKS.map((item) => (
               <Link
@@ -367,17 +348,6 @@ export function PublicLayout() {
               </Link>
             ))}
 
-            <DesktopMenu
-              align="left"
-              entries={MAIN_MORE_LINKS}
-              label="Más"
-              open={moreOpen}
-              onClose={() => setMoreOpen(false)}
-              onToggle={toggleMoreMenu}
-              triggerClassName="border-transparent px-0 text-muted-foreground hover:border-transparent hover:text-foreground"
-              wrapperRef={moreMenuRef}
-            />
-
             {status === 'authenticated' ? (
               <DesktopMenu
                 align="left"
@@ -386,13 +356,13 @@ export function PublicLayout() {
                 open={investmentOpen}
                 onClose={() => setInvestmentOpen(false)}
                 onToggle={toggleInvestmentMenu}
-                triggerClassName="border-transparent px-0 text-muted-foreground hover:border-transparent hover:text-foreground"
+                triggerClassName="border-transparent px-0 text-sm text-muted-foreground hover:border-transparent hover:text-foreground"
                 wrapperRef={investmentMenuRef}
               />
             ) : null}
           </nav>
 
-          <div className="hidden min-w-0 flex-1 justify-center md:flex">
+          <div className="hidden min-w-0 flex-1 justify-center lg:flex">
             <GlobalSearch className="max-w-[12rem] lg:max-w-[24rem]" />
           </div>
 
@@ -408,13 +378,13 @@ export function PublicLayout() {
                 open={accountOpen}
                 onClose={() => setAccountOpen(false)}
                 onToggle={toggleAccountMenu}
-                triggerClassName="max-w-[13rem] truncate text-foreground"
+                triggerClassName="max-w-[13rem] truncate text-xs text-foreground lg:text-sm"
                 wrapperRef={accountMenuRef}
               />
             ) : status === 'anonymous' ? (
               <Link
                 to="/login"
-                className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
+                className="inline-flex h-9 items-center rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer lg:text-sm"
               >
                 Iniciar sesión
               </Link>
