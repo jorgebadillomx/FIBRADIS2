@@ -21,6 +21,7 @@ public class SpaMetadataProviderTests
     [InlineData("/conoce-las-fibras")]
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
+    [InlineData("/portafolio")]
     [InlineData("/privacidad")]
     [InlineData("/acerca")]
     [InlineData("/contacto")]
@@ -35,7 +36,6 @@ public class SpaMetadataProviderTests
     }
 
     [Theory]
-    [InlineData("/portafolio")]
     [InlineData("/oportunidades")]
     [InlineData("/fibras/FUNO11")]
     [InlineData("/noticias/abc-123")]
@@ -69,6 +69,7 @@ public class SpaMetadataProviderTests
     [InlineData("/conoce-las-fibras")]
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
+    [InlineData("/portafolio")]
     [InlineData("/privacidad")]
     [InlineData("/acerca")]
     [InlineData("/contacto")]
@@ -92,6 +93,26 @@ public class SpaMetadataProviderTests
         Assert.Contains("\"@type\":\"SoftwareApplication\"", meta.JsonLd);
         Assert.Contains("\"name\":\"Calculadora de compra de FIBRAs\"", meta.JsonLd);
         Assert.Contains("Calcula cuántos CBFIs puedes comprar con tu presupuesto", meta.JsonLd);
+    }
+
+    [Fact]
+    public async Task Portafolio_HasCollectionPageJsonLd_WithBaseUrlReferences()
+    {
+        var provider = CreateProvider();
+        var meta = await provider.GetMetaForPathAsync("/portafolio");
+
+        Assert.NotNull(meta);
+        Assert.NotNull(meta!.JsonLd);
+        using var document = JsonDocument.Parse(meta.JsonLd);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        var collectionPage = graph.Single(element => element.GetProperty("@type").GetString() == "CollectionPage");
+        Assert.Equal($"{TestBaseUrl}/portafolio#page", collectionPage.GetProperty("@id").GetString());
+        Assert.Equal($"{TestBaseUrl}/portafolio", collectionPage.GetProperty("url").GetString());
+        Assert.Equal($"{TestBaseUrl}/#website", collectionPage.GetProperty("isPartOf").GetProperty("@id").GetString());
+        Assert.Equal($"{TestBaseUrl}/#organization", collectionPage.GetProperty("publisher").GetProperty("@id").GetString());
+        Assert.Equal("ItemList", collectionPage.GetProperty("mainEntity").GetProperty("@type").GetString());
+        Assert.Contains("\"Reportes trimestrales\"", meta.JsonLd);
     }
 
     [Fact]

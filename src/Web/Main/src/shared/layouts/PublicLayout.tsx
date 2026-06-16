@@ -383,10 +383,10 @@ export function PublicLayout() {
               />
             ) : status === 'anonymous' ? (
               <Link
-                to="/login"
+                to="/portafolio"
                 className="inline-flex h-9 items-center rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer lg:text-sm"
               >
-                Iniciar sesión
+                Portafolio
               </Link>
             ) : null}
           </div>

@@ -4,6 +4,14 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 13-6-portafolio-landing-publico (2026-06-16)
+
+- JSON-LD `ItemList` del `CollectionPage` de `/portafolio` apunta a rutas privadas `/reportes` y `/oportunidades` (`SpaMetadataProvider.cs`). Esas rutas no están en el sitemap y el riesgo SEO de empujar crawl es marginal; las tarjetas del landing ya usan `#login`. Considerar apuntar el itemList a anclas públicas o a `#login` si en el futuro importa.
+- El JSON-LD `CollectionPage`/`BreadcrumbList` inyectado server-side en el shell de `/portafolio` persiste en el DOM cuando un usuario autenticado ve el dashboard (`PortafolioPage`), porque `usePageTitle` solo gestiona title/description/canonical/og/robots y nunca `<script type="application/ld+json">`. Sin impacto SEO real (los crawlers nunca están autenticados); es inconsistencia de estado en el DOM del usuario logueado.
+- Literales de `title`/`description` de `/portafolio` duplicados entre frontend (`PortafolioLanding.tsx` `PAGE_TITLE`/`PAGE_DESCRIPTION`) y backend (`SpaMetadataProvider.cs`). Hoy coinciden carácter a carácter; el riesgo es de drift futuro si se edita uno y no el otro. Patrón pre-existente en todas las páginas públicas (p.ej. `HomePage`), por eso se difiere en lugar de tratarse como bug de 13-6.
+
+---
+
 ## Deferred from: code review of 13-5-reportes-trimestrales-privados (2026-06-16)
 
 - Warning de datos obsoletos muerto: `PeriodsAgo` se fija `null` en ambos endpoints (`/latest` y `/report` en `FundamentalsEndpoints.cs`), por lo que `shouldShowFundamentalesWarning` (dispara en `periodsAgo >= 3`) nunca se cumple y el banner "datos podrían estar desactualizados" es inalcanzable en `/reportes` y en la ficha pública. Pre-existente (ya era `null` antes de 13-5). Fix: calcular `PeriodsAgo` real en el endpoint o retirar el banner.
