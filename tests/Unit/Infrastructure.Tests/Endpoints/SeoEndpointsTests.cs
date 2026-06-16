@@ -38,6 +38,7 @@ public class SeoEndpointsTests
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/calendario</loc>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/fundamentales</loc>", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/plataforma</loc>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/portafolio</loc>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/acerca</loc>", xml);
@@ -109,8 +110,8 @@ public class SeoEndpointsTests
         var doc = System.Xml.Linq.XDocument.Parse(xml);
         Assert.Equal("urlset", doc.Root!.Name.LocalName);
         Assert.Equal("http://www.sitemaps.org/schemas/sitemap/0.9", doc.Root.Name.NamespaceName);
-        // 12 rutas estáticas + 2 fibras
-        Assert.Equal(14, doc.Root.Elements().Count());
+        // 13 rutas estáticas + 2 fibras
+        Assert.Equal(15, doc.Root.Elements().Count());
     }
 
     [Fact]
@@ -149,8 +150,8 @@ public class SeoEndpointsTests
         var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
 
         var doc = System.Xml.Linq.XDocument.Parse(xml);
-        // 12 rutas estáticas + 2 fibras + 2 noticias
-        Assert.Equal(16, doc.Root!.Elements().Count());
+        // 13 rutas estáticas + 2 fibras + 2 noticias
+        Assert.Equal(17, doc.Root!.Elements().Count());
     }
 
     [Fact]

@@ -10,6 +10,7 @@ public class SpaRouteCatalogTests
     [InlineData("/noticias")]
     [InlineData("/comparar")]
     [InlineData("/fundamentales")]
+    [InlineData("/plataforma")]
     [InlineData("/herramientas")]
     [InlineData("/perfil")]
     [InlineData("/portafolio")]

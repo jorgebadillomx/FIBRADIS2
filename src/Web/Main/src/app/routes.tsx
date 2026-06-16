@@ -23,6 +23,7 @@ const AcercaPage = lazy(() => import('@/modules/acerca/AcercaPage').then(m => ({
 const ContactoPage = lazy(() => import('@/modules/contacto/ContactoPage').then(m => ({ default: m.ContactoPage })))
 const PerfilPage = lazy(() => import('@/modules/perfil/PerfilPage').then(m => ({ default: m.PerfilPage })))
 const ReportesPage = lazy(() => import('@/modules/reportes/ReportesPage').then(m => ({ default: m.ReportesPage })))
+const PlataformaPage = lazy(() => import('@/modules/plataforma/PlataformaPage').then(m => ({ default: m.PlataformaPage })))
 
 // Reserva la altura del viewport mientras carga el chunk lazy de la ruta. Con min-h-[40vh] el
 // footer quedaba dentro del fold y se desplomaba al renderizar la página (CLS ~0.15 en /fibras/:slug,
@@ -51,6 +52,7 @@ export const routes: RouteObject[] = [
       { path: '/conoce-las-fibras', element: p(<ConoceLasFibrasPage />) },
       { path: '/noticias/:slug', element: p(<NoticiaPage />) },
       { path: '/fundamentales', element: p(<FundamentalesPage />) },
+      { path: '/plataforma', element: p(<PlataformaPage />) },
       { path: '/portafolio', element: <PortafolioRoute /> },
       { path: '/login', element: p(<LoginPage />) },
       { path: '/privacidad', element: p(<PrivacidadPage />) },

@@ -409,15 +409,23 @@ export function PublicLayout() {
             La información en Fibras Inmobiliarias es solo con fines informativos y educativos. No constituye asesoría financiera, legal ni fiscal. Consulte a un asesor profesional antes de tomar decisiones de inversión. Fibras Inmobiliarias no está regulado por la CNBV.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-            <span>© {new Date().getFullYear()} Fibras Inmobiliarias</span>
+            <span className="inline-flex items-center gap-1">
+              © {new Date().getFullYear()}
+              <Link
+                className="transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
+                to="/plataforma"
+              >
+                Fibras Inmobiliarias
+              </Link>
+            </span>
             <a
-              className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
               href={`mailto:${siteContent?.contactEmail ?? 'portafoliodefibras@gmail.com'}`}
             >
               Contacto
             </a>
             <Link
-              className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
               to="/privacidad"
             >
               Aviso de privacidad

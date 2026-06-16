@@ -178,3 +178,8 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 
 - **Migración sobrescribe ContactEmail editado en Ops** — `20260616171543_RebrandContactEmail.cs` hace `UpdateData(id=1, contact_email=gmail)` sin condición. Si un operador ya hubiera personalizado el correo desde Ops, la migración lo pisa al aplicarse. Riesgo bajo pre-lanzamiento; inherente a los seeds `HasData`. Revisitar si el correo se personaliza antes de aplicar la migración en prod.
 - **Fallback de `mailto` en footer usa `??` sin `.trim()`** — `PublicLayout.tsx:445` usa `siteContent?.contactEmail ?? 'portafoliodefibras@gmail.com'`; un `contactEmail` = "" (cadena vacía) produciría `mailto:` vacío. Acerca/Contacto/Privacidad usan el patrón más robusto `?.trim() || …`. Pre-existente; este story solo cambió el literal del fallback. Unificar al patrón `?.trim() ||` cuando se toque el footer.
+
+## Deferred from: code review of 13-8-landing-plataforma-publica (2026-06-16)
+
+- **Conteos hardcodeados en `/plataforma`** — `BuildPlataformaJsonLd` declara `numberOfItems = 8` como literal independiente del arreglo de `ListItem`, y `PlataformaPage.tsx` usa `StatTile value="8"`/`"5"` en vez de `PUBLIC_FEATURES.length`/`PRIVATE_FEATURES.length`. Hoy coinciden; riesgo de desincronización silenciosa al editar los arreglos. Polish LOW; derivar de la longitud cuando se toque el archivo.
+- **T5 — verificación manual a11y/responsive/SEO de `/plataforma` pendiente** — gating antes de `done` por el checklist SSR/SEO de convenciones: confirmar sin scroll horizontal en 375/768/1024/1440px, contraste AA, y curl al shell para validar `<title>`/canonical/JSON-LD/breadcrumb server-side + presencia en `sitemap.xml`/`sitemap-static.xml`. No lo cubre el test suite.

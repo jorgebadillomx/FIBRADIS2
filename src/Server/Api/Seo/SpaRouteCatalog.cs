@@ -23,6 +23,7 @@ public static class SpaRouteCatalog
         "/calendario",
         "/conoce-las-fibras",
         "/fundamentales",
+        "/plataforma",
         "/login",
         "/privacidad",
         "/acerca",

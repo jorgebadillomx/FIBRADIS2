@@ -21,6 +21,7 @@ public class SpaMetadataProviderTests
     [InlineData("/conoce-las-fibras")]
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
+    [InlineData("/plataforma")]
     [InlineData("/portafolio")]
     [InlineData("/privacidad")]
     [InlineData("/acerca")]
@@ -69,6 +70,7 @@ public class SpaMetadataProviderTests
     [InlineData("/conoce-las-fibras")]
     [InlineData("/calendario")]
     [InlineData("/fundamentales")]
+    [InlineData("/plataforma")]
     [InlineData("/portafolio")]
     [InlineData("/privacidad")]
     [InlineData("/acerca")]
@@ -113,6 +115,28 @@ public class SpaMetadataProviderTests
         Assert.Equal($"{TestBaseUrl}/#organization", collectionPage.GetProperty("publisher").GetProperty("@id").GetString());
         Assert.Equal("ItemList", collectionPage.GetProperty("mainEntity").GetProperty("@type").GetString());
         Assert.Contains("\"Reportes trimestrales\"", meta.JsonLd);
+    }
+
+    [Fact]
+    public async Task Plataforma_HasCollectionPageJsonLd_WithBaseUrlReferences()
+    {
+        var provider = CreateProvider();
+        var meta = await provider.GetMetaForPathAsync("/plataforma");
+
+        Assert.NotNull(meta);
+        Assert.NotNull(meta!.JsonLd);
+        using var document = JsonDocument.Parse(meta.JsonLd);
+        var graph = document.RootElement.GetProperty("@graph").EnumerateArray().ToArray();
+
+        var collectionPage = graph.Single(element => element.GetProperty("@type").GetString() == "CollectionPage");
+        Assert.Equal($"{TestBaseUrl}/plataforma#page", collectionPage.GetProperty("@id").GetString());
+        Assert.Equal($"{TestBaseUrl}/plataforma", collectionPage.GetProperty("url").GetString());
+        Assert.Equal($"{TestBaseUrl}/#website", collectionPage.GetProperty("isPartOf").GetProperty("@id").GetString());
+        Assert.Equal($"{TestBaseUrl}/#organization", collectionPage.GetProperty("publisher").GetProperty("@id").GetString());
+        Assert.Equal("ItemList", collectionPage.GetProperty("mainEntity").GetProperty("@type").GetString());
+        Assert.Equal(7, collectionPage.GetProperty("mainEntity").GetProperty("numberOfItems").GetInt32());
+        Assert.Contains("\"Catálogo y fichas de FIBRAs\"", meta.JsonLd);
+        Assert.Contains("\"Guía ¿Qué son las FIBRAs?\"", meta.JsonLd);
     }
 
     [Fact]
