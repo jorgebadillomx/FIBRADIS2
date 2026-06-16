@@ -63,6 +63,21 @@ if (Test-Path $UploadsDir) {
     Write-Host "  uploads/ excluido del paquete"
 }
 
+# -- 5b. Podar runtimes nativos innecesarios --
+# SkiaSharp publica binarios nativos para TODOS los RIDs (Linux, macOS, Windows x86/x64/arm64)
+# mas archivos .pdb gigantes de debug (~244 MB). IIS corre en Windows: solo necesitamos win*.
+# Esto reduce el paquete de ~164 MB a ~20 MB. Para Linux/Docker usa deploy/deploy.sh.
+$RuntimesDir = Join-Path $PublishDir "runtimes"
+if (Test-Path $RuntimesDir) {
+    $KeepRids = @('win', 'win-x64', 'win-x86')
+    Get-ChildItem $RuntimesDir -Directory |
+        Where-Object { $KeepRids -notcontains $_.Name } |
+        Remove-Item -Recurse -Force
+    Get-ChildItem $RuntimesDir -Recurse -File -Filter *.pdb | Remove-Item -Force
+    $rtMb = [math]::Round((Get-ChildItem $RuntimesDir -Recurse -File | Measure-Object Length -Sum).Sum / 1MB, 1)
+    Write-Host "  runtimes/ podado a win* sin .pdb ($rtMb MB)"
+}
+
 # -- 6. Crear ZIP --
 Write-Host "=== Crear ZIP ===" -ForegroundColor Cyan
 Compress-Archive -Path (Join-Path $PublishDir "*") -DestinationPath $OutZip
