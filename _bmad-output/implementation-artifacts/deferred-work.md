@@ -4,6 +4,33 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 13-5-reportes-trimestrales-privados (2026-06-16)
+
+- Warning de datos obsoletos muerto: `PeriodsAgo` se fija `null` en ambos endpoints (`/latest` y `/report` en `FundamentalsEndpoints.cs`), por lo que `shouldShowFundamentalesWarning` (dispara en `periodsAgo >= 3`) nunca se cumple y el banner "datos podrían estar desactualizados" es inalcanzable en `/reportes` y en la ficha pública. Pre-existente (ya era `null` antes de 13-5). Fix: calcular `PeriodsAgo` real en el endpoint o retirar el banner.
+- `fetchFundamentalesAvailablePeriods` (`if (!response.ok) return []`) y `fetchFundamentalesPublic` (`return null`) en `fundamentalesApi.ts` ocultan un error de servidor (500/red) como estado vacío ("Esta FIBRA todavía no tiene reportes trimestrales procesados") en lugar de un estado de error. `/periods` es público (sin dimensión 401). Util compartida con la ficha pública — endurecer (distinguir 404 de error) preservando el comportamiento de la ficha.
+- Test `GetPublicLatest_NoLongerIncludesAiFields` no asevera sobre el JSON crudo que las claves IA (`summaryMarkdown`, `riskFlags`, etc.) estén ausentes; la garantía actual es solo el sistema de tipos (el DTO ya no las declara). Reforzar con una aserción negativa sobre el body crudo de la respuesta.
+
+---
+
+## Deferred from: code review of 13-4-tabla-universo-fibras-responsive-movil (2026-06-15)
+
+- `expandedRows` (Set) no se purga al cambiar filtro/orden/período en `FibraUniverseTable` y `FundamentalesPage`: filas que salen del filtro reaparecen ya expandidas al volver, y el Set crece monótonamente (estado fantasma). Introducido por la historia; impacto UX bajo. Fix: limpiar/intersectar `expandedRows` con las filas visibles al cambiar filtro/orden/período.
+- `MetricTile` está duplicado en `FibraUniverseTable.tsx` (`value: string` + `valueClassName`) y `FundamentalesPage.tsx` (`value: string | number`) con firmas divergentes → riesgo de drift. Extraer a un componente compartido.
+- `SortIcon` usa emojis `⇅ ▲ ▼` y se reusó en los chips de orden móvil NUEVOS de esta historia (AC-6 "nada de emojis"). No se migró a `lucide-react` porque `SortIcon` también alimenta el desktop y AC-3 exige "≥md intacto". Migrar a iconos lucide en un follow-up que toque ambos breakpoints.
+- Verificación manual chrome-devtools MCP a 768/1024/1440 no documentada en el Dev Agent Record (AC-8 la exige explícitamente); se usó Playwright a 375px. Documentar la verificación o tratarla como superada por la cobertura e2e ampliada (ver Patch de la review).
+
+---
+
+## Deferred from: code review of 13-3-accesibilidad-formularios-y-contraste (2026-06-15)
+
+- **`name` auto-generado no determinista/colisionable en `Input`/`Textarea`** — cae a `input-<useId>` cuando no hay aria-label/placeholder, y dos inputs con el mismo placeholder resuelven al mismo `name`. Latente: ningún formulario tocado usa `FormData`; PerfilPage usa `autocomplete`. Revisitar si se introduce submission nativo/`FormData`.
+- **`WeightSlider` deriva `id`/`name` del label sin `useId` ni sufijo único** (`OportunidadesPage.tsx:93`) — colisión si dos labels normalizan al mismo slug. Hoy los 5 labels son distintos. Alinear con el patrón `useId` del resto.
+- **`NumberField` (`HerramientasPage.tsx:657-668`): el `name` no lleva el sufijo único que sí tiene el `id`** — colisión de `name` si dos labels iguales. Hoy distintos.
+- **Emoji ⚠️ en `IsrCalculatorWidget.tsx:105`** — viola AC9/MASTER.md (sin emojis como iconos); línea pre-existente no tocada por el diff. Limpiar en una pasada de a11y futura.
+- **Evidencia del Dev Agent Record imprecisa (13-3)** — ratios de contraste inflados (reportados vs reales; siguen ≥AA) y auditoría a11y omitió `/` y `/comparar`. Re-ejecutar la auditoría a11y tras aplicar los patches de id/name.
+
+---
+
 ## Deferred from: code review of 13-1-reorganizacion-menus-navegacion (2026-06-15)
 
 - Dropdowns desktop de Main con `role="menu"` sin navegación por flechas (patrón APG incompleto). AC2 se cumple literalmente (click/Escape/click-fuera); mejora de a11y, no bloqueante.

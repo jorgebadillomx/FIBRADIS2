@@ -10,7 +10,7 @@ import { fetchFundamentalesPublic, fetchFundamentalesAvailablePeriods } from '@/
 import { useAuth } from '@/modules/auth/AuthContext'
 import { StarButton } from '@/modules/oportunidades/StarButton'
 import { useFavorites } from '@/modules/oportunidades/useFavorites'
-import type { FundamentalesData } from './sections/fundamentales'
+import type { FundamentalesPublicData } from './sections/fundamentales'
 import { FibraNotFound } from './FibraNotFound'
 import { PrecioSection } from './sections/PrecioSection'
 import { MercadoSection } from './sections/MercadoSection'
@@ -289,17 +289,11 @@ export function FibraPage() {
   const toFundamentalNum = (v: null | number | string | undefined): number | null =>
     v == null ? null : Number(v)
 
-  const fundamentalesData: FundamentalesData | undefined = fundamentalesDto
+  const fundamentalesData: FundamentalesPublicData | undefined = fundamentalesDto
     ? {
         period: fundamentalesDto.period,
         periodsAgo: typeof fundamentalesDto.periodsAgo === 'number' ? fundamentalesDto.periodsAgo : undefined,
         capturedAt: fundamentalesDto.capturedAt,
-        summary: fundamentalesDto.summary ?? null,
-        summaryMarkdown: fundamentalesDto.summaryMarkdown ?? null,
-        investorTakeaway: fundamentalesDto.investorTakeaway ?? null,
-        operationalSignals: fundamentalesDto.operationalSignals ?? [],
-        financialSignals: fundamentalesDto.financialSignals ?? [],
-        riskFlags: fundamentalesDto.riskFlags ?? [],
         items: ([
           'capRate',
           'navPerCbfi',
@@ -405,7 +399,7 @@ export function FibraPage() {
                       {marketPrice!.toFixed(2)}
                     </span>
                     {annualizedYield != null ? (
-                      <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-violet-700">
+                      <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-100 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-violet-900">
                         {annualizedYield.toFixed(1)}%
                       </span>
                     ) : null}
@@ -485,6 +479,8 @@ export function FibraPage() {
               {availablePeriods.length > 1 && (
                 <div className="min-w-[6.5rem] shrink-0">
                   <select
+                    id="fibra-fundamentales-period"
+                    name="selectedPeriod"
                     value={activePeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
                     className="w-full rounded-lg border border-border bg-background px-2 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"

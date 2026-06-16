@@ -53,11 +53,11 @@ function fmtPct(v: null | number | string | undefined): string {
 
 function ScoreBadge({ score }: { score: number }) {
   const cls =
-    score >= 65 ? 'bg-green-100 text-green-800' :
-    score >= 35 ? 'bg-yellow-100 text-yellow-800' :
-    'bg-red-100 text-red-800'
+    score >= 65 ? 'bg-green-100 text-green-900 border-green-200' :
+    score >= 35 ? 'bg-yellow-100 text-yellow-900 border-yellow-200' :
+    'bg-red-100 text-red-900 border-red-200'
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
+    <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-semibold ${cls}`}>
       {score.toFixed(1)}
     </span>
   )
@@ -90,10 +90,15 @@ function WeightSlider({
   value: number
   onChange: (v: number) => void
 }) {
+  const id = `weight-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   return (
     <div className="flex items-center gap-3">
-      <span className="w-32 shrink-0 text-sm">{label}</span>
+      <label htmlFor={id} className="w-32 shrink-0 text-sm">
+        {label}
+      </label>
       <input
+        id={id}
+        name={id}
         type="range"
         min={0}
         max={100}

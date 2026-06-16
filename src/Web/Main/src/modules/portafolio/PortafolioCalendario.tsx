@@ -61,7 +61,7 @@ export function PortafolioCalendario({ positions }: PortafolioCalendarioProps) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-semibold text-foreground">{payment.ticker}</span>
-                      <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-700">
+                      <span className="rounded-full border border-violet-200 bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-900">
                         {payment.cadencia}
                       </span>
                     </div>

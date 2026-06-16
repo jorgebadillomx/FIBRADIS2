@@ -8,24 +8,29 @@ export interface FundamentalItem {
   note?: string
 }
 
-export interface FundamentalesData {
+export interface FundamentalesBaseData {
   period?: string
   periodsAgo?: number
   capturedAt?: string | null
+  items?: FundamentalItem[]
+}
+
+export interface FundamentalesPublicData extends FundamentalesBaseData {}
+
+export interface FundamentalesReportData extends FundamentalesBaseData {
   summary?: string | null
   summaryMarkdown?: string | null
   investorTakeaway?: string | null
   operationalSignals?: string[]
   financialSignals?: string[]
   riskFlags?: string[]
-  items?: FundamentalItem[]
 }
 
-export function shouldShowFundamentalesWarning(data?: FundamentalesData): boolean {
+export function shouldShowFundamentalesWarning(data?: FundamentalesBaseData): boolean {
   return data?.periodsAgo !== undefined && data.periodsAgo >= 3
 }
 
-export function hasFundamentalesItems(data?: FundamentalesData): boolean {
+export function hasFundamentalesItems(data?: FundamentalesBaseData): boolean {
   return (data?.items?.length ?? 0) > 0
 }
 

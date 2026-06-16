@@ -5,7 +5,7 @@ import {
   getLatestCapturedAt,
   hasFundamentalesItems,
   shouldShowFundamentalesWarning,
-  type FundamentalesData,
+  type FundamentalesPublicData,
 } from './fundamentales.ts'
 
 test('shouldShowFundamentalesWarning only shows the stale-data alert at three periods or more', () => {
@@ -22,7 +22,7 @@ test('formatFundamentalValue preserves zeroes and replaces nullables with em das
 })
 
 test('hasFundamentalesItems detects when the section should render data rows', () => {
-  const data: FundamentalesData = {
+  const data: FundamentalesPublicData = {
     items: [{ label: 'Cap Rate', period: 'Q3 2024', value: 8.4 }],
   }
 

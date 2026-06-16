@@ -30,6 +30,7 @@ public static class SpaRouteCatalog
         "/portafolio",
         "/oportunidades",
         "/herramientas",
+        "/reportes",
         "/perfil",
     };
 

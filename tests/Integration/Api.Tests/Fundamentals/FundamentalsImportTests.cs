@@ -327,7 +327,7 @@ public class FundamentalsImportTests(ApiWebFactory factory) : IClassFixture<ApiW
     }
 
     [Fact]
-    public async Task GetPublicLatest_ReturnsEnrichedAiFields_WithArraysNeverNull()
+    public async Task GetPublicLatest_NoLongerIncludesAiFields()
     {
         var payload = new ImportFundamentalsRequest(
             FibraId: _funoId, Period: "Q2-2025",
@@ -358,12 +358,59 @@ public class FundamentalsImportTests(ApiWebFactory factory) : IClassFixture<ApiW
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(body);
-        Assert.Equal("**Fortaleza** operativa.", body!.SummaryMarkdown);
-        Assert.Equal("Distribución defendible.", body.InvestorTakeaway);
-        Assert.Equal(["Ocupación sólida"], body.OperationalSignals);
-        Assert.NotNull(body.FinancialSignals);
-        Assert.Empty(body.FinancialSignals);
-        Assert.Equal(["Mayor costo financiero"], body.RiskFlags);
+        Assert.Equal("Q2-2025", body!.Period);
+        Assert.Equal(0.09m, body.CapRate);
+        Assert.Equal(125m, body.NavPerCbfi);
+        Assert.Equal(0.48m, body.QuarterlyDistribution);
+        Assert.Null(body.FieldNotes);
+    }
+
+    [Fact]
+    public async Task GetPrivateReport_WithAuthenticatedUser_Returns200_WithAiAnalysis()
+    {
+        var payload = new ImportFundamentalsRequest(
+            FibraId: _funoId, Period: "Q3-2025",
+            CapRate: 0.1m, NavPerCbfi: 128m, Ltv: 0.31m,
+            NoiMargin: 0.75m, FfoMargin: 0.68m, QuarterlyDistribution: 0.5m,
+            Summary: "Resumen privado", PdfReference: null);
+
+        var importResponse = await _adminClient.PostAsJsonAsync("/api/v1/ops/fundamentals/import", payload);
+        var preview = await importResponse.Content.ReadFromJsonAsync<FundamentalPreviewDto>();
+        await _adminClient.PostAsJsonAsync($"/api/v1/ops/fundamentals/{preview!.Id}/confirm", (object?)null);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var record = await db.FundamentalRecords.FirstAsync(r => r.Id == preview.Id);
+            record.SetAiAnalysis(new FundamentalAiAnalysis(
+                SummaryMarkdown: "**Resumen** privado.",
+                InvestorTakeaway: "Perspectiva privada.",
+                OperationalSignals: ["Ocupación alta"],
+                FinancialSignals: ["Endeudamiento bajo"],
+                RiskFlags: ["Riesgo controlado"],
+                ExtractionNotes: "Análisis privado"));
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _userClient.GetAsync("/api/v1/fundamentals/FUNO11/report?period=Q3-2025");
+        var body = await response.Content.ReadFromJsonAsync<FundamentalesReportDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal("Q3-2025", body!.Period);
+        Assert.Equal("**Resumen** privado.", body.SummaryMarkdown);
+        Assert.Equal("Perspectiva privada.", body.InvestorTakeaway);
+        Assert.Equal(["Ocupación alta"], body.OperationalSignals);
+        Assert.Equal(["Endeudamiento bajo"], body.FinancialSignals);
+        Assert.Equal(["Riesgo controlado"], body.RiskFlags);
+    }
+
+    [Fact]
+    public async Task GetPrivateReport_WithoutToken_Returns401()
+    {
+        var response = await _anonClient.GetAsync("/api/v1/fundamentals/FUNO11/report?period=Q2-2025");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     private async Task<string> LoginAndGetTokenAsync(string email, string password)

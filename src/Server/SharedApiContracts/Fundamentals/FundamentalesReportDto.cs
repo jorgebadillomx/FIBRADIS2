@@ -1,6 +1,6 @@
 namespace SharedApiContracts.Fundamentals;
 
-public sealed record FundamentalesPublicDto(
+public sealed record FundamentalesReportDto(
     string Period,
     int? PeriodsAgo,
     decimal? CapRate,
@@ -9,5 +9,11 @@ public sealed record FundamentalesPublicDto(
     decimal? NoiMargin,
     decimal? FfoMargin,
     decimal? QuarterlyDistribution,
+    string? Summary,
+    string? SummaryMarkdown,
+    string? InvestorTakeaway,
+    string[] OperationalSignals,
+    string[] FinancialSignals,
+    string[] RiskFlags,
     Dictionary<string, string>? FieldNotes,
     DateTimeOffset CapturedAt);

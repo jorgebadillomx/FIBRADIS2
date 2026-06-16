@@ -2,9 +2,32 @@ import * as React from "react"
 
 import { cn } from "@/shared/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+function buildFieldName(seed: string) {
+  const normalized = seed
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return normalized || 'field'
+}
+
+function Input({ className, type, id, name, ...props }: React.ComponentProps<"input">) {
+  const autoId = React.useId().replace(/:/g, '')
+  const resolvedId = id ?? `input-${autoId}`
+  const labelSeed =
+    typeof props['aria-label'] === 'string'
+      ? props['aria-label']
+      : typeof props.placeholder === 'string'
+        ? props.placeholder
+        : resolvedId
+  const resolvedName = name ?? buildFieldName(labelSeed)
+
   return (
     <input
+      id={resolvedId}
+      name={resolvedName}
       type={type}
       data-slot="input"
       className={cn(

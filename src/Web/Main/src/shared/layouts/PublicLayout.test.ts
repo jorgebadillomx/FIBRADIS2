@@ -12,6 +12,10 @@ test('Main navigation keeps the flat public order without a Más group', () => {
     MAIN_PRIMARY_LINKS.map((item) => item.label),
     ['Conoce las FIBRAs', 'Fibras', 'Comparar', 'Noticias', 'Calculadora', 'Calendario', 'Fundamentales'],
   )
+  assert.deepEqual(
+    MAIN_INVESTMENT_LINKS.map((item) => item.label),
+    ['Portafolio', 'Oportunidades', 'Herramientas', 'Reportes'],
+  )
 })
 
 test('buildMainMobileSections hides Mi inversión for anonymous users and exposes it for authenticated users', () => {

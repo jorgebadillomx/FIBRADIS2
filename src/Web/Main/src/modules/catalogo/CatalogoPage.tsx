@@ -76,12 +76,16 @@ export function CatalogoPage() {
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Input
+            id="catalogo-search"
+            name="search"
             className="sm:max-w-xs"
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por ticker o nombre..."
             value={search}
           />
           <select
+            id="catalogo-sector"
+            name="sector"
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring cursor-pointer"
             onChange={(e) => setSector(e.target.value)}
             title="Filtrar por sector"
@@ -91,6 +95,8 @@ export function CatalogoPage() {
             {sectors.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <select
+            id="catalogo-market"
+            name="market"
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring cursor-pointer"
             onChange={(e) => setMarket(e.target.value)}
             title="Filtrar por mercado"
@@ -196,7 +202,7 @@ function FibraCard({ fibra, snapshot }: FibraCardProps) {
                 </p>
               </div>
               {annualizedYield != null ? (
-                <span className="inline-flex shrink-0 items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-violet-700">
+                <span className="inline-flex shrink-0 items-center rounded-full border border-violet-200 bg-violet-100 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-violet-900">
                   {annualizedYield.toFixed(1)}%
                 </span>
               ) : null}

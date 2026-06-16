@@ -125,6 +125,8 @@ export function NoticiasListPage() {
             <label className="space-y-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Filtrar por FIBRA</span>
               <select
+                id="noticias-fibra-filter"
+                name="fibraId"
                 value={fibraId ?? ''}
                 onChange={(event) => {
                   const nextFibraId = event.target.value || undefined

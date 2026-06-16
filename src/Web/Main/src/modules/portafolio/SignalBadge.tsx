@@ -5,7 +5,7 @@ const BADGE_CLASSES: Record<SignalStatus, string> = {
   verde: 'bg-green-100 text-green-800 border-green-300',
   amarillo: 'bg-yellow-100 text-yellow-800 border-yellow-300',
   rojo: 'bg-red-100 text-red-800 border-red-300',
-  gris: 'bg-muted text-muted-foreground border-border',
+  gris: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
 const BADGE_LABELS: Record<SignalStatus, string> = {

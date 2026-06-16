@@ -149,6 +149,8 @@ export function UploadZone({ currentPositionCount, onUploadSuccess }: UploadZone
         </div>
         <input
           ref={fileInputRef}
+          id="portfolio-file"
+          name="portfolioFile"
           type="file"
           accept=".xlsx,.csv"
           className="hidden"

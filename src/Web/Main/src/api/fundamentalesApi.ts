@@ -1,6 +1,8 @@
 import type { components } from '@fibradis/shared-api-client'
+import { apiClient } from './fibrasApi'
 
 export type FundamentalesPublicDto = components['schemas']['FundamentalesPublicDto']
+export type FundamentalesReportDto = components['schemas']['FundamentalesReportDto']
 export type FundamentalesSummaryItemDto = components['schemas']['FundamentalesSummaryItemDto']
 
 export async function fetchFundamentalesPublic(ticker: string, period?: string): Promise<FundamentalesPublicDto | null> {
@@ -18,6 +20,25 @@ export async function fetchFundamentalesAvailablePeriods(ticker: string): Promis
   const response = await fetch(`/api/v1/fundamentals/${encodeURIComponent(ticker)}/periods`)
   if (!response.ok) return []
   return response.json() as Promise<string[]>
+}
+
+export async function fetchFundamentalesReport(
+  ticker: string,
+  period?: string,
+): Promise<FundamentalesReportDto | null> {
+  const { data, error, response } = await apiClient.GET('/api/v1/fundamentals/{ticker}/report', {
+    params: {
+      path: { ticker },
+      query: period ? { period } : undefined,
+    },
+  })
+
+  if (error) {
+    if (response.status === 404) return null
+    throw new Error(`Error al obtener reporte de fundamentales para '${ticker}': ${JSON.stringify(error)}`)
+  }
+
+  return data ?? null
 }
 
 export async function fetchFundamentalesSummary(
