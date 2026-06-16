@@ -3,18 +3,18 @@ import { useSiteContent } from '@/shared/hooks/useSiteContent'
 
 export function ContactoPage() {
   const { data: siteContent } = useSiteContent()
-  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibradis.mx'
+  const contactEmail = siteContent?.contactEmail?.trim() || 'portafoliodefibras@gmail.com'
 
   usePageTitle(
-    'Contacto | FIBRADIS',
-    'Contacta con FIBRADIS para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.',
+    'Contacto | Fibras Inmobiliarias',
+    'Contacta con Fibras Inmobiliarias para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.',
   )
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-playfair text-3xl font-semibold tracking-tight">Contacto</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        FIBRADIS es una plataforma de análisis independiente de FIBRAs inmobiliarias mexicanas.
+        Fibras Inmobiliarias es una plataforma de análisis independiente de FIBRAs inmobiliarias mexicanas.
       </p>
 
       <div className="mt-8 space-y-6 text-sm leading-7 text-foreground/80">
@@ -42,7 +42,7 @@ export function ContactoPage() {
         <section>
           <h2 className="font-semibold text-base text-foreground">Aviso legal</h2>
           <p className="mt-2">
-            La información publicada en FIBRADIS es de referencia y no constituye asesoría de inversión.
+            La información publicada en Fibras Inmobiliarias es de referencia y no constituye asesoría de inversión.
             Consulta nuestro{' '}
             <a className="text-primary hover:underline" href="/privacidad">
               aviso de privacidad

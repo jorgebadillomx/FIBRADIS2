@@ -57,7 +57,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
 
         Assert.False(nextCalled.Value);
         Assert.StartsWith("text/html", context.Response.ContentType);
-        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS</title>", body);
+        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<meta property=\"og:url\" content=\"https://fibrasinmobiliarias.com/calculadora\" />", body);
         Assert.Contains("<script type=\"application/ld+json\">", body);
@@ -83,14 +83,17 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS</title>", body);
+        Assert.Contains("<title>FIBRAs Inmobiliarias — Análisis y Herramientas | Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/\" />", body);
         Assert.Contains("<meta name=\"description\"", body);
         Assert.Contains("<meta property=\"og:title\"", body);
+        Assert.Contains("<meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />", body);
+        Assert.Contains("<meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />", body);
         Assert.Contains("<meta property=\"og:description\"", body);
         // La home conserva su JSON-LD (WebSite) pero NO emite BreadcrumbList:
         // un breadcrumb de un solo ítem no aporta jerarquía (decisión code review 12-5)
         Assert.Contains("<script type=\"application/ld+json\">", body);
+        Assert.Contains("\"name\":\"Fibras Inmobiliarias\"", body);
         Assert.DoesNotContain("\"@type\":\"BreadcrumbList\"", body);
     }
 
@@ -108,7 +111,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS</title>", body);
+        Assert.Contains("<title>Comparar FIBRAs Inmobiliarias — Análisis Comparativo | Fibras Inmobiliarias</title>", body);
         Assert.Contains("\"@type\":\"WebApplication\"", body);
         Assert.Contains("\"@type\":\"ItemList\"", body);
         Assert.Contains("https://fibrasinmobiliarias.com/fibras/fibra-macquarie-fibramq12", body);
@@ -149,7 +152,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS</title>", body);
+        Assert.Contains("<title>Fundamentales FIBRAs — Cap Rate, NAV, NOI | Fibras Inmobiliarias</title>", body);
         using var document = JsonDocument.Parse(ExtractJsonLdBlocks(body).Single(block => block.Contains("\"@type\":\"Dataset\"", StringComparison.Ordinal)));
         var dataset = document.RootElement.GetProperty("@graph").EnumerateArray().Single(node => node.GetProperty("@type").GetString() == "Dataset");
         Assert.Equal("FIBRAs cubiertas", dataset.GetProperty("variableMeasured")[5].GetProperty("name").GetString());
@@ -192,7 +195,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS</title>", body);
+        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | Fibras Inmobiliarias</title>", body);
         Assert.DoesNotContain("SEO inactivo", body);
     }
 
@@ -203,7 +206,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>Portafolio de FIBRAs, reportes y login | FIBRADIS</title>", body);
+        Assert.Contains("<title>Portafolio de FIBRAs, reportes y login | Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/portafolio\" />", body);
         Assert.Contains("\"@type\":\"CollectionPage\"", body);
         Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
@@ -267,7 +270,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         var body = await ReadBodyAsync(context);
 
         Assert.False(nextCalled.Value);
-        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS</title>", body);
+        Assert.Contains("<title>Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | Fibras Inmobiliarias</title>", body);
     }
 
     [Fact]
@@ -447,7 +450,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         services.AddScoped<ISeoMetadataRepository>(_ => new StubSeoMetadataRepository(seoMetadata));
         services.AddScoped<IFibraRepository>(_ => new StubFibraRepository(activeFibras ?? []));
         services.AddScoped<IFaqRepository>(_ => new StubFaqRepository());
-        services.AddScoped<IOperationalConfigRepository>(_ => new StubOperationalConfigRepository("contacto@fibradis.mx"));
+        services.AddScoped<IOperationalConfigRepository>(_ => new StubOperationalConfigRepository("portafoliodefibras@gmail.com"));
         services.AddScoped<IEditorialPageRepository>(_ => new StubEditorialPageRepository());
         services.AddScoped<IFundamentalRepository>(_ => new StubFundamentalRepository(fundamentalRows ?? []));
         services.AddSingleton<ISeoDefaultsBuilder, SeoDefaultsBuilder>();

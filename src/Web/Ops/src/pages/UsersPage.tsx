@@ -371,7 +371,7 @@ export function UsersPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">Gestión de acceso</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Usuarios</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-          Crea y administra cuentas de usuario para el sitio principal de FIBRADIS y para Ops.
+          Crea y administra cuentas de usuario para el sitio principal de Fibras Inmobiliarias y para Ops.
         </p>
       </div>
 

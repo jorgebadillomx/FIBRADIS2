@@ -77,9 +77,11 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         Assert.False(nextCalled.Value);
         Assert.StartsWith("text/html", context.Response.ContentType);
         Assert.DoesNotContain("<!-- prerender-meta -->", body);
-        Assert.Contains("<title>FUNO11 reporta resultados del 2T25 — Noticias | FIBRADIS</title>", body);
+        Assert.Contains("<title>FUNO11 reporta resultados del 2T25 — Noticias | Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25\" />", body);
         Assert.Contains("<meta property=\"og:type\" content=\"article\" />", body);
+        Assert.Contains("<meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />", body);
+        Assert.Contains("<meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />", body);
         Assert.Contains("<meta property=\"og:url\" content=\"https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25\" />", body);
         Assert.Contains("<script type=\"application/ld+json\">", body);
         Assert.Contains("\"@type\":\"NewsArticle\"", body);
@@ -98,7 +100,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         var (context, _) = await InvokeAsync("/noticias/funo11-reporta-resultados-del-2t25", article);
         var body = await ReadBodyAsync(context);
 
-        Assert.Contains("<title>Fibra Uno supera expectativas del mercado — Noticias | FIBRADIS</title>", body);
+        Assert.Contains("<title>Fibra Uno supera expectativas del mercado — Noticias | Fibras Inmobiliarias</title>", body);
         Assert.Contains("Resumen analítico de los resultados trimestrales", body);
     }
 
@@ -136,7 +138,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         var (context, _) = await InvokeAsync("/noticias/funo11-reporta-resultados-del-2t25", article, seoMetadata: seoMetadata);
         var body = await ReadBodyAsync(context);
 
-        Assert.Contains("<title>FUNO11 reporta resultados del 2T25 — Noticias | FIBRADIS</title>", body);
+        Assert.Contains("<title>FUNO11 reporta resultados del 2T25 — Noticias | Fibras Inmobiliarias</title>", body);
         Assert.DoesNotContain("SEO inactivo", body);
     }
 
@@ -174,7 +176,7 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
         var (context, _) = await InvokeAsync("/noticias/funo11-reporta-resultados-del-2t25", article);
         var body = await ReadBodyAsync(context);
 
-        Assert.Contains("Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.", body);
+        Assert.Contains("Texto corto. — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.", body);
     }
 
     [Fact]

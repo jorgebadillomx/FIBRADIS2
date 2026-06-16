@@ -76,9 +76,11 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         Assert.False(nextCalled.Value);
         Assert.StartsWith("text/html", context.Response.ContentType);
         Assert.DoesNotContain("<!-- prerender-meta -->", body);
-        Assert.Contains("<title>Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias</title>", body);
+        Assert.Contains("<title>Fibra Uno (FUNO11) | Fibras Inmobiliarias</title>", body);
         Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11\" />", body);
         Assert.Contains("<meta property=\"og:image\" content=\"https://fibrasinmobiliarias.com/og/fibras/FUNO11.png\" />", body);
+        Assert.Contains("<meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />", body);
+        Assert.Contains("<meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />", body);
         Assert.Contains("\"@type\":\"FinancialProduct\"", body);
         Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
         // Precio modelado como PropertyValue (no Offer) — decisión D1 code review
@@ -188,7 +190,7 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
         var (context, _) = await InvokeAsync("/fibras/fibra-uno-funo11", CreateFibra(), seoMetadata: seoMetadata, marketData: CreateMarketData());
         var body = await ReadBodyAsync(context);
 
-        Assert.Contains("<title>Fibra Uno (FUNO11) | FIBRADIS — Fibras Inmobiliarias</title>", body);
+        Assert.Contains("<title>Fibra Uno (FUNO11) | Fibras Inmobiliarias</title>", body);
         Assert.DoesNotContain("SEO inactivo", body);
     }
 

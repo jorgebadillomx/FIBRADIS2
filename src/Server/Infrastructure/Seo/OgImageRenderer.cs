@@ -15,7 +15,7 @@ public sealed class OgImageRenderer(IWebHostEnvironment env) : IOgImageRenderer
     private const int CanvasHeight = 630;
     private const string FallbackImageName = "og-image.png";
     private const string LogoImageName = "logo.png";
-    private const string BrandName = "FIBRADIS";
+    private const string BrandName = "Fibras Inmobiliarias";
     private static readonly SKColor Slate950 = new(15, 23, 42);
     private static readonly SKColor Slate700 = new(51, 65, 85);
     private static readonly SKColor Slate500 = new(100, 116, 139);
@@ -265,7 +265,7 @@ public sealed class OgImageRenderer(IWebHostEnvironment env) : IOgImageRenderer
             Slate950);
 
         using var footerStyle = CreateTextStyle(14, SKFontStyleWeight.SemiBold, Slate500);
-        canvas.DrawText("Datos vivos · FIBRADIS", 770, 540, SKTextAlign.Left, footerStyle.Font, footerStyle.Paint);
+        canvas.DrawText("Datos vivos · Fibras Inmobiliarias", 770, 540, SKTextAlign.Left, footerStyle.Font, footerStyle.Paint);
         using var footerSubtitleStyle = CreateTextStyle(16, SKFontStyleWeight.Normal, Slate700);
         canvas.DrawText("Compartible para redes e IA", 770, 566, SKTextAlign.Left, footerSubtitleStyle.Font, footerSubtitleStyle.Paint);
     }
@@ -465,7 +465,7 @@ public sealed class OgImageRenderer(IWebHostEnvironment env) : IOgImageRenderer
         DrawCardShell(canvas);
 
         using var titleStyle = CreateTextStyle(54, SKFontStyleWeight.SemiBold, Slate950);
-        canvas.DrawText("FIBRADIS", 96, 204, SKTextAlign.Left, titleStyle.Font, titleStyle.Paint);
+        canvas.DrawText("Fibras Inmobiliarias", 96, 204, SKTextAlign.Left, titleStyle.Font, titleStyle.Paint);
         using var subtitleStyle = CreateTextStyle(22, SKFontStyleWeight.Normal, Slate700);
         canvas.DrawText("Imagen social genérica", 96, 258, SKTextAlign.Left, subtitleStyle.Font, subtitleStyle.Paint);
         canvas.DrawText("La versión dinámica se activa cuando hay datos de mercado.", 96, 304, SKTextAlign.Left, subtitleStyle.Font, subtitleStyle.Paint);

@@ -211,7 +211,7 @@ public class OperationalConfigRepositoryTests
 
         Assert.Equal("nuevo@fibradis.mx", config.ContactEmail);
         Assert.Equal("contact_email", audit.FieldName);
-        Assert.Equal("contacto@fibradis.mx", audit.PreviousValue);
+        Assert.Equal("portafoliodefibras@gmail.com", audit.PreviousValue);
         Assert.Equal("nuevo@fibradis.mx", audit.NewValue);
     }
 

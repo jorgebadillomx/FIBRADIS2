@@ -237,7 +237,7 @@ public class SeoEndpointsTests
             ("Noticias", "Listado de noticias", "/noticias"),
         ]);
 
-        Assert.Contains("# FIBRADIS", txt);
+        Assert.Contains("# Fibras Inmobiliarias", txt);
         Assert.Contains("[Inicio](https://fibrasinmobiliarias.com/)", txt);
         Assert.Contains("[Noticias](https://fibrasinmobiliarias.com/noticias)", txt);
         Assert.Contains("Nota de uso", txt);

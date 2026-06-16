@@ -34,7 +34,7 @@ export function CalendarioPage() {
   )
 
   usePageTitle(
-    'Calendario de Eventos Corporativos FIBRAs | FIBRADIS',
+    'Calendario de Eventos Corporativos FIBRAs | Fibras Inmobiliarias',
     'Próximas asambleas, distribuciones y eventos corporativos de FIBRAs inmobiliarias mexicanas. Mantente informado para tus decisiones.',
   )
 

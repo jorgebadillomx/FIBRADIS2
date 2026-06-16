@@ -406,13 +406,13 @@ export function PublicLayout() {
       <footer className="border-t border-border bg-background/80 py-4 text-center text-xs text-muted-foreground">
         <div className="container mx-auto flex flex-col items-center gap-y-2 px-4">
           <p className="max-w-2xl leading-relaxed">
-            La información en FIBRADIS es solo con fines informativos y educativos. No constituye asesoría financiera, legal ni fiscal. Consulte a un asesor profesional antes de tomar decisiones de inversión. FIBRADIS no está regulado por la CNBV.
+            La información en Fibras Inmobiliarias es solo con fines informativos y educativos. No constituye asesoría financiera, legal ni fiscal. Consulte a un asesor profesional antes de tomar decisiones de inversión. Fibras Inmobiliarias no está regulado por la CNBV.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
             <span>© {new Date().getFullYear()} Fibras Inmobiliarias</span>
             <a
               className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              href={`mailto:${siteContent?.contactEmail ?? 'contacto@fibradis.mx'}`}
+              href={`mailto:${siteContent?.contactEmail ?? 'portafoliodefibras@gmail.com'}`}
             >
               Contacto
             </a>

@@ -173,7 +173,7 @@ export function HerramientasPage() {
     [selectedFibrasWithYield, retornoPrecioCompraValue, retornoIsrValue],
   )
 
-  usePageTitle('Herramientas — FIBRADIS')
+  usePageTitle('Herramientas — Fibras Inmobiliarias')
 
   return (
     <>

@@ -8,10 +8,10 @@ import {
   type UpdateOperationalConfigRequest,
 } from '@/api/configApi'
 
-const DEFAULT_TERMS_TEXT = `FIBRADIS — Términos de uso y aviso de privacidad
+const DEFAULT_TERMS_TEXT = `Fibras Inmobiliarias — Términos de uso y aviso de privacidad
 
 1. Información de referencia únicamente
-La información publicada en esta plataforma tiene carácter exclusivamente informativo y no constituye asesoría de inversión ni recomendación de compra o venta de valores. Las decisiones de inversión son de exclusiva responsabilidad del usuario. FIBRADIS no será responsable de pérdidas derivadas del uso de los datos del sitio.
+La información publicada en esta plataforma tiene carácter exclusivamente informativo y no constituye asesoría de inversión ni recomendación de compra o venta de valores. Las decisiones de inversión son de exclusiva responsabilidad del usuario. Fibras Inmobiliarias no será responsable de pérdidas derivadas del uso de los datos del sitio.
 
 2. Protección de datos personales
 Tu correo electrónico se almacena cifrado en nuestra base de datos. No lo compartimos, vendemos ni cedemos a terceros. Lo usamos únicamente para identificarte en la plataforma.
@@ -23,7 +23,7 @@ Las contraseñas se almacenan como hash unidireccional (bcrypt). La comunicació
 El acceso a la plataforma es personal e intransferible. Está prohibido su uso para actividades ilegales o que violen derechos de terceros.
 
 5. Derechos del usuario
-Para ejercer derechos de acceso, rectificación o cancelación, escribe a contacto@fibradis.mx. Atendemos en 5 días hábiles.
+Para ejercer derechos de acceso, rectificación o cancelación, escribe a portafoliodefibras@gmail.com. Atendemos en 5 días hábiles.
 
 Al usar esta plataforma aceptas estos términos.`
 
@@ -92,7 +92,7 @@ export function ConfigPage() {
     })
     setTermsEnabled(configQuery.data.termsEnabled ?? false)
     setTermsText(configQuery.data.termsText ?? DEFAULT_TERMS_TEXT)
-    setContactEmail(configQuery.data.contactEmail ?? 'contacto@fibradis.mx')
+    setContactEmail(configQuery.data.contactEmail ?? 'portafoliodefibras@gmail.com')
   }, [configQuery.data, reset])
 
   const saveMutation = useMutation({
@@ -342,7 +342,7 @@ export function ConfigPage() {
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600"
               id="contact-email"
               onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="contacto@fibradis.mx"
+              placeholder="portafoliodefibras@gmail.com"
               type="email"
               value={contactEmail}
             />

@@ -121,7 +121,7 @@ public class SeoEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebFacto
         var response = await client.GetAsync("/llms.txt");
         var body = await response.Content.ReadAsStringAsync();
 
-        Assert.Contains("# FIBRADIS", body);
+        Assert.Contains("# Fibras Inmobiliarias", body);
         Assert.Contains("/conoce-las-fibras", body);
         Assert.Contains("/fundamentales", body);
     }

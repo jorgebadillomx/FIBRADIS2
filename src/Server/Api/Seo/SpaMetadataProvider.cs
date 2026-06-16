@@ -15,7 +15,7 @@ public class SpaMetadataProvider(
     ISeoDefaultsBuilder seoDefaultsBuilder,
     IServiceScopeFactory scopeFactory) : ISpaMetadataProvider
 {
-    private const string BrandName = "FIBRADIS";
+    private const string BrandName = "Fibras Inmobiliarias";
     private const string DefaultDescription =
         "Plataforma de análisis de FIBRAs inmobiliarias mexicanas: precios en tiempo real, distribuciones, fundamentales y ranking de oportunidades de inversión.";
     private const string CalculadoraDescription =
@@ -29,11 +29,11 @@ public class SpaMetadataProvider(
     private const string PortafolioDescription =
         "Tu entrada pública a Fibras Inmobiliarias: explora portafolio, reportes, oportunidades, herramientas, fundamentales, noticias y catálogo, o inicia sesión.";
     private const string PrivacyDescription =
-        "Aviso de privacidad de FIBRADIS: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.";
+        "Aviso de privacidad de Fibras Inmobiliarias: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.";
     private const string AboutDescription =
-        "Conoce la metodología de FIBRADIS: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.";
+        "Conoce la metodología de Fibras Inmobiliarias: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.";
     private const string ContactDescription =
-        "Contacta con FIBRADIS para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.";
+        "Contacta con Fibras Inmobiliarias para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.";
 
     private static readonly JsonSerializerOptions JsonLdOptions = new()
     {
@@ -60,58 +60,58 @@ public class SpaMetadataProvider(
         return normalizedPath switch
         {
             "/" => new SpaPageMeta(
-                "FIBRAs Inmobiliarias — Análisis y Herramientas | FIBRADIS",
+                "FIBRAs Inmobiliarias — Análisis y Herramientas | Fibras Inmobiliarias",
                 DefaultDescription,
                 "/",
                 await BuildHomepageJsonLdAsync(ct)),
             "/calculadora" => new SpaPageMeta(
-                "Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | FIBRADIS",
+                "Calculadora de FIBRAs — ¿Cuántos CBFIs puedo comprar? | Fibras Inmobiliarias",
                 CalculadoraDescription,
                 "/calculadora",
                 BuildCalculadoraJsonLd()),
             "/comparar" => new SpaPageMeta(
-                "Comparar FIBRAs Inmobiliarias — Análisis Comparativo | FIBRADIS",
+                "Comparar FIBRAs Inmobiliarias — Análisis Comparativo | Fibras Inmobiliarias",
                 "Compara hasta 4 FIBRAs inmobiliarias en precio, yield, fundamentales y score de oportunidad. Toma mejores decisiones de inversión.",
                 "/comparar",
                 BuildCompareJsonLd()),
             "/fibras" => new SpaPageMeta(
-                "FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | FIBRADIS",
+                "FIBRAs Inmobiliarias Mexicanas — Catálogo Completo | Fibras Inmobiliarias",
                 "Directorio completo de FIBRAs inmobiliarias en México con descripción, sector, precio y datos fundamentales de cada fideicomiso.",
                 "/fibras"),
             "/noticias" => new SpaPageMeta(
-                "Noticias FIBRAs Inmobiliarias | FIBRADIS",
+                "Noticias FIBRAs Inmobiliarias | Fibras Inmobiliarias",
                 "Últimas noticias y novedades sobre el mercado de FIBRAs inmobiliarias mexicanas. Actualización continua desde fuentes especializadas.",
                 "/noticias"),
             "/conoce-las-fibras" => new SpaPageMeta(
-                "¿Qué son las FIBRAs Inmobiliarias? Guía Completa | FIBRADIS",
+                "¿Qué son las FIBRAs Inmobiliarias? Guía Completa | Fibras Inmobiliarias",
                 ConoceDescription,
                 "/conoce-las-fibras",
                 await BuildConoceLasFibrasJsonLdAsync(ct)),
             "/calendario" => new SpaPageMeta(
-                "Calendario de Eventos Corporativos FIBRAs | FIBRADIS",
+                "Calendario de Eventos Corporativos FIBRAs | Fibras Inmobiliarias",
                 CalendarioDescription,
                 "/calendario"),
             "/fundamentales" => new SpaPageMeta(
-                "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
+                "Fundamentales FIBRAs — Cap Rate, NAV, NOI | Fibras Inmobiliarias",
                 FundamentalesDescription,
                 "/fundamentales",
                 await BuildFundamentalesJsonLdAsync(ct)),
             "/portafolio" => new SpaPageMeta(
-                "Portafolio de FIBRAs, reportes y login | FIBRADIS",
+                "Portafolio de FIBRAs, reportes y login | Fibras Inmobiliarias",
                 PortafolioDescription,
                 "/portafolio",
                 BuildPortafolioJsonLd()),
             "/privacidad" => new SpaPageMeta(
-                "Aviso de Privacidad | FIBRADIS",
+                "Aviso de Privacidad | Fibras Inmobiliarias",
                 PrivacyDescription,
                 "/privacidad"),
             "/acerca" => new SpaPageMeta(
-                "Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS",
+                "Sobre Fibras Inmobiliarias — Metodología y Fuentes de Datos | Fibras Inmobiliarias",
                 AboutDescription,
                 "/acerca",
                 await BuildAboutJsonLdAsync(ct)),
             "/contacto" => new SpaPageMeta(
-                "Contacto | FIBRADIS",
+                "Contacto | Fibras Inmobiliarias",
                 ContactDescription,
                 "/contacto",
                 await BuildContactJsonLdAsync(ct)),
@@ -187,7 +187,7 @@ public class SpaMetadataProvider(
                     ["@type"] = "WebSite",
                     ["@id"] = $"{_baseUrl}/#website",
                     ["url"] = _baseUrl,
-                    ["name"] = "FIBRADIS — Fibras Inmobiliarias",
+                    ["name"] = BrandName,
                     ["publisher"] = new Dictionary<string, object?>
                     {
                         ["@id"] = $"{_baseUrl}/#organization",
@@ -198,7 +198,7 @@ public class SpaMetadataProvider(
                 {
                     ["@type"] = "FinancialService",
                     ["@id"] = $"{_baseUrl}/#service",
-                    ["name"] = "FIBRADIS — Análisis de FIBRAs Inmobiliarias",
+                    ["name"] = BrandName,
                     ["url"] = _baseUrl,
                     ["provider"] = new Dictionary<string, object?>
                     {
@@ -272,7 +272,7 @@ public class SpaMetadataProvider(
                 {
                     ["@type"] = "CollectionPage",
                     ["@id"] = $"{_baseUrl}/portafolio#page",
-                    ["name"] = "Portafolio de FIBRAs, reportes y login | FIBRADIS",
+                    ["name"] = "Portafolio de FIBRAs, reportes y login | Fibras Inmobiliarias",
                     ["description"] = PortafolioDescription,
                     ["url"] = $"{_baseUrl}/portafolio",
                     ["isPartOf"] = new Dictionary<string, object?>
@@ -354,7 +354,7 @@ public class SpaMetadataProvider(
             ["@context"] = "https://schema.org",
             ["@type"] = "AboutPage",
             ["@id"] = $"{_baseUrl}/acerca#page",
-            ["name"] = "Sobre FIBRADIS — Metodología y Fuentes de Datos | FIBRADIS",
+            ["name"] = "Sobre Fibras Inmobiliarias — Metodología y Fuentes de Datos | Fibras Inmobiliarias",
             ["description"] = AboutDescription,
             ["url"] = $"{_baseUrl}/acerca",
             ["publisher"] = new Dictionary<string, object?>
@@ -402,7 +402,7 @@ public class SpaMetadataProvider(
             ["@context"] = "https://schema.org",
             ["@type"] = "ContactPage",
             ["@id"] = $"{_baseUrl}/contacto#page",
-            ["name"] = "Contacto | FIBRADIS",
+            ["name"] = "Contacto | Fibras Inmobiliarias",
             ["description"] = ContactDescription,
             ["url"] = $"{_baseUrl}/contacto",
             ["mainEntity"] = new Dictionary<string, object?>

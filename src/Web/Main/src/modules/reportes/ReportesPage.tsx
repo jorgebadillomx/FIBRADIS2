@@ -110,7 +110,7 @@ export function ReportesPage() {
   const showReportEmpty = !!selectedFibra && sortedPeriods.length > 0 && reportQuery.isSuccess && !reportData
   const showError = fibrasQuery.isError || periodsQuery.isError || reportQuery.isError
 
-  usePageTitle('Reportes trimestrales privados — FIBRADIS', 'Reportes trimestrales privados de FIBRAs con KPIs y análisis IA completo tras autenticación.')
+  usePageTitle('Reportes trimestrales privados — Fibras Inmobiliarias', 'Reportes trimestrales privados de FIBRAs con KPIs y análisis IA completo tras autenticación.')
 
   return (
     <div className="relative overflow-hidden bg-[radial-gradient(circle_at_10%_10%,rgba(194,65,12,0.12),transparent_25%),radial-gradient(circle_at_90%_15%,rgba(15,118,110,0.10),transparent_22%),linear-gradient(180deg,rgba(10,14,26,0.02),transparent_30%)]">

@@ -226,7 +226,7 @@ public static class SeoEndpoints
     public static string BuildLlmsTxt(string baseUrl, IReadOnlyList<(string Title, string Description, string Path)> pages)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("# FIBRADIS");
+        sb.AppendLine("# Fibras Inmobiliarias");
         sb.AppendLine("Plataforma web integral de análisis de FIBRAs inmobiliarias mexicanas.");
         sb.AppendLine();
         sb.AppendLine("## Páginas clave");

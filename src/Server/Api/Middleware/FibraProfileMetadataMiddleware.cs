@@ -232,12 +232,12 @@ public partial class FibraProfileMetadataMiddleware(
             .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
             .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
             .Append($"<meta property=\"og:locale\" content=\"{Encoder.Encode(metadata.OgLocale)}\" />\n    ")
-            .Append("<meta property=\"og:site_name\" content=\"FIBRADIS\" />\n    ")
+            .Append("<meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />\n    ")
             .Append("<meta property=\"og:image:width\" content=\"1200\" />\n    ")
             .Append("<meta property=\"og:image:height\" content=\"630\" />\n    ")
-            .Append("<meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
+            .Append("<meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
             .Append($"<meta name=\"twitter:card\" content=\"{Encoder.Encode(metadata.TwitterCard)}\" />\n    ")
-            .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+            .Append("<meta name=\"twitter:site\" content=\"@fibrasinmobiliarias\" />\n    ")
             .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
             .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
             .Append(string.IsNullOrWhiteSpace(robotsDirectives) ? string.Empty : $"<meta name=\"robots\" content=\"{Encoder.Encode(robotsDirectives)}\" />\n    ")
@@ -250,7 +250,7 @@ public partial class FibraProfileMetadataMiddleware(
 
     private static string BuildMetaBlock(Fibra fibra, string canonicalSlug, string baseUrl)
     {
-        var title = $"{fibra.FullName} ({fibra.Ticker}) | FIBRADIS — Fibras Inmobiliarias";
+        var title = $"{fibra.FullName} ({fibra.Ticker}) | Fibras Inmobiliarias";
         var description = BuildDescription(fibra);
         var canonicalPath = $"{baseUrl}/fibras/{canonicalSlug}";
         var canonicalUrl = Encoder.Encode(canonicalPath);
@@ -271,7 +271,7 @@ public partial class FibraProfileMetadataMiddleware(
                     ["provider"] = new Dictionary<string, object?>
                     {
                         ["@type"] = "Organization",
-                        ["name"] = "FIBRADIS",
+                        ["name"] = "Fibras Inmobiliarias",
                         ["url"] = baseUrl,
                     },
                     ["category"] = fibra.Sector,
@@ -305,12 +305,12 @@ public partial class FibraProfileMetadataMiddleware(
             .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
             .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
             .Append("<meta property=\"og:locale\" content=\"es_MX\" />\n    ")
-            .Append("<meta property=\"og:site_name\" content=\"FIBRADIS\" />\n    ")
+            .Append("<meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />\n    ")
             .Append("<meta property=\"og:image:width\" content=\"1200\" />\n    ")
             .Append("<meta property=\"og:image:height\" content=\"630\" />\n    ")
-            .Append("<meta property=\"og:image:alt\" content=\"FIBRADIS — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
+            .Append("<meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
             .Append("<meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
-            .Append("<meta name=\"twitter:site\" content=\"@fibradis\" />\n    ")
+            .Append("<meta name=\"twitter:site\" content=\"@fibrasinmobiliarias\" />\n    ")
             .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
             .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
             .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")

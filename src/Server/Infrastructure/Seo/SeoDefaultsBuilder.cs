@@ -16,9 +16,9 @@ namespace Infrastructure.Seo;
 
 public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
 {
-    private const string BrandName = "FIBRADIS";
-    private const string BrandTitleSuffix = " | FIBRADIS";
-    private const string FibraTitleSuffix = " | FIBRADIS — Fibras Inmobiliarias";
+    private const string BrandName = "Fibras Inmobiliarias";
+    private const string BrandTitleSuffix = " | Fibras Inmobiliarias";
+    private const string FibraTitleSuffix = " | Fibras Inmobiliarias";
     private const string OgImagePath = "/og-image.png";
     private const string OgLocale = "es_MX";
     private const string TwitterCard = "summary_large_image";
@@ -31,7 +31,7 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
     private const int NewsMinDescriptionLength = 120;
     private const int FibraMaxDescriptionLength = 155;
     private const int FibraMinDescriptionLength = 120;
-    private const string FibraDescriptionPadSuffix = " Consulta su análisis completo en FIBRADIS.";
+    private const string FibraDescriptionPadSuffix = " Consulta su análisis completo en Fibras Inmobiliarias.";
 
     private static readonly JsonSerializerOptions JsonLdOptions = new()
     {
@@ -286,7 +286,7 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
         {
             ["@type"] = "Dataset",
             ["@id"] = $"{trimmedBaseUrl}/fundamentales#dataset",
-            ["name"] = "Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS",
+            ["name"] = "Fundamentales FIBRAs — Cap Rate, NAV, NOI | Fibras Inmobiliarias",
             ["description"] = coveredCount > 0
                 ? $"Dataset comparativo con métricas fundamentales de {coveredCount} FIBRAs mexicanas."
                 : FundamentalsDescription,
@@ -544,8 +544,8 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
             return text;
 
         var padded = text.Length > 0
-            ? text + " — Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México."
-            : "Análisis y noticias de FIBRAs inmobiliarias en FIBRADIS: resultados, distribuciones y mercado inmobiliario bursátil de México.";
+            ? text + " — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México."
+            : "Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.";
 
         return padded.Length > NewsMaxDescriptionLength
             ? TruncateWithEllipsis(padded, NewsMaxDescriptionLength)
