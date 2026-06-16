@@ -92,7 +92,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-15  # épica 13: creados story files 13-3 (a11y/contraste) y 13-4 (tabla responsive); 13-5 gating server-side confirmado. Toda la épica 13 (1,3,4,5,6) con story file
+last_updated: 2026-06-15  # épica 13: creados story files 13-7 (rebranding FIBRADIS→Fibras Inmobiliarias + correo + título SEO; regla doc+mem0 ya aplicada) y 13-8 (landing /plataforma desde footer). Antes: 13-3/13-4/13-5/13-6 con story file
 # story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
@@ -425,7 +425,8 @@ development_status:
   # 13-1 code review (2026-06-15): nav extraído a rama v2 desde main (la rama vieja arrastraba 12-1 duplicada); re-integrados los 4 ítems SEO de Épica 12 en nueva sección "SEO" (6 secciones/17 ítems, deviación de AC-7). Pendiente: 4 patches (DialogTitle drawer Ops, prefers-reduced-motion, logout no-op, target táctil) + decisión AC14 (tests no renderizan componentes). Tests Main 162 + Ops 12 verdes; builds verdes.
   # 13-1 done (2026-06-15) — merge a main. Pendiente decisión de review AC14 (tests a nivel de datos, sin render).
   # 13-1 REABIERTA (2026-06-15, decisión usuario) — nueva iteración: REVERTIR el desplegable público "Más" (Conoce las FIBRAs/Calendario/Calculadora vuelven a enlaces planos), recupera el enlazado interno site-wide que se difirió. "Mi inversión" (auth) intacto. Ver adenda en el story file. El botón "Portafolio" NO va aquí (va en 13-6). Branch nuevo desde main al implementar.
-  13-1-reorganizacion-menus-navegacion: in-progress
+  # 13-1 adenda done (2026-06-15) — code review pass (1 patch: regresión GlobalSearch inaccesible en md 768–1023px → hamburguesa lg:hidden + nav lg:flex, todo bajo lg vive en el drawer; limpieza clases compactación muertas). Auditor confirma A1–A5+TA3 al 100% (orden A2 idéntico al history pre-13.1, rutas intactas, sin regresión SEO). 2 defers (TA4 verificación manual responsive; deuda tests sin render AC14) + 5 dismissed. 162/162 tests Main + build verdes.
+  13-1-reorganizacion-menus-navegacion: done
   # ── Historias derivadas de la revisión de UI 2026-06-13 (localhost:5173, MCP chrome-devtools + design-system/fibradis/MASTER.md) ──
   # story 13-2 cancelada (2026-06-13, decisión usuario) — la repetición del precio entre el header sticky y la tarjeta hero de FibraPage es un patrón defendible (barra persistente + bloque de entrada), sin impacto funcional ni a11y; el carrusel superior muestra OTRAS fibras (no redundante). No justifica una historia.
   13-2-jerarquia-encabezado-ficha-fibra: cancelled
@@ -439,6 +440,10 @@ development_status:
   13-5-reportes-trimestrales-privados: ready-for-dev
   # story 13-6 (antes 13-5; renumerada por decisión del usuario) — /portafolio pasa de ruta protegida a pública DUAL: anónimo → landing SEO estático (overview "todo lo que hace", incluida Reportes + login embebido), autenticado → dashboard actual intacto. Botón nav "Iniciar sesión" → "Portafolio" (apunta a /portafolio). SEO: /portafolio a KnownPaths+StaticRoutes+breadcrumb+metadata SSR. El landing describe la página Reportes (13-5). La reversión de "Más" se movió a 13-1 (reabierta). Branch story/13-6-portafolio-landing-publico. Coordinar merge con 13-1 (ambas tocan public-navigation.ts).
   13-6-portafolio-landing-publico: ready-for-dev
+  # story 13-7 creada (2026-06-15) — REBRANDING: "FIBRADIS" (nombre de código interno) → marca visible "Fibras Inmobiliarias" en TODAS las superficies de usuario/SEO (títulos `… | Fibras Inmobiliarias`, og:*, JSON-LD, copy, footer, llms.txt, OG images, UI Ops). Correo de contacto → portafoliodefibras@gmail.com (seed administrable + migración EF + fallbacks). NO tocar identificadores técnicos (env var FIBRADIS_SKIP_STARTUP_DB_READS, salt EmailEncryptor, BD FIBRADIS_Dev, dominio fibradis.mx). Regla documentada en AGENTS.md + convenciones + mem0 + memoria Claude DURANTE la creación de la historia (T6 pre-completada). Coordinar título SEO con 13-6/13-8.
+  13-7-rebranding-fibras-inmobiliarias-y-contacto: ready-for-dev
+  # story 13-8 creada (2026-06-15) — nueva ruta pública /plataforma: landing de venta/showcase que describe TODAS las funciones públicas y privadas (incluida Reportes 13-5), enlazada desde el footer ("Fibras Inmobiliarias" → <Link to=/plataforma>). SEO: KnownPaths + StaticRoutes + SpaRouteCatalog + breadcrumb + metadata SSR (título `… | Fibras Inmobiliarias`). Estática/evergreen. Diferenciar contenido de /portafolio (13-6) para evitar duplicate content. Coordinar footer con 13-7 (ambas tocan PublicLayout.tsx).
+  13-8-landing-plataforma-publica: ready-for-dev
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done
