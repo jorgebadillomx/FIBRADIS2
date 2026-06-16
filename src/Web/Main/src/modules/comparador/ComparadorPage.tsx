@@ -246,6 +246,8 @@ export function ComparadorPage() {
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <input
+                      id="comparador-search"
+                      name="comparadorSearch"
                       aria-label="Buscar FIBRAs para comparar"
                       disabled={selectorDisabled}
                       onBlur={() => setIsSearchFocused(false)}

@@ -26,11 +26,11 @@ function toNum(v: null | number | string | undefined): number {
 
 function ScoreBadge({ score }: { score: number }) {
   const cls =
-    score >= 65 ? 'bg-green-100 text-green-800' :
-    score >= 35 ? 'bg-yellow-100 text-yellow-800' :
-    'bg-red-100 text-red-800'
+    score >= 65 ? 'bg-green-100 text-green-900 border-green-200' :
+    score >= 35 ? 'bg-yellow-100 text-yellow-900 border-yellow-200' :
+    'bg-red-100 text-red-900 border-red-200'
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
+    <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-semibold ${cls}`}>
       {score.toFixed(1)}
     </span>
   )
@@ -288,11 +288,13 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                     {yieldPct != null ? `${yieldPct.toFixed(1)}%` : '—'}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={adicionalesStr}
+                      <input
+                        id={`adicionales-${position.fibraId}`}
+                        name={`adicionales-${position.fibraId}`}
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={adicionalesStr}
                       aria-label={`Títulos adicionales para ${position.ticker}`}
                       onChange={(e) =>
                         setAdicionales((prev) => ({ ...prev, [position.fibraId]: e.target.value }))
@@ -348,6 +350,8 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                 FIBRA
               </span>
               <select
+                id="promediar-fibra"
+                name="whatIfFibraId"
                 value={whatIfFibraId}
                 onChange={(e) => setWhatIfFibraId(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
@@ -365,6 +369,8 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                 Títulos a comprar
               </span>
               <input
+                id="promediar-titulos-a-comprar"
+                name="whatIfTitulos"
                 type="number"
                 min={0}
                 step={1}
@@ -414,6 +420,8 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                 Renta mensual objetivo (MXN)
               </span>
               <input
+                id="promediar-renta-mensual-objetivo"
+                name="whatIfTargetRenta"
                 type="number"
                 min={0}
                 step={100}

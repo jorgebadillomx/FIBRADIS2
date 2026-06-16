@@ -105,6 +105,8 @@ export function ColumnPicker({ enabledColumns, onEnabledColumnsChange }: ColumnP
                       className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-muted/60"
                     >
                       <input
+                        id={`column-picker-${column.key}`}
+                        name={`column-picker-${column.key}`}
                         type="checkbox"
                         className="size-4 rounded border-border text-primary focus:ring-0"
                         checked={checked}

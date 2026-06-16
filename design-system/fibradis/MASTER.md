@@ -25,12 +25,12 @@
 | Card | `#F8FAFC` | `--color-card` |
 | Foreground | `#1E293B` | `--color-foreground` |
 | Muted | `#F1F5F9` | `--color-muted` |
-| Muted FG | `#64748B` | `--color-muted-foreground` |
+| Muted FG | `#475569` | `--color-muted-foreground` |
 | Border | `#E2E8F0` | `--color-border` |
 | Destructive | `#DC2626` | `--color-destructive` |
 | Ring | `#1A4A3A` | `--color-ring` |
 
-**Color Notes:** Verde bosque sobre fondo blanco limpio + gris frío para cards — premium, legible, moderno
+**Color Notes:** Verde bosque sobre fondo blanco limpio + gris frío para cards — premium, legible, moderno. El tema base es light por diseño; el modo dark solo existe como variante explícita.
 
 ### Typography
 
@@ -194,7 +194,7 @@
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Light mode default
+- ❌ Dark mode default
 - ❌ Slow rendering
 
 ### Additional Forbidden Patterns

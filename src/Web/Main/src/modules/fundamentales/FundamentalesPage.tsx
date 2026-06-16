@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
+import { ChevronDown } from 'lucide-react'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchFundamentalesSummary, fetchAllFundamentalesPeriods } from '@/api/fundamentalesApi'
@@ -13,6 +14,7 @@ import type { FundamentalesSummaryItemDto } from '@/api/fundamentalesApi'
 export function FundamentalesPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('')
   const [fibraFilter, setFibraFilter] = useState('')
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   // una sola suscripción para toda la tabla — llamarlo por fila crea N observers y N Maps
   const { slugFor } = useFibraSlugMap()
 
@@ -57,6 +59,18 @@ export function FundamentalesPage() {
     [filteredRows, summaryData],
   )
 
+  function toggleRow(key: string) {
+    setExpandedRows(current => {
+      const next = new Set(current)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
   usePageTitle(
     'Fundamentales FIBRAs — Cap Rate, NAV, NOI | FIBRADIS',
     'Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.',
@@ -80,6 +94,8 @@ export function FundamentalesPage() {
             <label className="flex-1 space-y-1.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Período</span>
               <select
+                id="fundamentales-period"
+                name="selectedPeriod"
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
                 className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -96,6 +112,8 @@ export function FundamentalesPage() {
             <label className="flex-1 space-y-1.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Buscar FIBRA</span>
               <input
+                id="fundamentales-fibra-filter"
+                name="fibraFilter"
                 type="search"
                 value={fibraFilter}
                 onChange={(e) => setFibraFilter(e.target.value)}
@@ -116,10 +134,125 @@ export function FundamentalesPage() {
           </p>
         ) : null}
 
-        <section className="overflow-x-auto rounded-2xl border border-border bg-surface-elevated shadow-sm">
+        <section className="md:hidden space-y-3">
+          {isSummaryLoading ? (
+            <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-2">
+                      <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+                      <div className="h-3 w-28 animate-pulse rounded bg-muted" />
+                    </div>
+                    <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
+                  </div>
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="h-16 animate-pulse rounded-xl bg-muted" />
+                    <div className="h-16 animate-pulse rounded-xl bg-muted" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredRows.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-10 text-center shadow-sm">
+              <p className="text-base font-medium text-muted-foreground">
+                {summaryData?.length === 0
+                  ? isAllPeriods
+                    ? 'Sin datos disponibles.'
+                    : selectedPeriod
+                      ? `Sin datos para el período «${selectedPeriod}».`
+                      : 'No hay fundamentales procesados en el sistema.'
+                  : `Sin resultados para «${fibraFilter}» en el período seleccionado.`}
+              </p>
+              {(summaryData?.length ?? 0) > 0 && fibraFilter && (
+                <p className="mt-1 text-sm text-muted-foreground/70">
+                  Ajusta el texto del filtro para encontrar la FIBRA.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredRows.map((row) => {
+                const rowKey = `${row.ticker}-${row.period}`
+                const isExpanded = expandedRows.has(rowKey)
+                const capRate = formatFundamentalValue(toNullableNumber(row.capRate))
+                const navPerCbfi = formatFundamentalValue(toNullableNumber(row.navPerCbfi))
+                const ltv = formatFundamentalValue(toNullableNumber(row.ltv))
+                const noiMargin = formatFundamentalValue(toNullableNumber(row.noiMargin))
+                const ffoMargin = formatFundamentalValue(toNullableNumber(row.ffoMargin))
+                const quarterlyDistribution = formatFundamentalValue(toNullableNumber(row.quarterlyDistribution))
+
+                return (
+                  <article
+                    key={rowKey}
+                    data-testid="fundamentales-mobile-card"
+                    className="relative rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm transition-colors hover:bg-muted/25"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link
+                            to={`/fibras/${slugFor(row.ticker)}`}
+                            aria-label={`Abrir ficha de ${row.ticker}`}
+                            className="font-mono text-base font-semibold text-primary outline-none after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ring/40"
+                          >
+                            {row.ticker}
+                          </Link>
+                          <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                            {row.period}
+                          </span>
+                        </div>
+                        <p className="mt-1 truncate text-sm text-muted-foreground">{row.name}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        aria-label={`${isExpanded ? 'Colapsar' : 'Expandir'} detalles de ${row.ticker}`}
+                        aria-expanded={isExpanded}
+                        aria-controls={`fundamentales-mobile-${rowKey}`}
+                        onClick={() => toggleRow(rowKey)}
+                        className="relative z-10 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors duration-200 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-none cursor-pointer"
+                      >
+                        <ChevronDown
+                          className={`size-4 transition-transform duration-200 motion-reduce:transition-none ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <MetricTile label={KPI_DEFINITIONS.capRate.label} value={capRate} />
+                      <MetricTile label={KPI_DEFINITIONS.navPerCbfi.label} value={navPerCbfi} />
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">Toca para abrir la ficha</span>
+                      <span className="text-xs text-muted-foreground">Ver detalle</span>
+                    </div>
+
+                    {isExpanded ? (
+                      <div id={`fundamentales-mobile-${rowKey}`} className="mt-4 space-y-2">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <MetricTile label={KPI_DEFINITIONS.ltv.label} value={ltv} />
+                          <MetricTile label={KPI_DEFINITIONS.noiMargin.label} value={noiMargin} />
+                          <MetricTile label={KPI_DEFINITIONS.ffoMargin.label} value={ffoMargin} />
+                          <MetricTile
+                            label={KPI_DEFINITIONS.quarterlyDistribution.label}
+                            value={quarterlyDistribution}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="hidden rounded-2xl border border-border bg-surface-elevated shadow-sm md:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
-              <tr className="border-b border-border text-xs font-medium text-muted-foreground/70 uppercase tracking-wide bg-muted/30">
+              <tr className="border-b border-border bg-muted/30 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
                 <th className="px-4 py-3 text-left font-medium">FIBRA</th>
                 <th className="px-4 py-3 text-left font-medium">Período</th>
                 <th className="px-4 py-3 text-right font-medium" title={KPI_DEFINITIONS.capRate.description}>{KPI_DEFINITIONS.capRate.label}</th>
@@ -251,6 +384,23 @@ function toNullableNumber(value: number | string | null | undefined): number | n
   if (value === null || value === undefined) return null
   const n = typeof value === 'string' ? Number(value) : value
   return Number.isNaN(n) ? null : n
+}
+
+function MetricTile({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/80 px-3 py-2">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium tabular-nums text-foreground">{value}</div>
+    </div>
+  )
 }
 
 function FaqSkeleton() {

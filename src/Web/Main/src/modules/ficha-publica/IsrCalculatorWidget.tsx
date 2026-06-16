@@ -71,6 +71,8 @@ export function IsrCalculatorWidget({
             Distribución por CBFI
           </span>
           <input
+            id="isr-distribution-per-unit"
+            name="distributionPerUnit"
             type="number"
             inputMode="decimal"
             step="0.0001"
@@ -85,6 +87,8 @@ export function IsrCalculatorWidget({
             Tus CBFIs
           </span>
           <input
+            id="isr-units"
+            name="units"
             type="number"
             inputMode="numeric"
             step="1"

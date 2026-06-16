@@ -74,8 +74,46 @@ public static class FundamentalsEndpoints
             if (record is null)
                 return Results.NotFound();
 
-            var aiAnalysis = record.GetAiAnalysis();
             return Results.Ok(new FundamentalesPublicDto(
+                Period: record.Period,
+                PeriodsAgo: null,
+                CapRate: record.CapRate,
+                NavPerCbfi: record.NavPerCbfi,
+                Ltv: record.Ltv,
+                NoiMargin: record.NoiMargin,
+                FfoMargin: record.FfoMargin,
+                QuarterlyDistribution: record.QuarterlyDistribution,
+                FieldNotes: record.GetFieldNotes(),
+                CapturedAt: record.CapturedAt));
+        })
+        .AllowAnonymous()
+        .Produces<FundamentalesPublicDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{ticker}/report", async (
+            string ticker,
+            [FromQuery] string? period,
+            IFibraRepository fibraRepo,
+            IFundamentalRepository fundamentalRepo,
+            CancellationToken ct) =>
+        {
+            var fibra = await fibraRepo.GetByTickerAsync(ticker, ct);
+            if (fibra is null)
+                return Results.Problem(
+                    title: "FIBRA no encontrada",
+                    detail: $"No existe una FIBRA con ticker '{ticker}'.",
+                    statusCode: StatusCodes.Status404NotFound,
+                    extensions: new Dictionary<string, object?> { ["domainCode"] = "FIBRA_NOT_FOUND" });
+
+            FundamentalRecord? record = string.IsNullOrWhiteSpace(period)
+                ? await fundamentalRepo.GetLatestProcessedByFibraAsync(fibra.Id, ct)
+                : await fundamentalRepo.GetProcessedByFibraAndPeriodAsync(fibra.Id, period.Trim().ToUpperInvariant(), ct);
+
+            if (record is null)
+                return Results.NotFound();
+
+            var aiAnalysis = record.GetAiAnalysis();
+            return Results.Ok(new FundamentalesReportDto(
                 Period: record.Period,
                 PeriodsAgo: null,
                 CapRate: record.CapRate,
@@ -93,9 +131,11 @@ public static class FundamentalsEndpoints
                 FieldNotes: record.GetFieldNotes(),
                 CapturedAt: record.CapturedAt));
         })
-        .AllowAnonymous()
-        .Produces<FundamentalesPublicDto>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
+        .RequireAuthorization("User")
+        .Produces<FundamentalesReportDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden);
 
         group.MapGet("/{ticker}/periods", async (
             string ticker,

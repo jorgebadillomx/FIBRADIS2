@@ -1,9 +1,9 @@
 import { cn } from '@/shared/lib/utils'
 
 function getToneClass(score: number): string {
-  if (score >= 4) return 'border-emerald-200 bg-emerald-50 text-emerald-700'
-  if (score >= 3) return 'border-amber-200 bg-amber-50 text-amber-700'
-  return 'border-rose-200 bg-rose-50 text-rose-700'
+  if (score >= 4) return 'border-emerald-200 bg-emerald-100 text-emerald-900'
+  if (score >= 3) return 'border-amber-200 bg-amber-100 text-amber-900'
+  return 'border-rose-200 bg-rose-100 text-rose-900'
 }
 
 export function ScoreBadge({ score }: { score: number }) {

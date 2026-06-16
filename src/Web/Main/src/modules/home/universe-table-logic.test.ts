@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { filterSnapshots, sortSnapshots, calcRange52Pct } from './universe-table-logic.ts'
+import { filterSnapshots, sortSnapshots, calcRange52Pct, buildUniverseMobileCardData } from './universe-table-logic.ts'
 
 const rows = [
   { ticker: 'FUNO11',   lastPrice: 30, dailyChange: 0.5,  dailyChangePct: 1.7,  volume: 500_000, week52High: 40, week52Low: 20 },
@@ -114,4 +114,62 @@ test('calcRange52Pct — null low devuelve null', () => {
 
 test('calcRange52Pct — high === low devuelve null (evita división por cero)', () => {
   assert.equal(calcRange52Pct(50, 50, 50), null)
+})
+
+// ── buildUniverseMobileCardData ─────────────────────────────────────────────
+
+test('buildUniverseMobileCardData — formatea precios, cambios y estado', () => {
+  const result = buildUniverseMobileCardData({
+    ticker: 'FUNO11',
+    lastPrice: 28.5,
+    dailyChange: 0.32,
+    dailyChangePct: 1.14,
+    freshnessStatus: 'fresh',
+    latestPeriod: '2025-Q4',
+    volume: 1_250_000,
+    rangePct: 0.62,
+    week52High: 31,
+    week52Low: 24,
+    annualizedYield: 8.75,
+  })
+
+  assert.equal(result.summary.ticker, 'FUNO11')
+  assert.equal(result.summary.price, '28.50')
+  assert.equal(result.summary.change, '+0.32')
+  assert.equal(result.summary.changePct, '+1.14%')
+  assert.equal(result.summary.changeTone, 'positive')
+  assert.equal(result.summary.freshnessStatus, 'fresh')
+  assert.equal(result.summary.latestPeriod, '2025-Q4')
+  assert.equal(result.details.volume, '1.3M')
+  assert.equal(result.details.rangePct, 0.62)
+  assert.equal(result.details.week52High, '31.00')
+  assert.equal(result.details.week52Low, '24.00')
+  assert.equal(result.details.annualizedYield, '8.75%')
+})
+
+test('buildUniverseMobileCardData — cambios nulos y precio ausente usan em dash', () => {
+  const result = buildUniverseMobileCardData({
+    ticker: 'FMTY14',
+    lastPrice: null,
+    dailyChange: null,
+    dailyChangePct: null,
+    freshnessStatus: null,
+    latestPeriod: null,
+    volume: null,
+    rangePct: null,
+    week52High: null,
+    week52Low: null,
+    annualizedYield: null,
+  })
+
+  assert.equal(result.summary.price, '—')
+  assert.equal(result.summary.change, '—')
+  assert.equal(result.summary.changePct, '—')
+  assert.equal(result.summary.changeTone, 'neutral')
+  assert.equal(result.summary.freshnessStatus, null)
+  assert.equal(result.summary.latestPeriod, '—')
+  assert.equal(result.details.volume, '—')
+  assert.equal(result.details.week52High, '—')
+  assert.equal(result.details.week52Low, '—')
+  assert.equal(result.details.annualizedYield, '—')
 })

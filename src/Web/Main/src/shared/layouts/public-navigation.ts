@@ -29,6 +29,7 @@ export const MAIN_INVESTMENT_LINKS: NavLinkItem[] = [
   { label: 'Portafolio', to: '/portafolio' },
   { label: 'Oportunidades', to: '/oportunidades' },
   { label: 'Herramientas', to: '/herramientas' },
+  { label: 'Reportes', to: '/reportes' },
 ]
 
 export const MAIN_ACCOUNT_LINKS: MenuEntry[] = [{ label: 'Mi perfil', to: '/perfil' }]

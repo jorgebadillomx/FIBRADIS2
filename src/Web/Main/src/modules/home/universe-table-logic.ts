@@ -1,4 +1,9 @@
+import type { FreshnessStatus } from '@/shared/ui/freshness-badge'
+import { formatVolume } from './movers-logic.ts'
+
 export type SortKey = 'lastPrice' | 'dailyChange' | 'dailyChangePct' | 'volume' | 'week52High' | 'week52Low' | 'annualizedYield'
+
+export type UniverseChangeTone = 'negative' | 'neutral' | 'positive'
 
 export interface SnapshotRow {
   ticker: string
@@ -9,6 +14,25 @@ export interface SnapshotRow {
   week52High: null | number | string
   week52Low: null | number | string
   annualizedYield: null | number | string
+}
+
+export interface UniverseMobileCardData {
+  summary: {
+    ticker: string
+    price: string
+    change: string
+    changePct: string
+    changeTone: UniverseChangeTone
+    freshnessStatus: FreshnessStatus | null
+    latestPeriod: string
+  }
+  details: {
+    volume: string
+    rangePct: number | null
+    week52High: string
+    week52Low: string
+    annualizedYield: string
+  }
 }
 
 function numOf(val: null | number | string | undefined): number | null {
@@ -48,4 +72,54 @@ export function calcRange52Pct(
   if (lastPrice == null || high == null || low == null) return null
   if (high === low) return null
   return Math.min(1, Math.max(0, (lastPrice - low) / (high - low)))
+}
+
+function formatNumber(value: number | null, digits = 2, suffix = ''): string {
+  if (value == null) return '—'
+  return `${value.toFixed(digits)}${suffix}`
+}
+
+function formatSignedNumber(value: number | null, digits = 2, suffix = ''): string {
+  if (value == null) return '—'
+  return `${value >= 0 ? '+' : ''}${value.toFixed(digits)}${suffix}`
+}
+
+export function buildUniverseMobileCardData(params: {
+  dailyChange: number | null
+  dailyChangePct: number | null
+  freshnessStatus: FreshnessStatus | null
+  lastPrice: number | null
+  latestPeriod: string | null
+  rangePct: number | null
+  volume: number | null
+  week52High: number | null
+  week52Low: number | null
+  annualizedYield: number | null
+  ticker: string
+}): UniverseMobileCardData {
+  return {
+    summary: {
+      ticker: params.ticker,
+      price: formatNumber(params.lastPrice),
+      change: formatSignedNumber(params.dailyChange),
+      changePct: formatSignedNumber(params.dailyChangePct, 2, '%'),
+      changeTone:
+        params.dailyChangePct == null
+          ? 'neutral'
+          : params.dailyChangePct > 0
+            ? 'positive'
+            : params.dailyChangePct < 0
+              ? 'negative'
+              : 'neutral',
+      freshnessStatus: params.freshnessStatus,
+      latestPeriod: params.latestPeriod ?? '—',
+    },
+    details: {
+      volume: params.volume == null ? '—' : formatVolume(params.volume),
+      rangePct: params.rangePct,
+      week52High: formatNumber(params.week52High),
+      week52Low: formatNumber(params.week52Low),
+      annualizedYield: formatNumber(params.annualizedYield, 2, '%'),
+    },
+  }
 }

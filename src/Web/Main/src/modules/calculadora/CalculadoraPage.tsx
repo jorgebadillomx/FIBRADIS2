@@ -134,12 +134,15 @@ export function CalculadoraPage() {
                 </p>
               </div>
 
-              <label className="w-full max-w-sm space-y-1.5">
+              <label className="w-full max-w-sm space-y-1.5" htmlFor="calculadora-search">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Buscar fibra...
                 </span>
                 <input
+                  id="calculadora-search"
+                  name="filtro"
                   type="text"
+                  aria-label="Buscar fibra por ticker o nombre"
                   value={filtro}
                   onChange={(event) => setFiltro(event.target.value)}
                   placeholder="Buscar fibra..."
@@ -191,6 +194,7 @@ export function CalculadoraPage() {
                             </label>
                             <input
                               id={`monto-${row.ticker}`}
+                              name={`monto-${row.ticker}`}
                               type="text"
                               inputMode="decimal"
                               autoComplete="off"

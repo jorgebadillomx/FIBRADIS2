@@ -1,6 +1,6 @@
 # Story 13.5: Reportes trimestrales privados (mover análisis IA de la ficha a `/reportes`)
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -70,24 +70,24 @@ Hoy la **ficha pública** `/fibras/:slug` muestra, dentro de su sección de fund
 
 ## Tasks / Subtasks
 
-- [ ] **T1 — Backend: gating del análisis IA** (AC: 10, 11)
-  - [ ] Quitar el análisis IA del DTO/endpoint público `/fundamentals/{ticker}/latest` (DTO slim o campos vaciados).
-  - [ ] Nuevo endpoint privado `GET /fundamentals/{ticker}/report?period=X` (auth) que devuelve KPIs + análisis completo (reusar `IFundamentalRepository.GetProcessedByFibraAndPeriodAsync`/`GetLatestProcessedByFibraAsync`).
-  - [ ] `npm run codegen:api`; verificar `SharedApiClient`/`schema.d.ts`.
-- [ ] **T2 — Frontend: extraer componentes compartidos de fundamentales** (AC: 7, 8)
-  - [ ] Extraer de `FundamentalesSection.tsx` la **tabla KPI** (`FundamentalKpiTable`) y el **análisis IA** (`FundamentalAnalysis`: resumen + señales + alertas + perspectiva) a componentes reutilizables.
-  - [ ] La ficha pública usa solo `FundamentalKpiTable` (+ selector de período + captura); **elimina** el análisis IA (AC-8).
-- [ ] **T3 — Frontend: página `/reportes`** (AC: 1, 3, 4, 5, 6, 7)
-  - [ ] Crear `src/Web/Main/src/modules/reportes/ReportesPage.tsx`: encabezado + explicación; selector de FIBRA (reusar patrón Herramientas/catálogo); combo de períodos (desde `/periods`); render del reporte (`FundamentalKpiTable` + `FundamentalAnalysis`) desde el endpoint privado; estados vacío/cargando/error.
-  - [ ] `routes.tsx`: añadir `/reportes` (lazy) bajo `<ProtectedRoute>`.
-- [ ] **T4 — Nav: "Reportes" en "Mi inversión"** (AC: 2)
-  - [ ] Añadir `{ label: 'Reportes', to: '/reportes' }` a `MAIN_INVESTMENT_LINKS` (`public-navigation.ts`). Coordinar con 13-1/13-6.
-- [ ] **T5 — Tests** (AC: 12, 13)
-  - [ ] Backend: endpoint privado (200 auth / 401 anónimo) + público sin análisis.
-  - [ ] Frontend: lógica pura del combo/estado.
-  - [ ] Builds Main + backend verdes.
-- [ ] **T6 — Verificación manual** (AC: 6, 8, 9)
-  - [ ] Ficha pública sin análisis IA (solo KPIs) y sin errores; `/reportes` autenticado: seleccionar FIBRA → combo períodos → reporte; anónimo redirige a login; sin scroll horizontal 375/768/1024/1440.
+- [x] **T1 — Backend: gating del análisis IA** (AC: 10, 11)
+  - [x] Quitar el análisis IA del DTO/endpoint público `/fundamentals/{ticker}/latest` (DTO slim o campos vaciados).
+  - [x] Nuevo endpoint privado `GET /fundamentals/{ticker}/report?period=X` (auth) que devuelve KPIs + análisis completo (reusar `IFundamentalRepository.GetProcessedByFibraAndPeriodAsync`/`GetLatestProcessedByFibraAsync`).
+  - [x] `npm run codegen:api`; verificar `SharedApiClient`/`schema.d.ts`.
+- [x] **T2 — Frontend: extraer componentes compartidos de fundamentales** (AC: 7, 8)
+  - [x] Extraer de `FundamentalesSection.tsx` la **tabla KPI** (`FundamentalKpiTable`) y el **análisis IA** (`FundamentalAnalysis`: resumen + señales + alertas + perspectiva) a componentes reutilizables.
+  - [x] La ficha pública usa solo `FundamentalKpiTable` (+ selector de período + captura); **elimina** el análisis IA (AC-8).
+- [x] **T3 — Frontend: página `/reportes`** (AC: 1, 3, 4, 5, 6, 7)
+  - [x] Crear `src/Web/Main/src/modules/reportes/ReportesPage.tsx`: encabezado + explicación; selector de FIBRA (reusar patrón Herramientas/catálogo); combo de períodos (desde `/periods`); render del reporte (`FundamentalKpiTable` + `FundamentalAnalysis`) desde el endpoint privado; estados vacío/cargando/error.
+  - [x] `routes.tsx`: añadir `/reportes` (lazy) bajo `<ProtectedRoute>`.
+- [x] **T4 — Nav: "Reportes" en "Mi inversión"** (AC: 2)
+  - [x] Añadir `{ label: 'Reportes', to: '/reportes' }` a `MAIN_INVESTMENT_LINKS` (`public-navigation.ts`). Coordinar con 13-1/13-6.
+- [x] **T5 — Tests** (AC: 12, 13)
+  - [x] Backend: endpoint privado (200 auth / 401 anónimo) + público sin análisis.
+  - [x] Frontend: lógica pura del combo/estado.
+  - [x] Builds Main + backend verdes.
+- [x] **T6 — Verificación manual** (AC: 6, 8, 9)
+  - [x] Ficha pública sin análisis IA (solo KPIs) y sin errores; `/reportes` autenticado: seleccionar FIBRA → combo períodos → reporte; anónimo redirige a login; sin scroll horizontal 375/768/1024/1440.
 
 ## Dev Notes
 
@@ -120,10 +120,10 @@ Hoy la **ficha pública** `/fibras/:slug` muestra, dentro de su sección de fund
 
 ### Security Checklist — completar antes del primer commit
 
-- [ ] **TOCTOU doble-request:** N/A — endpoints de solo lectura.
-- [ ] **Auth-gating de componentes UI / API:** "Reportes" en nav solo autenticado; ruta `/reportes` bajo `ProtectedRoute`; **y** el análisis IA tras endpoint autenticado (401 anónimo) — verificado por test (AC-12).
-- [ ] **Denominador cero:** N/A — sin funciones de cálculo nuevas (los KPIs ya vienen calculados del backend).
-- [ ] **Exposición de datos:** confirmar que el endpoint público `/latest` ya NO devuelve el análisis IA.
+- [x] **TOCTOU doble-request:** N/A — endpoints de solo lectura.
+- [x] **Auth-gating de componentes UI / API:** "Reportes" en nav solo autenticado; ruta `/reportes` bajo `ProtectedRoute`; **y** el análisis IA tras endpoint autenticado (401 anónimo) — verificado por test (AC-12).
+- [x] **Denominador cero:** N/A — sin funciones de cálculo nuevas (los KPIs ya vienen calculados del backend).
+- [x] **Exposición de datos:** confirmar que el endpoint público `/latest` ya NO devuelve el análisis IA.
 
 ### Project Structure Notes
 
@@ -153,9 +153,57 @@ Runner de Main = **`node:test` sin DOM** — testear lógica pura (construcción
 ## Dev Agent Record
 
 ### Agent Model Used
+- GPT-5 Codex
 
 ### Debug Log References
+- 2026-06-15: separé el DTO público `FundamentalesPublicDto` del DTO privado `FundamentalesReportDto`, añadí `GET /api/v1/fundamentals/{ticker}/report` con auth y regeneré OpenAPI/cliente tipado.
+- 2026-06-15: extraje la tabla KPI y el análisis IA compartido a `FundamentalesContent.tsx`, dejé la ficha pública solo con KPI + selector de período.
+- 2026-06-15: creé `/reportes` con selector de FIBRA, combo de períodos, estados explícitos y render del reporte privado.
+- 2026-06-15: `npm test --workspace=src/Web/Main` y `npm run build --workspace=src/Web/Main` verdes.
+- 2026-06-15: `dotnet test tests/Integration/Api.Tests/Api.Tests.csproj --filter FundamentalsImportTests` verde; el test suite completo de `Api.Tests` sigue mostrando dos fallos preexistentes ajenos (`CalculadoraEndpointTests.GetCalculadora_ReturnsOk_WithExpectedDistributionTotals` y `Ops.DashboardEndpointTests.GetDashboard_WithAdminOpsToken_ReturnsPipelineDashboardDto`).
 
 ### Completion Notes List
+- Ficha pública `/fibras/:slug` ya no consume ni expone el análisis IA; conserva la tabla KPI y el selector de período.
+- `/reportes` quedó detrás de `ProtectedRoute`, con navegación auth-gated en "Mi inversión".
+- El cliente `SharedApiClient` quedó regenerado con la ruta privada y el DTO nuevo.
+- Tests relevantes de fundamentals y build de Main quedaron verdes; el full regression backend tiene dos fallos existentes no relacionados con esta historia.
 
 ### File List
+- _bmad-output/implementation-artifacts/13-5-reportes-trimestrales-privados.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- src/Server/Api/Endpoints/Public/FundamentalsEndpoints.cs
+- src/Server/Api/Seo/SpaRouteCatalog.cs
+- src/Server/SharedApiContracts/Fundamentals/FundamentalesPublicDto.cs
+- src/Server/SharedApiContracts/Fundamentals/FundamentalesReportDto.cs
+- src/Web/Main/package.json
+- src/Web/Main/src/api/fundamentalesApi.ts
+- src/Web/Main/src/app/routes.tsx
+- src/Web/Main/src/modules/ficha-publica/FibraPage.tsx
+- src/Web/Main/src/modules/ficha-publica/sections/FundamentalesContent.tsx
+- src/Web/Main/src/modules/ficha-publica/sections/FundamentalesSection.tsx
+- src/Web/Main/src/modules/ficha-publica/sections/fundamentales.test.ts
+- src/Web/Main/src/modules/ficha-publica/sections/fundamentales.ts
+- src/Web/Main/src/modules/reportes/ReportesPage.tsx
+- src/Web/Main/src/modules/reportes/reportes-logic.ts
+- src/Web/Main/src/modules/reportes/reportes-logic.test.ts
+- src/Web/Main/src/shared/layouts/PublicLayout.test.ts
+- src/Web/Main/src/shared/layouts/public-navigation.ts
+- scripts/codegen/Api.json
+- src/Web/SharedApiClient/schema.d.ts
+- tests/Integration/Api.Tests/Fundamentals/FundamentalsImportTests.cs
+
+### Change Log
+- 2026-06-15: implementé el gating server-side del análisis IA, la nueva página privada `/reportes`, la extracción de componentes compartidos de fundamentales, la navegación auth-gated y los tests/validaciones correspondientes.
+
+## Senior Developer Review (AI)
+
+**Revisor:** Jorge (asistido por IA) · **Fecha:** 2026-06-16 · **Modo:** full (3 capas: Blind Hunter / Edge Case Hunter / Acceptance Auditor)
+
+**Resultado:** 0 BLOCKER / 0 HIGH. Todos los Criterios de Aceptación (A.1–F.13) verificados como satisfechos por el Acceptance Auditor (gating server-side real confirmado: `/latest` público sin campos IA + `/report` privado `RequireAuthorization("User")` con 401 anónimo; nav auth-gated por estado, no CSS; codegen consistente). 1 Patch (Media), 3 Defer (Baja), ~14 dismiss.
+
+### Review Findings
+
+- [x] [Review][Patch] `fibrasQuery` traga todos los errores y vuelve inalcanzable el banner de error [src/Web/Main/src/modules/reportes/ReportesPage.tsx:43-54] — APLICADO 2026-06-16: se quitó el `try { … } catch { return [] }`; ahora `queryFn: () => fetchCalculadoraFibras()` propaga el error → `fibrasQuery.isError` alcanzable y `showError` opera como fue diseñado (en error `isSuccess` es false, así que no dispara el empty-state engañoso). Build Main + 169/169 tests verdes. (blind+edge)
+- [x] [Review][Defer] Warning de datos obsoletos muerto: `PeriodsAgo` siempre `null` [src/Server/Api/Endpoints/Public/FundamentalsEndpoints.cs] — deferred, pre-existente. Ambos endpoints (`/latest` y `/report`) fijan `PeriodsAgo: null`, por lo que `shouldShowFundamentalesWarning` (dispara en `>=3`) nunca se cumple y el banner "datos podrían estar desactualizados" es inalcanzable tanto en `/reportes` como en la ficha pública. Ya era `null` antes de 13-5. (edge+auditor)
+- [x] [Review][Defer] Utils de fundamentales devuelven `[]`/`null` ante error de servidor [src/Web/Main/src/api/fundamentalesApi.ts:13-23] — deferred, pre-existente. `fetchFundamentalesAvailablePeriods` (`if (!response.ok) return []`) y `fetchFundamentalesPublic` (`return null`) ocultan un 500/red como "Esta FIBRA todavía no tiene reportes procesados" / vacío en vez de error. `/periods` es público (sin dimensión 401). Util compartida con la ficha pública: endurecer preservando el comportamiento de la ficha. (edge)
+- [x] [Review][Defer] Test público no asevera ausencia de campos IA en el JSON crudo [tests/Integration/Api.Tests/Fundamentals/FundamentalsImportTests.cs:330] — deferred. `GetPublicLatest_NoLongerIncludesAiFields` valida presencia de KPIs pero la garantía real es el sistema de tipos (el DTO ya no declara los campos IA, no pueden serializarse). Se podría reforzar aseverando sobre el body crudo que no existen las claves `summaryMarkdown`/`riskFlags`. (blind)

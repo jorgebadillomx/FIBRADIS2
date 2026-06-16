@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { ArrowUpRight, Plus, Search, X } from 'lucide-react'
@@ -378,10 +378,12 @@ export function HerramientasPage() {
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Horizonte
                       </span>
-                      <select
-                        value={fibraHorizonte}
-                        onChange={(e) =>
-                          setFibraHorizonte(
+                    <select
+                      id="herramientas-horizonte"
+                      name="horizonte"
+                      value={fibraHorizonte}
+                      onChange={(e) =>
+                        setFibraHorizonte(
                             Number(e.target.value) as (typeof HORIZON_OPTIONS)[number],
                           )
                         }
@@ -653,12 +655,18 @@ function NumberField({
   onChange: (value: string) => void
   placeholder: string
 }) {
+  const autoId = useId().replace(/:/g, '')
+  const id = `number-field-${buildFieldName(label)}-${autoId}`
+  const name = buildFieldName(label)
+
   return (
-    <label className="space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
-      </span>
+      </label>
       <input
+        id={id}
+        name={name}
         type="number"
         inputMode="decimal"
         step="any"
@@ -667,8 +675,19 @@ function NumberField({
         placeholder={placeholder}
         className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
-    </label>
+    </div>
   )
+}
+
+function buildFieldName(seed: string) {
+  const normalized = seed
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return normalized || 'field'
 }
 
 function formatInteger(value: number): string {
