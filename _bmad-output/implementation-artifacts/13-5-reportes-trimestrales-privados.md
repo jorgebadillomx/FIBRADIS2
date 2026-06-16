@@ -51,13 +51,13 @@ Hoy la **ficha pública** `/fibras/:slug` muestra, dentro de su sección de fund
 8. En `FundamentalesSection.tsx` (ficha pública `/fibras/:slug`): **eliminar** los bloques de análisis IA — resumen analítico (≈ l.137-154), señales operativas (≈ l.156-161), señales financieras (≈ l.163-168), alertas de riesgo (≈ l.170-178) y perspectiva del analista (≈ l.180-189). **Conservar** la tabla KPI (≈ l.102-133), el período/fecha de captura y el selector de período.
 9. La ficha pública **ya no consume ni expone** el análisis IA (ver E: el endpoint público deja de devolverlo). Verificar que la ficha sigue funcionando con KPIs + selector de período sin errores por campos ausentes.
 
-### E. Gating server-side del análisis IA (decisión clave de diseño)
+### E. Gating server-side del análisis IA (decisión confirmada por el usuario)
 
-10. El análisis IA deja de servirse por el endpoint **público**. **Enfoque recomendado** (gating real, no solo UI):
+10. El análisis IA deja de servirse por el endpoint **público**. **Enfoque obligatorio** (confirmado con el usuario — gating real server-side, NO solo UI):
     - **Público** `GET /api/v1/fundamentals/{ticker}/latest` y su DTO → **solo KPIs** (quitar `Summary`, `SummaryMarkdown`, `InvestorTakeaway`, `OperationalSignals`, `FinancialSignals`, `RiskFlags`). Crear un DTO público slim o vaciar esos campos.
-    - **Nuevo endpoint privado autenticado** `GET /api/v1/fundamentals/{ticker}/report?period=X` (requiere auth; 401 anónimo) → KPIs + análisis IA completo. Lo consume `/reportes`.
+    - **Nuevo endpoint privado autenticado** `GET /api/v1/fundamentals/{ticker}/report?period=X` (requiere auth; **401 anónimo**) → KPIs + análisis IA completo. Lo consume `/reportes`.
     - `GET /api/v1/fundamentals/{ticker}/periods` puede seguir **público** (la lista de períodos no es sensible).
-    - **Alternativa NO recomendada:** solo ocultar el análisis en la UI dejándolo en el endpoint público → el contenido premium quedaría scrapeable vía API. **Si el dev opta por esta, debe justificarlo y marcarlo para review.**
+    - ❌ **NO aceptable:** ocultar el análisis solo en la UI dejándolo en el endpoint público (quedaría scrapeable vía API). El gating **debe** ser server-side.
 11. Si cambian DTOs/endpoints, **regenerar el cliente tipado**: `npm run codegen:api` y verificar que `SharedApiClient`/`schema.d.ts` quedan consistentes en ambos SPAs.
 
 ### F. Tests (obligatorios antes de `review`, por `workflow-rules.md`)
