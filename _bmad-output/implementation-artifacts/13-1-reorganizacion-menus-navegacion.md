@@ -1,6 +1,9 @@
 # Story 13.1: Reorganización de menús de navegación (Main + Ops)
 
-Status: review
+Status: in-progress
+
+<!-- REABIERTA 2026-06-15: ver "Adenda 2026-06-15 — Revertir desplegable público 'Más'" al final. La primera entrega (dropdowns Main + secciones Ops) ya se fusionó a main (merge --no-ff). -->
+> **Nota:** la primera entrega está **fusionada a `main`**. Esta reapertura agrega SOLO el alcance de la adenda al final del archivo.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -201,3 +204,30 @@ GPT-5
 - [x] [Review][Defer] SEO/internal-linking: las 3 rutas públicas movidas al dropdown "Más" (`/conoce-las-fibras`, `/calendario`, `/calculadora`) salen del DOM cuando está cerrado (`{open ? … : null}`); siguen indexables vía sitemap (`SeoEndpoints.cs`) + metadata server-side (`SpaMetadataProvider.cs`), pero pierden el enlace interno site-wide del header — deferred, tradeoff de diseño
 - [x] [Review][Defer] Estado `checking`: el drawer móvil muestra "Iniciar sesión" para un usuario autenticado durante la revalidación (flicker) — deferred, pre-existente
 - [x] [Review][Defer] Drawer de Ops abre por `onClick` manual fuera de `DialogTrigger` y retorno de foco manual; diverge del patrón de Main pero funciona — deferred
+
+## Adenda 2026-06-15 — Revertir el desplegable público "Más"
+
+**Origen:** feedback del usuario tras ver la primera entrega en producción. No le gustó agrupar los enlaces públicos secundarios bajo un desplegable "Más"; quiere volver al nav público **plano** anterior. Esto además resuelve el defer SEO/internal-linking que la propia 13.1 generó (los 3 enlaces salían del DOM al cerrar el dropdown, perdiendo enlace interno site-wide).
+
+**Alcance (solo navegación pública Main):**
+
+A1. Eliminar **por completo** el desplegable público **"Más"** (desktop y móvil). Sus 3 enlaces vuelven a ser **enlaces directos planos** en el nav: `Conoce las FIBRAs` → `/conoce-las-fibras`, `Calendario` → `/calendario`, `Calculadora` → `/calculadora`.
+A2. Restaurar el **orden plano pre-13.1** de los enlaces públicos: `Conoce las FIBRAs`, `Fibras`, `Comparar`, `Noticias`, `Calculadora`, `Calendario`, `Fundamentales` (verificar el orden exacto en el git history de `PublicLayout.tsx` previo al commit `25eb6eb`; si difiere, prevalece el del history). **No** se cambia ninguna ruta destino.
+A3. El desplegable **"Mi inversión"** (auth-gated: Portafolio/Oportunidades/Herramientas) se **conserva sin cambios** — al usuario le parece bien.
+A4. Menú móvil (`Dialog`): **eliminar la sección "Más"**; sus enlaces se integran a la sección "Navegar" (plano) en el orden de A2. "Mi inversión" (auth) y "Cuenta" intactos.
+A5. **Sin regresión de enlazado interno:** los 3 enlaces ex-"Más" quedan en el DOM del header de forma persistente (no condicionados a dropdown abierto).
+
+**Archivos a tocar:** `src/Web/Main/src/shared/layouts/public-navigation.ts` (eliminar `MAIN_MORE_LINKS` y la sección "Más" de `buildMainMobileSections`; fusionar en la lista plana) y `src/Web/Main/src/shared/layouts/PublicLayout.tsx` (quitar el `DesktopMenu` "Más" — `moreOpen`/`moreMenuRef`/`toggleMoreMenu` y sus usos; renderizar enlaces planos; limpiar imports/estado muertos). **No tocar** "Mi inversión" ni el menú de cuenta.
+
+**Tests (obligatorios antes de `review`, `node:test` patrón existente):** verificar que ya **no existe** `MAIN_MORE_LINKS`/sección "Más" en la estructura de datos, que los 3 enlaces ex-"Más" están en la lista plana en el orden de A2, y que `MAIN_INVESTMENT_LINKS` sigue intacto. Build Main verde.
+
+**Coordinación con 13-6:** la historia 13-6 **también** toca `public-navigation.ts`/`PublicLayout.tsx` (cambia la entrada anónima a "Portafolio"/`/portafolio`). Recomendado: **13-1 (esta adenda) primero a main**, luego 13-6 rebasa. El botón "Portafolio" **NO** es parte de esta adenda (vive en 13-6).
+
+**Branch:** crear uno nuevo desde `main` (p. ej. `story/13-1-revert-menu-mas`) — la primera entrega ya está en `main`.
+
+### Tasks (adenda)
+
+- [ ] **TA1 — Revertir "Más" en `public-navigation.ts`** (A1, A2, A4, A5)
+- [ ] **TA2 — Quitar `DesktopMenu` "Más" en `PublicLayout.tsx`** (A1, A5) — limpiar estado/refs/imports muertos; conservar "Mi inversión" y cuenta.
+- [ ] **TA3 — Tests de nav** (sin "Más", orden plano A2, "Mi inversión" intacto) + build Main verde.
+- [ ] **TA4 — Verificación manual** (desktop/móvil, sin scroll horizontal 375/768/1024/1440).

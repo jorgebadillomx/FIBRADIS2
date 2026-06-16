@@ -92,7 +92,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-15  # 12-11 editor robots → done (code review: 1 decisión + 6 patches; 9 frontend + 16 unit + 5 integration verdes)
+last_updated: 2026-06-15  # reorg épica 13: 13-1 a main + REABIERTA (revertir "Más"); nueva 13-5 Reportes; portafolio público renumerado 13-5→13-6
 # story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
@@ -423,8 +423,9 @@ development_status:
   # story 13-1 creada — Main: nav de hasta 10 enlaces → ≤4 directos + dropdowns "Más" y "Mi inversión" (auth), menú móvil Dialog agrupado; Ops: sidebar de 13 ítems planos → 5 secciones con encabezado (Operación/Datos/Contenido/IA/Sistema) + descripción a tooltip + drawer hamburguesa en <1024px (hoy se apila completo arriba del contenido). Sin cambio de rutas. Reusa patrón dropdown/dialog existente (no shadcn add).
   epic-13: in-progress
   # 13-1 code review (2026-06-15): nav extraído a rama v2 desde main (la rama vieja arrastraba 12-1 duplicada); re-integrados los 4 ítems SEO de Épica 12 en nueva sección "SEO" (6 secciones/17 ítems, deviación de AC-7). Pendiente: 4 patches (DialogTitle drawer Ops, prefers-reduced-motion, logout no-op, target táctil) + decisión AC14 (tests no renderizan componentes). Tests Main 162 + Ops 12 verdes; builds verdes.
-  # 13-1 done (2026-06-15) — merge a main por decisión del usuario. Nav Main reorganizado + Ops 6 secciones/drawer; tests Main 162 + Ops 12 verdes, builds verdes. PENDIENTE: decisión de review AC14 (los tests validan datos/funciones puras, no montan componentes — toolchain Main sin jsdom/RTL).
-  13-1-reorganizacion-menus-navegacion: done
+  # 13-1 done (2026-06-15) — merge a main. Pendiente decisión de review AC14 (tests a nivel de datos, sin render).
+  # 13-1 REABIERTA (2026-06-15, decisión usuario) — nueva iteración: REVERTIR el desplegable público "Más" (Conoce las FIBRAs/Calendario/Calculadora vuelven a enlaces planos), recupera el enlazado interno site-wide que se difirió. "Mi inversión" (auth) intacto. Ver adenda en el story file. El botón "Portafolio" NO va aquí (va en 13-6). Branch nuevo desde main al implementar.
+  13-1-reorganizacion-menus-navegacion: in-progress
   # ── Historias derivadas de la revisión de UI 2026-06-13 (localhost:5173, MCP chrome-devtools + design-system/fibradis/MASTER.md) ──
   # story 13-2 cancelada (2026-06-13, decisión usuario) — la repetición del precio entre el header sticky y la tarjeta hero de FibraPage es un patrón defendible (barra persistente + bloque de entrada), sin impacto funcional ni a11y; el carrusel superior muestra OTRAS fibras (no redundante). No justifica una historia.
   13-2-jerarquia-encabezado-ficha-fibra: cancelled
@@ -432,6 +433,10 @@ development_status:
   13-3-accesibilidad-formularios-y-contraste: backlog
   # story 13-4 creada — tabla "Universo FIBRAS" responsiva en móvil: hoy es min-w-[60rem] (960px) dentro de scroll interno; en 375px exige scroll horizontal extenso y oculta columnas clave (Volumen/Rango 52S/Yield). Adoptar layout de tarjeta por emisora o columnas prioritarias (Precio + Var%) con detalle expandible en <768px. Evaluar mismo patrón en la tabla de /fundamentales. Sin cambio de datos ni rutas.
   13-4-tabla-universo-fibras-responsive-movil: backlog
+  # story 13-5 creada (2026-06-15) — REPORTES: nueva página PRIVADA /reportes (reportes trimestrales por FIBRA). Selector de FIBRA + combo con todos sus períodos de fundamentales → muestra datos fundamentales + análisis IA (resumen analítico, señales, alertas, perspectiva). El análisis IA se QUITA de la ficha pública /fibras/:slug (la ficha conserva la tabla KPI básica); el análisis premium pasa a la sección privada. Reutiliza endpoints existentes (/fundamentals/{ticker}/periods + /{ticker}/latest?period=X) y el componente FundamentalesSection.
+  13-5-reportes-trimestrales-privados: ready-for-dev
+  # story 13-6 (antes 13-5; renumerada por decisión del usuario) — /portafolio pasa de ruta protegida a pública DUAL: anónimo → landing SEO estático (overview "todo lo que hace", incluida Reportes + login embebido), autenticado → dashboard actual intacto. Botón nav "Iniciar sesión" → "Portafolio" (apunta a /portafolio). SEO: /portafolio a KnownPaths+StaticRoutes+breadcrumb+metadata SSR. El landing describe la página Reportes (13-5). La reversión de "Más" se movió a 13-1 (reabierta). Branch story/13-6-portafolio-landing-publico. Coordinar merge con 13-1 (ambas tocan public-navigation.ts).
+  13-6-portafolio-landing-publico: ready-for-dev
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done
