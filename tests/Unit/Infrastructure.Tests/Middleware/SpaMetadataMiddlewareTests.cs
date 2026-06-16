@@ -213,6 +213,19 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
     }
 
     [Fact]
+    public async Task InjectsMetadata_ForPlataforma()
+    {
+        var (context, nextCalled) = await InvokeAsync("/plataforma");
+        var body = await ReadBodyAsync(context);
+
+        Assert.False(nextCalled.Value);
+        Assert.Contains("<title>Plataforma de Fibras Inmobiliarias — descubre funciones y acceso | Fibras Inmobiliarias</title>", body);
+        Assert.Contains("<link rel=\"canonical\" href=\"https://fibrasinmobiliarias.com/plataforma\" />", body);
+        Assert.Contains("\"@type\":\"CollectionPage\"", body);
+        Assert.Contains("\"@type\":\"BreadcrumbList\"", body);
+    }
+
+    [Fact]
     public async Task PassesThrough_ForAssets()
     {
         var (_, nextCalled) = await InvokeAsync("/assets/index-1TzwM6fE.js");

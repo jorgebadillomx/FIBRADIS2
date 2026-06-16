@@ -28,6 +28,7 @@ public static class SeoEndpoints
         "/conoce-las-fibras",
         "/calendario",
         "/fundamentales",
+        "/plataforma",
         "/portafolio",
         "/calculadora",
         "/acerca",

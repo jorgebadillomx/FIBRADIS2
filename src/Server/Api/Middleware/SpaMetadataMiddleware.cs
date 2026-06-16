@@ -216,6 +216,7 @@ public partial class SpaMetadataMiddleware(
             "/conoce-las-fibras" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Conoce las FIBRAs", "/conoce-las-fibras") },
             "/calendario" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Calendario", "/calendario") },
             "/fundamentales" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Fundamentales", "/fundamentales") },
+            "/plataforma" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Plataforma", "/plataforma") },
             "/portafolio" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Portafolio", "/portafolio") },
             "/privacidad" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Privacidad", "/privacidad") },
             "/acerca" => new[] { new SeoBreadcrumbItem("Inicio", "/"), new SeoBreadcrumbItem("Acerca", "/acerca") },

@@ -28,6 +28,10 @@ public class SpaMetadataProvider(
         "Métricas fundamentales comparativas de FIBRAs: Cap Rate, NAV por CBFI, LTV, NOI Margin y más. Análisis cross-FIBRA actualizado.";
     private const string PortafolioDescription =
         "Tu entrada pública a Fibras Inmobiliarias: explora portafolio, reportes, oportunidades, herramientas, fundamentales, noticias y catálogo, o inicia sesión.";
+    private const string PlataformaTitle =
+        "Plataforma de Fibras Inmobiliarias — descubre funciones y acceso | Fibras Inmobiliarias";
+    private const string PlataformaDescription =
+        "Descubre Fibras Inmobiliarias: catálogo, fichas, comparador, calculadora, noticias, calendario, portafolio, reportes y herramientas para invertir mejor.";
     private const string PrivacyDescription =
         "Aviso de privacidad de Fibras Inmobiliarias: qué datos recopilamos, cómo los usamos, protección de datos y derechos de usuario conforme a la LFPDPPP.";
     private const string AboutDescription =
@@ -50,7 +54,7 @@ public class SpaMetadataProvider(
     public IReadOnlyList<string> KnownPaths { get; } =
     [
         "/", "/calculadora", "/comparar", "/fibras", "/noticias", "/conoce-las-fibras",
-        "/calendario", "/fundamentales", "/portafolio", "/privacidad", "/acerca", "/contacto",
+        "/calendario", "/fundamentales", "/plataforma", "/portafolio", "/privacidad", "/acerca", "/contacto",
     ];
 
     public async Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
@@ -96,6 +100,11 @@ public class SpaMetadataProvider(
                 FundamentalesDescription,
                 "/fundamentales",
                 await BuildFundamentalesJsonLdAsync(ct)),
+            "/plataforma" => new SpaPageMeta(
+                PlataformaTitle,
+                PlataformaDescription,
+                "/plataforma",
+                BuildPlataformaJsonLd()),
             "/portafolio" => new SpaPageMeta(
                 "Portafolio de FIBRAs, reportes y login | Fibras Inmobiliarias",
                 PortafolioDescription,
@@ -339,6 +348,90 @@ public class SpaMetadataProvider(
                                 ["position"] = 7,
                                 ["name"] = "Catálogo de FIBRAs",
                                 ["url"] = $"{_baseUrl}/fibras",
+                            },
+                        },
+                    },
+                },
+            },
+        }, JsonLdOptions);
+
+    private string BuildPlataformaJsonLd()
+        => JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = new object[]
+            {
+                new Dictionary<string, object?>
+                {
+                    ["@type"] = "CollectionPage",
+                    ["@id"] = $"{_baseUrl}/plataforma#page",
+                    ["name"] = PlataformaTitle,
+                    ["description"] = PlataformaDescription,
+                    ["url"] = $"{_baseUrl}/plataforma",
+                    ["isPartOf"] = new Dictionary<string, object?>
+                    {
+                        ["@id"] = $"{_baseUrl}/#website",
+                    },
+                    ["publisher"] = new Dictionary<string, object?>
+                    {
+                        ["@id"] = $"{_baseUrl}/#organization",
+                    },
+                    ["mainEntity"] = new Dictionary<string, object?>
+                    {
+                        ["@type"] = "ItemList",
+                        ["name"] = "Funciones públicas de Fibras Inmobiliarias",
+                        ["numberOfItems"] = 7,
+                        ["itemListOrder"] = "https://schema.org/ItemListOrderAscending",
+                        ["itemListElement"] = new object[]
+                        {
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 1,
+                                ["name"] = "Catálogo y fichas de FIBRAs",
+                                ["url"] = $"{_baseUrl}/fibras",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 2,
+                                ["name"] = "Comparador",
+                                ["url"] = $"{_baseUrl}/comparar",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 3,
+                                ["name"] = "Fundamentales",
+                                ["url"] = $"{_baseUrl}/fundamentales",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 4,
+                                ["name"] = "Calculadora",
+                                ["url"] = $"{_baseUrl}/calculadora",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 5,
+                                ["name"] = "Calendario",
+                                ["url"] = $"{_baseUrl}/calendario",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 6,
+                                ["name"] = "Noticias",
+                                ["url"] = $"{_baseUrl}/noticias",
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "ListItem",
+                                ["position"] = 7,
+                                ["name"] = "Guía ¿Qué son las FIBRAs?",
+                                ["url"] = $"{_baseUrl}/conoce-las-fibras",
                             },
                         },
                     },
