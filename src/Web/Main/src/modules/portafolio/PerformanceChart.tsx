@@ -26,7 +26,7 @@ const RANGE_OPTIONS: Array<{ value: PerformanceRange; label: string }> = [
 ]
 
 const chartConfig = {
-  portfolio: { label: 'Mi Portafolio', color: 'hsl(var(--primary))' },
+  portfolio: { label: 'Mi Portafolio', color: 'var(--primary)' },
   ipc: { label: 'IPC BMV', color: '#0284c7' },
   sp500: { label: 'S&P 500', color: '#8b5cf6' },
 } as const

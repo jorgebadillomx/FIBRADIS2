@@ -40,6 +40,25 @@ function GroupRow({
   onToggle: () => void
   isAlt: boolean
 }) {
+  // Un solo registro en el periodo: no agrupar — fila plana, sin expandir ni fila hija duplicada.
+  const isSingle = group.items.length === 1
+
+  if (isSingle) {
+    return (
+      <tr className={isAlt ? 'bg-muted/20' : ''}>
+        <td className="px-4 py-2 font-medium text-foreground/85 whitespace-nowrap">
+          {group.label}
+        </td>
+        <td className="px-4 py-2 text-right tabular-nums font-medium">
+          ${group.total.toFixed(4)}
+        </td>
+        <td className="px-4 py-2 text-right">
+          <DiffCell diff={diff} />
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <>
       <tr

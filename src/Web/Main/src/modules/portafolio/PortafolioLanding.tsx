@@ -157,6 +157,29 @@ export function PortafolioLanding() {
           </aside>
         </section>
 
+        <section id="login" className="mt-10 scroll-mt-24">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+            <div className="space-y-4 rounded-3xl border border-border bg-background/80 p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                Acceso privado
+              </p>
+              <h2 className="font-playfair text-3xl font-semibold tracking-tight text-foreground">
+                Entra a tu portafolio sin perder contexto
+              </h2>
+              <p className="text-sm leading-6 text-muted-foreground md:text-base">
+                El formulario reutiliza la misma lógica de sesión que la página de login. Cuando entras aquí,
+                el mismo enlace vuelve al dashboard privado sin recargar la página.
+              </p>
+              <div className="rounded-2xl border border-dashed border-border bg-surface-elevated/70 p-4 text-sm leading-6 text-muted-foreground">
+                Si solo quieres explorar la plataforma, usa las secciones públicas de esta misma página. Si ya
+                tienes cuenta, inicia sesión y verás el portafolio privado con las métricas calculadas en backend.
+              </div>
+            </div>
+
+            <LoginForm redirectTo="/portafolio" titleAs="h2" className="shadow-md" />
+          </div>
+        </section>
+
         <section className="mt-10">
           <div className="max-w-3xl space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
@@ -214,29 +237,6 @@ export function PortafolioLanding() {
                 </article>
               )
             })}
-          </div>
-        </section>
-
-        <section id="login" className="mt-10 scroll-mt-24">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
-            <div className="space-y-4 rounded-3xl border border-border bg-background/80 p-6 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                Acceso privado
-              </p>
-              <h2 className="font-playfair text-3xl font-semibold tracking-tight text-foreground">
-                Entra a tu portafolio sin perder contexto
-              </h2>
-              <p className="text-sm leading-6 text-muted-foreground md:text-base">
-                El formulario reutiliza la misma lógica de sesión que la página de login. Cuando entras aquí,
-                el mismo enlace vuelve al dashboard privado sin recargar la página.
-              </p>
-              <div className="rounded-2xl border border-dashed border-border bg-surface-elevated/70 p-4 text-sm leading-6 text-muted-foreground">
-                Si solo quieres explorar la plataforma, usa las secciones públicas de arriba. Si ya tienes
-                cuenta, inicia sesión y verás el portafolio privado con las métricas calculadas en backend.
-              </div>
-            </div>
-
-            <LoginForm redirectTo="/portafolio" titleAs="h2" className="shadow-md" />
           </div>
         </section>
       </div>

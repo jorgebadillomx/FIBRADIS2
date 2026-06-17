@@ -6,8 +6,8 @@ import { fetchFundamentalesSummary } from '@/api/fundamentalesApi'
 import { toNum } from '@/shared/lib/format-time'
 import { FreshnessBadge, type FreshnessStatus } from '@/shared/ui/freshness-badge'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
-import { formatVolume } from './movers-logic'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
+import { formatVolume } from './movers-logic'
 import {
   filterSnapshots,
   sortSnapshots,
@@ -331,180 +331,135 @@ export function FibraUniverseTable() {
         )}
       </div>
 
-      <div className="hidden md:block">
-        <div className="overflow-x-auto">
-          <div className="min-w-[60rem]">
-            <div className="grid grid-cols-[2.5rem_minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] gap-3 border-y border-border px-4 py-2 text-xs font-semibold text-muted-foreground">
-              <span />
-              <span>Emisora</span>
-              {SORT_COLUMNS.slice(0, 4).map(col => (
-                <button
-                  key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  type="button"
-                  className="flex items-center gap-1 text-right tabular-nums transition-colors hover:text-foreground"
-                >
-                  {col.label}
-                  <SortIcon active={sortKey === col.key} dir={sortDir} />
-                </button>
+      <div className="hidden md:block overflow-x-auto">
+        {isError ? (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            No se pudo cargar el universo FIBRAS. Intenta de nuevo más tarde.
+          </p>
+        ) : isLoading ? (
+          <table className="w-full animate-pulse">
+            <tbody className="divide-y divide-border">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-2 py-3"><div className="h-10 w-10 rounded-lg bg-muted" /></td>
+                  <td className="px-4 py-3"><div className="h-3 w-24 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-12 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-10 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-12 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-14 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-12 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-12 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-10 rounded bg-muted" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-3 w-12 rounded bg-muted" /></td>
+                </tr>
               ))}
-              <span className="text-right">Rango 52S</span>
-              {SORT_COLUMNS.slice(4, 6).map(col => (
-                <button
-                  key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  type="button"
-                  className="flex items-center gap-1 text-right tabular-nums transition-colors hover:text-foreground"
-                >
-                  {col.label}
-                  <SortIcon active={sortKey === col.key} dir={sortDir} />
-                </button>
-              ))}
-              <button
-                onClick={() => handleSort('annualizedYield')}
-                type="button"
-                className="flex items-center gap-1 text-right tabular-nums transition-colors hover:text-foreground"
-              >
-                Yield
-                <SortIcon active={sortKey === 'annualizedYield'} dir={sortDir} />
-              </button>
-              <span className="text-right">Último Rep.</span>
-              <span>Estado</span>
-            </div>
-
-            {isError ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                No se pudo cargar el universo FIBRAS. Intenta de nuevo más tarde.
-              </p>
-            ) : isLoading ? (
-              <div className="divide-y divide-border animate-pulse">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="grid grid-cols-[2.5rem_minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3"
-                  >
-                    <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
-                    <div className="h-3 w-16 rounded bg-muted" />
-                    <div className="h-3 w-12 rounded bg-muted" />
-                    <div className="h-3 w-10 rounded bg-muted" />
-                    <div className="h-3 w-10 rounded bg-muted" />
-                    <div className="h-3 w-12 rounded bg-muted" />
-                    <div className="h-2 w-full rounded-full bg-muted" />
-                    <div className="h-3 w-12 rounded bg-muted" />
-                    <div className="h-3 w-12 rounded bg-muted" />
-                    <div className="h-3 w-10 rounded bg-muted" />
-                    <div className="h-3 w-12 rounded bg-muted" />
-                    <div className="h-5 w-16 rounded-full bg-muted" />
-                  </div>
-                ))}
-              </div>
-            ) : sorted.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                {filterText.trim()
-                  ? `Sin resultados para "${filterText.trim()}"`
-                  : 'Sin datos de mercado disponibles'}
-              </p>
-            ) : (
-              <div className="divide-y divide-border">
-                {sorted.map(snap => {
-                  const lastPrice = toNum(snap.lastPrice)
-                  const dailyChange = toNum(snap.dailyChange)
-                  const dailyChangePct = toNum(snap.dailyChangePct)
-                  const vol = toNum(snap.volume)
-                  const high = toNum(snap.week52High)
-                  const low = toNum(snap.week52Low)
-                  const yield_ = toNum(snap.annualizedYield)
-                  const rangePct = calcRange52Pct(lastPrice, high, low)
-                  const latestPeriod = latestPeriodByTicker[snap.ticker] ?? null
-
-                  const changeColor =
-                    dailyChangePct == null
-                      ? 'text-muted-foreground'
-                      : dailyChangePct > 0
-                        ? 'text-positive'
-                        : dailyChangePct < 0
-                          ? 'text-negative'
-                          : 'text-muted-foreground'
-
-                  return (
-                    <a
-                      key={snap.ticker}
-                      href={`/fibras/${slugFor(snap.ticker)}`}
-                      className="grid grid-cols-[2.5rem_minmax(5rem,1fr)_auto_auto_auto_auto_6rem_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+            </tbody>
+          </table>
+        ) : sorted.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            {filterText.trim()
+              ? `Sin resultados para "${filterText.trim()}"`
+              : 'Sin datos de mercado disponibles'}
+          </p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-y border-border text-xs font-semibold text-muted-foreground">
+                <th className="px-2 py-2 text-left"><span className="sr-only">Logo</span></th>
+                <th className="px-4 py-2 text-left">Emisora</th>
+                {SORT_COLUMNS.map(col => (
+                  <th key={col.key} className="px-4 py-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleSort(col.key)}
+                      className="inline-flex items-center justify-end gap-1 w-full tabular-nums transition-colors hover:text-foreground"
                     >
+                      {col.label}
+                      <SortIcon active={sortKey === col.key} dir={sortDir} />
+                    </button>
+                  </th>
+                ))}
+                <th className="px-4 py-2 text-right">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('annualizedYield')}
+                    className="inline-flex items-center justify-end gap-1 w-full tabular-nums transition-colors hover:text-foreground"
+                  >
+                    Yield
+                    <SortIcon active={sortKey === 'annualizedYield'} dir={sortDir} />
+                  </button>
+                </th>
+                <th className="px-4 py-2 text-right">Último Rep.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {sorted.map(snap => {
+                const lastPrice = toNum(snap.lastPrice)
+                const dailyChange = toNum(snap.dailyChange)
+                const dailyChangePct = toNum(snap.dailyChangePct)
+                const vol = toNum(snap.volume)
+                const high = toNum(snap.week52High)
+                const low = toNum(snap.week52Low)
+                const yield_ = toNum(snap.annualizedYield)
+                const latestPeriod = latestPeriodByTicker[snap.ticker] ?? null
+
+                const changeColor =
+                  dailyChangePct == null
+                    ? 'text-muted-foreground'
+                    : dailyChangePct > 0
+                      ? 'text-positive'
+                      : dailyChangePct < 0
+                        ? 'text-negative'
+                        : 'text-muted-foreground'
+
+                return (
+                  <tr
+                    key={snap.ticker}
+                    className="transition-colors hover:bg-muted/30 cursor-pointer"
+                    onClick={() => { window.location.href = `/fibras/${slugFor(snap.ticker)}` }}
+                  >
+                    <td className="px-2 py-3">
                       <FibraLogo
                         size="sm"
                         siteUrl={fibraByTicker[snap.ticker]?.siteUrl ?? null}
                         ticker={snap.ticker}
                       />
-
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold">{snap.ticker}</span>
-                      </span>
-
-                      <span className="text-right text-sm tabular-nums">
-                        {lastPrice != null ? lastPrice.toFixed(2) : '—'}
-                      </span>
-
-                      <span className={`text-right text-sm font-medium tabular-nums ${changeColor}`}>
-                        {dailyChange != null
-                          ? `${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}`
-                          : '—'}
-                      </span>
-
-                      <span className={`text-right text-sm font-medium tabular-nums ${changeColor}`}>
-                        {dailyChangePct != null
-                          ? `${dailyChangePct >= 0 ? '+' : ''}${dailyChangePct.toFixed(2)}%`
-                          : '—'}
-                      </span>
-
-                      <span className="text-right text-sm tabular-nums text-muted-foreground">
-                        {vol != null ? formatVolume(vol) : '—'}
-                      </span>
-
-                      <span className="flex items-center">
-                        {rangePct != null ? (
-                          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-muted-foreground/60"
-                              style={{ width: `${(rangePct * 100).toFixed(1)}%` }}
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
-                        )}
-                      </span>
-
-                      <span className="text-right text-sm tabular-nums text-muted-foreground">
-                        {high != null ? high.toFixed(2) : '—'}
-                      </span>
-
-                      <span className="text-right text-sm tabular-nums text-muted-foreground">
-                        {low != null ? low.toFixed(2) : '—'}
-                      </span>
-
-                      <span className="text-right text-sm tabular-nums text-muted-foreground">
-                        {yield_ != null ? `${yield_.toFixed(2)}%` : '—'}
-                      </span>
-
-                      <span className="text-right text-xs tabular-nums text-muted-foreground">
-                        {latestPeriod ?? '—'}
-                      </span>
-
-                      <span>
-                        {snap.freshnessStatus ? (
-                          <FreshnessBadge status={snap.freshnessStatus as FreshnessStatus} />
-                        ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
-                        )}
-                      </span>
-                    </a>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+                    </td>
+                    <td className="px-4 py-3 font-semibold">{snap.ticker}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {lastPrice != null ? lastPrice.toFixed(2) : '—'}
+                    </td>
+                    <td className={`px-4 py-3 text-right font-medium tabular-nums ${changeColor}`}>
+                      {dailyChange != null
+                        ? `${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}`
+                        : '—'}
+                    </td>
+                    <td className={`px-4 py-3 text-right font-medium tabular-nums ${changeColor}`}>
+                      {dailyChangePct != null
+                        ? `${dailyChangePct >= 0 ? '+' : ''}${dailyChangePct.toFixed(2)}%`
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                      {vol != null ? formatVolume(vol) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                      {high != null ? high.toFixed(2) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                      {low != null ? low.toFixed(2) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                      {yield_ != null ? `${yield_.toFixed(2)}%` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs tabular-nums text-muted-foreground">
+                      {latestPeriod ?? '—'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )
