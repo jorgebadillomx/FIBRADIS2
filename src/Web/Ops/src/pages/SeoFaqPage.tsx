@@ -7,6 +7,11 @@ import { createFaqItem, deactivateFaqItem, fetchFaqItems, seedFaqItems, updateFa
 const PAGE_TARGETS = [
   { id: 'home', label: 'Home', pageType: 'Home', entityKey: '/' },
   { id: 'editorial', label: 'Conoce las FIBRAs', pageType: 'StaticPage', entityKey: '/conoce-las-fibras' },
+  { id: 'fibras', label: 'Fibras (catálogo)', pageType: 'StaticPage', entityKey: '/fibras' },
+  { id: 'comparar', label: 'Comparar', pageType: 'StaticPage', entityKey: '/comparar' },
+  { id: 'noticias', label: 'Noticias', pageType: 'StaticPage', entityKey: '/noticias' },
+  { id: 'calculadora', label: 'Calculadora', pageType: 'StaticPage', entityKey: '/calculadora' },
+  { id: 'calendario', label: 'Calendario', pageType: 'StaticPage', entityKey: '/calendario' },
   { id: 'fundamentales', label: 'Fundamentales', pageType: 'StaticPage', entityKey: '/fundamentales' },
   { id: 'fibra', label: 'FIBRA específica', pageType: 'Fibra', entityKey: 'FUNO11' },
   { id: 'news', label: 'Noticia', pageType: 'News', entityKey: 'funo11-reporta-resultados-del-2t25' },

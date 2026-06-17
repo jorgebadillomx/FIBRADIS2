@@ -45,9 +45,9 @@ export function formatCompareVolume(value: string | number | null | undefined): 
 }
 
 export function compareTableMinWidth(selectedCount: number): string {
-  if (selectedCount <= 2) return '36rem'
-  if (selectedCount === 3) return '44rem'
-  return '56rem'
+  if (selectedCount <= 2) return 'min-w-[36rem]'
+  if (selectedCount === 3) return 'min-w-[44rem]'
+  return 'min-w-[56rem]'
 }
 
 export function parseCompareBenchmarks(value: string | null | undefined): CompareBenchmark[] {

@@ -8,13 +8,11 @@ import { fetchAllFibras } from '@/api/fibrasApi'
 import {
   MAX_COMPARE_FIBRAS,
   MIN_COMPARE_FIBRAS,
-  parseCompareBenchmarks,
   compareTableMinWidth,
   formatCompareNumber,
   formatComparePercent,
   formatCompareVolume,
   parseCompareTickers,
-  serializeCompareBenchmarks,
   serializeCompareTickers,
 } from './comparador-logic'
 import { fetchComparacion } from './comparadorApi'
@@ -23,6 +21,9 @@ type ComparadorFibraDto = components['schemas']['ComparadorFibraDto']
 
 type CompareMetric = {
   label: string
+  getValue?: (row: ComparadorFibraDto) => number | null
+  betterWhen?: 'higher' | 'lower'
+  renderMargin?: (diff: number, secondTicker: string) => string
   render: (row: ComparadorFibraDto) => ReactNode
 }
 
@@ -41,6 +42,9 @@ const COMPARISON_SECTIONS: CompareSection[] = [
       },
       {
         label: 'Cambio día (%)',
+        getValue: (row) => toNum(row.mercado.cambiaDiaPct),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(2)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.mercado.cambiaDiaPct, 2),
       },
       {
@@ -62,6 +66,9 @@ const COMPARISON_SECTIONS: CompareSection[] = [
       },
       {
         label: 'Cap Rate (%)',
+        getValue: (row) => toNum(row.fundamentales.capRate),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.fundamentales.capRate, 1),
       },
       {
@@ -70,14 +77,23 @@ const COMPARISON_SECTIONS: CompareSection[] = [
       },
       {
         label: 'LTV (%)',
+        getValue: (row) => toNum(row.fundamentales.ltv),
+        betterWhen: 'lower',
+        renderMargin: (diff, t) => `−${diff.toFixed(1)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.fundamentales.ltv, 1),
       },
       {
         label: 'Margen NOI (%)',
+        getValue: (row) => toNum(row.fundamentales.noiMargin),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.fundamentales.noiMargin, 1),
       },
       {
         label: 'Margen FFO (%)',
+        getValue: (row) => toNum(row.fundamentales.ffoMargin),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.fundamentales.ffoMargin, 1),
       },
     ],
@@ -91,10 +107,16 @@ const COMPARISON_SECTIONS: CompareSection[] = [
       },
       {
         label: 'Yield calculado anual (%)',
+        getValue: (row) => toNum(row.distribuciones.yieldCalculadoPct),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(2)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.distribuciones.yieldCalculadoPct, 2),
       },
       {
         label: 'Yield decretado anual (%)',
+        getValue: (row) => toNum(row.distribuciones.yieldDecretadoPct),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(2)} pp vs ${t}`,
         render: (row) => formatComparePercent(row.distribuciones.yieldDecretadoPct, 2),
       },
     ],
@@ -104,26 +126,44 @@ const COMPARISON_SECTIONS: CompareSection[] = [
     rows: [
       {
         label: 'Score de oportunidad',
+        getValue: (row) => (row.score.isExcluded ? null : toNum(row.score.score)),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pts vs ${t}`,
         render: (row) => renderOverallScore(row.score),
       },
       {
         label: 'NAV Descuento',
+        getValue: (row) => (row.score.isExcluded ? null : toNum(row.score.navDescuentoScore)),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pts vs ${t}`,
         render: (row) => renderScoreComponent(row.score.navDescuentoScore, row.score.isExcluded),
       },
       {
         label: 'Dividend Yield',
+        getValue: (row) => (row.score.isExcluded ? null : toNum(row.score.dividendYieldScore)),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pts vs ${t}`,
         render: (row) => renderScoreComponent(row.score.dividendYieldScore, row.score.isExcluded),
       },
       {
         label: 'LTV',
+        getValue: (row) => (row.score.isExcluded ? null : toNum(row.score.ltvScore)),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pts vs ${t}`,
         render: (row) => renderScoreComponent(row.score.ltvScore, row.score.isExcluded),
       },
       {
         label: 'NOI Margin',
+        getValue: (row) => (row.score.isExcluded ? null : toNum(row.score.noiMarginScore)),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pts vs ${t}`,
         render: (row) => renderScoreComponent(row.score.noiMarginScore, row.score.isExcluded),
       },
       {
         label: 'Price vs 52S',
+        getValue: (row) => (row.score.isExcluded ? null : toNum(row.score.priceVs52wScore)),
+        betterWhen: 'higher',
+        renderMargin: (diff, t) => `+${diff.toFixed(1)} pts vs ${t}`,
         render: (row) => renderScoreComponent(row.score.priceVs52wScore, row.score.isExcluded),
       },
     ],
@@ -136,11 +176,8 @@ export function ComparadorPage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
 
   const queryTickers = searchParams.get('fibras')
-  const queryBenchmarks = searchParams.get('benchmarks')
   const selectedTickers = useMemo(() => parseCompareTickers(queryTickers), [queryTickers])
-  const selectedBenchmarks = useMemo(() => parseCompareBenchmarks(queryBenchmarks), [queryBenchmarks])
   const selectedSet = useMemo(() => new Set(selectedTickers), [selectedTickers])
-  const benchmarkSet = useMemo(() => new Set(selectedBenchmarks), [selectedBenchmarks])
   const selectedCount = selectedTickers.length
 
   const { data: fibras = [], isLoading: fibrasLoading } = useQuery({
@@ -179,13 +216,10 @@ export function ComparadorPage() {
 
   const comparisonMinWidth = compareTableMinWidth(Math.max(selectedCount, 2))
 
-  function updateSelection(nextTickers: string[], nextBenchmarks = selectedBenchmarks) {
+  function updateSelection(nextTickers: string[]) {
     const params = new URLSearchParams()
     const fibras = serializeCompareTickers(nextTickers)
-    const benchmarks = serializeCompareBenchmarks(nextBenchmarks)
-
     if (fibras) params.set('fibras', fibras)
-    if (benchmarks) params.set('benchmarks', benchmarks)
     setSearchParams(params, { replace: true })
   }
 
@@ -200,13 +234,6 @@ export function ComparadorPage() {
   function removeTicker(ticker: string) {
     if (selectedCount <= MIN_COMPARE_FIBRAS) return
     updateSelection(selectedTickers.filter((item) => item !== ticker))
-  }
-
-  function toggleBenchmark(benchmark: 'ipc' | 'sp500') {
-    const next = benchmarkSet.has(benchmark)
-      ? selectedBenchmarks.filter((item) => item !== benchmark)
-      : [...selectedBenchmarks, benchmark]
-    updateSelection(selectedTickers, next)
   }
 
   const selectorDisabled = selectedCount >= MAX_COMPARE_FIBRAS
@@ -349,31 +376,6 @@ export function ComparadorPage() {
               })}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Benchmarks
-              </span>
-              {([
-                { key: 'ipc', label: 'IPC BMV' },
-                { key: 'sp500', label: 'S&P 500' },
-              ] as const).map((benchmark) => {
-                const active = benchmarkSet.has(benchmark.key)
-                return (
-                  <button
-                    key={benchmark.key}
-                    type="button"
-                    onClick={() => toggleBenchmark(benchmark.key)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      active
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-background text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {benchmark.label}
-                  </button>
-                )
-              })}
-            </div>
           </div>
         </section>
 
@@ -420,7 +422,7 @@ export function ComparadorPage() {
         ) : (
           <section className="rounded-2xl border border-border bg-surface-elevated shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed text-sm" style={{ minWidth: comparisonMinWidth }}>
+              <table className={`w-full table-fixed text-sm ${comparisonMinWidth}`}>
                 <colgroup>
                   <col className="w-[15rem]" />
                   {comparisonRows.map((row) => (
@@ -455,18 +457,36 @@ export function ComparadorPage() {
                           {section.title}
                         </th>
                       </tr>
-                      {section.rows.map((metric) => (
-                        <tr key={`${section.title}-${metric.label}`} className="border-b border-border last:border-0">
-                          <th className="px-4 py-3 text-left font-medium text-foreground">
-                            {metric.label}
-                          </th>
-                          {comparisonRows.map((row) => (
-                            <td key={`${section.title}-${metric.label}-${row.ticker}`} className="px-4 py-3 text-right">
-                              {metric.render(row)}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
+                      {section.rows.map((metric) => {
+                        const winner =
+                          metric.getValue && metric.betterWhen
+                            ? computeWinner(comparisonRows, metric.getValue, metric.betterWhen)
+                            : { winnerIdx: null, diff: null, secondTicker: null }
+
+                        return (
+                          <tr key={`${section.title}-${metric.label}`} className="border-b border-border last:border-0">
+                            <th className="px-4 py-3 text-left font-medium text-foreground">
+                              {metric.label}
+                            </th>
+                            {comparisonRows.map((row, colIdx) => {
+                              const isWinner = colIdx === winner.winnerIdx
+                              return (
+                                <td
+                                  key={`${section.title}-${metric.label}-${row.ticker}`}
+                                  className={`px-4 py-3 text-right ${isWinner ? 'bg-emerald-50/70' : ''}`}
+                                >
+                                  {metric.render(row)}
+                                  {isWinner && winner.diff !== null && winner.secondTicker && metric.renderMargin ? (
+                                    <div className="mt-0.5 text-[10px] font-medium tabular-nums text-emerald-700">
+                                      {metric.renderMargin(winner.diff, winner.secondTicker)}
+                                    </div>
+                                  ) : null}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        )
+                      })}
                     </Fragment>
                   ))}
                 </tbody>
@@ -477,6 +497,30 @@ export function ComparadorPage() {
       </div>
     </>
   )
+}
+
+function computeWinner(
+  rows: ComparadorFibraDto[],
+  getValue: (row: ComparadorFibraDto) => number | null,
+  betterWhen: 'higher' | 'lower',
+): { winnerIdx: number | null; diff: number | null; secondTicker: string | null } {
+  const entries = rows
+    .map((row, idx) => ({ idx, val: getValue(row), ticker: row.ticker }))
+    .filter((e): e is { idx: number; val: number; ticker: string } => e.val !== null)
+
+  if (entries.length < 2) return { winnerIdx: null, diff: null, secondTicker: null }
+
+  const sorted = [...entries].sort((a, b) =>
+    betterWhen === 'higher' ? b.val - a.val : a.val - b.val,
+  )
+
+  if (sorted[0].val === sorted[1].val) return { winnerIdx: null, diff: null, secondTicker: null }
+
+  return {
+    winnerIdx: sorted[0].idx,
+    diff: Math.abs(sorted[0].val - sorted[1].val),
+    secondTicker: sorted[1].ticker,
+  }
 }
 
 function formatMoney(value: string | number | null | undefined): string {
