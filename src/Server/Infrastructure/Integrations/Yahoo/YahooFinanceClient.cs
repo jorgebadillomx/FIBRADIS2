@@ -29,6 +29,11 @@ public class YahooFinanceClient(
             snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
         }
 
+        var nullSymbols = snapshots.Where(kv => kv.Value is null).Select(kv => kv.Key).ToList();
+        if (nullSymbols.Count > 0)
+            logger.LogWarning("Yahoo devolvió null para {Count}/{Total} símbolos: {Symbols}",
+                nullSymbols.Count, snapshots.Count, string.Join(", ", nullSymbols));
+
         var results = new List<YahooQuoteResult>(snapshots.Count);
         foreach (var (symbol, snapshot) in snapshots)
         {
@@ -92,17 +97,25 @@ public class YahooFinanceClient(
         ct.ThrowIfCancellationRequested();
 
         const int maxRetries = 3;
-        YahooQuotesApi.YahooHistory? history = null;
+        YahooQuotesApi.History? history = null;
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var result = await historyClient.Inner.GetHistoryAsync(yahooTicker);
-            if (result.HasValue)
+            try
             {
-                history = result.Value;
-                break;
+                var result = await historyClient.Inner.GetHistoryAsync(yahooTicker);
+                if (result.HasValue)
+                {
+                    history = result.Value;
+                    break;
+                }
             }
+            catch (Exception ex) when (Is429(ex))
+            {
+                logger.LogWarning("Yahoo devolvió 429 para {Ticker}, intento {Attempt}/{MaxRetries}", yahooTicker, attempt, maxRetries);
+            }
+
             if (attempt < maxRetries)
-                await Task.Delay(TimeSpan.FromSeconds(attempt * 3), ct);
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 30), ct);
         }
 
         if (history is null)

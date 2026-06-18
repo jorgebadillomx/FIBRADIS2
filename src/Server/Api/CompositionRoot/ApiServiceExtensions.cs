@@ -18,6 +18,7 @@ using Infrastructure.Integrations.OgImage;
 using Infrastructure.Integrations.MasDividendos;
 using Infrastructure.Integrations.PdfDiscovery;
 using Infrastructure.Integrations.Yahoo;
+using System.Threading.RateLimiting;
 using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
@@ -119,12 +120,24 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IPortfolioUploadService, PortfolioUploadService>();
         builder.Services.AddSingleton<ITimeService, SystemTimeService>();
         builder.Services.AddSingleton<IBmvSchedule, BmvSchedule>();
-        builder.Services.AddSingleton(_ => new YahooQuotesBuilder().Build());
+        var yahooRateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 3,
+            TokensPerPeriod = 1,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(2),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 50,
+            AutoReplenishment = true,
+        });
+        builder.Services.AddSingleton(_ => new YahooQuotesBuilder()
+            .WithHttpRateLimiter(yahooRateLimiter)
+            .Build());
         builder.Services.AddSingleton(
             _ => new YahooQuotesHistory(
                 new YahooQuotesBuilder()
                     .WithHistoryStartDate(NodaTime.Instant.FromDateTimeUtc(
                         new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc)))
+                    .WithHttpRateLimiter(yahooRateLimiter)
                     .Build()));
         builder.Services.AddSingleton<IYahooFinanceClient, YahooFinanceClient>();
         builder.Services.AddHttpClient<IMasDividendosClient, MasDividendosClient>(client =>

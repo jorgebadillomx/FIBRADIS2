@@ -107,11 +107,11 @@ public class DailySnapshotHistoricalJob(
             return (localInserted, localSkipped, localErrors);
         }
 
-        var oneMonthAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+        var sevenDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
 
         DateOnly ResolveHistoryStart(DateOnly? lastDate) =>
             lastDate.HasValue
-                ? (lastDate.Value < oneMonthAgo ? lastDate.Value : oneMonthAgo)
+                ? (lastDate.Value < sevenDaysAgo ? lastDate.Value : sevenDaysAgo)
                 : defaultHistoryStart;
 
         foreach (var (fibra, index) in fibras.Select((f, i) => (f, i)))

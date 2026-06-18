@@ -152,29 +152,31 @@ public class MarketPipelineJob(
                     };
 
                     await marketRepo.AddPriceSnapshotAsync(snapshot, ct);
-                    var tickerAiContext = $"El pipeline de mercado procesó un lote de {fibras.Count} FIBRAs y no pudo actualizar el precio de {fibra.Ticker} usando el símbolo {fibra.YahooTicker}. El estado previo indicaba {(prevFailed ? "fallas recientes" : "operación normal")} y por eso se marcó el snapshot como {snapshotStatus}. El paso exacto que falló fue la resolución de la cotización dentro de la respuesta de Yahoo Finance.";
-                    try
+                    if (!batchFailed)
                     {
-                        await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
+                        var tickerAiContext = $"El pipeline de mercado procesó un lote de {fibras.Count} FIBRAs y no pudo actualizar el precio de {fibra.Ticker} usando el símbolo {fibra.YahooTicker}. El estado previo indicaba {(prevFailed ? "fallas recientes" : "operación normal")} y por eso se marcó el snapshot como {snapshotStatus}. El paso exacto que falló fue la resolución de la cotización dentro de la respuesta de Yahoo Finance.";
+                        try
                         {
-                            Pipeline = "Market",
-                            Timestamp = capturedAt,
-                            ErrorType = batchFailed ? "BatchRequestFailed" : "MissingTickerQuote",
-                            Message = reason,
-                            Context = JsonSerializer.Serialize(new
+                            await pipelineErrorLogRepo.LogErrorAsync(new PipelineErrorLog
                             {
-                                fibra.Id,
-                                fibra.Ticker,
-                                fibra.YahooTicker,
-                                capturedAt,
-                                batchFailed,
-                            }),
-                            AiContext = tickerAiContext.Length > 800 ? tickerAiContext[..800] : tickerAiContext,
-                        }, ct);
-                    }
-                    catch (Exception logEx)
-                    {
-                        logger.LogWarning(logEx, "Failed to write pipeline error log entry for ticker {Ticker}", fibra.Ticker);
+                                Pipeline = "Market",
+                                Timestamp = capturedAt,
+                                ErrorType = "MissingTickerQuote",
+                                Message = reason,
+                                Context = JsonSerializer.Serialize(new
+                                {
+                                    fibra.Id,
+                                    fibra.Ticker,
+                                    fibra.YahooTicker,
+                                    capturedAt,
+                                }),
+                                AiContext = tickerAiContext.Length > 800 ? tickerAiContext[..800] : tickerAiContext,
+                            }, ct);
+                        }
+                        catch (Exception logEx)
+                        {
+                            logger.LogWarning(logEx, "Failed to write pipeline error log entry for ticker {Ticker}", fibra.Ticker);
+                        }
                     }
 
                     if (snapshotStatus == MarketDataStatus.Critical) critical++;
