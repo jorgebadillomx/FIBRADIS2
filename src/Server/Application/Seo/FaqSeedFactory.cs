@@ -79,57 +79,57 @@ public static class FaqSeedFactory
 
     public static IReadOnlyList<FaqItem> BuildStaticPagesItems() =>
     [
-        // /fibras — Catálogo
+        // /fibras — Página principal / universo de FIBRAs
         CreateStaticItem("/fibras", 1,
-            "¿Cuántas FIBRAs inmobiliarias existen en México?",
-            "En México cotizan alrededor de 14 FIBRAs activas en la Bolsa Mexicana de Valores (BMV). El catálogo de Fibras Inmobiliarias muestra el universo completo con precio, sector, yield y métricas fundamentales actualizadas."),
+            "¿Qué información muestra la tabla del universo de FIBRAs?",
+            "La tabla muestra todas las FIBRAs activas con sus columnas principales: Precio, variación del día en pesos y porcentaje, Volumen, Máximo y Mínimo de las últimas 52 semanas, Yield anualizado y el período del último reporte. Puedes ordenar por cualquier columna y filtrar por ticker."),
         CreateStaticItem("/fibras", 2,
-            "¿Cómo se clasifican las FIBRAs por sector?",
-            "Las FIBRAs se agrupan por tipo de activo inmobiliario: Industrial/Logístico (bodegas, parques industriales), Comercial (centros comerciales, retail), Oficinas, Diversificado (mezcla de activos) y Especializado (educación, salud, almacenamiento). El sector determina en gran medida su comportamiento ante ciclos económicos."),
+            "¿Qué son los Ganadores y Perdedores del día?",
+            "Son los top 5 de FIBRAs con mayor y menor variación porcentual en la sesión actual. Se actualiza conforme avanza la jornada bursátil y permite identificar de un vistazo qué emisoras están teniendo el mejor y peor desempeño en precio ese día."),
         CreateStaticItem("/fibras", 3,
-            "¿Qué información muestra el catálogo de FIBRAs?",
-            "Cada ficha del catálogo incluye: precio actual, cambio del día, promedio 52 semanas, Cap Rate, LTV, NAV por CBFI, Margen NOI, yield calculado y el Score de oportunidad. Los datos de mercado se actualizan en tiempo real vía Yahoo Finance; los fundamentales provienen de los reportes trimestrales oficiales."),
+            "¿Qué es el Yield que aparece en el catálogo?",
+            "Es el rendimiento anualizado estimado a partir de la última distribución trimestral reportada, dividida entre el precio de mercado actual. Se calcula como: (distribución trimestral × 4) / precio actual. Cambia en tiempo real con el precio y sirve como referencia rápida de rentabilidad por distribución."),
 
         // /comparar — Comparador
         CreateStaticItem("/comparar", 1,
-            "¿Cómo comparar FIBRAs inmobiliarias de forma objetiva?",
-            "El comparador de Fibras Inmobiliarias permite contrastar hasta 4 emisoras en una sola tabla: precio, rendimiento, Cap Rate, LTV, Margen NOI/FFO y Score de oportunidad. Cada métrica resalta automáticamente al mejor valor y muestra el margen respecto al segundo lugar."),
+            "¿Qué secciones incluye el comparador de FIBRAs?",
+            "El comparador organiza la información en cuatro secciones: **Mercado** (precio, cambio del día, promedio 52 semanas, volumen), **Fundamentales** (Cap Rate, NAV por CBFI, LTV, Margen NOI y Margen FFO), **Distribuciones** (distribución trimestral, yield calculado y yield decretado) y **Score público** (score de oportunidad y sus cinco componentes)."),
         CreateStaticItem("/comparar", 2,
-            "¿Qué métricas son las más importantes al comparar FIBRAs?",
-            "Las métricas clave son: **Yield** (distribución anual / precio de mercado), **Cap Rate** (rendimiento operativo del portafolio), **LTV** (nivel de deuda vs valor de activos) y **NAV Descuento** (precio de mercado vs valor intrínseco). Un yield alto con LTV bajo y Cap Rate sólido generalmente indica una oportunidad más favorable."),
+            "¿Cómo indica el comparador cuál FIBRA gana en cada métrica?",
+            "La celda con el mejor valor de cada fila se resalta en verde. Debajo del valor aparece la diferencia respecto al segundo lugar, por ejemplo '+1.3 pp vs FUNO' para métricas de porcentaje o '+8.4 pts vs MXCD' para el score. En métricas donde menor es mejor (como LTV), el resalte corresponde al valor más bajo."),
         CreateStaticItem("/comparar", 3,
-            "¿Cuántas FIBRAs puedo comparar al mismo tiempo?",
-            "Puedes comparar de 2 a 4 FIBRAs simultáneamente. La selección se guarda en la URL, por lo que puedes compartir o guardar la comparación directamente desde el navegador."),
+            "¿Puedo compartir una comparación específica?",
+            "Sí. Cada selección de FIBRAs queda reflejada en la URL de la página. Para compartir o guardar una comparación, copia el enlace del navegador; al abrirlo, cargará exactamente las mismas emisoras comparadas."),
 
         // /noticias — Noticias
         CreateStaticItem("/noticias", 1,
-            "¿Dónde encontrar noticias y comunicados de FIBRAs mexicanas?",
-            "La sección de noticias de Fibras Inmobiliarias agrega reportes trimestrales, comunicados de asamblea, anuncios de distribución y cobertura de medios especializados para cada FIBRA. Los artículos están vinculados a la ficha de cada emisora para dar contexto al momento."),
+            "¿Cómo buscar noticias de una FIBRA en particular?",
+            "Usa el filtro 'Filtrar por FIBRA' para ver solo las noticias asociadas a una emisora específica. También puedes combinar ese filtro con la búsqueda por título para afinar más los resultados. El botón 'Limpiar filtros' restablece ambos criterios."),
         CreateStaticItem("/noticias", 2,
-            "¿Con qué frecuencia se publican resultados trimestrales de FIBRAs?",
-            "Las FIBRAs reportan resultados cada trimestre: Q1 (marzo-abril), Q2 (julio-agosto), Q3 (octubre-noviembre) y Q4 (febrero-marzo del año siguiente). Los reportes incluyen NOI, FFO, distribuciones decretadas y actualización de la valuación del portafolio."),
+            "¿Qué datos muestra cada nota en el listado de noticias?",
+            "Cada tarjeta incluye la fuente de la noticia, el tiempo relativo de publicación, el titular, un extracto del contenido y etiquetas con las FIBRAs a las que está vinculada. Si hay más de las que caben, se muestra '+N más'. Al hacer clic entras al detalle completo de la nota."),
 
-        // /calculadora — Calculadora
+        // /calculadora — Calculadora de compra
         CreateStaticItem("/calculadora", 1,
-            "¿Cómo calcular el rendimiento esperado de una FIBRA?",
-            "Ingresa el monto a invertir y el precio actual del CBFI. La calculadora estima las distribuciones trimestrales proyectadas según el yield histórico de cada FIBRA, el número de CBFIs que recibirías y el rendimiento anualizado. Recuerda que las distribuciones pasadas no garantizan rendimientos futuros."),
+            "¿Cómo funciona la calculadora de compra de FIBRAs?",
+            "Ingresa un monto en pesos en la columna '$ a calcular' para cada FIBRA que te interese. La tabla calcula al instante cuántos CBFIs puedes comprar, cuánto dinero sobra, la distribución proyectada por CBFI (trimestral y anual) y la renta bruta estimada sobre tu inversión. Puedes ingresar montos distintos para cada emisora."),
         CreateStaticItem("/calculadora", 2,
-            "¿Qué es el yield de una FIBRA y cómo se calcula?",
-            "El yield (o rendimiento por distribución) es la distribución anual por CBFI dividida entre el precio de mercado actual. Ejemplo: si una FIBRA distribuye $0.80 MXN por CBFI trimestralmente ($3.20 anuales) y cotiza a $40 MXN, su yield es 8%. Un yield más alto puede indicar mayor valor, pero conviene validarlo con el LTV y Cap Rate."),
+            "¿Qué significa '$ Sobra' en la calculadora?",
+            "Es el remanente de tu presupuesto que no alcanza para comprar un CBFI adicional, dado que los CBFIs se compran en unidades enteras. Por ejemplo, si el precio es $47.30 MXN y tu presupuesto es $500, puedes comprar 10 CBFIs ($473) y te sobran $27."),
         CreateStaticItem("/calculadora", 3,
-            "¿Qué diferencia hay entre yield calculado y yield decretado?",
-            "El **yield calculado** usa la última distribución trimestral anualizada (×4) sobre el precio actual, reflejando el rendimiento al precio de hoy. El **yield decretado** suma las distribuciones efectivamente pagadas en los últimos 12 meses. La diferencia es relevante cuando una FIBRA ha cambiado su política de distribución recientemente."),
+            "¿Los montos se pierden al filtrar u ordenar la tabla?",
+            "No. La tabla conserva los montos ingresados aunque cambies el orden de las columnas o apliques un filtro por nombre. Esto permite ordenar por Renta Bruta o Yield sin perder los presupuestos que ya capturaste."),
 
-        // /calendario — Calendario
+        // /calendario — Calendario de eventos corporativos
         CreateStaticItem("/calendario", 1,
-            "¿Cuándo pagan distribuciones las FIBRAs inmobiliarias?",
-            "La mayoría de las FIBRAs distribuyen cada trimestre, típicamente en enero, abril, julio y octubre, aunque las fechas exactas varían por emisora. El calendario de Fibras Inmobiliarias centraliza las fechas de decreto, registro y pago de todas las FIBRAs activas para que no pierdas ningún cobro."),
+            "¿Qué tipos de eventos muestra el calendario de FIBRAs?",
+            "El calendario registra tres tipos de eventos: **Pagos** (fecha en que se deposita la distribución), **Ex derechos** (último día para comprar y tener derecho al pago) y **Avisos BMV** (comunicados oficiales publicados en la Bolsa Mexicana de Valores). Cada tipo tiene un color de identificación distinto."),
         CreateStaticItem("/calendario", 2,
-            "¿Qué es la fecha de registro en las distribuciones de FIBRAs?",
-            "La fecha de registro (o *record date*) es el día en que debes tener los CBFIs en tu cuenta para tener derecho a la distribución. Comprar después de esa fecha implica que no recibirás el pago del trimestre en curso. El calendario incluye fecha de decreto, fecha de registro y fecha estimada de pago."),
+            "¿Qué información aparece al revisar un evento en el calendario?",
+            "Cada evento muestra la emisora, el monto de distribución por CBFI, el desglose entre la parte fiscal y el reembolso de capital, y un enlace al aviso oficial en BMV cuando está disponible. La vista mensual agrupa los eventos por día para lectura rápida."),
         CreateStaticItem("/calendario", 3,
-            "¿Cómo saber cuánto voy a cobrar de distribución?",
-            "Multiplica el monto decretado por CBFI por el número de CBFIs que tienes. Por ejemplo: si tienes 500 CBFIs y la distribución decretada es $0.85 MXN/CBFI, recibirás $425 MXN brutos ese trimestre. La calculadora de Fibras Inmobiliarias puede proyectar este cálculo para cualquier monto de inversión."),
+            "¿Qué es la fecha ex derecho y por qué importa?",
+            "Es la fecha a partir de la cual quien compre la FIBRA ya no tiene derecho a cobrar la distribución en curso. Para recibir el pago debes tener los CBFIs registrados en tu cuenta **antes** de esa fecha. El mismo día puede aparecer tanto el pago de una distribución como la fecha ex derecho de la siguiente."),
     ];
 
     private static FaqItem CreateStaticItem(string entityKey, int order, string question, string answer) => new()
