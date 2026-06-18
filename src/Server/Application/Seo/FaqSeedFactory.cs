@@ -5,7 +5,7 @@ namespace Application.Seo;
 
 public static class FaqSeedFactory
 {
-    private static readonly DateTimeOffset SeedUpdatedAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset SeedUpdatedAt = new(2026, 6, 18, 0, 0, 0, TimeSpan.Zero);
 
     private static readonly IReadOnlyDictionary<string, string> EditorialQuestions =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -41,27 +41,85 @@ public static class FaqSeedFactory
         CreateFundamentalsItem(
             1,
             "¿Qué es Cap Rate?",
-            $"**Fórmula:** {SharedKpiDefinitions.CapRate.Formula}\n\n{SharedKpiDefinitions.CapRate.Description}"),
+            "**Fórmula:** Cap Rate = NOI anualizado / Valor de propiedades de inversión\n\n" +
+            "Tasa de capitalización que mide el rendimiento operativo neto del portafolio inmobiliario " +
+            "como proporción de su valor de inversión, sin considerar el efecto del apalancamiento ni el " +
+            "costo financiero de la deuda. Un Cap Rate alto implica mayor rendimiento bruto y generalmente " +
+            "mayor riesgo del activo o ubicaciones secundarias; uno bajo refleja propiedades premium con " +
+            "demanda constante — centros logísticos clase A o centros comerciales ancla en zonas de alta " +
+            "afluencia. Para las FIBRAs mexicanas, el rango habitual oscila entre 6 % y 10 % según el " +
+            "segmento: las industriales como FIBRAMQ12 tienden a Cap Rates superiores a las de oficinas o " +
+            "comercio. Al comparar dos FIBRAs, un Cap Rate de 9 % vs. 6.5 % no significa automáticamente " +
+            "que la primera sea mejor inversión; debe evaluarse junto con el LTV y la calidad del portafolio. " +
+            "La CNBV exige que todas las FIBRAs reporten el NOI y el valor de sus propiedades de inversión " +
+            "en sus informes trimestrales."),
         CreateFundamentalsItem(
             2,
             "¿Qué es NAV por CBFI?",
-            $"**Fórmula:** {SharedKpiDefinitions.NavPerCbfi.Formula}\n\n{SharedKpiDefinitions.NavPerCbfi.Description}"),
+            "**Fórmula:** NAV = Valor de propiedades − Deuda total | NAV/CBFI = NAV / CBFIs en circulación\n\n" +
+            "Valor Neto de los Activos por certificado bursátil: indica si el precio de mercado de la FIBRA " +
+            "cotiza con **descuento** o **prima** respecto al valor intrínseco de los activos inmobiliarios " +
+            "que respaldan cada CBFI. Un precio menor al NAV/CBFI sugiere que el mercado valúa la emisora " +
+            "por debajo del valor de su portafolio — oportunidad potencial si el descuento es sostenido. Un " +
+            "precio mayor indica que el mercado paga una prima, generalmente justificada por calidad de la " +
+            "administración, contratos de largo plazo o expectativas de crecimiento. Por ejemplo, si el " +
+            "NAV/CBFI de DANHOS13 es $35.00 y cotiza a $29.00, el descuento es del 17 %. La CNBV exige " +
+            "reportar el valor de propiedades de inversión cada trimestre; AMEFIBRA incluye el ratio " +
+            "Precio/NAV como métrica estándar en su análisis comparativo del sector de FIBRAs."),
         CreateFundamentalsItem(
             3,
             "¿Qué es LTV?",
-            $"**Fórmula:** {SharedKpiDefinitions.Ltv.Formula}\n\n{SharedKpiDefinitions.Ltv.Description}"),
+            "**Fórmula:** LTV = Deuda total / Valor de propiedades de inversión\n\n" +
+            "Loan-to-Value: nivel de apalancamiento financiero medido como la proporción de la deuda total " +
+            "sobre el valor de mercado de las propiedades de inversión. Un LTV bajo — típicamente bajo 40 % — " +
+            "indica solidez financiera y menor vulnerabilidad ante caídas en la valuación de activos o alzas " +
+            "en tasas de interés; un LTV alto señala mayor exposición al riesgo de refinanciamiento y presión " +
+            "sobre las distribuciones en períodos de tensión. Para las FIBRAs mexicanas reguladas por la CNBV, " +
+            "el límite máximo de endeudamiento establecido en la normativa es del 60 % del valor total de " +
+            "activos — aunque la mayoría opera entre 25 % y 45 %. Un LTV de 28 % ofrece más margen de " +
+            "maniobra que uno de 45 % para adquirir nuevas propiedades sin diluir a los tenedores de CBFIs. " +
+            "El dato se publica en los estados financieros trimestrales que cada FIBRA entrega a la CNBV."),
         CreateFundamentalsItem(
             4,
             "¿Qué es NOI Margin?",
-            $"**Fórmula:** {SharedKpiDefinitions.NoiMargin.Formula}\n\n{SharedKpiDefinitions.NoiMargin.Description}"),
+            "**Fórmula:** NOI Margin = NOI / Ingresos Totales\n\n" +
+            "Margen de Ingreso Neto Operativo: porcentaje de los ingresos totales que permanece después de " +
+            "descontar los gastos directos de operación del portafolio inmobiliario — mantenimiento, " +
+            "administración de propiedades, seguros, impuestos locales y honorarios del fiduciario. Mide la " +
+            "eficiencia operativa del portafolio con independencia de la estructura de deuda. Un NOI Margin " +
+            "alto — típicamente superior al 70 % para FIBRAs bien administradas — indica que una proporción " +
+            "elevada de los ingresos por rentas se convierte en utilidad operativa disponible para distribuir " +
+            "o invertir. Las FIBRAs industriales como FIBRAMQ12 o VESTA suelen alcanzar márgenes de " +
+            "75 %–85 % gracias a contratos de arrendamiento triple-net, donde el inquilino asume los gastos " +
+            "operativos. Las FIBRAs de uso mixto o comercial tienden a márgenes menores. La CNBV exige el " +
+            "reporte desglosado de NOI en los estados financieros trimestrales de cada emisora."),
         CreateFundamentalsItem(
             5,
             "¿Qué es FFO Margin?",
-            $"**Fórmula:** {SharedKpiDefinitions.FfoMargin.Formula}\n\n{SharedKpiDefinitions.FfoMargin.Description}"),
+            "**Fórmula:** FFO Margin = FFO / Ingresos Totales | FFO = Utilidad Neta + ajustes por valuación − ganancias cambiarias\n\n" +
+            "Fondos de Operación como proporción de los ingresos totales. El FFO corrige la utilidad neta " +
+            "contable eliminando tres distorsiones que no reflejan la generación real de efectivo: las " +
+            "ganancias o pérdidas por valuación de propiedades a valor razonable (ajustes no realizados), " +
+            "las ganancias o pérdidas cambiarias — relevantes para FIBRAs con deuda en dólares como " +
+            "FIBRAMQ12 — y la depreciación contable, que en bienes raíces no implica pérdida de valor real " +
+            "si el portafolio está bien mantenido. El resultado es una métrica más cercana al flujo de caja " +
+            "operativo real. Por convención adoptada por AMEFIBRA y alineada con estándares de la NAREIT " +
+            "estadounidense, el FFO es la base preferida para calcular el payout ratio de distribuciones, " +
+            "ya que refleja mejor la capacidad real de pago de la FIBRA."),
         CreateFundamentalsItem(
             6,
             "¿Qué es la distribución trimestral?",
-            $"**Fórmula:** {SharedKpiDefinitions.QuarterlyDistribution.Formula}\n\n{SharedKpiDefinitions.QuarterlyDistribution.Description}"),
+            "**Fórmula:** Distribución = Resultado Fiscal Distribuido + Reembolso de Capital\n\n" +
+            "Pago en efectivo que la FIBRA entrega a cada tenedor de CBFIs registrado al cierre de cada " +
+            "trimestre fiscal. El monto se decreta en la asamblea de tenedores o por el comité técnico del " +
+            "fideicomiso y se publica como aviso en la Bolsa Mexicana de Valores con anterioridad a la " +
+            "fecha ex-derecho. Conforme a la Ley del ISR y la regulación de la CNBV, la distribución puede " +
+            "componerse de dos partes: la **parte fiscal** — correspondiente a utilidades fiscales " +
+            "distribuibles, que el inversionista declara como ingreso gravable — y el **reembolso de " +
+            "capital** — que no tributa como ingreso sino que reduce el costo de adquisición del CBFI para " +
+            "efectos fiscales futuros. Por ejemplo, si FUNO11 distribuye $0.60 por CBFI y $0.15 son " +
+            "reembolso de capital, solo $0.45 se declaran como ingreso en el período. Las FIBRAs están " +
+            "obligadas a distribuir al menos el 95 % de su resultado fiscal neto."),
     ];
 
     private static FaqItem CreateFundamentalsItem(int order, string question, string answer) => new()
@@ -82,65 +140,236 @@ public static class FaqSeedFactory
         // /fibras — Página principal / universo de FIBRAs
         CreateStaticItem("/fibras", 1,
             "¿Qué información muestra la tabla del universo de FIBRAs?",
-            "La tabla muestra todas las FIBRAs activas con sus columnas principales: Precio, variación del día en pesos y porcentaje, Volumen, Máximo y Mínimo de las últimas 52 semanas, Yield anualizado y el período del último reporte. Puedes ordenar por cualquier columna y filtrar por ticker."),
+            "La tabla muestra todas las FIBRAs activas que cotizan en la Bolsa Mexicana de Valores con sus " +
+            "métricas principales actualizadas durante la jornada bursátil: **Precio** de mercado en pesos " +
+            "mexicanos, **Variación diaria** en pesos y porcentaje respecto al cierre anterior, **Volumen** " +
+            "de CBFIs negociados en la sesión actual, **Máximo y Mínimo de 52 semanas** como referencia del " +
+            "rango histórico del último año, **Yield anualizado** calculado a partir de la última distribución " +
+            "trimestral reportada dividida entre el precio actual y multiplicada por cuatro, y el **período " +
+            "del último reporte fundamental** disponible en la plataforma. Puedes ordenar por cualquier " +
+            "columna — de mayor a menor o viceversa — con un clic en el encabezado, y filtrar por ticker " +
+            "para localizar rápidamente una emisora específica como FUNO11 o FIBRAMQ12. El precio y el " +
+            "volumen se actualizan en tiempo real; los datos fundamentales se refrescan cada vez que la " +
+            "FIBRA publica sus reportes trimestrales ante la CNBV."),
         CreateStaticItem("/fibras", 2,
             "¿Qué son los Ganadores y Perdedores del día?",
-            "Son los top 5 de FIBRAs con mayor y menor variación porcentual en la sesión actual. Se actualiza conforme avanza la jornada bursátil y permite identificar de un vistazo qué emisoras están teniendo el mejor y peor desempeño en precio ese día."),
+            "Los bloques **Ganadores** y **Perdedores del día** muestran el top 5 de FIBRAs con mayor y " +
+            "menor variación porcentual de precio en la sesión bursátil en curso, calculada respecto al " +
+            "cierre de la jornada anterior. El ranking no se basa en el precio absoluto sino en el " +
+            "movimiento porcentual: una emisora de precio bajo puede encabezar la lista si su variación es " +
+            "alta. Ambos bloques se actualizan en tiempo real conforme avanza la jornada de la Bolsa " +
+            "Mexicana de Valores y se reinician al abrir la siguiente sesión. Su utilidad principal es de " +
+            "lectura rápida de mercado: permite detectar en segundos qué emisoras están respondiendo a " +
+            "eventos corporativos — como resultados trimestrales, cambios en el portafolio de propiedades " +
+            "o avisos ante la CNBV — o a movimientos generales del mercado de bienes raíces mexicano. " +
+            "No sustituyen el análisis fundamental, pero son el primer indicador visual de actividad " +
+            "intradiaria del sector de FIBRAs afiliadas a AMEFIBRA."),
         CreateStaticItem("/fibras", 3,
             "¿Qué es el Yield que aparece en el catálogo?",
-            "Es el rendimiento anualizado estimado a partir de la última distribución trimestral reportada, dividida entre el precio de mercado actual. Se calcula como: (distribución trimestral × 4) / precio actual. Cambia en tiempo real con el precio y sirve como referencia rápida de rentabilidad por distribución."),
+            "El **Yield** del catálogo es el rendimiento anualizado estimado por distribuciones, calculado " +
+            "con la fórmula: **(última distribución trimestral × 4) / precio de mercado actual**. Es un " +
+            "indicador dinámico que varía en tiempo real: sube automáticamente cuando el precio de la FIBRA " +
+            "cae y baja cuando el precio sube, aunque el monto de la distribución no cambie. Por ejemplo, " +
+            "si FUNO11 distribuye $0.60 MXN por CBFI y cotiza a $20.00, su Yield sería del 12.0 % anual; " +
+            "si el precio asciende a $22.00 con la misma distribución, el Yield cae a 10.9 %. Es importante " +
+            "distinguirlo del **Yield decretado**, que utiliza el monto oficial aprobado por la asamblea del " +
+            "fideicomiso en lugar de la estimación anualizada. El Yield del catálogo sirve como referencia " +
+            "rápida de comparación entre emisoras, pero debe complementarse con el análisis de Cap Rate, " +
+            "LTV y solidez operativa antes de cualquier decisión de inversión, conforme a las " +
+            "recomendaciones de AMEFIBRA."),
 
         // /comparar — Comparador
         CreateStaticItem("/comparar", 1,
             "¿Qué secciones incluye el comparador de FIBRAs?",
-            "El comparador organiza la información en cuatro secciones: **Mercado** (precio, cambio del día, promedio 52 semanas, volumen), **Fundamentales** (Cap Rate, NAV por CBFI, LTV, Margen NOI y Margen FFO), **Distribuciones** (distribución trimestral, yield calculado y yield decretado) y **Score público** (score de oportunidad y sus cinco componentes)."),
+            "El comparador organiza la información de hasta cuatro FIBRAs simultáneamente en cuatro " +
+            "secciones estructuradas para análisis comparativo. **Mercado**: precio actual en pesos, " +
+            "variación del día en pesos y porcentaje, promedio de precio de las últimas 52 semanas y " +
+            "volumen de la sesión. **Fundamentales**: los cinco KPIs operativos clave — Cap Rate " +
+            "(rendimiento del portafolio), NAV por CBFI (valor neto de activos), LTV (apalancamiento " +
+            "sobre valor inmobiliario), Margen NOI (eficiencia operativa) y Margen FFO (fondos generados " +
+            "de la operación). **Distribuciones**: distribución trimestral por CBFI en pesos, Yield " +
+            "calculado a precio actual y Yield decretado en la última asamblea. **Score público**: " +
+            "puntuación de oportunidad de 0 a 100 con sus cinco componentes. Esta estructura permite " +
+            "responder en una vista si DANHOS13 supera a FIBRAMQ12 en Cap Rate aunque tenga menor Yield, " +
+            "o cuál de las dos presenta menor LTV según sus reportes ante la CNBV."),
         CreateStaticItem("/comparar", 2,
             "¿Cómo indica el comparador cuál FIBRA gana en cada métrica?",
-            "La celda con el mejor valor de cada fila se resalta en verde. Debajo del valor aparece la diferencia respecto al segundo lugar, por ejemplo '+1.3 pp vs FUNO' para métricas de porcentaje o '+8.4 pts vs MXCD' para el score. En métricas donde menor es mejor (como LTV), el resalte corresponde al valor más bajo."),
+            "La celda con el mejor valor de cada métrica se resalta en **verde** para identificarla de un " +
+            "vistazo sin necesidad de comparar cifras manualmente. Debajo de cada valor aparece la " +
+            "diferencia respecto al segundo lugar: '+1.3 pp vs FUNO11' para métricas de porcentaje como " +
+            "Cap Rate o Yield, o '+8.4 pts vs MXCD' para el score de oportunidad de 0-100. En métricas " +
+            "donde **menor es mejor** — como el LTV o la ratio de deuda sobre activos — el resalte " +
+            "corresponde al valor más bajo, no al más alto. Por ejemplo, si FIBRAMQ12 tiene LTV de 24 % " +
+            "y FUNO11 de 38 %, se resalta el 24 % de FIBRAMQ12 como favorable. Para el NAV por CBFI, el " +
+            "resalte indica la emisora cuyo precio de mercado está más alineado con su valor neto de " +
+            "activos, dato que la CNBV exige reportar trimestralmente. La lógica de resalte es consistente " +
+            "con los criterios de análisis publicados por AMEFIBRA para evaluación comparativa del sector."),
         CreateStaticItem("/comparar", 3,
             "¿Puedo compartir una comparación específica?",
-            "Sí. Cada selección de FIBRAs queda reflejada en la URL de la página. Para compartir o guardar una comparación, copia el enlace del navegador; al abrirlo, cargará exactamente las mismas emisoras comparadas."),
+            "Sí. El comparador codifica siempre la selección activa de FIBRAs directamente en los " +
+            "parámetros de la URL del navegador. Al elegir FUNO11, DANHOS13 y FMTY14 en el comparador, " +
+            "la barra de dirección muestra automáticamente una URL que incluye esos tickers como " +
+            "parámetros. Para compartir o guardar la comparación, copia el enlace completo del navegador " +
+            "y compártelo por correo, mensaje o guárdalo en favoritos. Quien abra el enlace verá " +
+            "exactamente las mismas emisoras cargadas en el comparador, actualizadas con los precios y " +
+            "métricas del momento en que abra la URL — no del momento en que se generó el enlace. Esto " +
+            "facilita el análisis colaborativo: por ejemplo, enviar a tu asesor financiero la comparación " +
+            "de tres FIBRAs industriales que estás evaluando. La selección no se guarda en ninguna cuenta " +
+            "ni base de datos; el enlace es la única forma de persistir una comparación específica entre " +
+            "sesiones."),
 
         // /noticias — Noticias
         CreateStaticItem("/noticias", 1,
             "¿Cómo buscar noticias de una FIBRA en particular?",
-            "Usa el filtro 'Filtrar por FIBRA' para ver solo las noticias asociadas a una emisora específica. También puedes combinar ese filtro con la búsqueda por título para afinar más los resultados. El botón 'Limpiar filtros' restablece ambos criterios."),
+            "Usa el selector **'Filtrar por FIBRA'** en la parte superior del listado para ver únicamente " +
+            "las noticias asociadas a una emisora específica: al elegir FUNO11, por ejemplo, el listado se " +
+            "filtra automáticamente para mostrar solo los artículos en los que esa FIBRA es mencionada. " +
+            "Puedes combinar ese filtro con la **búsqueda por título**: escribe 'resultados 2T25' y verás " +
+            "únicamente noticias de FUNO11 que contengan esas palabras en el titular. El botón **'Limpiar " +
+            "filtros'** restablece ambos criterios al mismo tiempo con un solo clic. Las noticias se " +
+            "ordenan siempre de más reciente a más antiguo dentro de los filtros activos. La asociación " +
+            "entre noticias y FIBRAs es automática: el sistema detecta menciones de tickers como DANHOS13 " +
+            "o FIBRAMQ12 y nombres comerciales en el cuerpo de cada artículo antes de publicarlo. Si una " +
+            "nota menciona varias emisoras — por ejemplo, un análisis sectorial de la CNBV — aparece en " +
+            "el filtro de cada una de ellas de forma independiente."),
         CreateStaticItem("/noticias", 2,
             "¿Qué datos muestra cada nota en el listado de noticias?",
-            "Cada tarjeta incluye la fuente de la noticia, el tiempo relativo de publicación, el titular, un extracto del contenido y etiquetas con las FIBRAs a las que está vinculada. Si hay más de las que caben, se muestra '+N más'. Al hacer clic entras al detalle completo de la nota."),
+            "Cada tarjeta de noticia en el listado muestra: la **fuente** de la nota (portal financiero, " +
+            "blog especializado en bienes raíces o comunicado oficial de la BMV), el **tiempo relativo de " +
+            "publicación** (por ejemplo, 'hace 3 horas' o 'ayer'), el **titular completo**, un **extracto** " +
+            "de las primeras líneas del contenido para evaluar relevancia sin abrir la nota, y las " +
+            "**etiquetas de FIBRAs** vinculadas — como VESTA, FUNO11 o FIBRAMQ12. Cuando hay más de cuatro " +
+            "emisoras asociadas a una nota, el listado muestra las primeras etiquetas y un indicador '+N " +
+            "más' para no sobrecargar la vista. Al hacer clic en la tarjeta accedes al **detalle completo** " +
+            "de la nota, que puede incluir, cuando está disponible, el análisis generado por inteligencia " +
+            "artificial: resumen ejecutivo, impacto estimado en el sector, hechos clave y la visión del " +
+            "inversor derivada del contenido. Las noticias provienen de fuentes especializadas en mercados " +
+            "financieros y bienes raíces inmobiliarios de México."),
 
         // /calculadora — Calculadora de compra
         CreateStaticItem("/calculadora", 1,
             "¿Cómo funciona la calculadora de compra de FIBRAs?",
-            "Ingresa un monto en pesos en la columna '$ a calcular' para cada FIBRA que te interese. La tabla calcula al instante cuántos CBFIs puedes comprar, cuánto dinero sobra, la distribución proyectada por CBFI (trimestral y anual) y la renta bruta estimada sobre tu inversión. Puedes ingresar montos distintos para cada emisora."),
+            "Ingresa en la columna **'$ a calcular'** el presupuesto en pesos mexicanos que destinarías a " +
+            "cada FIBRA de tu interés. La tabla recalcula de inmediato cuatro métricas por emisora: " +
+            "**CBFIs a comprar** — el número de certificados enteros que puedes adquirir con ese " +
+            "presupuesto, ya que los CBFIs se compran en unidades enteras en la BMV; **$ Sobra** — el " +
+            "remanente que no alcanza para el siguiente CBFI; **Distribución proyectada** — el ingreso " +
+            "trimestral y anual estimado por esos CBFIs basado en el último pago decretado por la FIBRA; " +
+            "y **Renta Bruta** — el rendimiento por distribuciones sobre tu inversión total expresado en " +
+            "porcentaje anual. Puedes ingresar montos distintos para cada emisora: por ejemplo, $10,000 " +
+            "para FUNO11 y $30,000 para FIBRAMQ12. Los cálculos usan el precio en tiempo real. La " +
+            "calculadora no considera comisiones de corretaje ni impuestos; esos factores dependen del " +
+            "intermediario y del régimen fiscal del inversionista, conforme a la normativa de la CNBV."),
         CreateStaticItem("/calculadora", 2,
             "¿Qué significa '$ Sobra' en la calculadora?",
-            "Es el remanente de tu presupuesto que no alcanza para comprar un CBFI adicional, dado que los CBFIs se compran en unidades enteras. Por ejemplo, si el precio es $47.30 MXN y tu presupuesto es $500, puedes comprar 10 CBFIs ($473) y te sobran $27."),
+            "Es el remanente de tu presupuesto que no alcanza para adquirir un CBFI adicional. Dado que " +
+            "los certificados bursátiles se transan en unidades enteras en la BMV — igual que cualquier " +
+            "acción —, es imposible comprar 10.6 CBFIs; solo puedes comprar 10. **Ejemplo numérico**: si " +
+            "el precio de DANHOS13 es $32.50 MXN y tu presupuesto es $1,000, puedes comprar 30 CBFIs " +
+            "($975.00) y te sobran $25.00 — insuficientes para el CBFI número 31. Si ajustas el " +
+            "presupuesto a $1,040, compras 32 CBFIs ($1,040.00) y el sobrante es $0.00, maximizando el " +
+            "uso del capital. El campo '$ Sobra' es útil para optimizar la asignación: con el dato " +
+            "calculado decides si redondeas el presupuesto al múltiplo exacto del precio, o redistribuyes " +
+            "ese remanente en otra emisora del catálogo como FMTY14 o VESTA. La calculadora actualiza el " +
+            "sobrante en tiempo real si el precio de la FIBRA cambia durante la sesión bursátil."),
         CreateStaticItem("/calculadora", 3,
             "¿Los montos se pierden al filtrar u ordenar la tabla?",
-            "No. La tabla conserva los montos ingresados aunque cambies el orden de las columnas o apliques un filtro por nombre. Esto permite ordenar por Renta Bruta o Yield sin perder los presupuestos que ya capturaste."),
+            "No. La calculadora conserva los presupuestos que ingresaste en cada FIBRA incluso si cambias " +
+            "el orden de las columnas, aplicas un filtro por nombre de emisora o modificas el criterio de " +
+            "ordenamiento de la tabla. Por ejemplo: si ingresaste $8,000 para FUNO11 y $20,000 para " +
+            "FIBRAMQ12, y luego ordenas la tabla por **Renta Bruta** de mayor a menor para comparar qué " +
+            "emisora genera más ingresos de distribución con esos montos, los presupuestos de ambas " +
+            "permanecen intactos y los cálculos se mantienen visibles. Esta persistencia es intencional: " +
+            "permite explorar distintos ordenamientos para evaluar el rendimiento proyectado de tu " +
+            "asignación sin volver a capturar los datos. Los montos no se guardan entre sesiones de " +
+            "navegador: si cierras la pestaña o recargas la página, deberás reingresar los presupuestos. " +
+            "Para vaciar todos los montos durante una sesión activa, recarga la página o limpia " +
+            "manualmente cada campo."),
 
         // /calendario — Calendario de eventos corporativos
         CreateStaticItem("/calendario", 1,
             "¿Qué tipos de eventos muestra el calendario de FIBRAs?",
-            "El calendario registra tres tipos de eventos: **Pagos** (fecha en que se deposita la distribución), **Ex derechos** (último día para comprar y tener derecho al pago) y **Avisos BMV** (comunicados oficiales publicados en la Bolsa Mexicana de Valores). Cada tipo tiene un color de identificación distinto."),
+            "El calendario registra tres categorías de eventos corporativos para todas las FIBRAs activas " +
+            "que cotizan en la Bolsa Mexicana de Valores. **Pagos**: la fecha en que la FIBRA deposita la " +
+            "distribución en efectivo en las cuentas de los tenedores de CBFIs registrados; habitualmente " +
+            "ocurre entre dos y cinco días hábiles después de la ex-fecha. **Ex derechos (ex-fecha)**: el " +
+            "día a partir del cual quien compre CBFIs ya no tiene derecho al cobro de la distribución en " +
+            "curso; comprar antes de esta fecha es requisito indispensable para recibir el pago. **Avisos " +
+            "BMV**: comunicados oficiales publicados por la FIBRA ante la Bolsa Mexicana de Valores, que " +
+            "incluyen convocatorias de asambleas de tenedores, reestructuras de portafolio, cambios en el " +
+            "fiduciario o actualizaciones regulatorias. Cada categoría se distingue con un color en la " +
+            "vista mensual. Los eventos se obtienen directamente de los registros oficiales de la BMV y " +
+            "se actualizan conforme llegan los comunicados de cada emisora."),
         CreateStaticItem("/calendario", 2,
             "¿Qué información aparece al revisar un evento en el calendario?",
-            "Cada evento muestra la emisora, el monto de distribución por CBFI, el desglose entre la parte fiscal y el reembolso de capital, y un enlace al aviso oficial en BMV cuando está disponible. La vista mensual agrupa los eventos por día para lectura rápida."),
+            "Al hacer clic sobre un evento del calendario se despliega un panel con su información " +
+            "completa. Para los **pagos y ex-derechos** verás: la emisora, la fecha del evento, el " +
+            "**monto de distribución por CBFI** en pesos mexicanos — por ejemplo, $0.582 por CBFI si esa " +
+            "fue la distribución trimestral de FUNO11 en ese período —, el **desglose fiscal** entre la " +
+            "parte distribuible (que tributa como ingreso para el tenedor según el ISR) y el **reembolso " +
+            "de capital** (que reduce el costo de adquisición del CBFI y no tributa como ingreso " +
+            "inmediato), y el **enlace al aviso oficial** publicado por la FIBRA en la plataforma de la " +
+            "BMV cuando está disponible. Para los **Avisos BMV** se muestra el título del comunicado y un " +
+            "vínculo al texto completo registrado ante el regulador. La vista mensual agrupa los eventos " +
+            "del mismo día para facilitar la lectura de semanas con alta actividad, como el cierre de " +
+            "trimestre cuando varias FIBRAs reportan simultáneamente."),
         CreateStaticItem("/calendario", 3,
             "¿Qué es la fecha ex derecho y por qué importa?",
-            "Es la fecha a partir de la cual quien compre la FIBRA ya no tiene derecho a cobrar la distribución en curso. Para recibir el pago debes tener los CBFIs registrados en tu cuenta **antes** de esa fecha. El mismo día puede aparecer tanto el pago de una distribución como la fecha ex derecho de la siguiente."),
+            "La **fecha ex derecho** — o ex-fecha — es el día a partir del cual quien adquiera CBFIs de " +
+            "una FIBRA ya no tiene derecho a cobrar la distribución del trimestre en curso. Para recibir " +
+            "el pago es indispensable tener los CBFIs registrados en tu cuenta de inversión **antes** de " +
+            "esa fecha. En México, la liquidación bursátil opera en T+2 (dos días hábiles): si la ex-fecha " +
+            "es el martes, debiste comprar a más tardar el jueves anterior para que la operación liquide a " +
+            "tiempo y figure como tenedor registrado. Quien compre el mismo día de la ex-fecha o después " +
+            "no recibirá esa distribución; el vendedor — quien tenía los CBFIs registrados — cobrará en " +
+            "su lugar. Esta es la razón por la que el precio de una FIBRA puede caer en la ex-fecha un " +
+            "monto similar al de la distribución, fenómeno conocido como ajuste de dividendo. La BMV y la " +
+            "CNBV exigen que las FIBRAs publiquen estas fechas con anticipación suficiente en sus avisos " +
+            "oficiales."),
 
         // /portafolio — Landing pública / puerta de entrada
         CreateStaticItem("/portafolio", 1,
             "¿Qué puedo consultar en Fibras Inmobiliarias sin iniciar sesión?",
-            "Las secciones públicas están siempre disponibles sin cuenta: el **Catálogo de FIBRAs** con precios y métricas de mercado, los **Fundamentales comparativos** (Cap Rate, NAV, LTV, NOI y FFO Margin), el flujo de **Noticias** y la **Calculadora de compra** para estimar distribuciones proyectadas. No hace falta registrarse para explorar el universo completo de emisoras."),
+            "Las secciones públicas de Fibras Inmobiliarias están siempre disponibles sin necesidad de " +
+            "crear una cuenta ni proporcionar ningún dato personal. El **Catálogo de FIBRAs** muestra " +
+            "precios, variaciones diarias, volumen y métricas de mercado de las aproximadamente 20 " +
+            "emisoras activas afiliadas a AMEFIBRA en la BMV. Los **Fundamentales comparativos** " +
+            "presentan Cap Rate, NAV por CBFI, LTV, Margen NOI y Margen FFO actualizados cada vez que " +
+            "una FIBRA publica sus reportes trimestrales ante la CNBV. El flujo de **Noticias** está " +
+            "abierto en su totalidad: cualquier visitante puede leer artículos del sector inmobiliario y " +
+            "financiero con sus etiquetas por emisora y, cuando está disponible, el análisis de " +
+            "inteligencia artificial. La **Calculadora de compra** permite estimar distribuciones " +
+            "proyectadas sin guardar ningún dato. El **Comparador de FIBRAs** y el **Calendario de " +
+            "distribuciones** también son de acceso libre. Para explorar el universo completo de emisoras, " +
+            "sus precios y fundamentales no hace falta ningún registro."),
         CreateStaticItem("/portafolio", 2,
             "¿Qué incluye el acceso privado con cuenta?",
-            "Con una cuenta accedes a cuatro áreas adicionales: el **Portafolio privado** con KPIs consolidados, posición y calendario de distribuciones; los **Reportes trimestrales** con fundamentales y análisis IA por FIBRA; el módulo de **Oportunidades y ranking** con score configurable para detectar las emisoras con mayor potencial relativo; y las **Herramientas privadas** para análisis más profundo."),
+            "Con una cuenta accedes a cuatro módulos exclusivos que requieren autenticación. El " +
+            "**Portafolio privado** te permite registrar tu tenencia real de CBFIs por FIBRA y calcular " +
+            "KPIs consolidados de tu cartera: valor total de mercado, yield efectivo sobre tu costo de " +
+            "adquisición, distribuciones recibidas en el período y tu calendario personal de cobros " +
+            "futuros. Los **Reportes trimestrales** concentran los fundamentales financieros — NOI, FFO, " +
+            "Cap Rate, LTV, distribuciones — con análisis generado por inteligencia artificial para cada " +
+            "FIBRA, estructurado para ahorrar las horas de lectura que implica revisar los reportes ante " +
+            "la CNBV. El módulo de **Oportunidades y ranking** puntúa a todas las emisoras en una escala " +
+            "de 0 a 100 con cinco componentes configurables: precio vs NAV, Cap Rate sectorial, solidez " +
+            "financiera medida por LTV, momento de precio y score compuesto. Las **Herramientas privadas** " +
+            "complementan el análisis con opciones avanzadas para inversionistas activos en el mercado de " +
+            "FIBRAs."),
         CreateStaticItem("/portafolio", 3,
             "¿Cómo inicio sesión desde esta página?",
-            "El formulario de acceso está embebido directamente en esta página: haz clic en cualquier botón **Iniciar sesión** o desplázate hasta la sección de acceso privado. Al autenticarte, la misma URL te muestra el dashboard privado sin cambiar de pestaña ni recargar la aplicación."),
+            "El formulario de acceso está integrado directamente dentro de la página `/portafolio`, sin " +
+            "necesidad de navegar a una URL separada de inicio de sesión. Haz clic en cualquier botón " +
+            "**Iniciar sesión** de la página o desplázate hasta la sección de acceso privado donde " +
+            "encontrarás el formulario con los campos de correo electrónico y contraseña. Al autenticarte " +
+            "correctamente, la misma página muestra el **dashboard privado** de tu portafolio sin " +
+            "redirigirte ni recargar la aplicación — la transición es instantánea en la misma pestaña. " +
+            "Si aún no tienes cuenta, el registro está disponible para nuevos usuarios; consulta la página " +
+            "**Acerca** o contacta vía correo para solicitarlo. La sesión permanece activa durante un " +
+            "período configurado; si expira, la plataforma mostrará el formulario de inicio de sesión " +
+            "nuevamente al intentar acceder a las secciones privadas. Las credenciales se transmiten " +
+            "cifradas mediante HTTPS conforme a los estándares de seguridad aplicables a plataformas de " +
+            "análisis financiero en México."),
     ];
 
     private static FaqItem CreateStaticItem(string entityKey, int order, string question, string answer) => new()

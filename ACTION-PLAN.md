@@ -148,10 +148,11 @@ Priorizar FUNO11, DANHOS13, FIBRAMQ12, FIBRAPL14, FMTY14 con 150-250 palabras ca
 CatalogSeed.cs no tiene ningun valor de descripcion para las 20 FIBRAs activas.
 **Esfuerzo:** Medio (8-12h redaccion + 2h seed) | **Responsable:** Contenido + Backend
 
-### 15. Expandir respuestas FAQ a 134-167 palabras
+### 15. ✅ Expandir respuestas FAQ a 134-167 palabras
 FaqSeedFactory.cs promedia 40 palabras (rango 21-57). Rango optimo para AI engines: 134-167 palabras.
 Reescribir con contexto, ejemplos numericos y referencias CNBV.
 **Esfuerzo:** Medio (3-5h) | **Responsable:** Contenido
+**Implementado:** 2026-06-18 — 17 respuestas de páginas estáticas + 6 respuestas de fundamentales KPI reescritas a 134-167 palabras; ejemplos numéricos con FUNO11/DANHOS13/FIBRAMQ12; referencias CNBV/AMEFIBRA/BMV/ISR; SeedUpdatedAt actualizado a 2026-06-18; SharedKpiDefinitions intacto (UI no afectada)
 
 ### 16. ✅ Self-hosting de Google Fonts
 Descargar woff2 de Playfair Display e IBM Plex Sans y servirlos desde /assets/fonts/ con Cache-Control
