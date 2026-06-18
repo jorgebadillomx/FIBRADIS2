@@ -2,7 +2,7 @@
 title: 'SEO #11/#16 — Lazy-load HomePage y self-hosting Google Fonts'
 type: 'refactor'
 created: '2026-06-18'
-status: 'in-progress'
+status: 'done'
 baseline_commit: 'bf99e2861a026ca27943d3810a8c628df5ce661a'
 context: []
 ---
@@ -81,3 +81,21 @@ context: []
 
 **Manual checks:**
 - Abrir DevTools > Network en `/`, filtrar por `Font` — deben aparecer solo requests a `localhost` o el dominio propio, ninguno a `googleapis.com`
+
+## Suggested Review Order
+
+**Lazy-load de HomePage**
+
+- Entry point: ruta `/` ahora usa `lazy()` + `p()` como todas las demás páginas.
+  [`routes.tsx:8`](../../src/Web/Main/src/app/routes.tsx#L8)
+
+- Uso en el árbol de rutas — verificar que `p()` envuelve correctamente.
+  [`routes.tsx:45`](../../src/Web/Main/src/app/routes.tsx#L45)
+
+**Self-hosting de Google Fonts**
+
+- Declaraciones `@font-face` con paths locales y `font-display:swap`; aquí empieza el cambio de fuentes.
+  [`index.css:4`](../../src/Web/Main/src/index.css#L4)
+
+- HTML limpio: sin referencias a `googleapis.com` ni `gstatic.com`.
+  [`index.html:1`](../../src/Web/Main/index.html#L1)
