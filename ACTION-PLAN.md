@@ -106,11 +106,12 @@ senales de autoria para sitios financieros YMYL. Anadir nombre del fundador/equi
 
 ---
 
-### 10. Schema NewsArticle con author en paginas de noticia
+### 10. ✅ Schema NewsArticle con author en paginas de noticia
 **Descripcion:** NoticiaPage.tsx muestra solo fuente y fecha sin Schema de articulo. Anadir JSON-LD NewsArticle
 con author.name, datePublished, headline y publisher en NewsMetadataMiddleware.
 **Impacto:** Habilita elegibilidad para Google News y mejora trust score YMYL.
 **Esfuerzo:** Medio (4-6h) | **Responsable:** Backend
+**Implementado:** 2026-06-18 — guard "regenera si JsonLd null && !overridden" en NewsMetadataMiddleware; eliminado dead code BuildMetaBlock(NewsArticle) y métodos huérfanos (-155 líneas)
 
 ---
 

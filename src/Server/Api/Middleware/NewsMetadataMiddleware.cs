@@ -1,13 +1,11 @@
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using Application.Seo;
 using Application.News;
 using Domain.News;
 using Domain.Seo;
-using SharedApiContracts.News;
 
 namespace Api.Middleware;
 
@@ -24,28 +22,10 @@ public partial class NewsMetadataMiddleware(
     IServiceScopeFactory scopeFactory)
 {
     private const string PrerenderMetaComment = "<!-- prerender-meta -->";
-    // El sufijo mide >120 chars por sí solo: garantiza el piso de la meta description
-    // (checklist SSR/SEO 120-160) aun con snippets cortos o vacíos
-    private const string BrandDescriptionSuffix = " — Análisis y noticias de FIBRAs inmobiliarias en Fibras Inmobiliarias: resultados, distribuciones y mercado inmobiliario bursátil de México.";
-    private const int MaxDescriptionLength = 160;
-    private const int MinDescriptionLength = 120;
     private const int MaxSlugLength = 256;
 
     // UnicodeRanges.All deja pasar acentos/em-dash y solo escapa <, >, &, ", '
     private static readonly HtmlEncoder Encoder = HtmlEncoder.Create(UnicodeRanges.All);
-
-    private static readonly JsonSerializerOptions AnalysisDeserializeOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
-
-    // El encoder escapa control chars y los HTML-sensibles (< > &) como \uXXXX: el JSON-LD
-    // queda válido (RFC 8259) ante tabs/controles en títulos scrapeados y un </script>
-    // embebido no puede romper el bloque; acentos quedan legibles
-    private static readonly JsonSerializerOptions JsonLdOptions = new()
-    {
-        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-    };
 
     // og:url y canonical deben ser URLs absolutas; sin BaseUrl el middleware emitiría
     // metadata inválida en silencio — fail-fast al construir el pipeline
@@ -165,6 +145,11 @@ public partial class NewsMetadataMiddleware(
             seoMetadata = seoDefaultsBuilder.BuildNews(article, _baseUrl, DateTimeOffset.UtcNow, "system");
         }
 
+        // Artículos con fila BD pero sin JSON-LD (creados antes del schema de NewsArticle):
+        // regenerar desde los datos actuales del artículo si no fue overrideado por Ops.
+        if (!seoMetadata.JsonLdIsOverridden && string.IsNullOrEmpty(seoMetadata.JsonLd))
+            seoMetadata.JsonLd = seoDefaultsBuilder.BuildNews(article, _baseUrl, DateTimeOffset.UtcNow, "system").JsonLd;
+
         var faqRepo = scope.ServiceProvider.GetRequiredService<IFaqRepository>();
         var faqItems = await faqRepo.GetByPageAsync(SeoPageType.News, entityKey, includeInactive: false, context.RequestAborted);
         var faqJsonLdBlock = faqItems.Count > 0
@@ -237,144 +222,4 @@ public partial class NewsMetadataMiddleware(
         return block.ToString();
     }
 
-    private static string BuildMetaBlock(NewsArticle article, string baseUrl)
-    {
-        var aiAnalysis = TryDeserializeAnalysis(article.AiAnalysisJson);
-
-        var headline = aiAnalysis?.Headline ?? article.Title;
-        var title = $"{headline} — Noticias | Fibras Inmobiliarias";
-        // Misma cadena de fallback que el cliente (NoticiaPage): summaryMarkdown ?? aiSummary ?? snippet
-        var description = BuildDescription(aiAnalysis?.SummaryMarkdown ?? article.AiSummary ?? article.Snippet ?? string.Empty);
-
-        // Artículos sin slug (backlog pre-backfill alcanzado por GUID): canonical cae al ID
-        var canonicalPath = $"{baseUrl}/noticias/{article.Slug ?? article.Id.ToString()}";
-        var canonicalUrl = Encoder.Encode(canonicalPath);
-        var publishedIso = article.PublishedAt.ToString("o");
-
-        // Serialización JSON real: escapa control chars, comillas y < (un EscapeJson artesanal
-        // dejaba pasar tabs/U+0000-001F y Google descartaría el bloque NewsArticle completo)
-        var jsonLd = JsonSerializer.Serialize(new Dictionary<string, object?>
-        {
-            ["@context"] = "https://schema.org",
-            ["@type"] = "NewsArticle",
-            ["headline"] = headline,
-            ["datePublished"] = publishedIso,
-            ["author"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = article.Source },
-            ["publisher"] = new Dictionary<string, object?>
-            {
-                ["@type"] = "Organization",
-                ["name"] = "Fibras Inmobiliarias",
-                ["url"] = baseUrl,
-                ["logo"] = new Dictionary<string, object?>
-                {
-                    ["@type"] = "ImageObject",
-                    ["url"] = $"{baseUrl}/logo.png",
-                    ["width"] = 512,
-                    ["height"] = 512,
-                },
-            },
-            ["url"] = canonicalPath,
-            ["description"] = description,
-        }, JsonLdOptions);
-
-        var encodedTitle = Encoder.Encode(title);
-        var encodedDescription = Encoder.Encode(description);
-
-        var block = new StringBuilder()
-            .Append($"<title>{encodedTitle}</title>\n    ")
-            .Append($"<meta name=\"description\" content=\"{encodedDescription}\" />\n    ")
-            .Append($"<link rel=\"canonical\" href=\"{canonicalUrl}\" />\n    ")
-            // og:title debe ser el mismo texto que <title> (checklist SSR/SEO) y que el cliente
-            .Append($"<meta property=\"og:title\" content=\"{encodedTitle}\" />\n    ")
-            .Append($"<meta property=\"og:description\" content=\"{encodedDescription}\" />\n    ")
-            .Append("<meta property=\"og:type\" content=\"article\" />\n    ")
-            .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />");
-
-        var ogImage = article.ImageUrl ?? $"{baseUrl}/og-image.png";
-        block.Append($"\n    <meta property=\"og:image\" content=\"{Encoder.Encode(ogImage)}\" />");
-        block.Append("\n    <meta property=\"og:locale\" content=\"es_MX\" />");
-        block.Append("\n    <meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />");
-        if (article.ImageUrl is null)
-        {
-            block.Append("\n    <meta property=\"og:image:width\" content=\"1200\" />");
-            block.Append("\n    <meta property=\"og:image:height\" content=\"630\" />");
-            block.Append("\n    <meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />");
-        }
-
-        block.Append("\n    <meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
-             .Append("<meta name=\"twitter:site\" content=\"@fibrasinmobiliarias\" />\n    ")
-             .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
-             .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
-             .Append($"<meta name=\"twitter:image\" content=\"{Encoder.Encode(ogImage)}\" />");
-
-        block.Append($"\n    <script type=\"application/ld+json\">{jsonLd}</script>");
-
-        return block.ToString();
-    }
-
-    private static string BuildDescription(string rawDescription)
-    {
-        var text = StripMarkdown(rawDescription).Trim();
-
-        if (text.Length > MaxDescriptionLength)
-            return TruncateWithEllipsis(text);
-
-        if (text.Length >= MinDescriptionLength)
-            return text;
-
-        // El sufijo solo (sin guión inicial) sirve de descripción genérica cuando no hay contenido
-        var padded = text.Length > 0
-            ? text + BrandDescriptionSuffix
-            : BrandDescriptionSuffix.TrimStart(' ', '—', ' ');
-        return padded.Length > MaxDescriptionLength
-            ? TruncateWithEllipsis(padded)
-            : padded;
-    }
-
-    private static string TruncateWithEllipsis(string text)
-    {
-        var cut = MaxDescriptionLength - 3;
-        // No partir un surrogate pair (emoji) en el corte: dejaría un U+FFFD al final
-        if (char.IsHighSurrogate(text[cut - 1]))
-            cut--;
-        return text[..cut] + "...";
-    }
-
-    [GeneratedRegex(@"^\s*\|?(\s*:?-+:?\s*\|)+\s*$", RegexOptions.Multiline)]
-    private static partial Regex TableSeparatorRowRegex();
-
-    [GeneratedRegex(@"\|")]
-    private static partial Regex TablePipeRegex();
-
-    [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
-    private static partial Regex MarkdownLinkRegex();
-
-    [GeneratedRegex(@"[*_`#>]+")]
-    private static partial Regex MarkdownSyntaxRegex();
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex WhitespaceRunRegex();
-
-    // SummaryMarkdown llega con sintaxis Markdown que se vería literal en los SERPs
-    private static string StripMarkdown(string text)
-    {
-        text = TableSeparatorRowRegex().Replace(text, string.Empty);
-        text = MarkdownLinkRegex().Replace(text, "$1");
-        text = TablePipeRegex().Replace(text, " ");
-        text = MarkdownSyntaxRegex().Replace(text, string.Empty);
-        return WhitespaceRunRegex().Replace(text, " ").Trim();
-    }
-
-    private static NewsAiAnalysisDto? TryDeserializeAnalysis(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try
-        {
-            return JsonSerializer.Deserialize<NewsAiAnalysisDto>(json, AnalysisDeserializeOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
 }
