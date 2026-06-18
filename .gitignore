@@ -62,3 +62,7 @@ deploy/release/fibradis.zip
 deploy/iis-publish/
 scripts/seo_fetch.ps1
 scripts/sql/deploy_idempotent_post-AddOrganizationSameAsJson_through_20260616171543_RebrandContactEmail.sql
+
+## SEO audit outputs
+screenshots/
+SEO-REPORT-*.html

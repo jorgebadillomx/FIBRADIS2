@@ -227,6 +227,8 @@ export function CalendarioPage() {
               </ul>
             </section>
           </aside>
+        </div>
+
         {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
           <div className="mt-10">
             <FaqAccordion
