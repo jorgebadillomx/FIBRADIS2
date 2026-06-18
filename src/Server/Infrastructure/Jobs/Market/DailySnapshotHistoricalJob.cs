@@ -107,13 +107,20 @@ public class DailySnapshotHistoricalJob(
             return (localInserted, localSkipped, localErrors);
         }
 
+        var oneMonthAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+
+        DateOnly ResolveHistoryStart(DateOnly? lastDate) =>
+            lastDate.HasValue
+                ? (lastDate.Value < oneMonthAgo ? lastDate.Value : oneMonthAgo)
+                : defaultHistoryStart;
+
         foreach (var (fibra, index) in fibras.Select((f, i) => (f, i)))
         {
             if (index > 0)
                 await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
 
             var lastDate = await marketRepo.GetLatestDailySnapshotDateAsync(fibra.Id, ct);
-            var result = await ProcessFibraAsync(fibra, lastDate ?? defaultHistoryStart);
+            var result = await ProcessFibraAsync(fibra, ResolveHistoryStart(lastDate));
             inserted += result.inserted;
             skipped += result.skipped;
             errors += result.errors;
@@ -132,7 +139,7 @@ public class DailySnapshotHistoricalJob(
             }
 
             var lastDate = await marketRepo.GetLatestDailySnapshotDateAsync(benchmark.Id, ct);
-            var result = await ProcessFibraAsync(benchmark, lastDate ?? defaultHistoryStart);
+            var result = await ProcessFibraAsync(benchmark, ResolveHistoryStart(lastDate));
             inserted += result.inserted;
             skipped += result.skipped;
             errors += result.errors;

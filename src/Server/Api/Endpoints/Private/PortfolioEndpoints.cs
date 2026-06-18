@@ -438,8 +438,7 @@ public static class PortfolioEndpoints
             if (!allSnapshots.TryGetValue(position.FibraId, out var snapshots))
                 continue;
 
-            var acquiredAt = DateOnly.FromDateTime(position.UploadedAt.UtcDateTime);
-            foreach (var snapshot in snapshots.Where(s => s.Close.HasValue && s.Date >= acquiredAt))
+            foreach (var snapshot in snapshots.Where(s => s.Close.HasValue))
             {
                 if (!valuesByDate.TryGetValue(snapshot.Date, out var current))
                     current = 0m;

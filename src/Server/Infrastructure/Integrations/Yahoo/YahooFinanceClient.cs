@@ -90,10 +90,28 @@ public class YahooFinanceClient(
         }
 
         ct.ThrowIfCancellationRequested();
-        var result = await historyClient.Inner.GetHistoryAsync(yahooTicker);
-        if (!result.HasValue) return [];
 
-        var ticks = result.Value.Ticks;
+        const int maxRetries = 3;
+        YahooQuotesApi.YahooHistory? history = null;
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var result = await historyClient.Inner.GetHistoryAsync(yahooTicker);
+            if (result.HasValue)
+            {
+                history = result.Value;
+                break;
+            }
+            if (attempt < maxRetries)
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 3), ct);
+        }
+
+        if (history is null)
+        {
+            logger.LogWarning("Yahoo no devolvió historial para {Ticker} tras {MaxRetries} intentos", yahooTicker, maxRetries);
+            return [];
+        }
+
+        var ticks = history.Ticks;
         if (ticks.IsDefaultOrEmpty) return [];
 
         var cutoff = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
