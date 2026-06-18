@@ -2,10 +2,12 @@ using System.Text.Json;
 using Application.Catalog;
 using Application.Jobs;
 using Application.Market;
+using Application.Seo;
 using Domain.Jobs;
 using Domain.Market;
 using Infrastructure.Integrations.Yahoo;
 using Infrastructure.Time;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Jobs.Market;
@@ -18,6 +20,8 @@ public class MarketPipelineJob(
     IMarketRepository marketRepo,
     IPipelineErrorLogRepository pipelineErrorLogRepo,
     IPipelineRunLogRepository pipelineRunLogRepo,
+    IIndexNowService indexNowService,
+    IConfiguration config,
     ILogger<MarketPipelineJob> logger)
 {
     public async Task ExecuteAsync(CancellationToken ct = default) =>
@@ -198,6 +202,16 @@ public class MarketPipelineJob(
                         "Failed to delete old price snapshots before cutoff {Cutoff}",
                         retentionCutoff);
                 }
+
+                var baseUrl = config["App:BaseUrl"]?.TrimEnd('/') ?? string.Empty;
+                var successfulSymbols = new HashSet<string>(
+                    quotes.Select(q => q.Symbol), StringComparer.OrdinalIgnoreCase);
+                var fibraUrls = fibras
+                    .Where(f => successfulSymbols.Contains(f.YahooTicker))
+                    .Select(f => $"{baseUrl}/fibras/{FibraSlug.Build(f.FullName, f.Ticker)}")
+                    .ToList();
+                if (fibraUrls.Count > 0)
+                    _ = indexNowService.PingAsync(fibraUrls, CancellationToken.None);
             }
 
             logger.LogInformation(

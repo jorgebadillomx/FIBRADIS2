@@ -80,7 +80,7 @@ public static class SeoEndpoints
             {
                 var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
                 var staticRoutes = GetVisibleStaticRoutes(visibility);
-                return BuildUrlSetXml(staticRoutes.Select(path => (Loc: $"{GetBaseUrl(config)}{path}", LastMod: GetGeneratedLastMod())));
+                return BuildUrlSetXml(staticRoutes.Select(r => (Loc: $"{GetBaseUrl(config)}{r.Path}", LastMod: r.LastMod)));
             });
 
             httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
@@ -102,7 +102,8 @@ public static class SeoEndpoints
             {
                 var visibility = await LoadSitemapVisibilityAsync(seoRepo, ct);
                 var fibras = await GetVisibleFibraPathsAsync(fibraRepo, visibility, ct);
-                return BuildUrlSetXml(fibras.Select(path => (Loc: $"{GetBaseUrl(config)}{path}", LastMod: GetGeneratedLastMod())));
+                var today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                return BuildUrlSetXml(fibras.Select(path => (Loc: $"{GetBaseUrl(config)}{path}", LastMod: today)));
             });
 
             httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
@@ -142,9 +143,9 @@ public static class SeoEndpoints
                     .Where(article => !visibility.NewsSlugs.Contains(NormalizeEntityKey(article.Slug)))
                     .Select(article => (
                         Loc: $"{GetBaseUrl(config)}/noticias/{article.Slug}",
-                        LastMod: article.PublishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+                        PublishedAt: article.PublishedAt));
 
-                xml = BuildUrlSetXml(newsPaths);
+                xml = BuildNewsUrlSetXml(newsPaths);
                 cache.Set(cacheKey, xml, TimeSpan.FromHours(1));
             }
 
@@ -171,6 +172,10 @@ public static class SeoEndpoints
                     "/fundamentales",
                     "/comparar",
                     "/noticias",
+                    "/acerca",
+                    "/portafolio",
+                    "/calculadora",
+                    "/calendario",
                 };
 
                 var entries = new List<(string Title, string Description, string Path)>();
@@ -184,8 +189,21 @@ public static class SeoEndpoints
                 return BuildLlmsTxt(GetBaseUrl(config), entries);
             });
 
-            httpContext.Response.Headers.CacheControl = "public, max-age=3600, s-maxage=3600";
+            httpContext.Response.Headers.CacheControl = "public, max-age=86400, s-maxage=86400";
             return Results.Content(txt, "text/plain; charset=utf-8");
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
+        app.MapMethods("/indexnow.txt", GetAndHead, async (
+            IConfiguration config,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            var key = config["Seo:IndexNowKey"];
+            if (string.IsNullOrWhiteSpace(key)) return Results.NotFound();
+            httpContext.Response.Headers.CacheControl = "public, max-age=86400";
+            return Results.Content(key, "text/plain");
         })
         .AllowAnonymous()
         .ExcludeFromDescription();
@@ -196,29 +214,6 @@ public static class SeoEndpoints
         .ExcludeFromDescription();
 
         return app;
-    }
-
-    public static string BuildSitemapXml(
-        string baseUrl,
-        IEnumerable<(string FullName, string Ticker)> activeFibras,
-        IEnumerable<(string Slug, DateTimeOffset PublishedAt)>? newsArticles = null)
-    {
-        var sb = new StringBuilder();
-        sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
-
-        foreach (var path in StaticRoutes)
-            AppendUrlEntry(sb, $"{baseUrl}{path}");
-
-        var today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        foreach (var (fullName, ticker) in activeFibras)
-            AppendUrlEntry(sb, $"{baseUrl}/fibras/{FibraSlug.Build(fullName, ticker)}", today);
-
-        foreach (var (slug, publishedAt) in newsArticles ?? [])
-            AppendUrlEntry(sb, $"{baseUrl}/noticias/{slug}", publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-
-        sb.Append("</urlset>\n");
-        return sb.ToString();
     }
 
     public static string BuildSitemapIndexXml(string baseUrl, IEnumerable<string> sitemapPaths)
@@ -298,19 +293,26 @@ public static class SeoEndpoints
         var metadata = await seoRepo.GetAllAsync(ct: ct);
         var visibility = new SitemapVisibility();
 
-        foreach (var row in metadata.Where(row => row.IsActive && IsNoIndex(row.RobotsDirectives)))
+        foreach (var row in metadata.Where(row => row.IsActive))
         {
+            var isNoIndex = IsNoIndex(row.RobotsDirectives);
             switch (row.PageType)
             {
                 case SeoPageType.Home:
                 case SeoPageType.StaticPage:
-                    visibility.StaticRoutes.Add(NormalizePath(row.EntityKey));
+                    var path = NormalizePath(row.EntityKey);
+                    if (isNoIndex)
+                        visibility.StaticRoutes.Add(path);
+                    else
+                        visibility.StaticRouteLastMod[path] = row.UpdatedAt;
                     break;
                 case SeoPageType.Fibra:
-                    visibility.FibraTickers.Add(row.EntityKey.Trim().ToUpperInvariant());
+                    if (isNoIndex)
+                        visibility.FibraTickers.Add(row.EntityKey.Trim().ToUpperInvariant());
                     break;
                 case SeoPageType.News:
-                    visibility.NewsSlugs.Add(NormalizeEntityKey(row.EntityKey));
+                    if (isNoIndex)
+                        visibility.NewsSlugs.Add(NormalizeEntityKey(row.EntityKey));
                     break;
             }
         }
@@ -330,9 +332,17 @@ public static class SeoEndpoints
             .ToList();
     }
 
-    private static IReadOnlyList<string> GetVisibleStaticRoutes(SitemapVisibility visibility)
+    private static IReadOnlyList<(string Path, string LastMod)> GetVisibleStaticRoutes(SitemapVisibility visibility)
         => StaticRoutes
             .Where(route => !visibility.StaticRoutes.Contains(NormalizePath(route)))
+            .Select(route =>
+            {
+                var normalized = NormalizePath(route);
+                var lastMod = visibility.StaticRouteLastMod.TryGetValue(normalized, out var updatedAt)
+                    ? updatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : "2024-01-01";
+                return (route, lastMod);
+            })
             .ToList();
 
     private static async Task<int> GetNewsPageCountAsync(INewsRepository newsRepo, CancellationToken ct)
@@ -383,7 +393,35 @@ public static class SeoEndpoints
         return sb.ToString();
     }
 
-    private static string GetGeneratedLastMod() => DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    public static string BuildNewsUrlSetXmlPublic(string baseUrl, IEnumerable<(string Loc, DateTimeOffset PublishedAt)> entries)
+        => BuildNewsUrlSetXml(entries);
+
+    private static string BuildNewsUrlSetXml(IEnumerable<(string Loc, DateTimeOffset PublishedAt)> entries)
+    {
+        var sb = new StringBuilder();
+        sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"\n");
+        sb.Append("        xmlns:news=\"http://www.google.com/schemas/sitemap-news/0.9\">\n");
+
+        foreach (var (loc, publishedAt) in entries)
+        {
+            var dateOnly = publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            sb.Append("  <url>\n");
+            sb.Append($"    <loc>{SecurityElement.Escape(loc)}</loc>\n");
+            sb.Append($"    <lastmod>{dateOnly}</lastmod>\n");
+            sb.Append("    <news:news>\n");
+            sb.Append("      <news:publication>\n");
+            sb.Append("        <news:name>Fibras Inmobiliarias</news:name>\n");
+            sb.Append("        <news:language>es</news:language>\n");
+            sb.Append("      </news:publication>\n");
+            sb.Append($"      <news:publication_date>{publishedAt:O}</news:publication_date>\n");
+            sb.Append("    </news:news>\n");
+            sb.Append("  </url>\n");
+        }
+
+        sb.Append("</urlset>\n");
+        return sb.ToString();
+    }
 
     private static int GetPageCount(int totalItems, int pageSize)
         => totalItems <= 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
@@ -428,6 +466,7 @@ public static class SeoEndpoints
     private sealed class SitemapVisibility
     {
         public HashSet<string> StaticRoutes { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, DateTimeOffset> StaticRouteLastMod { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> FibraTickers { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> NewsSlugs { get; } = new(StringComparer.OrdinalIgnoreCase);
     }

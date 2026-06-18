@@ -1114,3 +1114,142 @@ para que pueda estimar mi ingreso real después de impuestos sin necesitar conoc
 
 **Dado que** la distribución por CBFI no está disponible para una FIBRA (null en la API),
 **Entonces** la calculadora ISR en la ficha muestra un estado de "Sin datos de distribución disponibles" sin romper el layout.
+
+---
+
+## Épica 14: Registro, Trial y Suscripción de Usuarios
+
+Fibras Inmobiliarias pasa de acceso abierto a modelo freemium controlado: cualquier visitante puede registrarse y obtener 14 días de prueba gratuita; al vencer, el acceso a las rutas privadas queda bloqueado hasta que pague. El pago en Fase 1 es manual (transferencia bancaria verificada por el administrador); en Fase 2 se integrará una pasarela. Los usuarios existentes con `IsActive = 1` migran automáticamente a Lifetime. El modelo soporta tres tipos de suscripción: Monthly, Annual y Lifetime.
+
+### Historia 14.1: Modelo de suscripción — backend foundation
+
+Como administrador,
+quiero que la base de datos y el dominio reflejen el ciclo de vida completo de una suscripción (trial → activo → expirado),
+para que toda la lógica de acceso futura se base en campos explícitos y no en heurísticas ad-hoc.
+
+**Criterios de Aceptación:**
+
+**Dado que** ejecuto la migración EF,
+**Entonces** `auth.User` tiene cinco columnas nuevas: `email_confirmed_at` (datetime2 nullable), `trial_ends_at` (datetime2 nullable), `subscription_type` (nvarchar(16) nullable — valores: 'Monthly', 'Annual', 'Lifetime'), `subscription_ends_at` (datetime2 nullable), `how_did_you_hear` (nvarchar(32) nullable — valores: 'Google', 'RedesSociales', 'Recomendacion', 'Otro').
+
+**Dado que** la migración corre sobre la BD de producción (usuarios existentes con `IsActive = 1`),
+**Entonces** el script de data migration los actualiza a `subscription_type = 'Lifetime'`, `subscription_started_at = ISNULL(fecha_pago, GETUTCDATE())`, `subscription_ends_at = NULL`, `is_active = 1` en un único UPDATE atómico.
+
+**Dado que** el dominio `User` se actualiza con los nuevos campos,
+**Entonces** existe una propiedad computed `IsActive` que devuelve `true` si: (a) `SubscriptionType == Lifetime && SubscriptionStartedAt != null`, o (b) `SubscriptionEndsAt != null && SubscriptionEndsAt > UtcNow`, o (c) `TrialEndsAt != null && TrialEndsAt > UtcNow`; la columna `is_active` en BD sigue siendo el stored bit que el job actualiza.
+
+**Dado que** llamo `PATCH /api/v1/ops/users/{id}/subscription` con `{ "type": "Annual", "startedAt": "2026-06-18", "endsAt": "2027-06-18" }` como AdminOps,
+**Entonces** los campos `subscription_type`, `subscription_started_at` y `subscription_ends_at` se actualizan en BD, `is_active` se recalcula y persiste, y la respuesta devuelve el `UserSummaryDto` actualizado con 200 OK.
+
+**Dado que** la BD tiene el `UserSummaryDto` expuesto por `GET /api/v1/ops/users`,
+**Entonces** el DTO incluye los campos nuevos: `subscriptionType`, `subscriptionStartedAt`, `subscriptionEndsAt`, `trialEndsAt` para que el panel Ops los muestre correctamente.
+
+---
+
+### Historia 14.2: Flujo de registro + confirmación de email
+
+Como visitante,
+quiero registrarme con email, contraseña, nombre opcional y fuente de descubrimiento,
+para que al confirmar mi email se active automáticamente mi prueba gratuita de 14 días.
+
+**Criterios de Aceptación:**
+
+**Dado que** hago POST `/api/v1/auth/register` con email válido, contraseña segura y opcionalmente nombre y `howDidYouHear`,
+**Entonces** se crea el usuario con `Role = User`, `IsActive = false`, `EmailConfirmedAt = null`, `TrialEndsAt = null`, y se envía un email de confirmación con token firmado (expiración 24h) vía Resend.
+
+**Dado que** el email enviado tiene dominio en la lista negra de dominios desechables (ej. mailinator.com, tempmail.org),
+**Entonces** el endpoint devuelve 422 con code `disposable_email`.
+
+**Dado que** hago GET `/api/v1/auth/confirm-email?token=xxx` con token válido y no expirado,
+**Entonces** `email_confirmed_at` se setea a `UtcNow`, `trial_ends_at` se setea a `email_confirmed_at + 14 días`, `is_active` se actualiza a `true`, y el endpoint devuelve 200 OK con `{ "trialEndsAt": "..." }`.
+
+**Dado que** hago GET `/api/v1/auth/confirm-email?token=xxx` con token expirado o ya usado,
+**Entonces** el endpoint devuelve 400 con code `token_expired` o `token_already_used`.
+
+**Dado que** el email ya está confirmado y el usuario hace login normalmente,
+**Entonces** el JWT devuelto incluye el claim estándar con `Role = User` sin cambios al flujo de auth existente.
+
+---
+
+### Historia 14.3: Frontend — acceso controlado y páginas de conversión
+
+Como visitante o usuario con trial expirado,
+quiero ver una pantalla clara que explique mi estado y me dé los pasos concretos para activar o reactivar el acceso,
+para que la fricción de conversión sea mínima.
+
+**Criterios de Aceptación:**
+
+**Dado que** el usuario autenticado tiene `isActive = false` e intenta acceder a `/portafolio`, `/oportunidades`, `/herramientas`, `/reportes` o `/perfil`,
+**Entonces** es redirigido a `/activar` con `?reason=trial_expired` o `?reason=trial_not_started` según corresponda.
+
+**Dado que** el usuario no autenticado intenta acceder a una ruta privada,
+**Entonces** es redirigido a `/login` (comportamiento existente, sin cambio).
+
+**Dado que** navego a `/registro`,
+**Entonces** veo un formulario con campos Email (requerido), Contraseña (requerido), Nombre (opcional) y ¿Cómo nos encontraste? (select: Google / Redes sociales / Recomendación / Otro). Al enviar con éxito, la UI muestra "Revisa tu email para confirmar tu cuenta".
+
+**Dado que** navego a `/confirmar-email?token=xxx`,
+**Entonces** la página llama al endpoint de confirmación y, si es exitoso, muestra "¡Cuenta confirmada! Tu prueba de 14 días ha comenzado" con un botón "Ir a mi portafolio".
+
+**Dado que** navego a `/activar` con `?reason=trial_expired`,
+**Entonces** veo el título "Tu prueba de 14 días ha terminado", los tres planes con sus precios (Mensual / Anual / Lifetime), las instrucciones de transferencia bancaria (CLABE + banco), y el botón "Ya pagué — notificar al equipo" que envía un email automático a portafoliodefibras@gmail.com con el UserId.
+
+**Dado que** navego a `/activar` con `?reason=trial_not_started`,
+**Entonces** veo el título "Confirma tu email para comenzar tu prueba gratuita", una descripción de los 14 días, y un botón "Reenviar email de confirmación".
+
+**Dado que** llamo `GET /api/v1/account/me` como usuario autenticado,
+**Entonces** la respuesta incluye `isActive: bool`, `trialEndsAt: string|null` y `paidAt: string|null` además de los campos existentes.
+
+---
+
+### Historia 14.4: SubscriptionMaintenanceJob + emails automáticos
+
+Como sistema,
+quiero que un job diario mantenga el estado de suscripciones actualizado y notifique a los usuarios en momentos clave,
+para que los bloqueos de acceso ocurran automáticamente sin intervención manual del administrador.
+
+**Criterios de Aceptación:**
+
+**Dado que** el job `SubscriptionMaintenanceJob` corre a las 02:00 UTC diariamente vía Hangfire `RecurringJob`,
+**Entonces** en un solo pass: (1) desactiva usuarios con `subscription_ends_at < UtcNow && is_active = true`, (2) detecta trials que vencen en exactamente 3 días y envía email de aviso, (3) detecta suscripciones Monthly que vencen en 3 días y envía email de aviso, (4) detecta suscripciones Annual que vencen en 30 días y envía email de aviso.
+
+**Dado que** el job desactiva un usuario,
+**Entonces** `is_active` se pone en `false` en BD y se envía email "Tu acceso ha expirado — reactívalo en fibrasinmobiliarias.com/activar" vía Resend.
+
+**Dado que** AdminOps activa manualmente la suscripción de un usuario vía Ops,
+**Entonces** se envía email automático "¡Tu acceso está activo! Bienvenido a Fibras Inmobiliarias" vía Resend.
+
+**Dado que** el job no puede conectarse a Resend (falla de red),
+**Entonces** loguea el error en `PipelineErrorLog` pero no falla el job completo — los demás usuarios del batch siguen procesándose.
+
+---
+
+## Épica 15: Rendimiento Real e Inflación (INPC)
+
+Exponer el rendimiento ajustado por inflación en todas las herramientas de análisis de la plataforma. Los usuarios autenticados podrán ver si sus inversiones en FIBRAs realmente crecen su poder adquisitivo o solo igualan la inflación. Requiere backfill de 5 años de datos INPC desde Banxico y la fórmula de Fisher aplicada transversalmente en Calculadora, Portafolio, Oportunidades, Comparador y Performance Chart.
+
+### Historia 15.1: INPC — Rendimiento real e inflación visible
+
+Como usuario autenticado de Fibras Inmobiliarias,
+quiero ver mi rendimiento ajustado por inflación en las herramientas de análisis, portafolio y comparación,
+para que pueda saber si mis inversiones en FIBRAs realmente están creciendo mi poder adquisitivo y no solo igualando la inflación.
+
+**Criterios de Aceptación:**
+
+**Dado que** ejecuto `POST /api/v1/ops/banxico/sync-inpc/backfill` como AdminOps,
+**Entonces** el sistema fetcha desde Banxico SP1 los últimos 72 meses y upserta todos los registros, logrando ≥60 entradas en `[ops].[InpcMonthly]`.
+
+**Dado que** el usuario ve la calculadora FIBRAs vs CETES,
+**Entonces** aparece una fila "Rendimiento real anual" calculada con fórmula de Fisher y un chip de contexto `"INPC últimos 12m: X.X%"`. Si INPC no disponible, la fila no aparece (degradación silenciosa).
+
+**Dado que** el usuario ve el KpiCard "Yield del Portafolio",
+**Entonces** aparece sublabel `"Real: X.X% vs INPC Y.Y%"` y en la sección expandible una 4ª métrica "Yield Real" con tono verde/rojo según sea positivo o negativo.
+
+**Dado que** el usuario accede a `/oportunidades`,
+**Entonces** existe un 6° slider "Yield Real [INPC]" con default 0% que no altera los perfiles existentes.
+
+**Dado que** el usuario seleccionó ≥ 2 FIBRAs en el comparador,
+**Entonces** aparece la fila "Yield real [vs INPC]" con winner detection y tooltip con la fórmula.
+
+**Dado que** el usuario ve la gráfica de performance de su portafolio en rango 1y o all,
+**Entonces** aparece una 4ª serie "Inflación (INPC)" como step-function mensual normalizada al inicio del rango, con toggle independiente.

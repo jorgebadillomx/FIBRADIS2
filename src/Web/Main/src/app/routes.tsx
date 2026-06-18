@@ -1,11 +1,11 @@
 import { lazy, Suspense } from 'react'
 import type { RouteObject } from 'react-router'
 import { PublicLayout } from '@/shared/layouts/PublicLayout'
-import { HomePage } from '@/modules/home/HomePage'
 import { ProtectedRoute } from '@/modules/auth/ProtectedRoute'
 import { PortafolioRoute } from '@/modules/portafolio/PortafolioRoute'
 import { NotFound } from '@/shared/layouts/NotFound'
 
+const HomePage = lazy(() => import('@/modules/home/HomePage').then(m => ({ default: m.HomePage })))
 const FibraPage = lazy(() => import('@/modules/ficha-publica/FibraPage').then(m => ({ default: m.FibraPage })))
 const NoticiaPage = lazy(() => import('@/modules/noticia/NoticiaPage').then(m => ({ default: m.NoticiaPage })))
 const NoticiasListPage = lazy(() => import('@/modules/noticias/NoticiasListPage').then(m => ({ default: m.NoticiasListPage })))
@@ -42,7 +42,7 @@ export const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
-      { path: '/', element: <HomePage /> },
+      { path: '/', element: p(<HomePage />) },
       { path: '/fibras', element: p(<CatalogoPage />) },
       { path: '/comparar', element: p(<ComparadorPage />) },
       { path: '/calculadora', element: p(<CalculadoraPage />) },

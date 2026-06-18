@@ -5,7 +5,7 @@
 # story 6-7 done — code review pass (4 patches: P1 EmailEncryptor key base64-decode vs SHA256-hash, P2 AuthService login order null→disabled→pwd, P3 password inputs type=password, P4 generateStrongPassword crypto.getRandomValues+Fisher-Yates). 4 defers (D1 ChangePasswordAsync no revoca tokens, D2 SetUserActiveAsync sin guard último AdminOps, D3 toggleActiveMutation sin onError, D4 PaymentCell sin onError). 25/25 unit tests verdes
 # story 7-3 done — code review pass (3 patches: P1 configRepo fuera de Task.WhenAll, P2 mensaje suspensión clarificado, P3 label ConfigPage en español). 7 defers (D1-D4 pre-existentes + D5-D7 nuevos).
 # story 7-4 done — code review pass (3 patches: P1 AddAsync DbUpdateException catch TOCTOU, P2 StarButton guard isAuthenticated M8/M9, P3 Math.Max guard MissingPct negativo). 8 defers. 262/262 Infrastructure tests + 47/47 Application tests verdes
-# last_updated: 2026-06-15
+# last_updated: 2026-06-18
 # story 11-2 done — code review pass (6 patches middleware: guard prerender-meta, GET/HEAD, HTML-encoding+escape JSON-LD, Cache-Control no-cache, BaseUrl fail-fast, catch IOException; /herramientas al provider resolviendo deuda 10-2 og:url fibradis.mx; meta client-side retirada de Calculadora/Herramientas + canonicals incorrectos de Home/Calendario; FibraPage canonical corregido; prerender.mjs LEGACY). 5 defers + huérfana /calculadora diferida (funcionalidad posterior). 377/377 + 272/272 + 105/105 verdes
 # story 11-2 review — SpaMetadataMiddleware inyecta title/description/canonical/og/JSON-LD server-side en 8 rutas públicas (sustituye title estático, extensión CA-3 aprobada); static shell /calculadora literal (badge próximamente, decisión usuario); App:BaseUrl configurable; 45 tests nuevos, 834 tests verdes (unit+integration+frontend)
 # story 11-4 creada — slug URLs + metadata SSR dinámica para /noticias/:slug, OpsNewsManagement backfill, NewsMetadataMiddleware independiente de 11.2
@@ -92,7 +92,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-16  # 13-8 → done (code review: 1 decisión→patch + 1 patch aplicados, 1 defer, 7 dismissed; build+181 tests verdes; T5 verificada en review). Antes: 13-7 → done (code review: 2 decisiones resueltas [refs sociales/dominio aprobadas, wwwroot descartado], 0 patches, 2 defers, 3 descartados; rebrand visible/SEO correcto, migración EF reversible, tests reportados verdes). Hallazgo: dominio real = fibrasinmobiliarias.com (no fibradis.mx como decía el spec). Antes: 13-6 → done
+last_updated: 2026-06-18  # epic-14 creada — registro/trial/suscripción; 14-1 ready-for-dev, 14-2/3/4 backlog. Antes: 13-10 creada — disclaimer YMYL /acerca (LMV + AMEFIBRA + fecha revisión). Antes: 13-8 → done (code review: 1 decisión→patch + 1 patch aplicados, 1 defer, 7 dismissed; build+181 tests verdes; T5 verificada en review). Antes: 13-7 → done (code review: 2 decisiones resueltas [refs sociales/dominio aprobadas, wwwroot descartado], 0 patches, 2 defers, 3 descartados; rebrand visible/SEO correcto, migración EF reversible, tests reportados verdes). Hallazgo: dominio real = fibrasinmobiliarias.com (no fibradis.mx como decía el spec). Antes: 13-6 → done
 # story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
@@ -448,6 +448,18 @@ development_status:
   # story 13-8 creada (2026-06-15) — nueva ruta pública /plataforma: landing de venta/showcase que describe TODAS las funciones públicas y privadas (incluida Reportes 13-5), enlazada desde el footer ("Fibras Inmobiliarias" → <Link to=/plataforma>). SEO: KnownPaths + StaticRoutes + SpaRouteCatalog + breadcrumb + metadata SSR (título `… | Fibras Inmobiliarias`). Estática/evergreen. Diferenciar contenido de /portafolio (13-6) para evitar duplicate content. Coordinar footer con 13-7 (ambas tocan PublicLayout.tsx).
   # 13-8 code review (2026-06-16) — review adversarial 3 capas: implementación conforme (todos los AC). 1 decisión→patch (fusionar tarjetas Catálogo+Ficha que duplicaban /fibras → ItemList de 7 ítems) + 1 patch (footer: © + marca quedaban separados por gap-x-6, reunidos en un span) aplicados y verificados. 1 defer (conteos hardcodeados LOW) + 7 dismissed. T5 verificada en review vía Chrome DevTools MCP (sin scroll horizontal 375/768/1024/1440, footer→/plataforma) + SEO server-side por tests middleware/endpoint. Build Main + 181/181 tests SEO/middleware verdes.
   13-8-landing-plataforma-publica: done
+  # story 13-9 creada (2026-06-18) — reducir FCP/LCP homepage: vendor-charts innecesariamente en modulepreload (82 KB wasted 81.4%), eliminar de manualChunks en vite.config.ts. Baseline: FCP 5.1s, LCP 7.7s, score 62/100 (PSI móvil). Branch story/13-9-fcp-lcp-homepage.
+  13-9-fcp-lcp-homepage: ready-for-dev
+  # story 13-10 creada (2026-06-18) — disclaimer YMYL en /acerca: añadir fecha de revisión explícita (18 de junio de 2026), mención de Ley del Mercado de Valores (LMV) y enlace a AMEFIBRA. Complementa E-E-A-T de 12-4. Solo frontend, sin backend ni migraciones. Branch story/13-10-disclaimer-ymyl.
+  13-10-disclaimer-ymyl-lmv-amefibra: ready-for-dev
+
+  # ── Épica 14: Registro, Trial y Suscripción de Usuarios ───────────────────
+  # epic-14 creada 2026-06-18 — modelo freemium: registro público, trial 14d, suscripción Monthly/Annual/Lifetime, bloqueo rutas privadas, job mantenimiento. Fase 1: pago manual. Fase 2: pasarela.
+  epic-14: in-progress
+  14-1-modelo-suscripcion-backend: ready-for-dev
+  14-2-registro-y-confirmacion-email: backlog
+  14-3-frontend-acceso-controlado: backlog
+  14-4-subscription-maintenance-job: backlog
 
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done

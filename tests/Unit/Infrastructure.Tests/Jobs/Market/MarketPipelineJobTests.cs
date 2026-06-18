@@ -1,12 +1,14 @@
 using Application.Catalog;
 using Application.Jobs;
 using Application.Market;
+using Application.Seo;
 using Domain.Jobs;
 using Domain.Catalog;
 using Domain.Market;
 using Infrastructure.Integrations.Yahoo;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Time;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Infrastructure.Tests.Jobs.Market;
@@ -31,6 +33,8 @@ public class MarketPipelineJobTests
             marketRepo,
             new FakeMarketPipelineErrorLogRepository(),
             new FakeMarketPipelineRunLogRepository(),
+            new FakeMarketIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<MarketPipelineJob>.Instance);
 
     private static MarketPipelineJob Build(
@@ -48,6 +52,8 @@ public class MarketPipelineJobTests
             marketRepo,
             new FakeMarketPipelineErrorLogRepository(),
             runLogRepo,
+            new FakeMarketIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<MarketPipelineJob>.Instance);
 
     [Fact]
@@ -399,4 +405,9 @@ internal sealed class FakeMarketPipelineRunLogRepository : IPipelineRunLogReposi
 
     public Task<PipelineRunLog?> GetLastCompletedAsync(string pipeline, CancellationToken ct = default)
         => Task.FromResult<PipelineRunLog?>(null);
+}
+
+internal sealed class FakeMarketIndexNowService : IIndexNowService
+{
+    public Task PingAsync(IEnumerable<string> urls, CancellationToken ct = default) => Task.CompletedTask;
 }

@@ -6,46 +6,6 @@ public class SeoEndpointsTests
 {
     private const string BaseUrl = "https://fibrasinmobiliarias.com";
 
-    private static readonly (string FullName, string Ticker)[] SampleFibras =
-    [
-        ("Fibra Uno", "FUNO11"),
-        ("Fibra Macquarie", "FIBRAMQ12"),
-    ];
-
-    private static readonly (string Slug, DateTimeOffset PublishedAt)[] SampleNews =
-    [
-        ("funo11-reporta-resultados-del-2t25", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
-        ("danhos13-anuncia-distribucion", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
-    ];
-
-    [Fact]
-    public void SitemapContainsCalculadora()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
-
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>", xml);
-    }
-
-    [Fact]
-    public void SitemapContainsAllStaticRoutes()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, []);
-
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/comparar</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/conoce-las-fibras</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calendario</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fundamentales</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/plataforma</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/portafolio</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/calculadora</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/acerca</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/contacto</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/privacidad</loc>", xml);
-    }
-
     [Fact]
     public void SitemapIndexContainsSectionSitemaps()
     {
@@ -64,110 +24,9 @@ public class SeoEndpointsTests
     }
 
     [Fact]
-    public void SitemapDoesNotContainChangefreqOrPriority()
+    public void SitemapIndex_EscapesXmlSpecialCharsInBaseUrl()
     {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
-
-        Assert.DoesNotContain("<changefreq>", xml);
-        Assert.DoesNotContain("<priority>", xml);
-    }
-
-    [Fact]
-    public void SitemapContainsFibraSlugUrls()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
-
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-uno-funo11</loc>", xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/fibras/fibra-macquarie-fibramq12</loc>", xml);
-        // las URLs viejas por ticker NO se incluyen
-        Assert.DoesNotContain("/fibras/FUNO11", xml);
-        Assert.DoesNotContain("<loc>https://fibrasinmobiliarias.com/fibras/funo11</loc>", xml);
-    }
-
-    [Fact]
-    public void SitemapFibraUrls_ContainLastmod()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
-        var doc = System.Xml.Linq.XDocument.Parse(xml);
-
-        var fibraUrls = doc.Root!.Elements()
-            .Where(u => u.Elements().First().Value.Contains("/fibras/fibra-"))
-            .ToList();
-
-        Assert.NotEmpty(fibraUrls);
-        Assert.All(fibraUrls, u =>
-        {
-            var children = u.Elements().Select(e => e.Name.LocalName).ToArray();
-            Assert.Equal(["loc", "lastmod"], children);
-        });
-    }
-
-    [Fact]
-    public void SitemapIsValidXml_WithSitemapsOrgNamespace()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
-
-        var doc = System.Xml.Linq.XDocument.Parse(xml);
-        Assert.Equal("urlset", doc.Root!.Name.LocalName);
-        Assert.Equal("http://www.sitemaps.org/schemas/sitemap/0.9", doc.Root.Name.NamespaceName);
-        // 13 rutas estáticas + 2 fibras
-        Assert.Equal(15, doc.Root.Elements().Count());
-    }
-
-    [Fact]
-    public void SitemapElementsHaveCorrectStructure()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
-        var doc = System.Xml.Linq.XDocument.Parse(xml);
-
-        foreach (var url in doc.Root!.Elements())
-        {
-            var names = url.Elements().Select(e => e.Name.LocalName).ToArray();
-            // Primer elemento siempre es <loc>
-            Assert.Equal("loc", names[0]);
-            // Si hay segundo elemento, debe ser <lastmod> (FIBRA pages y noticias)
-            if (names.Length == 2)
-                Assert.Equal("lastmod", names[1]);
-            // Nunca más de 2 elementos
-            Assert.True(names.Length <= 2, $"URL entry had {names.Length} elements: {string.Join(", ", names)}");
-        }
-    }
-
-    [Fact]
-    public void SitemapContainsNewsSlugUrls_WithLastmod()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
-
-        Assert.Contains(
-            "<loc>https://fibrasinmobiliarias.com/noticias/funo11-reporta-resultados-del-2t25</loc>\n    <lastmod>2026-06-10</lastmod>",
-            xml);
-        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias/danhos13-anuncia-distribucion</loc>", xml);
-    }
-
-    [Fact]
-    public void SitemapWithNews_IsValidXml_WithExpectedUrlCount()
-    {
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras, SampleNews);
-
-        var doc = System.Xml.Linq.XDocument.Parse(xml);
-        // 13 rutas estáticas + 2 fibras + 2 noticias
-        Assert.Equal(17, doc.Root!.Elements().Count());
-    }
-
-    [Fact]
-    public void SitemapWithoutNews_KeepsBackwardCompatibleShape()
-    {
-        // llamada sin noticias (firma previa) — no debe emitir entradas /noticias/{slug}
-        var xml = SeoEndpoints.BuildSitemapXml(BaseUrl, SampleFibras);
-
-        Assert.DoesNotContain("/noticias/funo11-reporta", xml);
-    }
-
-    [Fact]
-    public void SitemapEscapesXmlSpecialCharsInLoc()
-    {
-        // App:BaseUrl viene de config sin validar — un '&' debe quedar escapado, no romper el XML
-        var xml = SeoEndpoints.BuildSitemapXml("https://example.com/x?a=1&b=2", SampleFibras);
+        var xml = SeoEndpoints.BuildSitemapIndexXml("https://example.com/x?a=1&b=2", ["/sitemap-static.xml"]);
 
         Assert.Contains("&amp;", xml);
         var doc = System.Xml.Linq.XDocument.Parse(xml);
@@ -175,12 +34,50 @@ public class SeoEndpointsTests
     }
 
     [Fact]
-    public void SitemapUsesConfigurableBaseUrl()
+    public void NewsSitemapXml_HasGoogleNewsNamespace()
     {
-        var xml = SeoEndpoints.BuildSitemapXml("https://staging.example.com", SampleFibras);
+        var articles = new[]
+        {
+            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/danhos-distribucion", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
+        };
 
-        Assert.Contains("<loc>https://staging.example.com/calculadora</loc>", xml);
-        Assert.DoesNotContain("fibrasinmobiliarias.com", xml);
+        var xml = SeoEndpoints.BuildNewsUrlSetXmlPublic(BaseUrl, articles);
+
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+        Assert.Equal("urlset", doc.Root!.Name.LocalName);
+        Assert.Contains(doc.Root.Attributes(), a => a.Value == "http://www.google.com/schemas/sitemap-news/0.9");
+    }
+
+    [Fact]
+    public void NewsSitemapXml_ContainsPublicationAndDate()
+    {
+        var articles = new[]
+        {
+            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+        };
+
+        var xml = SeoEndpoints.BuildNewsUrlSetXmlPublic(BaseUrl, articles);
+
+        Assert.Contains("Fibras Inmobiliarias", xml);
+        Assert.Contains("<news:language>es</news:language>", xml);
+        Assert.Contains("<news:publication_date>2026-06-10T12:00:00", xml);
+        Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias/funo11-resultados</loc>", xml);
+    }
+
+    [Fact]
+    public void NewsSitemapXml_IsValidXml()
+    {
+        var articles = new[]
+        {
+            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/danhos-distribucion", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
+        };
+
+        var xml = SeoEndpoints.BuildNewsUrlSetXmlPublic(BaseUrl, articles);
+
+        var doc = System.Xml.Linq.XDocument.Parse(xml);
+        Assert.Equal(2, doc.Root!.Elements().Count());
     }
 
     [Fact]

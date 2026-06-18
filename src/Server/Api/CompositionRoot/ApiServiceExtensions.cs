@@ -111,6 +111,8 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         builder.Services.AddScoped<ISeoMetadataRepository, SeoMetadataRepository>();
         builder.Services.AddSingleton<SeoSitemapCacheState>();
+        builder.Services.AddHttpClient<IIndexNowService, IndexNowService>(c =>
+            c.Timeout = TimeSpan.FromSeconds(10));
         builder.Services.AddScoped<IFaqRepository, FaqRepository>();
         builder.Services.AddScoped<IRedirectRepository, RedirectRepository>();
         builder.Services.AddSingleton<ISeoDefaultsBuilder, SeoDefaultsBuilder>();

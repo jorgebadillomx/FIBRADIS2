@@ -1,7 +1,9 @@
 using Application.News;
+using Application.Seo;
 using Domain.Catalog;
 using Domain.News;
 using Infrastructure.Jobs.News;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Infrastructure.Tests.Jobs.News;
@@ -85,6 +87,8 @@ public class NewsPipelineJobThresholdTests
             aiService,
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
+            new FakeIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<NewsPipelineJob>.Instance);
     }
 }

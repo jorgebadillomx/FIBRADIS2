@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using Application.Catalog;
@@ -28,15 +27,9 @@ public partial class FibraProfileMetadataMiddleware(
     IServiceScopeFactory scopeFactory)
 {
     private const string PrerenderMetaComment = "<!-- prerender-meta -->";
-    private const int MaxDescriptionLength = 155;
     private const int MaxSlugLength = 256;
 
     private static readonly HtmlEncoder Encoder = HtmlEncoder.Create(UnicodeRanges.All);
-
-    private static readonly JsonSerializerOptions JsonLdOptions = new()
-    {
-        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-    };
 
     private readonly string _baseUrl = !string.IsNullOrWhiteSpace(config["App:BaseUrl"])
         ? config["App:BaseUrl"]!.TrimEnd('/')
@@ -45,12 +38,6 @@ public partial class FibraProfileMetadataMiddleware(
 
     [GeneratedRegex("<title>.*?</title>", RegexOptions.Singleline)]
     private static partial Regex TitleTagRegex();
-
-    [GeneratedRegex(@"[#|*>_`]+")]
-    private static partial Regex MarkdownSyntaxRegex();
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex WhitespaceRunRegex();
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -248,112 +235,4 @@ public partial class FibraProfileMetadataMiddleware(
             .ToString();
     }
 
-    private static string BuildMetaBlock(Fibra fibra, string canonicalSlug, string baseUrl)
-    {
-        var title = $"{fibra.FullName} ({fibra.Ticker}) | Fibras Inmobiliarias";
-        var description = BuildDescription(fibra);
-        var canonicalPath = $"{baseUrl}/fibras/{canonicalSlug}";
-        var canonicalUrl = Encoder.Encode(canonicalPath);
-
-        var jsonLd = JsonSerializer.Serialize(new Dictionary<string, object?>
-        {
-            ["@context"] = "https://schema.org",
-            ["@graph"] = new object[]
-            {
-                new Dictionary<string, object?>
-                {
-                    ["@type"] = "FinancialProduct",
-                    ["@id"] = $"{canonicalPath}#product",
-                    ["name"] = fibra.FullName,
-                    ["alternateName"] = fibra.Ticker,
-                    ["description"] = description,
-                    ["url"] = canonicalPath,
-                    ["provider"] = new Dictionary<string, object?>
-                    {
-                        ["@type"] = "Organization",
-                        ["name"] = "Fibras Inmobiliarias",
-                        ["url"] = baseUrl,
-                    },
-                    ["category"] = fibra.Sector,
-                    ["additionalType"] = "https://en.wikipedia.org/wiki/Real_estate_investment_trust",
-                },
-                new Dictionary<string, object?>
-                {
-                    ["@type"] = "BreadcrumbList",
-                    ["itemListElement"] = new object[]
-                    {
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 1, ["name"] = "Inicio", ["item"] = $"{baseUrl}/" },
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 2, ["name"] = "Fibras Inmobiliarias", ["item"] = $"{baseUrl}/fibras" },
-                        new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 3, ["name"] = fibra.FullName, ["item"] = canonicalPath },
-                    },
-                },
-            },
-        }, JsonLdOptions);
-
-        var encodedTitle = Encoder.Encode(title);
-        var encodedDescription = Encoder.Encode(description);
-
-        var ogImage = Encoder.Encode($"{baseUrl}/og-image.png");
-
-        return new StringBuilder()
-            .Append($"<title>{encodedTitle}</title>\n    ")
-            .Append($"<meta name=\"description\" content=\"{encodedDescription}\" />\n    ")
-            .Append($"<link rel=\"canonical\" href=\"{canonicalUrl}\" />\n    ")
-            .Append($"<meta property=\"og:title\" content=\"{encodedTitle}\" />\n    ")
-            .Append($"<meta property=\"og:description\" content=\"{encodedDescription}\" />\n    ")
-            .Append("<meta property=\"og:type\" content=\"website\" />\n    ")
-            .Append($"<meta property=\"og:url\" content=\"{canonicalUrl}\" />\n    ")
-            .Append($"<meta property=\"og:image\" content=\"{ogImage}\" />\n    ")
-            .Append("<meta property=\"og:locale\" content=\"es_MX\" />\n    ")
-            .Append("<meta property=\"og:site_name\" content=\"Fibras Inmobiliarias\" />\n    ")
-            .Append("<meta property=\"og:image:width\" content=\"1200\" />\n    ")
-            .Append("<meta property=\"og:image:height\" content=\"630\" />\n    ")
-            .Append("<meta property=\"og:image:alt\" content=\"Fibras Inmobiliarias — Análisis de FIBRAs Inmobiliarias Mexicanas\" />\n    ")
-            .Append("<meta name=\"twitter:card\" content=\"summary_large_image\" />\n    ")
-            .Append("<meta name=\"twitter:site\" content=\"@fibrasinmobiliarias\" />\n    ")
-            .Append($"<meta name=\"twitter:title\" content=\"{encodedTitle}\" />\n    ")
-            .Append($"<meta name=\"twitter:description\" content=\"{encodedDescription}\" />\n    ")
-            .Append($"<meta name=\"twitter:image\" content=\"{ogImage}\" />\n    ")
-            .Append($"<script type=\"application/ld+json\">{jsonLd}</script>")
-            .ToString();
-    }
-
-    // Plantilla limpia derivada de campos estructurados (FullName/Ticker/Sector), nunca del
-    // markdown de Description: ese campo llega con heading, tablas "| Campo | Detalle |" y emoji
-    // y se volcaba crudo en las 3 superficies SEO (meta description, twitter:description y el
-    // "description" del JSON-LD FinancialProduct). La plantilla garantiza una frase legible,
-    // sin sintaxis markdown ni pérdida de encoding ("??") al evitar el origen corrupto.
-    private static string BuildDescription(Fibra fibra)
-    {
-        var sectorClause = string.IsNullOrWhiteSpace(fibra.Sector)
-            ? " Cotiza en la BMV."
-            : $" Sector {fibra.Sector.Trim()} en la BMV.";
-
-        var text = Sanitize(
-            $"Análisis de {fibra.FullName} ({fibra.Ticker}): precio, yield, fundamentales (Cap Rate, NAV, LTV) y distribuciones.{sectorClause}");
-
-        return text.Length > MaxDescriptionLength ? TruncateAtWordBoundary(text) : text;
-    }
-
-    // FullName/Sector son texto libre de BD: eliminar sintaxis markdown residual (#, |, *, >, _, `)
-    // y colapsar espacios para que ninguna de estas se filtre a la metadata servida.
-    private static string Sanitize(string text)
-    {
-        text = MarkdownSyntaxRegex().Replace(text, " ");
-        return WhitespaceRunRegex().Replace(text, " ").Trim();
-    }
-
-    private static string TruncateAtWordBoundary(string text)
-    {
-        var slice = text[..MaxDescriptionLength];
-        // No partir un surrogate pair en el límite duro (dejaría un U+FFFD)
-        if (char.IsHighSurrogate(slice[^1]))
-            slice = slice[..^1];
-
-        var lastSpace = slice.LastIndexOf(' ');
-        if (lastSpace > 0)
-            slice = slice[..lastSpace];
-
-        return slice.TrimEnd(' ', ',', ';', ':', '.', '·') + "…";
-    }
 }

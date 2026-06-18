@@ -143,6 +143,32 @@ public sealed class NewsMetadataMiddlewareTests : IDisposable
     }
 
     [Fact]
+    public async Task InvokeAsync_SeoRowWithNullJsonLd_RegeneratesNewsArticleSchema()
+    {
+        // Row de BD creado antes de que existiera el schema NewsArticle en SeoDefaultsBuilder:
+        // JsonLd = null, JsonLdIsOverridden = false → el guard debe regenerar desde BuildNews().
+        var seoMetadata = CreateSeoMetadata(
+            title: "SEO manual sin JSON-LD",
+            description: "Descripción manual para la noticia.",
+            canonicalPath: "/noticias/funo11-reporta-resultados-del-2t25",
+            jsonLd: null);
+
+        var article = CreateArticle();
+        var (context, _) = await InvokeAsync("/noticias/funo11-reporta-resultados-del-2t25", article, seoMetadata: seoMetadata);
+        var body = await ReadBodyAsync(context);
+
+        // El title y description del row de BD se respetan
+        Assert.Contains("<title>SEO manual sin JSON-LD</title>", body);
+        Assert.Contains("Descripción manual para la noticia.", body);
+        // El guard regenera el JSON-LD desde BuildNews()
+        Assert.Contains("<script type=\"application/ld+json\">", body);
+        Assert.Contains("\"@type\":\"NewsArticle\"", body);
+        Assert.Contains("\"datePublished\"", body);
+        Assert.Contains("\"author\"", body);
+        Assert.Contains("\"publisher\"", body);
+    }
+
+    [Fact]
     public async Task InvokeAsync_GuidPath_InjectsMetadataWithSlugCanonical()
     {
         // links antiguos /noticias/{guid}: la metadata se sirve pero el canonical apunta al slug

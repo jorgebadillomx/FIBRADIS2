@@ -413,11 +413,17 @@ export function PublicLayout() {
               © {new Date().getFullYear()}
               <Link
                 className="transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
-                to="/plataforma"
+                to="/"
               >
                 Fibras Inmobiliarias
               </Link>
             </span>
+            <Link
+              className="transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
+              to="/plataforma"
+            >
+              Plataforma
+            </Link>
             <a
               className="transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
               href={`mailto:${siteContent?.contactEmail ?? 'portafoliodefibras@gmail.com'}`}
