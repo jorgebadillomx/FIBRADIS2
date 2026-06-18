@@ -1,8 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCalculadoraFibras } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
 import { formatMoney } from '@/modules/portafolio/portfolio-format'
 import { calcCbfis, calcRentaBruta, calcRentaBrutaAnual, calcSobra } from './calculadora-logic'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
+
+const FAQ_PAGE_TYPE = 'StaticPage'
+const FAQ_ENTITY_KEY = '/calculadora'
 
 type SortKey =
   | ''
@@ -57,6 +62,12 @@ export function CalculadoraPage() {
   const { data = [], isLoading, isError } = useQuery({
     queryKey: ['calculadora'],
     queryFn: fetchCalculadoraFibras,
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
+    queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
+    staleTime: 60 * 60_000,
   })
   const [montos, setMontos] = useState<Record<string, string>>({})
   const [filtro, setFiltro] = useState('')
@@ -244,6 +255,17 @@ export function CalculadoraPage() {
               </div>
             )}
           </section>
+
+          {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+            <div className="mt-10">
+              <FaqAccordion
+                items={faqQuery.data}
+                kicker="FAQ"
+                title="Preguntas frecuentes sobre la calculadora"
+                description="Cómo ingresar montos, entender el remanente y qué pasa al ordenar o filtrar la tabla."
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </>

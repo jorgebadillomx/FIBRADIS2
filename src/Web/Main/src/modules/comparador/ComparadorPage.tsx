@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { useSearchParams } from 'react-router'
 import { fetchAllFibras } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import {
   MAX_COMPARE_FIBRAS,
   MIN_COMPARE_FIBRAS,
@@ -170,6 +172,9 @@ const COMPARISON_SECTIONS: CompareSection[] = [
   },
 ]
 
+const FAQ_PAGE_TYPE = 'StaticPage'
+const FAQ_ENTITY_KEY = '/comparar'
+
 export function ComparadorPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
@@ -184,6 +189,12 @@ export function ComparadorPage() {
     queryKey: ['fibras', 'compare-selector'],
     queryFn: fetchAllFibras,
     staleTime: Infinity,
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
+    queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
+    staleTime: 60 * 60_000,
   })
 
   const { data: comparisonRows = [], isLoading: comparisonLoading, isError, refetch } = useQuery({
@@ -493,6 +504,17 @@ export function ComparadorPage() {
             </div>
           </section>
         )}
+
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-2">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ"
+              title="Preguntas frecuentes sobre el comparador"
+              description="Cómo interpretar las métricas, el resalte de ganadores y cómo compartir una comparación."
+            />
+          </div>
+        ) : null}
       </div>
     </>
   )

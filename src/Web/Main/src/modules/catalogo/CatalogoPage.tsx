@@ -3,16 +3,27 @@ import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllFibras, fetchMarketSnapshots } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
 import { toNum } from '@/shared/lib/format-time'
 import { buildFibraSlug } from '@/shared/lib/fibra-slug'
 import { Input } from '@/shared/ui/input'
 import { FibraLogo } from '@/shared/ui/fibra-logo'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
+
+const FAQ_PAGE_TYPE = 'StaticPage'
+const FAQ_ENTITY_KEY = '/fibras'
 
 export function CatalogoPage() {
   const { data: fibras = [], isLoading } = useQuery({
     queryKey: ['fibras', 'all'],
     queryFn: fetchAllFibras,
     staleTime: 5 * 60_000,
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
+    queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
+    staleTime: 60 * 60_000,
   })
 
   const { data: snapshots = [] } = useQuery({
@@ -144,6 +155,17 @@ export function CatalogoPage() {
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Mostrando {filtered.length} de {fibras.length} emisoras
           </p>
+        ) : null}
+
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-10">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ"
+              title="Preguntas frecuentes sobre el catálogo"
+              description="Todo lo que necesitas saber sobre la tabla de FIBRAs, yields y métricas de mercado."
+            />
+          </div>
         ) : null}
       </div>
     </>

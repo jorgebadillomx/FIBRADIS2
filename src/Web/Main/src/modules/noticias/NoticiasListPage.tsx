@@ -4,12 +4,17 @@ import { Link, useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllFibras } from '@/api/fibrasApi'
 import { fetchNewsPaged } from '@/api/newsApi'
+import { fetchFaqItems } from '@/api/faqApi'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { formatRelativeTime } from '@/shared/lib/format-time'
 import { getArticleImageUrl } from '@/shared/lib/news-image-fallback'
 import { buildNoticiasCanonicalPath, buildNoticiasRobotsDirectives } from '@/modules/noticias/noticiasSeo'
+
+const FAQ_PAGE_TYPE = 'StaticPage'
+const FAQ_ENTITY_KEY = '/noticias'
 
 const PAGE_SIZE = 20
 
@@ -29,6 +34,12 @@ export function NoticiasListPage() {
     queryKey: ['fibras', 'all'],
     queryFn: fetchAllFibras,
     staleTime: 5 * 60_000,
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
+    queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
+    staleTime: 60 * 60_000,
   })
 
   const {
@@ -276,6 +287,16 @@ export function NoticiasListPage() {
             </nav>
           </div>
         )}
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-10">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ"
+              title="Preguntas frecuentes sobre las noticias"
+              description="Cómo filtrar, qué datos muestra cada nota y cómo navegar el listado de cobertura."
+            />
+          </div>
+        ) : null}
       </div>
     </>
   )

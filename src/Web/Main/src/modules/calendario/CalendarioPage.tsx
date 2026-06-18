@@ -1,15 +1,27 @@
 import { useMemo, useState } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
 import type { MarketCalendarEvent } from '@/api/calendarApi'
+import { fetchFaqItems } from '@/api/faqApi'
 import { useCalendarEvents } from './useCalendarEvents'
 import { CalendarGrid } from './CalendarGrid'
 import { EventChip } from './EventChip'
 import { useFibraSlugMap } from '@/shared/hooks/useFibraSlugMap'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
+
+const FAQ_PAGE_TYPE = 'StaticPage'
+const FAQ_ENTITY_KEY = '/calendario'
 
 export function CalendarioPage() {
   const [monthOffset, setMonthOffset] = useState(0)
   const { slugFor } = useFibraSlugMap()
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
+    queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
+    staleTime: 60 * 60_000,
+  })
 
   const monthAnchor = useMemo(() => {
     const now = new Date()
@@ -215,7 +227,16 @@ export function CalendarioPage() {
               </ul>
             </section>
           </aside>
-        </div>
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-10">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ"
+              title="Preguntas frecuentes sobre el calendario"
+              description="Qué tipos de eventos registra, qué muestra cada tarjeta y cómo funciona la fecha ex derecho."
+            />
+          </div>
+        ) : null}
       </div>
     </>
   )

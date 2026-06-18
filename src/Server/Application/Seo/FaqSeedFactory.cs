@@ -130,6 +130,17 @@ public static class FaqSeedFactory
         CreateStaticItem("/calendario", 3,
             "¿Qué es la fecha ex derecho y por qué importa?",
             "Es la fecha a partir de la cual quien compre la FIBRA ya no tiene derecho a cobrar la distribución en curso. Para recibir el pago debes tener los CBFIs registrados en tu cuenta **antes** de esa fecha. El mismo día puede aparecer tanto el pago de una distribución como la fecha ex derecho de la siguiente."),
+
+        // /portafolio — Landing pública / puerta de entrada
+        CreateStaticItem("/portafolio", 1,
+            "¿Qué puedo consultar en Fibras Inmobiliarias sin iniciar sesión?",
+            "Las secciones públicas están siempre disponibles sin cuenta: el **Catálogo de FIBRAs** con precios y métricas de mercado, los **Fundamentales comparativos** (Cap Rate, NAV, LTV, NOI y FFO Margin), el flujo de **Noticias** y la **Calculadora de compra** para estimar distribuciones proyectadas. No hace falta registrarse para explorar el universo completo de emisoras."),
+        CreateStaticItem("/portafolio", 2,
+            "¿Qué incluye el acceso privado con cuenta?",
+            "Con una cuenta accedes a cuatro áreas adicionales: el **Portafolio privado** con KPIs consolidados, posición y calendario de distribuciones; los **Reportes trimestrales** con fundamentales y análisis IA por FIBRA; el módulo de **Oportunidades y ranking** con score configurable para detectar las emisoras con mayor potencial relativo; y las **Herramientas privadas** para análisis más profundo."),
+        CreateStaticItem("/portafolio", 3,
+            "¿Cómo inicio sesión desde esta página?",
+            "El formulario de acceso está embebido directamente en esta página: haz clic en cualquier botón **Iniciar sesión** o desplázate hasta la sección de acceso privado. Al autenticarte, la misma URL te muestra el dashboard privado sin cambiar de pestaña ni recargar la aplicación."),
     ];
 
     private static FaqItem CreateStaticItem(string entityKey, int order, string question, string answer) => new()

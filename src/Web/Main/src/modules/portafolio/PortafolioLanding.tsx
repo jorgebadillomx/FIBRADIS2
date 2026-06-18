@@ -1,9 +1,15 @@
 import type { MouseEvent } from 'react'
-import { ArrowRight, Briefcase, Calculator, FileText, LayoutGrid, Newspaper, Scale, TrendingUp } from 'lucide-react'
+import { Briefcase, Calculator, FileText, LayoutGrid, Newspaper, Scale, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
+import { useQuery } from '@tanstack/react-query'
+import { fetchFaqItems } from '@/api/faqApi'
 import { Button } from '@/shared/ui/button'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { LoginForm } from '@/modules/auth/LoginForm'
+
+const FAQ_PAGE_TYPE = 'StaticPage'
+const FAQ_ENTITY_KEY = '/portafolio'
 
 // Los anclas internas (#login) no re-scrollean en re-clic cuando la URL ya contiene
 // el hash (el router no gestiona hash). Forzamos el scroll en cada clic.
@@ -88,6 +94,12 @@ const CAPABILITY_CARDS: CapabilityCard[] = [
 
 export function PortafolioLanding() {
   usePageTitle(PAGE_TITLE, PAGE_DESCRIPTION, { canonicalPath: '/portafolio' })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
+    queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
+    staleTime: 60 * 60_000,
+  })
 
   return (
     <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(194,65,12,0.14),transparent_28%),radial-gradient(circle_at_top_right,rgba(15,118,110,0.12),transparent_24%),linear-gradient(180deg,rgba(10,14,26,0.03),transparent_24%)]">
@@ -207,6 +219,17 @@ export function PortafolioLanding() {
             })}
           </div>
         </section>
+
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-10">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ"
+              title="Preguntas frecuentes sobre la plataforma"
+              description="Qué está disponible sin cuenta, qué incluye el acceso privado y cómo iniciar sesión."
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   )
