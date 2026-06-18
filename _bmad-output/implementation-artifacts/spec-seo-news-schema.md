@@ -2,7 +2,7 @@
 title: 'SEO #10 — NewsArticle JSON-LD siempre inyectado en páginas de noticia'
 type: 'bugfix'
 created: '2026-06-18'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '84d40d9b805f2e66560d7a6488230d47fb0a234c'
 context: []
 ---
@@ -72,3 +72,18 @@ context: []
 
 **Commands:**
 - `dotnet build FIBRADIS.slnx` -- expected: 0 errores, 0 warnings nuevos, sin referencias a `BuildMetaBlock(NewsArticle`
+
+## Suggested Review Order
+
+**Guard y emisión de JSON-LD (núcleo del cambio)**
+
+- Entry point: guard que rellena `JsonLd` cuando el row de BD no lo tiene.
+  [`NewsMetadataMiddleware.cs:148`](../../src/Server/Api/Middleware/NewsMetadataMiddleware.cs#L148)
+
+- Cómo `JsonLd` se convierte en `<script>` en el HTML final.
+  [`NewsMetadataMiddleware.cs:212`](../../src/Server/Api/Middleware/NewsMetadataMiddleware.cs#L212)
+
+**Test de cobertura**
+
+- Test del escenario central del guard: row BD activo con `JsonLd = null`.
+  [`NewsMetadataMiddlewareTests.cs:146`](../../tests/Unit/Infrastructure.Tests/Middleware/NewsMetadataMiddlewareTests.cs#L146)
