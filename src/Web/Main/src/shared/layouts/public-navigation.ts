@@ -58,3 +58,7 @@ export function buildMainMobileSections(
 export function shouldCloseMenuOnEscape(key: string): boolean {
   return key === 'Escape'
 }
+
+export function isMenuEntryLink(entry: MenuEntry): entry is NavLinkItem {
+  return 'to' in entry
+}

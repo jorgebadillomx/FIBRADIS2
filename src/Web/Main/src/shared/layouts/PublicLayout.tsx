@@ -1,40 +1,58 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
-import { Menu, X } from 'lucide-react'
-import { GlobalSearch } from '@/modules/home/GlobalSearch'
+import { Menu } from 'lucide-react'
 import { PriceCarousel } from '@/modules/home/PriceCarousel'
 import { useAuth } from '@/modules/auth/AuthContext'
 import { useProfile } from '@/modules/auth/useProfile'
-import { TermsModal } from '@/modules/auth/TermsModal'
 import { useSiteContent } from '@/shared/hooks/useSiteContent'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/ui/dialog'
 import { cn } from '@/shared/lib/utils'
 import {
+  isMenuEntryLink,
   MAIN_INVESTMENT_LINKS,
   MAIN_PRIMARY_LINKS,
   type MenuEntry,
-  type NavLinkItem,
-  type PublicLayoutStatus,
-  buildMainMobileSections,
   shouldCloseMenuOnEscape,
 } from './public-navigation'
+
+const GlobalSearch = lazy(() => import('@/modules/home/GlobalSearch').then(m => ({ default: m.GlobalSearch })))
+const TermsModal = lazy(() => import('@/modules/auth/TermsModal').then(m => ({ default: m.TermsModal })))
+const MobileNavigationDialog = lazy(() =>
+  import('./MobileNavigationDialog').then(m => ({ default: m.MobileNavigationDialog })),
+)
 
 function truncateEmail(email: string): string {
   const [localPart] = email.split('@')
   return localPart ? `${localPart}@...` : email
 }
 
-function isMenuEntryLink(entry: MenuEntry): entry is NavLinkItem {
-  return 'to' in entry
+function GlobalSearchFallback({ className }: { className?: string }) {
+  return (
+    <input
+      aria-label="Buscar FIBRA por ticker o nombre"
+      className={cn(
+        'h-9 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-base text-muted-foreground md:text-sm',
+        className,
+      )}
+      disabled
+      placeholder="Buscar FIBRA por ticker o nombre..."
+      type="search"
+    />
+  )
+}
+
+function DeferredGlobalSearch({
+  className,
+  onSelect,
+}: {
+  className?: string
+  onSelect?: (ticker: string) => void
+}) {
+  return (
+    <Suspense fallback={<GlobalSearchFallback className={className} />}>
+      <GlobalSearch className={className} onSelect={onSelect} />
+    </Suspense>
+  )
 }
 
 export function DesktopMenu({
@@ -109,75 +127,6 @@ export function DesktopMenu({
         </div>
       ) : null}
     </div>
-  )
-}
-
-function MobileSection({
-  title,
-  items,
-  onNavigate,
-}: {
-  title: string
-  items: MenuEntry[]
-  onNavigate: () => void
-}) {
-  return (
-    <section className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        {title}
-      </p>
-      <div className="space-y-1">
-        {items.map((item) =>
-          isMenuEntryLink(item) ? (
-            <Link
-              key={item.to}
-              className="flex min-h-11 items-center rounded-lg px-3 py-3 text-foreground transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
-              onClick={onNavigate}
-              to={item.to}
-            >
-              {item.label}
-            </Link>
-          ) : (
-            <button
-              key={item.label}
-              className="flex min-h-11 w-full items-center rounded-lg px-3 py-3 text-left text-foreground transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
-              onClick={() => {
-                onNavigate()
-                item.onClick()
-              }}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ),
-        )}
-      </div>
-    </section>
-  )
-}
-
-export function MobileMenuContent({
-  status,
-  onNavigate,
-  onLogout,
-}: {
-  status: PublicLayoutStatus
-  onNavigate: () => void
-  onLogout: () => void
-}) {
-  const sections = buildMainMobileSections(status, onLogout)
-
-  return (
-    <nav aria-label="Navegación móvil" className="space-y-5 text-sm">
-      {sections.map((section) => (
-        <MobileSection
-          key={section.title}
-          onNavigate={onNavigate}
-          title={section.title}
-          items={section.items}
-        />
-      ))}
-    </nav>
   )
 }
 
@@ -284,55 +233,26 @@ export function PublicLayout() {
             Fibras Inmobiliarias
           </Link>
 
-          <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer lg:hidden"
-                aria-label="Abrir navegación"
-                aria-expanded={mobileMenuOpen}
-              >
-                <Menu className="size-4" />
-              </button>
-            </DialogTrigger>
-            <DialogContent
-              className="left-0 top-0 h-dvh w-[min(88vw,22rem)] translate-x-0 translate-y-0 rounded-none rounded-r-[2rem] border-r border-border bg-background p-0 text-foreground shadow-2xl"
-              showCloseButton={false}
-            >
-              <div className="flex h-full flex-col">
-                <DialogHeader className="border-b border-border px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <DialogTitle>Navegación</DialogTitle>
-                      <DialogDescription>
-                        Busca una FIBRA o navega entre las superficies públicas y privadas.
-                      </DialogDescription>
-                    </div>
-                    <DialogClose asChild>
-                      <button
-                        type="button"
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
-                        aria-label="Cerrar navegación"
-                      >
-                        <X className="size-4" />
-                      </button>
-                    </DialogClose>
-                  </div>
-                </DialogHeader>
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer lg:hidden"
+            aria-label="Abrir navegación"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="size-4" />
+          </button>
 
-                <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
-                  <div className="rounded-2xl border border-border/70 bg-background/70 p-3">
-                    <GlobalSearch className="max-w-none" onSelect={() => setMobileMenuOpen(false)} />
-                  </div>
-                  <MobileMenuContent
-                    status={status}
-                    onNavigate={() => setMobileMenuOpen(false)}
-                    onLogout={handleLogout}
-                  />
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          {mobileMenuOpen ? (
+            <Suspense fallback={<div role="dialog" aria-modal="true" aria-label="Cargando navegación" />}>
+              <MobileNavigationDialog
+                open={mobileMenuOpen}
+                onOpenChange={setMobileMenuOpen}
+                status={status}
+                onLogout={handleLogout}
+              />
+            </Suspense>
+          ) : null}
 
           <nav
             aria-label="Navegación principal"
@@ -363,7 +283,7 @@ export function PublicLayout() {
           </nav>
 
           <div className="hidden min-w-0 flex-1 justify-center lg:flex">
-            <GlobalSearch className="max-w-[12rem] lg:max-w-[24rem]" />
+            <DeferredGlobalSearch className="max-w-[12rem] lg:max-w-[24rem]" />
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -440,7 +360,11 @@ export function PublicLayout() {
         </div>
       </footer>
 
-      {showTermsModal ? <TermsModal termsText={siteContent!.termsText!} /> : null}
+      {showTermsModal ? (
+        <Suspense fallback={null}>
+          <TermsModal termsText={siteContent!.termsText!} />
+        </Suspense>
+      ) : null}
     </div>
   )
 }
