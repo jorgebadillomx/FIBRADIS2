@@ -16,48 +16,53 @@ Scores por area:
 
 ## CRITICO - Implementar esta semana
 
-### 1. Resolver conflicto robots.txt con Cloudflare
+### 1. ✅ Resolver conflicto robots.txt con Cloudflare
 **Descripcion:** El bloque gestionado por Cloudflare inyecta Disallow para ClaudeBot, GPTBot, Google-Extended y
 Applebot-Extended antes del bloque del app que los permite. Dependiendo del parser, estos bots pueden quedar
 bloqueados. Desactivar la gestion automatica de robots.txt en Cloudflare Bot Management y servir el archivo
 exclusivamente desde BuildRobotsTxt() en el backend. Anadir OAI-SearchBot con Allow.
 **Impacto:** Elimina el riesgo de bloqueo de AI crawlers; restaura visibilidad en AI Overviews.
 **Esfuerzo:** Bajo (30 min) | **Responsable:** Backend/DevOps
+**Implementado:** 2026-06-18 — Cloudflare Managed Robots.txt desactivado
 
 ---
 
-### 2. Desbloquear llms.txt y sitemap.xml ante bots (Cloudflare WAF 403)
+### 2. ✅ Desbloquear llms.txt y sitemap.xml ante bots (Cloudflare WAF 403)
 **Descripcion:** llms.txt devuelve HTTP 403 a fetchers automatizados y sitemap.xml es inaccesible para clientes
 desde datacenter IPs. Crear regla WAF en Cloudflare que permita acceso sin inspeccion a llms.txt, sitemap.xml,
 sitemap-*.xml y robots.txt.
 **Impacto:** Restaura acceso de Googlebot al sitemap completo; precondicion para cualquier mejora de indexacion.
 **Esfuerzo:** Bajo (1h) | **Responsable:** DevOps
+**Implementado:** 2026-06-18 — Regla WAF "Allow SEO crawlers" creada en Cloudflare
 
 ---
 
-### 3. Enviar sitemap actual a Google Search Console
+### 3. ✅ Enviar sitemap actual a Google Search Console
 **Descripcion:** GSC solo tiene registrado el legacy /xmlsitemap/ (0 paginas indexadas de 38 enviadas, desde 2023).
 La arquitectura actual nunca ha sido registrada. Enviar https://fibrasinmobiliarias.com/sitemap.xml en
 GSC -> Sitemaps -> Agregar sitemap nuevo. Eliminar sitemaps legacy.
 **Impacto:** Activa el descubrimiento formal de todas las paginas - accion de mayor palanca a costo cero.
 **Esfuerzo:** Bajo (15 min) | **Responsable:** Marketing/SEO
+**Implementado:** 2026-06-18 — sitemap.xml enviado a GSC; legacy /xmlsitemap/ eliminado
 
 ---
 
-### 4. Canonicalizar www a non-www y HTTP a HTTPS en Cloudflare
+### 4. ✅ Canonicalizar www a non-www y HTTP a HTTPS en Cloudflare
 **Descripcion:** GSC muestra trafico fragmentado en 4 variantes de URL. La query mas valiosa (lista de fibras
 en Mexico, posicion 4.8) aterriza en http://www.fibrasinmobiliarias.com/fibras. Configurar redirects 301
 permanentes en Cloudflare Page Rules.
 **Impacto:** Consolida toda la autoridad de enlace en un unico origen; impacto directo en rankings existentes.
 **Esfuerzo:** Bajo (30 min) | **Responsable:** DevOps
+**Implementado:** 2026-06-18 — Redirect Rule www→non-www (301) y Always Use HTTPS activado en Cloudflare
 
 ---
 
-### 5. Solicitar indexacion manual de /fibras en GSC
+### 5. ✅ Solicitar indexacion manual de /fibras en GSC
 **Descripcion:** GSC reporta /fibras como URL desconocida a pesar de ser la segunda pagina de mayor trafico
 organico (17 sesiones/mes, 115 impresiones). Usar Inspeccion de URL en GSC para solicitar rastreo manual.
 **Impacto:** Recupera posicionamiento de la pagina con mayor inventario de keywords del sitio en dias.
 **Esfuerzo:** Bajo (20 min) | **Responsable:** Marketing/SEO
+**Implementado:** 2026-06-18 — indexación manual solicitada en GSC
 
 ---
 
@@ -97,12 +102,13 @@ PageRank hacia una ruta incorrecta.
 
 ---
 
-### 9. Autoria visible en /acerca (E-E-A-T YMYL)
+### 9. ✅ Autoria visible en /acerca (E-E-A-T YMYL)
 **Descripcion:** La plataforma no tiene autor nombrado ni perfil editorial indexable. Google QRG requiere
 senales de autoria para sitios financieros YMYL. Anadir nombre del fundador/equipo, anio de fundacion
 (2023) y experiencia en mercados financieros mexicanos en la pagina /acerca.
 **Impacto:** Mayor mejora de E-E-A-T disponible; diferencia frente a Finantres y FibrasMX que tienen autores.
 **Esfuerzo:** Bajo (1-2h redaccion + 2h implementacion) | **Responsable:** Marketing/Contenido
+**Implementado:** 2026-06-18 — sección "Equipo editorial" añadida en /acerca: equipo desde 2023, experiencia en mercados BMV/BIVA/CNBV, independencia editorial explícita, sin nombre personal
 
 ---
 
@@ -143,10 +149,11 @@ news:publication_date y news:title en SeoEndpoints.cs. Los datos ya estan dispon
 
 ## MEDIO - Implementar en 1 mes
 
-### 14. Descripciones editoriales para FIBRAs (campo Description NULL)
+### 14. ✅ Descripciones editoriales para FIBRAs (campo Description NULL)
 Priorizar FUNO11, DANHOS13, FIBRAMQ12, FIBRAPL14, FMTY14 con 150-250 palabras cada una.
 CatalogSeed.cs no tiene ningun valor de descripcion para las 20 FIBRAs activas.
 **Esfuerzo:** Medio (8-12h redaccion + 2h seed) | **Responsable:** Contenido + Backend
+**Implementado:** 2026-06-18 — descripciones sincronizadas desde producción a CatalogDescriptions.cs (23 FIBRAs incluyendo FVIA16 nueva); migración 20260618201335_SyncFibraDescriptions generada (22 UPDATE + 1 INSERT FVIA16)
 
 ### 15. ✅ Expandir respuestas FAQ a 134-167 palabras
 FaqSeedFactory.cs promedia 40 palabras (rango 21-57). Rango optimo para AI engines: 134-167 palabras.
