@@ -115,11 +115,12 @@ con author.name, datePublished, headline y publisher en NewsMetadataMiddleware.
 
 ---
 
-### 11. Lazy load de HomePage y separacion del bundle Recharts
+### 11. ✅ Lazy load de HomePage y separacion del bundle Recharts
 **Descripcion:** HomePage es el unico componente importado estaticamente en routes.tsx. vendor-charts
 (102 KB transferidos, 82 KB sin usar en homepage) se precarga incondicionalmente. Mover ambos a React.lazy().
 **Impacto:** Reduccion estimada 1.3-1.8s en LCP mobile; mejora Lighthouse desde 49/100.
 **Esfuerzo:** Medio (4-6h) | **Responsable:** Frontend
+**Implementado:** 2026-06-18 — HomePage convertida a React.lazy() + p() en routes.tsx; chunk HomePage-*.js separado del entry bundle
 
 ---
 
@@ -152,10 +153,11 @@ FaqSeedFactory.cs promedia 40 palabras (rango 21-57). Rango optimo para AI engin
 Reescribir con contexto, ejemplos numericos y referencias CNBV.
 **Esfuerzo:** Medio (3-5h) | **Responsable:** Contenido
 
-### 16. Self-hosting de Google Fonts
+### 16. ✅ Self-hosting de Google Fonts
 Descargar woff2 de Playfair Display e IBM Plex Sans y servirlos desde /assets/fonts/ con Cache-Control
 max-age=31536000. Elimina 2 handshakes a dominios externos.
 **Esfuerzo:** Bajo (2-3h) | **Responsable:** Frontend
+**Implementado:** 2026-06-18 — 8 woff2 (subset latin) en public/assets/fonts/; @font-face en index.css; eliminados preconnect+preload+noscript de Google Fonts en index.html
 
 ### 17. Copy editorial en paginas de herramienta
 /calculadora, /comparar y /calendario son UI pura sin texto indexable. Anadir 150-200 palabras de contexto
