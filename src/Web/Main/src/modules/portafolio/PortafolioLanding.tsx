@@ -85,12 +85,6 @@ const CAPABILITY_CARDS: CapabilityCard[] = [
   },
 ]
 
-const PUBLIC_LINKS = [
-  { label: 'Catálogo', href: '/fibras' },
-  { label: 'Fundamentales', href: '/fundamentales' },
-  { label: 'Noticias', href: '/noticias' },
-  { label: 'Calculadora', href: '/calculadora' },
-] as const
 
 export function PortafolioLanding() {
   usePageTitle(PAGE_TITLE, PAGE_DESCRIPTION, { canonicalPath: '/portafolio' })
@@ -115,32 +109,6 @@ export function PortafolioLanding() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to="/fibras">
-                  Ver catálogo
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href="#login" onClick={handleHashAnchorClick}>Iniciar sesión</a>
-              </Button>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {PUBLIC_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="group rounded-2xl border border-border bg-background/80 p-4 text-sm text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-                >
-                  <p className="font-semibold">{link.label}</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Abrir sección pública
-                  </p>
-                </Link>
-              ))}
-            </div>
           </div>
 
           <aside className="rounded-3xl border border-border bg-surface-elevated/95 p-6 shadow-sm backdrop-blur">
