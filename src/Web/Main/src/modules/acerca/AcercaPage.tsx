@@ -31,6 +31,24 @@ export function AcercaPage() {
         </section>
 
         <section>
+          <h2 className="font-semibold text-base text-foreground">Equipo editorial</h2>
+          <p className="mt-2">
+            Fibras Inmobiliarias fue creada en 2023 por un equipo especializado en mercados de capitales
+            mexicanos con experiencia directa en el análisis de instrumentos bursátiles regulados por la
+            CNBV. El equipo combina formación en finanzas, ingeniería de software y experiencia práctica
+            en los mercados de la BMV y BIVA, con enfoque específico en fideicomisos de inversión en
+            bienes raíces (FIBRAs).
+          </p>
+          <p className="mt-2">
+            Toda la información publicada es revisada por el equipo editorial antes de su publicación.
+            Las metodologías de cálculo de fundamentales (Cap Rate, NAV, NOI) se basan en los estándares
+            utilizados por analistas de casas de bolsa mexicanas y se documentan en detalle en este mismo
+            apartado. No tenemos relación comercial con ninguna emisora, fideicomiso ni casa de bolsa;
+            nuestra independencia editorial es el núcleo de nuestra credibilidad.
+          </p>
+        </section>
+
+        <section>
           <h2 className="font-semibold text-base text-foreground">¿Qué es Fibras Inmobiliarias?</h2>
           <p className="mt-2">
             Fibras Inmobiliarias es una plataforma de análisis independiente dedicada a las FIBRAs (Fideicomisos de
