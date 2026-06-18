@@ -77,6 +77,74 @@ public static class FaqSeedFactory
         UpdatedBy = "system",
     };
 
+    public static IReadOnlyList<FaqItem> BuildStaticPagesItems() =>
+    [
+        // /fibras — Catálogo
+        CreateStaticItem("/fibras", 1,
+            "¿Cuántas FIBRAs inmobiliarias existen en México?",
+            "En México cotizan alrededor de 14 FIBRAs activas en la Bolsa Mexicana de Valores (BMV). El catálogo de Fibras Inmobiliarias muestra el universo completo con precio, sector, yield y métricas fundamentales actualizadas."),
+        CreateStaticItem("/fibras", 2,
+            "¿Cómo se clasifican las FIBRAs por sector?",
+            "Las FIBRAs se agrupan por tipo de activo inmobiliario: Industrial/Logístico (bodegas, parques industriales), Comercial (centros comerciales, retail), Oficinas, Diversificado (mezcla de activos) y Especializado (educación, salud, almacenamiento). El sector determina en gran medida su comportamiento ante ciclos económicos."),
+        CreateStaticItem("/fibras", 3,
+            "¿Qué información muestra el catálogo de FIBRAs?",
+            "Cada ficha del catálogo incluye: precio actual, cambio del día, promedio 52 semanas, Cap Rate, LTV, NAV por CBFI, Margen NOI, yield calculado y el Score de oportunidad. Los datos de mercado se actualizan en tiempo real vía Yahoo Finance; los fundamentales provienen de los reportes trimestrales oficiales."),
+
+        // /comparar — Comparador
+        CreateStaticItem("/comparar", 1,
+            "¿Cómo comparar FIBRAs inmobiliarias de forma objetiva?",
+            "El comparador de Fibras Inmobiliarias permite contrastar hasta 4 emisoras en una sola tabla: precio, rendimiento, Cap Rate, LTV, Margen NOI/FFO y Score de oportunidad. Cada métrica resalta automáticamente al mejor valor y muestra el margen respecto al segundo lugar."),
+        CreateStaticItem("/comparar", 2,
+            "¿Qué métricas son las más importantes al comparar FIBRAs?",
+            "Las métricas clave son: **Yield** (distribución anual / precio de mercado), **Cap Rate** (rendimiento operativo del portafolio), **LTV** (nivel de deuda vs valor de activos) y **NAV Descuento** (precio de mercado vs valor intrínseco). Un yield alto con LTV bajo y Cap Rate sólido generalmente indica una oportunidad más favorable."),
+        CreateStaticItem("/comparar", 3,
+            "¿Cuántas FIBRAs puedo comparar al mismo tiempo?",
+            "Puedes comparar de 2 a 4 FIBRAs simultáneamente. La selección se guarda en la URL, por lo que puedes compartir o guardar la comparación directamente desde el navegador."),
+
+        // /noticias — Noticias
+        CreateStaticItem("/noticias", 1,
+            "¿Dónde encontrar noticias y comunicados de FIBRAs mexicanas?",
+            "La sección de noticias de Fibras Inmobiliarias agrega reportes trimestrales, comunicados de asamblea, anuncios de distribución y cobertura de medios especializados para cada FIBRA. Los artículos están vinculados a la ficha de cada emisora para dar contexto al momento."),
+        CreateStaticItem("/noticias", 2,
+            "¿Con qué frecuencia se publican resultados trimestrales de FIBRAs?",
+            "Las FIBRAs reportan resultados cada trimestre: Q1 (marzo-abril), Q2 (julio-agosto), Q3 (octubre-noviembre) y Q4 (febrero-marzo del año siguiente). Los reportes incluyen NOI, FFO, distribuciones decretadas y actualización de la valuación del portafolio."),
+
+        // /calculadora — Calculadora
+        CreateStaticItem("/calculadora", 1,
+            "¿Cómo calcular el rendimiento esperado de una FIBRA?",
+            "Ingresa el monto a invertir y el precio actual del CBFI. La calculadora estima las distribuciones trimestrales proyectadas según el yield histórico de cada FIBRA, el número de CBFIs que recibirías y el rendimiento anualizado. Recuerda que las distribuciones pasadas no garantizan rendimientos futuros."),
+        CreateStaticItem("/calculadora", 2,
+            "¿Qué es el yield de una FIBRA y cómo se calcula?",
+            "El yield (o rendimiento por distribución) es la distribución anual por CBFI dividida entre el precio de mercado actual. Ejemplo: si una FIBRA distribuye $0.80 MXN por CBFI trimestralmente ($3.20 anuales) y cotiza a $40 MXN, su yield es 8%. Un yield más alto puede indicar mayor valor, pero conviene validarlo con el LTV y Cap Rate."),
+        CreateStaticItem("/calculadora", 3,
+            "¿Qué diferencia hay entre yield calculado y yield decretado?",
+            "El **yield calculado** usa la última distribución trimestral anualizada (×4) sobre el precio actual, reflejando el rendimiento al precio de hoy. El **yield decretado** suma las distribuciones efectivamente pagadas en los últimos 12 meses. La diferencia es relevante cuando una FIBRA ha cambiado su política de distribución recientemente."),
+
+        // /calendario — Calendario
+        CreateStaticItem("/calendario", 1,
+            "¿Cuándo pagan distribuciones las FIBRAs inmobiliarias?",
+            "La mayoría de las FIBRAs distribuyen cada trimestre, típicamente en enero, abril, julio y octubre, aunque las fechas exactas varían por emisora. El calendario de Fibras Inmobiliarias centraliza las fechas de decreto, registro y pago de todas las FIBRAs activas para que no pierdas ningún cobro."),
+        CreateStaticItem("/calendario", 2,
+            "¿Qué es la fecha de registro en las distribuciones de FIBRAs?",
+            "La fecha de registro (o *record date*) es el día en que debes tener los CBFIs en tu cuenta para tener derecho a la distribución. Comprar después de esa fecha implica que no recibirás el pago del trimestre en curso. El calendario incluye fecha de decreto, fecha de registro y fecha estimada de pago."),
+        CreateStaticItem("/calendario", 3,
+            "¿Cómo saber cuánto voy a cobrar de distribución?",
+            "Multiplica el monto decretado por CBFI por el número de CBFIs que tienes. Por ejemplo: si tienes 500 CBFIs y la distribución decretada es $0.85 MXN/CBFI, recibirás $425 MXN brutos ese trimestre. La calculadora de Fibras Inmobiliarias puede proyectar este cálculo para cualquier monto de inversión."),
+    ];
+
+    private static FaqItem CreateStaticItem(string entityKey, int order, string question, string answer) => new()
+    {
+        Id = Guid.NewGuid(),
+        PageType = SeoPageType.StaticPage,
+        EntityKey = entityKey,
+        Question = question,
+        Answer = answer.Trim(),
+        Order = order,
+        IsActive = true,
+        UpdatedAt = SeedUpdatedAt,
+        UpdatedBy = "system",
+    };
+
     private static string GetEditorialEntityKey() => "/conoce-las-fibras";
 
     // Copia intencional de los KPI compartidos de frontend: seed inicial de FAQ no debe

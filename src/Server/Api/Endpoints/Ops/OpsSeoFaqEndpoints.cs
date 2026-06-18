@@ -247,6 +247,7 @@ public static class OpsSeoFaqEndpoints
             var editorialPages = await editorialRepo.GetAllAsync(ct);
             var seedItems = FaqSeedFactory.BuildEditorialItems(editorialPages)
                 .Concat(FaqSeedFactory.BuildFundamentalsItems())
+                .Concat(FaqSeedFactory.BuildStaticPagesItems())
                 .ToList();
 
             var createdCount = 0;
