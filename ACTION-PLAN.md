@@ -77,21 +77,23 @@ organico (17 sesiones/mes, 115 impresiones). Usar Inspeccion de URL en GSC para 
 
 ## ALTO - Implementar en 2 semanas
 
-### 7. Corregir lastmod en sitemaps (siempre devuelve hoy)
+### 7. ✅ Corregir lastmod en sitemaps (siempre devuelve hoy)
 **Descripcion:** GetGeneratedLastMod() devuelve DateTimeOffset.UtcNow para todas las paginas sin excepcion.
 Modificar GetVisibleStaticRoutes en SeoEndpoints.cs para devolver tuplas (path, updatedAt) usando
 SeoMetadata.UpdatedAt. Para FIBRAs usar Fibra.CreatedAt o timestamp de ultima actualizacion de mercado.
 **Impacto:** Restaura fiabilidad de la senal de frescura; optimiza crawl budget en ~25 paginas estables.
 **Esfuerzo:** Bajo (~20 lineas en SeoEndpoints.cs) | **Responsable:** Backend
+**Implementado:** 2026-06-18 — SitemapVisibility.StaticRouteLastMod, GetVisibleStaticRoutes devuelve (Path, LastMod), fallback "2024-01-01"
 
 ---
 
-### 8. Corregir link de pie de pagina al home
+### 8. ✅ Corregir link de pie de pagina al home
 **Descripcion:** En PublicLayout.tsx linea 415, el nombre de marca en el copyright enlaza a la pagina de
 plataforma en lugar de la raiz del sitio. Este link aparece en todas las paginas publicas y distribuye
 PageRank hacia una ruta incorrecta.
 **Impacto:** Consolida senales de autoridad interna hacia la homepage.
 **Esfuerzo:** Bajo (5 min) | **Responsable:** Frontend
+**Implementado:** 2026-06-18 — copyright → /, nuevo link "Plataforma" → /plataforma en footer
 
 ---
 
@@ -120,11 +122,12 @@ con author.name, datePublished, headline y publisher en NewsMetadataMiddleware.
 
 ---
 
-### 12. Extension Google News en sitemap-noticias
+### 12. ✅ Extension Google News en sitemap-noticias
 **Descripcion:** sitemap-noticias-1.xml carece del namespace xmlns:news. Anadir news:publication,
 news:publication_date y news:title en SeoEndpoints.cs. Los datos ya estan disponibles en NewsArticle.
 **Impacto:** Mejora descubrimiento en Google News para 160 articulos indexados.
 **Esfuerzo:** Bajo (~30 lineas en SeoEndpoints.cs) | **Responsable:** Backend
+**Implementado:** 2026-06-18 — BuildNewsUrlSetXml con xmlns:news, news:publication y news:publication_date ISO 8601
 
 ---
 
@@ -162,9 +165,10 @@ editorial en cada una explicando la herramienta e implicaciones financieras.
 Generar clave IndexNow y anadir ping en el pipeline de publicacion de noticias y job de precios de FIBRAs.
 **Esfuerzo:** Bajo (3-4h) | **Responsable:** Backend
 
-### 19. Cache-Control de llms.txt: max-age=1 a max-age=86400
+### 19. ✅ Cache-Control de llms.txt: max-age=1 a max-age=86400
 SeoEndpoints.cs linea ~188. Ampliar contenido de llms.txt con todas las rutas publicas del sitio.
 **Esfuerzo:** Bajo (1h) | **Responsable:** Backend
+**Implementado:** 2026-06-18 — max-age=86400; añadidas /acerca, /portafolio, /calculadora, /calendario
 
 ### 20. Disclaimer YMYL con fecha y referencia CNBV
 Incluir fecha de revision, mencion de Ley del Mercado de Valores y referencia a AMEFIBRA.
@@ -200,9 +204,10 @@ Anadir boton de registro en la seccion hero, encima del data table de FIBRAs.
 portafoliodefibras@gmail.com senala organizacion no verificable para YMYL.
 **Esfuerzo:** Bajo | **Impacto:** Credibilidad organizacional para knowledge graph.
 
-### 27. Eliminar metodo BuildSitemapXml muerto en SeoEndpoints.cs
+### 27. ✅ Eliminar metodo BuildSitemapXml muerto en SeoEndpoints.cs
 Codigo inalcanzable sin binding a ninguna ruta. Deuda tecnica, sin impacto SEO directo.
 **Esfuerzo:** Bajo (15 min)
+**Implementado:** 2026-06-18 — método eliminado, tests adaptados a BuildSitemapIndexXml y BuildNewsUrlSetXml
 
 ---
 
