@@ -1,8 +1,10 @@
 using Application.Catalog;
 using Application.News;
+using Application.Seo;
 using Domain.Catalog;
 using Domain.News;
 using Infrastructure.Jobs.News;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -38,6 +40,8 @@ public class NewsPipelineJobTests
             new FakeAiNewsAnalysisService("resumen"),
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
+            new FakeIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -195,6 +199,8 @@ public class NewsPipelineJobTests
             new FakeAiNewsAnalysisService("resumen"),
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
+            new FakeIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -233,6 +239,8 @@ public class NewsPipelineJobTests
             summaryService,
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
+            new FakeIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<NewsPipelineJob>.Instance);
 
         await job.ExecuteAsync();
@@ -277,6 +285,8 @@ public class NewsPipelineJobTests
             analysisService ?? new FakeAiNewsAnalysisService("resumen"),
             new FakePipelineErrorLogRepository(),
             new FakePipelineRunLogRepository(),
+            new FakeIndexNowService(),
+            new ConfigurationBuilder().Build(),
             NullLogger<NewsPipelineJob>.Instance);
     }
 }
@@ -564,6 +574,11 @@ internal sealed class FakeArticleContentScraper(string? bodyText) : IArticleCont
         RequestedUrls.Add(url);
         return Task.FromResult(bodyText);
     }
+}
+
+internal sealed class FakeIndexNowService : IIndexNowService
+{
+    public Task PingAsync(IEnumerable<string> urls, CancellationToken ct = default) => Task.CompletedTask;
 }
 
 internal sealed class FakeAiNewsAnalysisService(string? summaryMarkdown = null, bool shouldThrow = false) : IAiNewsAnalysisService

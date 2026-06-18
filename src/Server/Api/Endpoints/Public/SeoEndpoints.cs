@@ -195,6 +195,19 @@ public static class SeoEndpoints
         .AllowAnonymous()
         .ExcludeFromDescription();
 
+        app.MapMethods("/indexnow.txt", GetAndHead, async (
+            IConfiguration config,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            var key = config["Seo:IndexNowKey"];
+            if (string.IsNullOrWhiteSpace(key)) return Results.NotFound();
+            httpContext.Response.Headers.CacheControl = "public, max-age=86400";
+            return Results.Content(key, "text/plain");
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
         app.MapMethods("/robots.txt", GetAndHead, (IConfiguration config) =>
             Results.Content(BuildRobotsTxt(GetBaseUrl(config)), "text/plain; charset=utf-8"))
         .AllowAnonymous()

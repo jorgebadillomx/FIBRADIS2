@@ -2,10 +2,12 @@ using System.Text.Json;
 using Application.Catalog;
 using Application.Jobs;
 using Application.News;
+using Application.Seo;
 using Domain.Catalog;
 using Domain.Jobs;
 using Domain.News;
 using Infrastructure.Integrations.Articles;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Jobs.News;
@@ -22,6 +24,8 @@ public class NewsPipelineJob(
     IAiNewsAnalysisService analysisService,
     IPipelineErrorLogRepository pipelineErrorLogRepo,
     IPipelineRunLogRepository pipelineRunLogRepo,
+    IIndexNowService indexNowService,
+    IConfiguration config,
     ILogger<NewsPipelineJob> logger)
 {
     private static readonly string[] GeneralQueries =
@@ -235,6 +239,12 @@ public class NewsPipelineJob(
 
                     await newsRepo.AddWithLinksAsync(article, fibraIds, ct);
                     saved++;
+
+                    if (!string.IsNullOrWhiteSpace(article.Slug))
+                    {
+                        var baseUrl = config["App:BaseUrl"]?.TrimEnd('/') ?? string.Empty;
+                        _ = indexNowService.PingAsync([$"{baseUrl}/noticias/{article.Slug}"], CancellationToken.None);
+                    }
                 }
                 catch (OperationCanceledException)
                 {

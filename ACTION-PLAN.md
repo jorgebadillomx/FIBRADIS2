@@ -164,9 +164,10 @@ max-age=31536000. Elimina 2 handshakes a dominios externos.
 editorial en cada una explicando la herramienta e implicaciones financieras.
 **Esfuerzo:** Medio (6-8h redaccion + 4h implementacion) | **Responsable:** Contenido + Frontend
 
-### 18. Habilitar IndexNow
+### 18. ✅ Habilitar IndexNow
 Generar clave IndexNow y anadir ping en el pipeline de publicacion de noticias y job de precios de FIBRAs.
 **Esfuerzo:** Bajo (3-4h) | **Responsable:** Backend
+**Implementado:** 2026-06-18 — IIndexNowService + IndexNowService (fire-and-forget, POST api.indexnow.org); /indexnow.txt endpoint (404 si clave vacía); clave en Seo:IndexNowKey de appsettings.json; hooks en NewsPipelineJob (post-save por slug) y MarketPipelineJob (bulk FIBRAs tras lote exitoso)
 
 ### 19. ✅ Cache-Control de llms.txt: max-age=1 a max-age=86400
 SeoEndpoints.cs linea ~188. Ampliar contenido de llms.txt con todas las rutas publicas del sitio.
@@ -195,9 +196,10 @@ El HTML raw pesa 203 bytes (div id=root). LLM crawlers sin ejecucion de JS recib
 Evaluar Vite SSR o prerender.io.
 **Esfuerzo:** Alto (2-4 semanas) | **Impacto:** Elimina SPA rendering gap para todos los crawlers.
 
-### 24. Dead code OG images por FIBRA (FibraProfileMetadataMiddleware.cs linea 251)
+### 24. ✅ Dead code OG images por FIBRA (FibraProfileMetadataMiddleware.cs linea 251)
 El endpoint /og/fibras/{ticker}.png existe pero el middleware referencia la imagen generica.
 **Esfuerzo:** Medio (6-10h) | **Impacto:** CTR mejorado con rich cards por ticker.
+**Implementado:** 2026-06-18 — eliminado overload muerto BuildMetaBlock(Fibra,...) y 7 miembros huérfanos (~100 líneas); ruta activa ya usaba seoMetadata.OgImageUrl per-ticker correctamente
 
 ### 25. CTA above-the-fold en homepage
 Anadir boton de registro en la seccion hero, encima del data table de FIBRAs.
