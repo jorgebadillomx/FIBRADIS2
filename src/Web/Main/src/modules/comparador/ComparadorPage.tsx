@@ -202,16 +202,15 @@ export function ComparadorPage() {
     const pool = fibras.filter((fibra) => !selectedSet.has(fibra.ticker.toUpperCase()))
 
     if (term.length === 0) {
-      return pool.slice(0, 8)
+      return pool
     }
 
-    return pool
-      .filter((fibra) =>
+    return pool.filter(
+      (fibra) =>
         fibra.ticker.toLowerCase().includes(term) ||
         fibra.fullName.toLowerCase().includes(term) ||
         fibra.shortName.toLowerCase().includes(term),
-      )
-      .slice(0, 8)
+    )
   }, [fibras, search, selectedSet])
 
   const comparisonMinWidth = compareTableMinWidth(Math.max(selectedCount, 2))
