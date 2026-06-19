@@ -143,6 +143,7 @@ public static class SeoEndpoints
                     .Where(article => !visibility.NewsSlugs.Contains(NormalizeEntityKey(article.Slug)))
                     .Select(article => (
                         Loc: $"{GetBaseUrl(config)}/noticias/{article.Slug}",
+                        Title: article.Title,
                         PublishedAt: article.PublishedAt));
 
                 xml = BuildNewsUrlSetXml(newsPaths);
@@ -392,17 +393,17 @@ public static class SeoEndpoints
         return sb.ToString();
     }
 
-    public static string BuildNewsUrlSetXmlPublic(string baseUrl, IEnumerable<(string Loc, DateTimeOffset PublishedAt)> entries)
+    public static string BuildNewsUrlSetXmlPublic(string baseUrl, IEnumerable<(string Loc, string Title, DateTimeOffset PublishedAt)> entries)
         => BuildNewsUrlSetXml(entries);
 
-    private static string BuildNewsUrlSetXml(IEnumerable<(string Loc, DateTimeOffset PublishedAt)> entries)
+    private static string BuildNewsUrlSetXml(IEnumerable<(string Loc, string Title, DateTimeOffset PublishedAt)> entries)
     {
         var sb = new StringBuilder();
         sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"\n");
         sb.Append("        xmlns:news=\"http://www.google.com/schemas/sitemap-news/0.9\">\n");
 
-        foreach (var (loc, publishedAt) in entries)
+        foreach (var (loc, title, publishedAt) in entries)
         {
             var dateOnly = publishedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             sb.Append("  <url>\n");
@@ -414,6 +415,7 @@ public static class SeoEndpoints
             sb.Append("        <news:language>es</news:language>\n");
             sb.Append("      </news:publication>\n");
             sb.Append($"      <news:publication_date>{publishedAt:O}</news:publication_date>\n");
+            sb.Append($"      <news:title>{SecurityElement.Escape(title)}</news:title>\n");
             sb.Append("    </news:news>\n");
             sb.Append("  </url>\n");
         }

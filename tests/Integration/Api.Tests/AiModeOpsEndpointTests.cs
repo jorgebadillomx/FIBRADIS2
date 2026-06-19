@@ -519,11 +519,11 @@ public class AiModeOpsEndpointTests
         public Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default)
             => Task.CompletedTask;
 
-        public Task<(IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default)
-            => Task.FromResult<(IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)> Items, int Total)>(([], 0));
+        public Task<(IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult<(IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)> Items, int Total)>(([], 0));
 
-        public Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<(string, DateTimeOffset)>>([]);
+        public Task<IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<(string, string, DateTimeOffset)>>([]);
     }
 
     private sealed class AiProviderApiWebFactory(IAiProviderConfigRepository providerRepo) : ApiWebFactory

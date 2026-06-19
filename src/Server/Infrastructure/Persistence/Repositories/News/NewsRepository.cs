@@ -445,13 +445,13 @@ public class NewsRepository(
             .ExecuteUpdateAsync(s => s.SetProperty(n => n.Slug, slug), ct);
     }
 
-    public async Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
+    public async Task<IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default)
     {
         var (items, _) = await GetArticlesForSitemapPageAsync(1, limit, ct);
         return items;
     }
 
-    public async Task<(IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default)
     {
         var query = db.NewsArticles
             .AsNoTracking()
@@ -500,19 +500,19 @@ public class NewsRepository(
             .ThenByDescending(n => n.Id)
             .Skip((int)skip)
             .Take(pageSize)
-            .Select(n => new { n.Slug, n.PublishedAt });
+            .Select(n => new { n.Slug, n.Title, n.PublishedAt });
 
         // READ UNCOMMITTED evita contención de locks al generar el sitemap; el provider
         // InMemory (tests) no soporta transacciones con isolation level, así que se omite
         if (!db.Database.IsRelational())
         {
             var rowsNoTx = await itemsQuery.ToListAsync(ct);
-            return (rowsNoTx.Select(r => (r.Slug!, r.PublishedAt)).ToList(), total);
+            return (rowsNoTx.Select(r => (r.Slug!, r.Title, r.PublishedAt)).ToList(), total);
         }
 
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted, ct);
         var rows = await itemsQuery.ToListAsync(ct);
         await tx.CommitAsync(ct);
-        return (rows.Select(r => (r.Slug!, r.PublishedAt)).ToList(), total);
+        return (rows.Select(r => (r.Slug!, r.Title, r.PublishedAt)).ToList(), total);
     }
 }

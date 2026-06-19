@@ -19,7 +19,7 @@ public interface INewsRepository
     Task<IReadOnlyList<(Guid Id, string Ticker)>> GetLinkedFibrasAsync(Guid articleId, CancellationToken ct = default);
     Task<(IReadOnlyList<NewsArticle> Items, int Total, IReadOnlyDictionary<Guid, IReadOnlyList<(Guid FibraId, string Ticker)>> TickersByArticleId)>
         GetPagedPublicAsync(int page, int pageSize, string? q, Guid? fibraId, CancellationToken ct = default);
-    Task<(IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default);
+    Task<(IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)> Items, int Total)> GetArticlesForSitemapPageAsync(int page, int pageSize, CancellationToken ct = default);
     Task<(IReadOnlyList<NewsArticle> Items, int Total)> GetPagedForOpsAsync(int page, int pageSize, string? search, bool? hasAiSummary, Guid? fibraId = null, CancellationToken ct = default);
     Task<IReadOnlyList<(Guid Id, string Url)>> GetNullBodyTextArticlesAsync(int maxArticles, int daysBack, CancellationToken ct = default);
     Task SoftDeleteAsync(Guid id, CancellationToken ct = default);
@@ -27,5 +27,5 @@ public interface INewsRepository
     Task<string> GenerateUniqueSlugAsync(string title, Guid? excludeId = null, CancellationToken ct = default);
     Task<IReadOnlyList<NewsArticle>> GetArticlesWithoutSlugAsync(int batchSize, CancellationToken ct = default);
     Task UpdateSlugAsync(Guid id, string slug, CancellationToken ct = default);
-    Task<IReadOnlyList<(string Slug, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default);
+    Task<IReadOnlyList<(string Slug, string Title, DateTimeOffset PublishedAt)>> GetArticlesForSitemapAsync(int limit, CancellationToken ct = default);
 }

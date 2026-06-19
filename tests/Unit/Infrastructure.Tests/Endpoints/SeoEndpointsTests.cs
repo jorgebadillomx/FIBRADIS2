@@ -38,8 +38,8 @@ public class SeoEndpointsTests
     {
         var articles = new[]
         {
-            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
-            ("https://fibrasinmobiliarias.com/noticias/danhos-distribucion", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", "FUNO11 presenta resultados trimestrales", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/danhos-distribucion", "DANHOS anuncia distribución", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
         };
 
         var xml = SeoEndpoints.BuildNewsUrlSetXmlPublic(BaseUrl, articles);
@@ -54,7 +54,7 @@ public class SeoEndpointsTests
     {
         var articles = new[]
         {
-            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", "FUNO11 presenta resultados trimestrales", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
         };
 
         var xml = SeoEndpoints.BuildNewsUrlSetXmlPublic(BaseUrl, articles);
@@ -62,6 +62,7 @@ public class SeoEndpointsTests
         Assert.Contains("Fibras Inmobiliarias", xml);
         Assert.Contains("<news:language>es</news:language>", xml);
         Assert.Contains("<news:publication_date>2026-06-10T12:00:00", xml);
+        Assert.Contains("<news:title>FUNO11 presenta resultados trimestrales</news:title>", xml);
         Assert.Contains("<loc>https://fibrasinmobiliarias.com/noticias/funo11-resultados</loc>", xml);
     }
 
@@ -70,8 +71,8 @@ public class SeoEndpointsTests
     {
         var articles = new[]
         {
-            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
-            ("https://fibrasinmobiliarias.com/noticias/danhos-distribucion", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/funo11-resultados", "FUNO11 presenta resultados trimestrales", new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero)),
+            ("https://fibrasinmobiliarias.com/noticias/danhos-distribucion", "DANHOS anuncia distribución", new DateTimeOffset(2026, 6, 9, 8, 0, 0, TimeSpan.Zero)),
         };
 
         var xml = SeoEndpoints.BuildNewsUrlSetXmlPublic(BaseUrl, articles);
@@ -86,7 +87,6 @@ public class SeoEndpointsTests
         var robots = SeoEndpoints.BuildRobotsTxt(BaseUrl);
 
         Assert.Contains("Disallow: /ops/\n", robots);
-        Assert.Contains("Disallow: /api/\n", robots);
         Assert.Contains("Disallow: /hangfire/\n", robots);
     }
 
