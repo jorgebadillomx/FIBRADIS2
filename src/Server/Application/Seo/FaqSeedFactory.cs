@@ -423,13 +423,16 @@ public static class FaqSeedFactory
             "de restaurar para que sepas qué tan reciente es."),
         CreatePrivateItem("/portafolio", 6,
             "¿Qué muestra la vista de Calendario?",
-            "La vista **Calendario** proyecta los pagos de distribución de tus FIBRAs en posición durante " +
-            "los próximos 90 días, basándose en las últimas distribuciones trimestrales reportadas por cada " +
-            "emisora. Cada evento muestra la FIBRA, la fecha estimada de pago y el monto proyectado en " +
-            "pesos calculado a partir de tus títulos registrados. Los eventos se ordenan cronológicamente. " +
-            "Es una herramienta de planificación de flujo de efectivo: te permite saber cuándo y " +
-            "aproximadamente cuánto esperar de cada FIBRA. Las fechas son estimadas a partir del patrón " +
-            "histórico; pueden variar según los avisos oficiales que cada emisora publique ante la BMV."),
+            "La vista **Calendario** muestra las distribuciones **confirmadas** de tus FIBRAs en posición, " +
+            "tomadas del registro oficial de la BMV. La ventana cubre los últimos dos meses y el mes " +
+            "siguiente, agrupadas por fecha de pago. Cada evento detalla el monto **bruto total** en pesos " +
+            "y, cuando la emisora ya clasificó la distribución, el desglose fiscal completo: **Componente " +
+            "CUFIN** (la parte que genera retención de ISR), **ISR estimado** calculado sobre el CUFIN con " +
+            "la tasa de retención vigente, **Retorno de Capital** (la parte no gravada) y **Neto estimado** " +
+            "— lo que efectivamente recibirías descontando el ISR. Si la clasificación fiscal aún no está " +
+            "disponible, la distribución aparece con el monto bruto y la etiqueta \"clasificación fiscal " +
+            "pendiente\". A diferencia de un proyector de flujo, el Calendario solo incluye distribuciones " +
+            "ya registradas ante la BMV; no genera estimaciones basadas en el historial de pagos."),
 
         // /oportunidades — Ranking privado con score configurable
         CreatePrivateItem("/oportunidades", 1,
@@ -466,13 +469,20 @@ public static class FaqSeedFactory
             "estrategia personal."),
         CreatePrivateItem("/oportunidades", 4,
             "¿Qué es la vista Promediar y cuándo usarla?",
-            "La vista **Promediar** es un simulador de estrategia de promediación: calcula cuánto capital " +
-            "adicional necesitarías invertir en una FIBRA que ya tienes para bajar tu costo promedio a un " +
-            "precio objetivo. Ingresas tu posición actual (títulos y costo promedio), el precio objetivo " +
-            "al que quieres promediar y el precio actual de mercado. El simulador calcula el capital " +
-            "adicional necesario, el número de CBFIs adicionales y el nuevo costo promedio resultante. " +
-            "Es útil cuando una FIBRA en tu portafolio baja de precio y evalúas si conviene comprar más " +
-            "para reducir el punto de equilibrio antes de una recuperación."),
+            "La vista **Promediar** tiene dos zonas. La primera es una **tabla de posiciones**: lista " +
+            "todas las FIBRAs de tu portafolio ordenadas por score de oportunidad. En la columna " +
+            "**Títulos adicionales** puedes ingresar cuántos CBFIs más deseas comprar por fila; la " +
+            "tabla recalcula en tiempo real el **nuevo costo promedio ponderado** (incluyendo comisión " +
+            "e IVA), el **nuevo valor total** de la posición, la **nueva plusvalía** respecto al precio " +
+            "actual y la **renta mensual estimada** con los títulos adicionales. La segunda zona es el " +
+            "panel **¿Qué pasaría si?**: seleccionas cualquier FIBRA del universo de oportunidades — " +
+            "la tengas o no en cartera —, ingresas **Títulos a comprar** o directamente una **Renta " +
+            "mensual objetivo**, y el simulador funciona de forma bidireccional: cambiar títulos " +
+            "actualiza la renta estimada; cambiar la renta calcula los títulos necesarios y el capital " +
+            "requerido. El costo de compra siempre incluye la comisión e IVA configurados en Ops. " +
+            "Adicionalmente, el panel **Retorno histórico** muestra cómo habría evolucionado esa FIBRA " +
+            "en los últimos 2 años: variación de capital, distribuciones acumuladas y rendimiento total " +
+            "anualizado, para poner en perspectiva la decisión de promediar."),
         CreatePrivateItem("/oportunidades", 5,
             "¿Por qué algunas FIBRAs aparecen en la sección Datos Limitados?",
             "Una FIBRA aparece en **Datos Limitados** cuando tiene información disponible para uno o dos " +
@@ -500,9 +510,10 @@ public static class FaqSeedFactory
             "estimado** (asumiendo reinversión de distribuciones), la **renta acumulada neta de ISR** — " +
             "descontando retención del 30 % para FIBRAs y 20 % para CETES conforme a la Ley del ISR — y " +
             "el **rendimiento real anual** si el INPC está disponible. La tasa de CETES se carga " +
-            "automáticamente desde los indicadores del mercado. Las distribuciones se obtienen de la " +
-            "última distribución trimestral reportada. La proyección es lineal y no modela variaciones " +
-            "de precio ni cambios en las tasas de distribución futuras."),
+            "automáticamente desde los indicadores del mercado; si necesitas ajustarla, puedes editarla " +
+            "manualmente. La **TIIE 28d vigente** también se muestra como dato de referencia. Las " +
+            "distribuciones se obtienen de la última distribución trimestral reportada. La proyección " +
+            "es lineal y no modela variaciones de precio ni cambios en las tasas de distribución futuras."),
         CreatePrivateItem("/herramientas", 2,
             "¿Qué me dice la calculadora de Meta de Renta?",
             "Calcula cuánto capital necesitas invertir en cada FIBRA para generar una renta mensual " +

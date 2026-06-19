@@ -67,3 +67,4 @@ scripts/sql/deploy_idempotent_post-AddOrganizationSameAsJson_through_20260616171
 screenshots/
 SEO-REPORT-*.html
 lighthouse-13-9-review.json
+scripts/migrations/prod_20260619_AddFiscalRatesConfig.sql
