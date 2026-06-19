@@ -248,6 +248,66 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         return ToData(user);
     }
 
+    public async Task<IReadOnlyList<UserData>> FindUsersToDeactivateAsync(CancellationToken ct = default)
+    {
+        var now = DateTime.UtcNow;
+        var users = await db.Users
+            .Where(u => u.IsActive && (
+                (u.SubscriptionEndsAt != null && u.SubscriptionEndsAt < now)
+                || (u.TrialEndsAt != null && u.TrialEndsAt < now && u.SubscriptionType == null)))
+            .ToListAsync(ct);
+
+        return users.Select(ToData).ToList();
+    }
+
+    public async Task BulkDeactivateUsersAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+            return;
+
+        var users = await db.Users
+            .Where(u => ids.Contains(u.Id) && u.IsActive)
+            .ToListAsync(ct);
+
+        foreach (var user in users)
+            user.IsActive = false;
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<UserData>> FindUsersWithExpiringTrialAsync(int daysAhead, CancellationToken ct = default)
+    {
+        var targetStart = DateTime.UtcNow.Date.AddDays(daysAhead);
+        var targetEnd = targetStart.AddDays(1);
+        var users = await db.Users
+            .Where(u => u.IsActive
+                && u.TrialEndsAt != null
+                && u.TrialEndsAt >= targetStart
+                && u.TrialEndsAt < targetEnd
+                && u.SubscriptionType == null)
+            .ToListAsync(ct);
+
+        return users.Select(ToData).ToList();
+    }
+
+    public async Task<IReadOnlyList<UserData>> FindUsersWithExpiringSubscriptionAsync(
+        int daysAhead,
+        SubscriptionType type,
+        CancellationToken ct = default)
+    {
+        var targetStart = DateTime.UtcNow.Date.AddDays(daysAhead);
+        var targetEnd = targetStart.AddDays(1);
+        var users = await db.Users
+            .Where(u => u.IsActive
+                && u.SubscriptionEndsAt != null
+                && u.SubscriptionEndsAt >= targetStart
+                && u.SubscriptionEndsAt < targetEnd
+                && u.SubscriptionType == type)
+            .ToListAsync(ct);
+
+        return users.Select(ToData).ToList();
+    }
+
     public async Task AcceptTermsAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await db.Users.FindAsync([userId], ct)

@@ -104,6 +104,10 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     {
         public List<CapturedEmail> Emails { get; } = [];
         public List<Guid> PaymentNotifications { get; } = [];
+        public List<string> AccessExpiredEmails { get; } = [];
+        public List<string> AccessActivatedEmails { get; } = [];
+        public List<(string ToEmail, int DaysLeft)> TrialExpiringEmails { get; } = [];
+        public List<(string ToEmail, int DaysLeft)> SubscriptionExpiringEmails { get; } = [];
 
         public Task SendEmailConfirmationAsync(string toEmail, string confirmationUrl, CancellationToken ct)
         {
@@ -117,10 +121,38 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             return Task.CompletedTask;
         }
 
+        public Task SendAccessExpiredAsync(string toEmail, CancellationToken ct)
+        {
+            AccessExpiredEmails.Add(toEmail);
+            return Task.CompletedTask;
+        }
+
+        public Task SendAccessActivatedAsync(string toEmail, CancellationToken ct)
+        {
+            AccessActivatedEmails.Add(toEmail);
+            return Task.CompletedTask;
+        }
+
+        public Task SendTrialExpiringAsync(string toEmail, int daysLeft, CancellationToken ct)
+        {
+            TrialExpiringEmails.Add((toEmail, daysLeft));
+            return Task.CompletedTask;
+        }
+
+        public Task SendSubscriptionExpiringAsync(string toEmail, int daysLeft, CancellationToken ct)
+        {
+            SubscriptionExpiringEmails.Add((toEmail, daysLeft));
+            return Task.CompletedTask;
+        }
+
         public void Clear()
         {
             Emails.Clear();
             PaymentNotifications.Clear();
+            AccessExpiredEmails.Clear();
+            AccessActivatedEmails.Clear();
+            TrialExpiringEmails.Clear();
+            SubscriptionExpiringEmails.Clear();
         }
     }
 

@@ -17,6 +17,7 @@ public class OpsUserEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebF
     public async Task InitializeAsync()
     {
         await _factory.SeedUsersAsync();
+        _factory.EmailService.Clear();
 
         _adminClient = _factory.CreateClient();
         _adminClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
@@ -300,6 +301,7 @@ public class OpsUserEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebF
         Assert.Equal(startedAt, body.SubscriptionStartedAt);
         Assert.Equal(endsAt, body.SubscriptionEndsAt);
         Assert.True(body.IsActive);
+        Assert.Contains(_factory.EmailService.AccessActivatedEmails, email => email == "subscription@fibradis.mx");
     }
 
     [Fact]
