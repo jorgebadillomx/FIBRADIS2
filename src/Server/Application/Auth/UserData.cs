@@ -7,4 +7,9 @@ public sealed record UserData(
     bool IsActive,
     DateTime CreatedAt,
     decimal? Pago,
-    DateTime? FechaPago);
+    DateTime? FechaPago,
+    string? SubscriptionType,
+    DateTime? SubscriptionStartedAt,
+    DateTime? SubscriptionEndsAt,
+    DateTime? TrialEndsAt,
+    DateTime? EmailConfirmedAt);

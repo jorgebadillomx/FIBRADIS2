@@ -470,6 +470,86 @@
         }
       }
     },
+    "/api/v1/ops/users/{id}/subscription": {
+      "patch": {
+        "tags": [
+          "Ops"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/account/me": {
       "get": {
         "tags": [
@@ -11038,6 +11118,30 @@
           }
         }
       },
+      "UpdateSubscriptionRequest": {
+        "required": [
+          "type",
+          "startedAt",
+          "endsAt"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "UpsertFaqItemRequest": {
         "required": [
           "pageType",
@@ -11212,7 +11316,12 @@
           "isActive",
           "createdAt",
           "pago",
-          "fechaPago"
+          "fechaPago",
+          "subscriptionType",
+          "subscriptionStartedAt",
+          "subscriptionEndsAt",
+          "trialEndsAt",
+          "emailConfirmedAt"
         ],
         "type": "object",
         "properties": {
@@ -11243,6 +11352,40 @@
             "format": "double"
           },
           "fechaPago": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "subscriptionType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subscriptionStartedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "subscriptionEndsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "trialEndsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "emailConfirmedAt": {
             "type": [
               "null",
               "string"

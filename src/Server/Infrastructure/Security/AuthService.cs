@@ -19,7 +19,7 @@ public class AuthService(AppDbContext db, ITokenService tokenService, IEmailEncr
         if (user is null)
             throw new InvalidCredentialsException();
 
-        if (!user.IsActive)
+        if (!user.IsActive || (user.SubscriptionType.HasValue && !user.ComputedIsActive))
             throw new AccountDisabledException();
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
@@ -39,7 +39,7 @@ public class AuthService(AppDbContext db, ITokenService tokenService, IEmailEncr
         var stored = candidates.FirstOrDefault(rt =>
             BCrypt.Net.BCrypt.Verify(rawRefreshToken, rt.TokenHash));
 
-        if (stored is null || !stored.User!.IsActive)
+        if (stored is null || !stored.User!.IsActive || (stored.User!.SubscriptionType.HasValue && !stored.User!.ComputedIsActive))
             throw new InvalidRefreshTokenException();
 
         stored.RevokedAt = DateTime.UtcNow;

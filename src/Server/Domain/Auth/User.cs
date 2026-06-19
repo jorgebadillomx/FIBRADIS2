@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Domain.Auth;
 
 public class User
@@ -13,6 +15,18 @@ public class User
     public DateTime? TermsAcceptedAt { get; set; }
     public decimal? Pago { get; set; }
     public DateTime? FechaPago { get; set; }
+    public DateTime? EmailConfirmedAt { get; set; }
+    public DateTime? TrialEndsAt { get; set; }
+    public SubscriptionType? SubscriptionType { get; set; }
+    public DateTime? SubscriptionStartedAt { get; set; }
+    public DateTime? SubscriptionEndsAt { get; set; }
+    public HowDidYouHear? HowDidYouHear { get; set; }
+
+    [NotMapped]
+    public bool ComputedIsActive =>
+        (SubscriptionType == global::Domain.Auth.SubscriptionType.Lifetime && SubscriptionStartedAt.HasValue) ||
+        (SubscriptionEndsAt.HasValue && SubscriptionEndsAt.Value > DateTime.UtcNow) ||
+        (TrialEndsAt.HasValue && TrialEndsAt.Value > DateTime.UtcNow);
 
     public List<RefreshToken> RefreshTokens { get; set; } = [];
 }

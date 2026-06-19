@@ -1,4 +1,5 @@
 using Application.Auth;
+using Domain.Auth;
 using Domain.Auth.Exceptions;
 using Infrastructure.Persistence.SqlServer;
 using Infrastructure.Security;
@@ -246,6 +247,84 @@ public class UserServiceTests
 
         await Assert.ThrowsAsync<UserNotFoundException>(
             () => svc.UpdatePaymentAsync(Guid.NewGuid(), 100m, null));
+    }
+
+    // ── UpdateSubscription ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateSubscriptionAsync_AnnualPlan_UpdatesFieldsAndPersistsActiveState()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("suscripcion@fibradis.mx", "Fuerte1!", "User");
+        var startedAt = new DateTime(2026, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+        var endsAt = new DateTime(2027, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+
+        var result = await svc.UpdateSubscriptionAsync(user.Id, "Annual", startedAt, endsAt);
+
+        Assert.Equal("Annual", result.SubscriptionType);
+        Assert.Equal(startedAt, result.SubscriptionStartedAt);
+        Assert.Equal(endsAt, result.SubscriptionEndsAt);
+        Assert.True(result.IsActive);
+
+        var stored = await db.Users.FindAsync([user.Id]);
+        Assert.Equal(SubscriptionType.Annual, stored!.SubscriptionType);
+        Assert.Equal(startedAt, stored.SubscriptionStartedAt);
+        Assert.Equal(endsAt, stored.SubscriptionEndsAt);
+        Assert.True(stored.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateSubscriptionAsync_LifetimePlan_WithNullEndsAt_SetsActiveState()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("lifetime@fibradis.mx", "Fuerte1!", "User");
+        var startedAt = new DateTime(2026, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+
+        var result = await svc.UpdateSubscriptionAsync(user.Id, "Lifetime", startedAt, null);
+
+        Assert.Equal("Lifetime", result.SubscriptionType);
+        Assert.Equal(startedAt, result.SubscriptionStartedAt);
+        Assert.Null(result.SubscriptionEndsAt);
+        Assert.True(result.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateSubscriptionAsync_InvalidType_ThrowsInvalidUserDataException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("invalidtype@fibradis.mx", "Fuerte1!", "User");
+
+        await Assert.ThrowsAsync<InvalidUserDataException>(
+            () => svc.UpdateSubscriptionAsync(user.Id, "Quarterly", DateTime.UtcNow, null));
+    }
+
+    [Fact]
+    public async Task UpdateSubscriptionAsync_MonthlyWithNullEndsAt_ThrowsInvalidUserDataException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("monthly-noends@fibradis.mx", "Fuerte1!", "User");
+
+        await Assert.ThrowsAsync<InvalidUserDataException>(
+            () => svc.UpdateSubscriptionAsync(user.Id, "Monthly", DateTime.UtcNow, null));
+    }
+
+    [Fact]
+    public async Task UpdateSubscriptionAsync_DoesNotOverrideManualBan()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("banned@fibradis.mx", "Fuerte1!", "User");
+        await svc.SetUserActiveAsync(user.Id, false);
+
+        var startedAt = new DateTime(2026, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+        var endsAt = new DateTime(2027, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+        var result = await svc.UpdateSubscriptionAsync(user.Id, "Annual", startedAt, endsAt);
+
+        Assert.False(result.IsActive, "Un ban manual no debe ser revertido por UpdateSubscriptionAsync.");
     }
 
     // ── AcceptTerms ──────────────────────────────────────────────────────────

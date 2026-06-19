@@ -83,9 +83,38 @@ public static class OpsUserEndpoints
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound);
 
+        app.MapPatch("/api/v1/ops/users/{id:guid}/subscription", async (
+            Guid id,
+            UpdateSubscriptionRequest req,
+            IUserService svc,
+            CancellationToken ct) =>
+        {
+            var user = await svc.UpdateSubscriptionAsync(id, req.Type, req.StartedAt, req.EndsAt, ct);
+            return Results.Ok(ToDto(user));
+        })
+        .RequireAuthorization("AdminOps")
+        .WithTags("Ops")
+        .Produces<UserSummaryDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
         return app;
     }
 
     private static UserSummaryDto ToDto(UserData u) =>
-        new(u.Id, u.Email, u.Role, u.IsActive, u.CreatedAt, u.Pago, u.FechaPago);
+        new(
+            u.Id,
+            u.Email,
+            u.Role,
+            u.IsActive,
+            u.CreatedAt,
+            u.Pago,
+            u.FechaPago,
+            u.SubscriptionType,
+            u.SubscriptionStartedAt,
+            u.SubscriptionEndsAt,
+            u.TrialEndsAt,
+            u.EmailConfirmedAt);
 }
