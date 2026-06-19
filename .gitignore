@@ -66,3 +66,4 @@ scripts/sql/deploy_idempotent_post-AddOrganizationSameAsJson_through_20260616171
 ## SEO audit outputs
 screenshots/
 SEO-REPORT-*.html
+lighthouse-13-9-review.json

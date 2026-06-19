@@ -144,10 +144,14 @@ export function AcercaPage() {
         <section>
           <h2 className="font-semibold text-base text-foreground">Aviso</h2>
           <p className="mt-2">
-            La información publicada en Fibras Inmobiliarias es de referencia y orientativa. No constituye asesoría
-            de inversión, recomendación de compra o venta de valores, ni ningún servicio regulado por
-            la CNBV. Consulte a un asesor financiero certificado antes de tomar decisiones de inversión.
+            La información publicada en Fibras Inmobiliarias es de referencia y orientativa, basada en datos
+            públicos disponibles conforme a la <strong>Ley del Mercado de Valores</strong> y los reportes
+            emitidos ante la CNBV y la <strong>AMEFIBRA</strong> (Asociación Mexicana de Fideicomisos de
+            Inversión en Bienes Raíces). No constituye asesoría de inversión, recomendación de compra o
+            venta de valores, ni ningún servicio regulado. Consulte a un asesor financiero certificado
+            antes de tomar decisiones de inversión.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">Revisado: Junio 2026</p>
         </section>
 
         <section>
