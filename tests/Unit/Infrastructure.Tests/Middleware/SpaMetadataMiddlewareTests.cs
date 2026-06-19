@@ -484,7 +484,7 @@ public sealed class SpaMetadataMiddlewareTests : IDisposable
         public Task UpdateOrganizationSameAsAsync(string? organizationSameAsJson, string actor, CancellationToken ct = default)
             => throw new NotSupportedException();
 
-        public Task UpdateAsync(decimal? commissionFactor, int? avgPeriods, int? newsCadenceMinutes, int? fibraNewsMonths, int? distributionCadenceMinutes, bool? termsEnabled, string? termsText, string? contactEmail, string actor, int? fundamentalsCadenceMinutes = null, int? universeDegradationThresholdPct = null, CancellationToken ct = default)
+        public Task UpdateAsync(decimal? commissionFactor, int? avgPeriods, int? newsCadenceMinutes, int? fibraNewsMonths, int? distributionCadenceMinutes, bool? termsEnabled, string? termsText, string? contactEmail, string actor, int? fundamentalsCadenceMinutes = null, int? universeDegradationThresholdPct = null, decimal? isrRetentionRate = null, decimal? ivaRate = null, CancellationToken ct = default)
             => throw new NotSupportedException();
     }
 

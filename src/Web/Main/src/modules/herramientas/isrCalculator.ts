@@ -1,4 +1,6 @@
-export const ISR_RATE = 0.30
+export const DEFAULT_ISR_RATE = 0.30
+/** @deprecated Use DEFAULT_ISR_RATE or fetch from fiscalRatesApi */
+export const ISR_RATE = DEFAULT_ISR_RATE
 
 export interface IsrResult {
   taxableGross: number
@@ -30,6 +32,7 @@ export function calcIsr(
   distPerUnit: number,
   units = 1,
   taxablePerUnit?: number | null,
+  isrRate = DEFAULT_ISR_RATE,
 ): IsrResult {
   const safeDist = Math.max(normalizeNumber(distPerUnit), 0)
   const safeUnits = normalizeUnits(units)
@@ -43,7 +46,7 @@ export function calcIsr(
   const capitalBase = isEstimate ? 0 : Math.max(0, safeDist - taxableBase)
   const taxableGross = taxableBase * safeUnits
   const capitalReturn = capitalBase * safeUnits
-  const isr = taxableGross * ISR_RATE
+  const isr = taxableGross * isrRate
 
   return {
     taxableGross,

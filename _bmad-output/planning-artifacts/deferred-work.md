@@ -1,5 +1,14 @@
 # Deferred Work
 
+## Deferred from: ops-config-tasas-fiscales-isr-iva (2026-06-19)
+
+- D1: **FiscalRatesEndpoint.cs separación** — el endpoint `GET /api/v1/config/fiscal-rates` vive en `OpsConfigEndpoints.cs` en lugar de un archivo dedicado `Public/FiscalRatesEndpoint.cs`. Mover en limpieza técnica para consistencia con el patrón `Public/` del proyecto.
+- D2: **FISCAL_RATES_QUERY_KEY constante exportada** — los tres componentes que consumen `useQuery(['fiscal-rates'], ...)` usan el query key inline. Exportar `FISCAL_RATES_QUERY_KEY = ['fiscal-rates'] as const` desde `fiscalRatesApi.ts` para evitar typos.
+- D3: **toFixed(0) en labels de tasa ISR** — si la tasa fuera no-entera (ej. 0.075 = 7.5%), el label mostraría "8%" mientras el cálculo usa 0.075. No aplica con las tasas fiscales mexicanas actuales (siempre enteras). Mejorar si se amplían casos de uso.
+- D4: **Timeout en fetchFiscalRates** — sin timeout en el `fetch`. Agregar `AbortSignal.timeout(5000)` para liberar el query si el backend tarda.
+- D5: **Rate limiting en `/api/v1/config/fiscal-rates`** — endpoint público sin throttle. Considerar `Cache-Control: public, max-age=600` o middleware de rate limiting ante tráfico anónimo alto.
+- D6: **204 sin cambios en config** — `UpdateAsync` retorna sin error cuando ningún campo cambió, y el endpoint siempre responde 204. El toast de éxito en Ops aparece aunque no hubo cambio. Pre-existing para todos los campos de `OperationalConfig`.
+
 ## Deferred from: code review de spec-promediar-simulador-yield-y-renta (2026-06-12)
 
 - D1: `whatIfTargetRenta` y `whatIfTitulos` no se resetean al cambiar de FIBRA en el selector "¿Qué pasaría si...?" — la UI muestra resultados calculados con el target de una FIBRA aplicados a otra. Patrón pre-existente idéntico para `whatIfTitulos`. Fix: agregar `useEffect` que resetee ambos inputs cuando `whatIfFibraId` cambia. `PromediarTab.tsx`.

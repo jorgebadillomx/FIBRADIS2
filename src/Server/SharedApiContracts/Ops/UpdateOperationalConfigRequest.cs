@@ -10,4 +10,6 @@ public sealed record UpdateOperationalConfigRequest(
     bool? TermsEnabled = null,
     string? TermsText = null,
     string? ContactEmail = null,
-    int? UniverseDegradationThresholdPct = null);
+    int? UniverseDegradationThresholdPct = null,
+    decimal? IsrRetentionRate = null,
+    decimal? IvaRate = null);

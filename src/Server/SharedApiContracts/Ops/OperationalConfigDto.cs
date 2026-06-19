@@ -12,4 +12,6 @@ public sealed record OperationalConfigDto(
     bool TermsEnabled,
     string? TermsText,
     string? ContactEmail,
-    int UniverseDegradationThresholdPct);
+    int UniverseDegradationThresholdPct,
+    decimal IsrRetentionRate,
+    decimal IvaRate);

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { type Weights, calcLocalScore } from '@/modules/oportunidades/OportunidadesPage'
+import { fetchFiscalRates } from '@/api/fiscalRatesApi'
 import {
   IVA_FACTOR,
   calcCostoPurchase,
@@ -87,6 +88,13 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     staleTime: Infinity,
     retry: false,
   })
+
+  const fiscalRatesQuery = useQuery({
+    queryKey: ['fiscal-rates'],
+    queryFn: fetchFiscalRates,
+    staleTime: 10 * 60_000,
+  })
+  const ivaFactor = fiscalRatesQuery.data?.ivaRate ?? IVA_FACTOR
 
   const positions = portfolioQuery.data?.positions ?? []
   const ranked = rankingQuery.data?.ranked ?? []
@@ -215,7 +223,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
   const rentaMensualEstimada = rentaAnualEstimada != null ? rentaAnualEstimada / 12 : null
 
   const costoPurchaseWhatIf = canSimulateWhatIf && currentPrice != null
-    ? calcCostoPurchase(currentPrice, additionalWhatIfTitles, commissionFactor)
+    ? calcCostoPurchase(currentPrice, additionalWhatIfTitles, commissionFactor, ivaFactor)
     : null
 
   const targetRentaMensualNum = parseFloat(whatIfTargetRenta)
@@ -234,7 +242,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     ? Math.max(0, titulosTotalesParaTarget - currentTitulos)
     : null
   const costoInversionParaTarget = titulosAdicionalesParaTarget != null
-    ? calcCostoPurchase(currentPrice ?? 0, titulosAdicionalesParaTarget, commissionFactor)
+    ? calcCostoPurchase(currentPrice ?? 0, titulosAdicionalesParaTarget, commissionFactor, ivaFactor)
     : null
   const targetYaCumplido = hasTargetRenta && titulosTotalesParaTarget != null
     && currentTitulos >= titulosTotalesParaTarget
@@ -314,7 +322,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               <th className="px-3 py-2 text-right" title="Valor total de la posición (actuales + adicionales) al precio actual">Nuevo valor</th>
               <th className="px-3 py-2 text-right" title="Plusvalía porcentual del nuevo costo promedio respecto al precio actual">Nueva plusvalía</th>
               <th className="px-3 py-2 text-right" title="Renta mensual estimada con los títulos adicionales (basada en yield anualizado)">Renta mens.</th>
-              <th className="px-3 py-2 text-right" title={`Costo total de compra incluyendo comisión (${(commissionFactor * 100).toFixed(2)}%) e IVA (${(IVA_FACTOR * 100).toFixed(0)}%)`}>Costo compra</th>
+              <th className="px-3 py-2 text-right" title={`Costo total de compra incluyendo comisión (${(commissionFactor * 100).toFixed(2)}%) e IVA (${(ivaFactor * 100).toFixed(0)}%)`}>Costo compra</th>
             </tr>
           </thead>
           <tbody>
@@ -333,7 +341,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                 : null
 
               const costoCompraRow = hasSimulacion && precioActual != null
-                ? calcCostoPurchase(precioActual, adicionalesNum, commissionFactor)
+                ? calcCostoPurchase(precioActual, adicionalesNum, commissionFactor, ivaFactor)
                 : null
 
               const rentaMensualRow = hasSimulacion && precioActual != null
@@ -452,7 +460,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
             </span>
             <span>
               IVA:{' '}
-              <span className="font-semibold text-foreground">{(IVA_FACTOR * 100).toFixed(0)}%</span>
+              <span className="font-semibold text-foreground">{(ivaFactor * 100).toFixed(0)}%</span>
             </span>
           </div>
         </div>

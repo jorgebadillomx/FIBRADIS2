@@ -20,4 +20,6 @@ public class OperationalConfig
     public string? ContactEmail { get; set; }
     public string? OrganizationSameAsJson { get; set; }
     public int UniverseDegradationThresholdPct { get; set; } = 30;
+    public decimal IsrRetentionRate { get; set; } = 0.30m;
+    public decimal IvaRate { get; set; } = 0.16m;
 }

@@ -108,6 +108,8 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
         string actor,
         int? fundamentalsCadenceMinutes = null,
         int? universeDegradationThresholdPct = null,
+        decimal? isrRetentionRate = null,
+        decimal? ivaRate = null,
         CancellationToken ct = default)
     {
         var config = await db.OperationalConfigs.FindAsync([1], ct);
@@ -242,6 +244,32 @@ public class OperationalConfigRepository(AppDbContext db) : IOperationalConfigRe
                 NewValue = universeDegradationThresholdPct.Value.ToString(CultureInfo.InvariantCulture),
             });
             config.UniverseDegradationThresholdPct = universeDegradationThresholdPct.Value;
+        }
+
+        if (isrRetentionRate.HasValue && config.IsrRetentionRate != isrRetentionRate.Value)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor,
+                ChangedAt = now,
+                FieldName = "isr_retention_rate",
+                PreviousValue = config.IsrRetentionRate.ToString("0.####", CultureInfo.InvariantCulture),
+                NewValue = isrRetentionRate.Value.ToString("0.####", CultureInfo.InvariantCulture),
+            });
+            config.IsrRetentionRate = isrRetentionRate.Value;
+        }
+
+        if (ivaRate.HasValue && config.IvaRate != ivaRate.Value)
+        {
+            auditEntries.Add(new ConfigAuditLog
+            {
+                Actor = actor,
+                ChangedAt = now,
+                FieldName = "iva_rate",
+                PreviousValue = config.IvaRate.ToString("0.####", CultureInfo.InvariantCulture),
+                NewValue = ivaRate.Value.ToString("0.####", CultureInfo.InvariantCulture),
+            });
+            config.IvaRate = ivaRate.Value;
         }
 
         if (auditEntries.Count == 0)

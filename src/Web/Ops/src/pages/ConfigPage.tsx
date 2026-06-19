@@ -35,6 +35,8 @@ interface FormValues {
   fundamentalsCadenceMinutes: number
   distributionCadenceMinutes: number
   universeDegradationThresholdPct: number
+  isrRetentionRate: number
+  ivaRate: number
 }
 
 const inputClassName =
@@ -75,6 +77,8 @@ export function ConfigPage() {
       fundamentalsCadenceMinutes: 1440,
       distributionCadenceMinutes: 1440,
       universeDegradationThresholdPct: 30,
+      isrRetentionRate: 0.30,
+      ivaRate: 0.16,
     },
   })
 
@@ -89,6 +93,8 @@ export function ConfigPage() {
       fundamentalsCadenceMinutes: Number(configQuery.data.fundamentalsCadenceMinutes ?? 1440),
       distributionCadenceMinutes: Number(configQuery.data.distributionCadenceMinutes ?? 1440),
       universeDegradationThresholdPct: Number(configQuery.data.universeDegradationThresholdPct ?? 30),
+      isrRetentionRate: Number(configQuery.data.isrRetentionRate ?? 0.30),
+      ivaRate: Number(configQuery.data.ivaRate ?? 0.16),
     })
     setTermsEnabled(configQuery.data.termsEnabled ?? false)
     setTermsText(configQuery.data.termsText ?? DEFAULT_TERMS_TEXT)
@@ -139,6 +145,8 @@ export function ConfigPage() {
     if (dirtyFields.fundamentalsCadenceMinutes) payload.fundamentalsCadenceMinutes = values.fundamentalsCadenceMinutes
     if (dirtyFields.distributionCadenceMinutes) payload.distributionCadenceMinutes = values.distributionCadenceMinutes
     if (dirtyFields.universeDegradationThresholdPct) payload.universeDegradationThresholdPct = values.universeDegradationThresholdPct
+    if (dirtyFields.isrRetentionRate) payload.isrRetentionRate = values.isrRetentionRate
+    if (dirtyFields.ivaRate) payload.ivaRate = values.ivaRate
 
     if (Object.keys(payload).length === 0) return
     saveMutation.mutate(payload)
@@ -272,6 +280,40 @@ export function ConfigPage() {
                   type="number"
                   min={1}
                   max={49}
+                />
+              </Field>
+
+              <Field label="Retención ISR — fracción decimal (ej. 0.30 = 30%)" error={errors.isrRetentionRate?.message} required>
+                <input
+                  {...register('isrRetentionRate', {
+                    required: 'isrRetentionRate es requerido.',
+                    min: { value: 0.01, message: 'Mínimo 0.01 (1%).' },
+                    max: { value: 0.50, message: 'Máximo 0.50 (50%).' },
+                    valueAsNumber: true,
+                  })}
+                  className={inputClassName}
+                  placeholder="0.30"
+                  step="0.01"
+                  type="number"
+                  min={0.01}
+                  max={0.50}
+                />
+              </Field>
+
+              <Field label="IVA — fracción decimal (ej. 0.16 = 16%)" error={errors.ivaRate?.message} required>
+                <input
+                  {...register('ivaRate', {
+                    required: 'ivaRate es requerido.',
+                    min: { value: 0.01, message: 'Mínimo 0.01 (1%).' },
+                    max: { value: 0.30, message: 'Máximo 0.30 (30%).' },
+                    valueAsNumber: true,
+                  })}
+                  className={inputClassName}
+                  placeholder="0.16"
+                  step="0.01"
+                  type="number"
+                  min={0.01}
+                  max={0.30}
                 />
               </Field>
             </div>

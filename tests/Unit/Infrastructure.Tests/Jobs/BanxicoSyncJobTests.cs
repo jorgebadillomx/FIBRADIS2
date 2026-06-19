@@ -123,6 +123,8 @@ public class BanxicoSyncJobTests
             string actor,
             int? fundamentalsCadenceMinutes = null,
             int? universeDegradationThresholdPct = null,
+            decimal? isrRetentionRate = null,
+            decimal? ivaRate = null,
             CancellationToken ct = default)
             => Task.CompletedTask;
     }

@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchPortfolioCalendar } from '@/api/portfolioCalendarApi'
 import type { PortfolioCalendarEvent } from '@/api/portfolioCalendarApi'
+import { fetchFiscalRates } from '@/api/fiscalRatesApi'
+import { DEFAULT_ISR_RATE } from '@/modules/herramientas/isrCalculator'
 import { formatMoney } from '@/modules/portafolio/portfolio-format'
-
-const ISR_RATE = 0.30
 
 const monthYearFmt = new Intl.DateTimeFormat('es-MX', {
   month: 'long',
@@ -33,6 +33,12 @@ export function PortafolioCalendario() {
     queryFn: () => fetchPortfolioCalendar(),
     staleTime: 5 * 60_000,
   })
+  const { data: fiscalRates } = useQuery({
+    queryKey: ['fiscal-rates'],
+    queryFn: fetchFiscalRates,
+    staleTime: 10 * 60_000,
+  })
+  const isrRate = fiscalRates?.isrRetentionRate ?? DEFAULT_ISR_RATE
 
   if (isLoading) {
     return (
@@ -81,7 +87,7 @@ export function PortafolioCalendario() {
 
           <div className="divide-y divide-border">
             {monthEvents.map((evt) => (
-              <CalendarEventRow key={`${evt.ticker}-${evt.paymentDate}`} evt={evt} />
+              <CalendarEventRow key={`${evt.ticker}-${evt.paymentDate}`} evt={evt} isrRate={isrRate} />
             ))}
           </div>
         </section>
@@ -90,13 +96,13 @@ export function PortafolioCalendario() {
   )
 }
 
-function CalendarEventRow({ evt }: { evt: PortfolioCalendarEvent }) {
+function CalendarEventRow({ evt, isrRate }: { evt: PortfolioCalendarEvent; isrRate: number }) {
   const titulos = toNumber(evt.titulos) ?? 0
   const totalAmount = toNumber(evt.totalAmount) ?? 0
   const totalTaxable = toNumber(evt.totalTaxable)
   const totalCapital = toNumber(evt.totalCapital)
   const hasBreakdown = totalTaxable !== null || totalCapital !== null
-  const isr = totalTaxable !== null ? totalTaxable * ISR_RATE : null
+  const isr = totalTaxable !== null ? totalTaxable * isrRate : null
   const netEstimado = isr !== null
     ? (totalCapital ?? 0) + (totalTaxable ?? 0) - isr
     : null
@@ -133,7 +139,7 @@ function CalendarEventRow({ evt }: { evt: PortfolioCalendarEvent }) {
                   <span className="tabular-nums text-foreground">{formatMoney(totalTaxable)}</span>
                 </div>
                 <div className="flex justify-between gap-4 sm:justify-end">
-                  <span className="text-muted-foreground">ISR 30%</span>
+                  <span className="text-muted-foreground">ISR {(isrRate * 100).toFixed(0)}%</span>
                   <span className="tabular-nums text-red-600">-{formatMoney(isr!)}</span>
                 </div>
               </>

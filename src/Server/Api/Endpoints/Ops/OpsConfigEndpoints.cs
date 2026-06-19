@@ -14,6 +14,20 @@ public static class OpsConfigEndpoints
 {
     public static IEndpointRouteBuilder MapOpsConfig(this IEndpointRouteBuilder app)
     {
+        // Public endpoint — fiscal rates (ISR/IVA), no auth required
+        app.MapGet("/api/v1/config/fiscal-rates", async (
+            IOperationalConfigRepository repo,
+            CancellationToken ct) =>
+        {
+            var config = await repo.GetAsync(ct);
+            return Results.Ok(new SharedApiContracts.Ops.FiscalRatesDto(
+                config.IsrRetentionRate,
+                config.IvaRate));
+        })
+        .AllowAnonymous()
+        .WithTags("Public")
+        .Produces<SharedApiContracts.Ops.FiscalRatesDto>(StatusCodes.Status200OK);
+
         // Public endpoint — no auth required
         app.MapGet("/api/v1/site-content", async (
             IOperationalConfigRepository repo,
@@ -78,6 +92,8 @@ public static class OpsConfigEndpoints
                 actor,
                 request.FundamentalsCadenceMinutes,
                 request.UniverseDegradationThresholdPct,
+                request.IsrRetentionRate,
+                request.IvaRate,
                 ct);
 
             var useInMemoryHangfire = ctx.RequestServices
@@ -150,7 +166,9 @@ public static class OpsConfigEndpoints
             && request.TermsEnabled is null
             && request.TermsText is null
             && request.ContactEmail is null
-            && request.UniverseDegradationThresholdPct is null)
+            && request.UniverseDegradationThresholdPct is null
+            && request.IsrRetentionRate is null
+            && request.IvaRate is null)
         {
             errors["body"] = ["Se debe proporcionar al menos un campo para actualizar."];
             return errors;
@@ -196,6 +214,18 @@ public static class OpsConfigEndpoints
                 ["universeDegradationThresholdPct debe estar entre 1 y 49."];
         }
 
+        if (request.IsrRetentionRate is not null &&
+            (request.IsrRetentionRate <= 0m || request.IsrRetentionRate > 0.50m))
+        {
+            errors["isrRetentionRate"] = ["isrRetentionRate debe ser mayor a 0 y menor o igual a 0.50."];
+        }
+
+        if (request.IvaRate is not null &&
+            (request.IvaRate <= 0m || request.IvaRate > 0.30m))
+        {
+            errors["ivaRate"] = ["ivaRate debe ser mayor a 0 y menor o igual a 0.30."];
+        }
+
         return errors;
     }
 
@@ -212,7 +242,9 @@ public static class OpsConfigEndpoints
             config.TermsEnabled,
             config.TermsText,
             config.ContactEmail,
-            config.UniverseDegradationThresholdPct);
+            config.UniverseDegradationThresholdPct,
+            config.IsrRetentionRate,
+            config.IvaRate);
 
     private static ConfigAuditLogDto ToDto(Domain.Ops.ConfigAuditLog entry)
         => new(

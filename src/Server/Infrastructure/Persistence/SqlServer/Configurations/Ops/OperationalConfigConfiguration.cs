@@ -34,6 +34,12 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
         builder.Property(x => x.TermsText).HasColumnName("terms_text");
         builder.Property(x => x.ContactEmail).HasColumnName("contact_email").HasMaxLength(256);
         builder.Property(x => x.OrganizationSameAsJson).HasColumnName("organization_same_as_json");
+        builder.Property(x => x.IsrRetentionRate)
+            .HasColumnName("isr_retention_rate")
+            .HasPrecision(5, 4);
+        builder.Property(x => x.IvaRate)
+            .HasColumnName("iva_rate")
+            .HasPrecision(5, 4);
 
         builder.HasData(new OperationalConfig
         {
@@ -48,6 +54,8 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             UpdatedBy = "system",
             TermsEnabled = false,
             ContactEmail = "portafoliodefibras@gmail.com",
+            IsrRetentionRate = 0.30m,
+            IvaRate = 0.16m,
         });
     }
 }

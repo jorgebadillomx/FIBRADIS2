@@ -120,6 +120,25 @@
         }
       }
     },
+    "/api/v1/config/fiscal-rates": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalRatesDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site-content": {
       "get": {
         "tags": [
@@ -7269,6 +7288,31 @@
           }
         }
       },
+      "FiscalRatesDto": {
+        "required": [
+          "isrRetentionRate",
+          "ivaRate"
+        ],
+        "type": "object",
+        "properties": {
+          "isrRetentionRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ivaRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "FundamentalesPublicDto": {
         "required": [
           "period",
@@ -8573,7 +8617,9 @@
           "termsEnabled",
           "termsText",
           "contactEmail",
-          "universeDegradationThresholdPct"
+          "universeDegradationThresholdPct",
+          "isrRetentionRate",
+          "ivaRate"
         ],
         "type": "object",
         "properties": {
@@ -8657,6 +8703,22 @@
               "string"
             ],
             "format": "int32"
+          },
+          "isrRetentionRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ivaRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
@@ -10800,6 +10862,24 @@
               "string"
             ],
             "format": "int32"
+          },
+          "isrRetentionRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ivaRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },

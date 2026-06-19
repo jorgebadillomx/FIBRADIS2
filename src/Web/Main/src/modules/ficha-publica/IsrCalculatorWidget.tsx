@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
-import { ISR_RATE, calcIsr, parseInput } from '@/modules/herramientas/isrCalculator'
+import { useQuery } from '@tanstack/react-query'
+import { DEFAULT_ISR_RATE, calcIsr, parseInput } from '@/modules/herramientas/isrCalculator'
+import { fetchFiscalRates } from '@/api/fiscalRatesApi'
 import { formatMoney } from '@/modules/portafolio/portfolio-format'
 
 interface IsrCalculatorWidgetProps {
@@ -15,8 +17,6 @@ const UNIT_FORMAT = new Intl.NumberFormat('es-MX', {
   maximumFractionDigits: 4,
 })
 
-const ISR_RATE_LABEL = `${(ISR_RATE * 100).toFixed(0)}%`
-
 function formatPerUnit(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '—'
   return UNIT_FORMAT.format(value)
@@ -27,14 +27,22 @@ export function IsrCalculatorWidget({
   taxableAmountPerUnit,
   capitalReturnAmountPerUnit,
 }: IsrCalculatorWidgetProps) {
+  const fiscalRatesQuery = useQuery({
+    queryKey: ['fiscal-rates'],
+    queryFn: fetchFiscalRates,
+    staleTime: 10 * 60_000,
+  })
+  const isrRate = fiscalRatesQuery.data?.isrRetentionRate ?? DEFAULT_ISR_RATE
+  const isrRateLabel = `${(isrRate * 100).toFixed(0)}%`
+
   const [distPerUnit, setDistPerUnit] = useState(
     lastDistribution != null ? String(lastDistribution) : '',
   )
   const [units, setUnits] = useState('')
 
   const result = useMemo(
-    () => calcIsr(parseInput(distPerUnit), parseInput(units), taxableAmountPerUnit),
-    [distPerUnit, taxableAmountPerUnit, units],
+    () => calcIsr(parseInput(distPerUnit), parseInput(units), taxableAmountPerUnit, isrRate),
+    [distPerUnit, taxableAmountPerUnit, units, isrRate],
   )
 
   if (lastDistribution == null) {
@@ -61,7 +69,7 @@ export function IsrCalculatorWidget({
         </div>
 
         <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          ISR {ISR_RATE_LABEL}
+          ISR {isrRateLabel}
         </span>
       </div>
 
@@ -112,13 +120,13 @@ export function IsrCalculatorWidget({
             {result.isEstimate ? (
               <>
                 <IsrRow label="Distribución bruta (est.)" value={formatMoney(result.taxableGross)} />
-                <IsrRow label={`ISR estimado (${ISR_RATE_LABEL})`} value={formatMoney(result.isr)} />
+                <IsrRow label={`ISR estimado (${isrRateLabel})`} value={formatMoney(result.isr)} />
                 <IsrRow label="Neto estimado" value={formatMoney(result.net)} emphasized />
               </>
             ) : (
               <>
                 <IsrRow label="Resultado Fiscal (bruto)" value={formatMoney(result.taxableGross)} />
-                <IsrRow label={`ISR retenido (${ISR_RATE_LABEL})`} value={formatMoney(result.isr)} />
+                <IsrRow label={`ISR retenido (${isrRateLabel})`} value={formatMoney(result.isr)} />
                 <IsrRow label="Reembolso de Capital *" value={formatMoney(result.capitalReturn)} />
                 <IsrRow label="Distribución neta" value={formatMoney(result.net)} emphasized />
               </>
@@ -144,7 +152,7 @@ export function IsrCalculatorWidget({
         * Reembolso de capital no sujeto a retención. Reduce tu costo base fiscal para la venta futura de CBFIs.
       </p>
       <p className="text-xs leading-5 text-muted-foreground">
-        Tasa de retención provisional del {ISR_RATE_LABEL} sobre resultado fiscal para personas físicas residentes en México
+        Tasa de retención provisional del {isrRateLabel} sobre resultado fiscal para personas físicas residentes en México
         (LISR Art. 188). No considera deducciones adicionales ni regímenes especiales.
       </p>
     </div>
