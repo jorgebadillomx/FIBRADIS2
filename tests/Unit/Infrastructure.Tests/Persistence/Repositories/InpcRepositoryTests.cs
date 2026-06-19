@@ -102,6 +102,37 @@ public class InpcRepositoryTests
             entry => Assert.Equal(new DateOnly(2024, 5, 1), entry.Periodo));
     }
 
+    [Fact]
+    public async Task GetRangeAsync_WhenEmpty_ReturnsEmptyList()
+    {
+        await using var db = CreateDbContext();
+        var repo = new InpcRepository(db);
+
+        var result = await repo.GetRangeAsync(new DateOnly(2024, 1, 1), new DateOnly(2024, 12, 1));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetRangeAsync_WhenHasRecords_ReturnsAscendingOrderedEntries()
+    {
+        await using var db = CreateDbContext();
+        db.InpcMonthlyEntries.AddRange(
+            new InpcMonthlyEntry { Periodo = new DateOnly(2024, 6, 1), InpcIndex = 136.0000m, CapturedAt = DateTimeOffset.UtcNow },
+            new InpcMonthlyEntry { Periodo = new DateOnly(2024, 4, 1), InpcIndex = 134.1258m, CapturedAt = DateTimeOffset.UtcNow },
+            new InpcMonthlyEntry { Periodo = new DateOnly(2024, 5, 1), InpcIndex = 135.5190m, CapturedAt = DateTimeOffset.UtcNow });
+        await db.SaveChangesAsync();
+
+        var repo = new InpcRepository(db);
+        var result = await repo.GetRangeAsync(new DateOnly(2024, 4, 1), new DateOnly(2024, 6, 1));
+
+        Assert.Collection(
+            result,
+            entry => Assert.Equal(new DateOnly(2024, 4, 1), entry.Periodo),
+            entry => Assert.Equal(new DateOnly(2024, 5, 1), entry.Periodo),
+            entry => Assert.Equal(new DateOnly(2024, 6, 1), entry.Periodo));
+    }
+
     private static AppDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

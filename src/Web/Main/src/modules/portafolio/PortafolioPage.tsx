@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Star } from 'lucide-react'
 import type { components } from '@fibradis/shared-api-client'
-import { apiClient } from '@/api/fibrasApi'
+import { apiClient, fetchIndicadores } from '@/api/fibrasApi'
 import { KpiCards } from '@/modules/portafolio/KpiCards'
 import { ColumnPicker } from '@/modules/portafolio/ColumnPicker'
 import { PerformanceChart } from '@/modules/portafolio/PerformanceChart'
@@ -10,6 +10,7 @@ import { PortafolioCalendario } from '@/modules/portafolio/PortafolioCalendario'
 import { PositionsTable } from '@/modules/portafolio/PositionsTable'
 import { UploadZone } from '@/modules/portafolio/UploadZone'
 import { useFavorites } from '@/modules/oportunidades/useFavorites'
+import { latestInpcPct } from '@/shared/lib/inflation-utils'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -56,6 +57,13 @@ export function PortafolioPage() {
       return data
     },
   })
+
+  const indicadoresQuery = useQuery({
+    queryKey: ['portfolio', 'indicadores'],
+    queryFn: fetchIndicadores,
+    staleTime: 5 * 60 * 1000,
+  })
+  const latestInpc = latestInpcPct(indicadoresQuery.data?.inpcHistory)
 
   const snapshotQuery = useQuery<PortfolioSnapshotStatusDto>({
     queryKey: ['portfolio', 'snapshot'],
@@ -274,7 +282,7 @@ export function PortafolioPage() {
               aria-labelledby="tab-posiciones"
               className="space-y-6"
             >
-              <KpiCards kpis={portfolio?.kpis} />
+              <KpiCards kpis={portfolio?.kpis} inpcAnual={latestInpc} />
               {favoritesCount > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <article className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur-sm">

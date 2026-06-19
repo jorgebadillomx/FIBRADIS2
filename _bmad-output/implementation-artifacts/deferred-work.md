@@ -183,3 +183,12 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 
 - **Conteos hardcodeados en `/plataforma`** — `BuildPlataformaJsonLd` declara `numberOfItems = 8` como literal independiente del arreglo de `ListItem`, y `PlataformaPage.tsx` usa `StatTile value="8"`/`"5"` en vez de `PUBLIC_FEATURES.length`/`PRIVATE_FEATURES.length`. Hoy coinciden; riesgo de desincronización silenciosa al editar los arreglos. Polish LOW; derivar de la longitud cuando se toque el archivo.
 - **T5 — verificación manual a11y/responsive/SEO de `/plataforma` pendiente** — gating antes de `done` por el checklist SSR/SEO de convenciones: confirmar sin scroll horizontal en 375/768/1024/1440px, contraste AA, y curl al shell para validar `<title>`/canonical/JSON-LD/breadcrumb server-side + presencia en `sitemap.xml`/`sitemap-static.xml`. No lo cubre el test suite.
+
+## Deferred from: code review of 15-1-inpc-rendimiento-real-e-inflacion (2026-06-18)
+
+- **FakeInpcRepository ignora from/to** — `PortfolioPerformanceInpcTests.cs`: fake retorna todas las entradas sin filtrar. Tests actuales pasan por coincidencia de datos; futuros tests con entradas fuera de rango darían resultados falsos. Corregir cuando se agreguen más casos al fake.
+- **baseEntry fallback sin aviso en BuildInpcSeriesAsync** — `PortfolioEndpoints.cs`: cuando no existe entry INPC ≤ rangeMonthStart (portafolio muy reciente), cae a `normalizedEntries[0]` silenciosamente. Agregar log.Warning y documentar el caso en Dev Notes.
+- **Toggle INPC flickea durante carga** — `PerformanceChart.tsx`: `disabled = !data?.inpcSeries?.length` es true mientras carga (data=undefined). Mejorar con `performanceQuery.isSuccess && !data?.inpcSeries?.length` para disabled solo en estado confirmado sin datos.
+- **"balanceado" en FromProfile pero bloqueado en ValidateWeights** — `OpportunityWeightsConfig.cs` + `OpportunityEndpoints.cs`: inconsistencia dead code. Si se decide exponer "Balanceado" en frontend, añadir a ValidateWeights y a PROFILES. Si no, remover de FromProfile.
+- **Race condition midnight en BanxicoInpcBackfillEndpointTests** — calcular expectedFrom/To dentro del scope de la respuesta o usar un clock inyectado en el factory.
+- **TOCTOU UpsertManyAsync backfill concurrente** — `InpcRepository.cs`: reemplazar FindAsync+Add con ExecuteUpdate atómico (ON CONFLICT UPDATE o ExecuteUpsertAsync) para prevenir PK violation en llamadas paralelas de AdminOps.

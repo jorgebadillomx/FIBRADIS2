@@ -1,6 +1,6 @@
 # Story 15.1: INPC — Rendimiento Real e Inflación Visible
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -60,64 +60,64 @@ entonces el `schema.d.ts` incluye `inpcSeries` en `PortfolioPerformanceResponseD
 ## Tasks / Subtasks
 
 ### T1 — Backend: IInpcRepository.GetRangeAsync (AC-1, AC-6)
-- [ ] Agregar `Task<IReadOnlyList<InpcMonthlyEntry>> GetRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default)` a `IInpcRepository`
-- [ ] Implementar en `InpcRepository.cs` con `WHERE periodo >= from AND periodo <= to ORDER BY periodo ASC`
-- [ ] Unit test: rango vacío devuelve lista vacía; rango con datos devuelve entradas ordenadas
+- [x] Agregar `Task<IReadOnlyList<InpcMonthlyEntry>> GetRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default)` a `IInpcRepository`
+- [x] Implementar en `InpcRepository.cs` con `WHERE periodo >= from AND periodo <= to ORDER BY periodo ASC`
+- [x] Unit test: rango vacío devuelve lista vacía; rango con datos devuelve entradas ordenadas
 
 ### T2 — Backend: Endpoint backfill 5 años (AC-1)
-- [ ] En `OpsBanxicoEndpoints.cs`, agregar `POST /api/v1/ops/banxico/sync-inpc/backfill` (requiere `"AdminOps"`)
-- [ ] El endpoint calcula `from = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-72)`, ignora DB state, llama `banxico.GetInpcHistoryAsync(from, today, ct)` y llama `inpcRepo.UpsertManyAsync(...)`
-- [ ] Loguear run en `PipelineRunLog` con pipeline = "BanxicoInpcBackfill"
-- [ ] No modificar `BanxicoMonthlySyncJob` — el backfill es una operación manual separada
-- [ ] Integration test: endpoint requiere auth AdminOps; 401 sin token, 403 con token User
+- [x] En `OpsBanxicoEndpoints.cs`, agregar `POST /api/v1/ops/banxico/sync-inpc/backfill` (requiere `"AdminOps"`)
+- [x] El endpoint calcula `from = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-72)`, ignora DB state, llama `banxico.GetInpcHistoryAsync(from, today, ct)` y llama `inpcRepo.UpsertManyAsync(...)`
+- [x] Loguear run en `PipelineRunLog` con pipeline = "BanxicoInpcBackfill"
+- [x] No modificar `BanxicoMonthlySyncJob` — el backfill es una operación manual separada
+- [x] Integration test: endpoint requiere auth AdminOps; 401 sin token, 403 con token User
 
 ### T3 — Backend: INPC series en PortfolioPerformanceResponseDto (AC-6)
-- [ ] En `PortfolioResponseDto.cs`: agregar `IReadOnlyList<PortfolioPerformancePointDto>? InpcSeries` a `PortfolioPerformanceResponseDto` (nullable — si no hay datos, null)
-- [ ] En `PortfolioEndpoints.cs` performance handler:
+- [x] En `PortfolioResponseDto.cs`: agregar `IReadOnlyList<PortfolioPerformancePointDto>? InpcSeries` a `PortfolioPerformanceResponseDto` (nullable — si no hay datos, null)
+- [x] En `PortfolioEndpoints.cs` performance handler:
   - Obtener INPC entries para el rango con `inpcRepo.GetRangeAsync(from, today, ct)` (inyectar `IInpcRepository`)
   - Si entries vacío → `InpcSeries = null`
   - Si hay entries: normalizar a step-function diaria + índice base = primer valor disponible en rango
   - Formula normalización: `valuePct = (currentInpcIndex / baseInpcIndex - 1m) * 100m`
   - Construir la serie con resolución diaria usando step-function mensual (cada día usa el valor del mes en curso)
   - Alinear fechas con `PortfolioSeries` fechas existentes (no generar fechas nuevas)
-- [ ] Unit test: serie vacía cuando no hay INPC en rango; serie normalizada correctamente con 2+ meses
+- [x] Unit test: serie vacía cuando no hay INPC en rango; serie normalizada correctamente con 2+ meses
 
 ### T4 — codegen (AC-7)
-- [ ] Ejecutar `npm run codegen:api` después de T3 para regenerar `schema.d.ts`
-- [ ] Verificar que `PortfolioPerformanceResponseDto` en schema incluye `inpcSeries`
+- [x] Ejecutar `npm run codegen:api` después de T3 para regenerar `schema.d.ts`
+- [x] Verificar que `PortfolioPerformanceResponseDto` en schema incluye `inpcSeries`
 
 ### T5 — Frontend utils: inflación (AC-2..AC-5)
-- [ ] Crear `src/Web/Main/src/shared/lib/inflation-utils.ts`:
+- [x] Crear `src/Web/Main/src/shared/lib/inflation-utils.ts`:
   ```typescript
   export function calcRealReturn(nominalPct: number, inflationPct: number): number
   // Fisher: ((1 + nominal/100) / (1 + inflation/100) - 1) * 100
   export function latestInpcPct(inpcHistory: InpcMonthlyDto[] | null | undefined): number | null
   // Devuelve anualPct del último elemento, o null si vacío/undefined
   ```
-- [ ] Unit tests: Fisher con valores conocidos; denominador = 0 (inflación = -100%) → debe manejarse sin dividir por cero; `latestInpcPct(null)` → null; `latestInpcPct([])` → null
+- [x] Unit tests: Fisher con valores conocidos; denominador = 0 (inflación = -100%) → debe manejarse sin dividir por cero; `latestInpcPct(null)` → null; `latestInpcPct([])` → null
 
 ### T6 — Frontend: Herramientas rendimiento real (AC-2)
-- [ ] En `herramientas-logic.ts`: el resultado de `calcFibraVsCetes` ya tiene `rendimientoTotalPct`; calcular `rendimientoRealPct = calcRealReturn(rendimientoTotalPct / horizonte, inpc)` para rendimiento anualizado real  
+- [x] En `herramientas-logic.ts`: el resultado de `calcFibraVsCetes` ya tiene `rendimientoTotalPct`; calcular `rendimientoRealPct = calcRealReturn(rendimientoTotalPct / horizonte, inpc)` para rendimiento anualizado real  
   **Nota:** el rendimiento total acumulado se convierte a tasa anual equivalente antes de aplicar Fisher: `tae = (1 + total/100)^(1/years) - 1`; luego Fisher: `real = ((1 + tae) / (1 + inpc/100) - 1) * 100`
-- [ ] En `HerramientasPage.tsx`:
+- [x] En `HerramientasPage.tsx`:
   - Extraer `const latestInpc = latestInpcPct(indicadoresQuery.data?.inpcHistory)`
   - Pasar `latestInpc` a la tabla de resultados FIBRAs vs CETES
   - Renderizar fila "Rendimiento real anual" si `latestInpc !== null` (tono `text-muted-foreground`, tamaño `text-sm`)
   - Chip de contexto sobre la tabla: `"Contexto inflación · INPC últimos 12m: X.X%"` (solo si `latestInpc !== null`)
   - Si real < 0 → tono rojo; si > 0 → verde; si 0 → gris
-- [ ] Unit tests en `herramientas-logic.ts`: caso INPC 0% (real = nominal), INPC igual al nominal (real ≈ 0), denominador -100% (edge case)
+- [x] Unit tests en `herramientas-logic.ts`: caso INPC 0% (real = nominal), INPC igual al nominal (real ≈ 0), denominador -100% (edge case)
 
 ### T7 — Frontend: Portafolio KPIs yield real (AC-3)
-- [ ] En `PortafolioPage.tsx`: agregar query `fetchIndicadores()` y extraer `latestInpc`
-- [ ] Pasar `inpcAnual?: number` como prop a `KpiCards`
-- [ ] En `KpiCards.tsx`:
+- [x] En `PortafolioPage.tsx`: agregar query `fetchIndicadores()` y extraer `latestInpc`
+- [x] Pasar `inpcAnual?: number` como prop a `KpiCards`
+- [x] En `KpiCards.tsx`:
   - En el KpiCard "Yield del Portafolio": si `inpcAnual` disponible, agregar sublabel `"Real: X.X% vs INPC Y.Y%"` (fuente más pequeña, muted)
   - En la sección secundaria (ya expandible): agregar una 4ª métrica "Yield Real" calculada con Fisher
   - Tono: verde si `yieldReal > 0`, rojo si `yieldReal <= 0`
   - Si `inpcAnual` null/undefined → no renderizar sublabel ni métrica extra (degradación silenciosa)
 
 ### T8 — Frontend: Oportunidades 6° factor (AC-4)
-- [ ] En `OportunidadesPage.tsx`:
+- [x] En `OportunidadesPage.tsx`:
   - Agregar `fetchIndicadores()` query para obtener `latestInpc`
   - Añadir `yieldReal: number` a la estructura del scoring (calculado como `yield TTM - latestInpc`, con fallback null si alguno es null)
   - Agregar 6° slider "Yield Real [INPC]" con default 0% y min/max 0/100
@@ -127,7 +127,7 @@ entonces el `schema.d.ts` incluye `inpcSeries` en `PortfolioPerformanceResponseD
   - Los 3 perfiles preset (Predeterminado, Renta, Crecimiento) mantienen el 6° factor en 0%
 
 ### T9 — Frontend: Comparador fila Yield Real (AC-5)
-- [ ] En `ComparadorPage.tsx`:
+- [x] En `ComparadorPage.tsx`:
   - Agregar `fetchIndicadores()` query para obtener `latestInpc`
   - En la sección "Distribuciones", agregar fila "Yield real [vs INPC]" después de "Yield decretado"
   - Cálculo: `yieldReal = calcRealReturn(yieldCalculado, latestInpc)` por FIBRA
@@ -136,7 +136,7 @@ entonces el `schema.d.ts` incluye `inpcSeries` en `PortfolioPerformanceResponseD
   - Si `latestInpc` null → no renderizar la fila
 
 ### T10 — Frontend: PerformanceChart 4ª serie INPC (AC-6)
-- [ ] En `PerformanceChart.tsx`:
+- [x] En `PerformanceChart.tsx`:
   - Agregar `inpcSeries` al merge de series (si no null): mapear `{ date, valuePct }` → `inpc: number`
   - Agregar toggle "Inflación INPC" con color naranja/ámbar (ej. `stroke="#f97316"`)
   - Si `performanceQuery.data?.inpcSeries` null → toggle aparece deshabilitado (grisado, no clickeable)
@@ -268,6 +268,68 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `dotnet test tests/Unit/Infrastructure.Tests/Infrastructure.Tests.csproj` - passed, 641/641 tests
+- `dotnet test tests/Integration/Api.Tests/Api.Tests.csproj --filter BanxicoInpcBackfillEndpointTests` - passed, 2/2 tests
+- `dotnet test tests/Integration/Api.Tests/Api.Tests.csproj` - 333/335 passed; 2 failures preexistentes y ajenas a esta historia en `CalculadoraEndpointTests` y `DashboardEndpointTests`
+- `npm run codegen:api` - passed, regeneró `src/Web/SharedApiClient/schema.d.ts`
+- `npm test --workspace=src/Web/Main` - passed, 184/184 tests
+- `npm run build --workspace=src/Web/Main` - passed
+
 ### Completion Notes List
 
+- Se agregó el backfill manual de INPC para Ops con ventana fija de 72 meses y auditoría en `PipelineRunLog`.
+- El performance de Portafolio ahora expone serie INPC y la gráfica la muestra como línea adicional.
+- Las herramientas, portafolio, oportunidades y comparador ya calculan y muestran rendimiento real ajustado por inflación.
+- Se añadió el sexto factor de oportunidades `Yield Real` y se extendieron pesos, perfiles y validaciones.
+- Se regeneró el cliente API compartido para incluir `inpcSeries` y `yieldReal`.
+
 ### File List
+
+- `src/Server/Application/Ops/IInpcRepository.cs`
+- `src/Server/Infrastructure/Persistence/Repositories/Ops/InpcRepository.cs`
+- `src/Server/Api/Endpoints/Ops/OpsBanxicoEndpoints.cs`
+- `src/Server/Api/Endpoints/Private/PortfolioEndpoints.cs`
+- `src/Server/Api/Endpoints/Private/OpportunityEndpoints.cs`
+- `src/Server/Application/Opportunities/OpportunityWeightsConfig.cs`
+- `src/Server/SharedApiContracts/Opportunities/OpportunityWeightsDto.cs`
+- `src/Server/SharedApiContracts/Portfolio/PortfolioResponseDto.cs`
+- `src/Web/Main/src/shared/lib/inflation-utils.ts`
+- `src/Web/Main/src/shared/lib/inflation-utils.test.ts`
+- `src/Web/Main/src/modules/herramientas/herramientas-logic.ts`
+- `src/Web/Main/src/modules/herramientas/herramientas-logic.test.ts`
+- `src/Web/Main/src/modules/herramientas/HerramientasPage.tsx`
+- `src/Web/Main/src/modules/portafolio/PortafolioPage.tsx`
+- `src/Web/Main/src/modules/portafolio/KpiCards.tsx`
+- `src/Web/Main/src/modules/oportunidades/OportunidadesPage.tsx`
+- `src/Web/Main/src/modules/comparador/ComparadorPage.tsx`
+- `src/Web/Main/src/modules/portafolio/PerformanceChart.tsx`
+- `src/Web/SharedApiClient/schema.d.ts`
+- `tests/Unit/Infrastructure.Tests/Persistence/Repositories/InpcRepositoryTests.cs`
+- `tests/Unit/Infrastructure.Tests/Jobs/BanxicoMonthlySyncJobTests.cs`
+- `tests/Unit/Infrastructure.Tests/Endpoints/PortfolioPerformanceInpcTests.cs`
+- `tests/Integration/Api.Tests/Ops/BanxicoInpcBackfillEndpointTests.cs`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Change Log
+
+- 2026-06-18: Implementación completa de la historia 15.1, pruebas ejecutadas, story movido a `review`.
+
+### Review Findings
+
+- [x] \[Review\]\[Decision\] **yieldRealPct es diferencia aritmética (~3.5 pp) pero calcLocalScore la pondera igual que scores 0–100 → el 6° slider es prácticamente inerte (~21× menos influencia que otros factores)** — **Implementado opción B:** `yieldRealScore` se computa server-side como percentil sobre el universo activo. `OpportunityScoreCalculator` recibe `latestInpcAnualPct`, computa `yieldRealRaw = dividendYieldRaw - inpc` por FIBRA, ejecuta `PercentileNormalize`, expone `YieldRealScore` + `YieldRealPct` en DTO. Frontend usa `row.yieldRealScore` en `calcLocalScore` y `ComponentBar`.
+
+- [x] [Review][Defer] **`weightSum` incluye `yieldReal` aunque el slider esté disabled → posible confusión si `effectiveWeights.yieldReal > 0` con INPC no disponible** — Analizado: el escenario "permanentemente bloqueado" no se produce en práctica porque las weights almacenadas suman 100 incluyendo yieldReal; el usuario puede ajustar los otros sliders activos. Riesgo mínimo, diferido.
+
+- [x] \[Review\]\[Patch\] **`getToneClass(0)` retorna neutro pero el spec (AC-3) dice "rojo si ≤ 0" para Yield Real** — **Implementado:** `KpiCards.tsx` línea 149: reemplazado `getToneClass(yieldReal)` por `yieldReal <= 0 ? 'text-red-600' : 'text-green-600'`.
+
+- [x] [Review][Defer] **FakeInpcRepository.GetRangeAsync ignora parámetros from/to — test coverage frágil para futuros escenarios con entradas fuera del rango** — `PortfolioPerformanceInpcTests.cs`: los tests actuales pasan porque los datos del fake están dentro del rango; el fake devuelve todo incondicionalmente. Impacto: futuras regressions no detectadas si se agregan entradas fuera del rango al fake.
+
+- [x] [Review][Defer] **`baseEntry` cae a `normalizedEntries[0]` cuando no existe entry ≤ rangeMonthStart → serie INPC con base errónea sin aviso** — `PortfolioEndpoints.cs` `BuildInpcSeriesAsync`: ocurre cuando el portafolio comienza en un mes cuyo INPC aún no está publicado. La serie retorna valores no-nulos pero con base desplazada. Sin log de advertencia.
+
+- [x] [Review][Defer] **Toggle INPC disabled=true MIENTRAS carga (data=undefined) → parpadeo visible** — `PerformanceChart.tsx` línea 131: `!performanceQuery.data?.inpcSeries?.length`. Con data=undefined, disabled=true. Al llegar datos, enabled. Fix sugerido: `key === 'inpc' && performanceQuery.isSuccess && !performanceQuery.data?.inpcSeries?.length`.
+
+- [x] [Review][Defer] **"balanceado" añadido a `FromProfile` pero bloqueado por `ValidateWeights` y ausente en `PROFILES` frontend → dead code path** — `OpportunityWeightsConfig.cs` + `OpportunityEndpoints.cs`: `FromProfile("balanceado")` retorna `Balanced` pero `ValidateWeights` rechaza `profile = "balanceado"` con 422. Frontend nunca genera este valor. Sin impacto de usuario actual.
+
+- [x] [Review][Defer] **Race condition en test de integración de backfill al ejecutarse justo en medianoche UTC** — `BanxicoInpcBackfillEndpointTests.cs`: `expectedFrom` y `fakeBanxico.LastFrom` se calculan independientemente. Probabilidad mínima en práctica.
+
+- [x] [Review][Defer] **TOCTOU pre-existente en `UpsertManyAsync` (FindAsync → Add) puede lanzar PK violation si dos AdminOps llaman backfill simultáneamente** — `InpcRepository.cs`: patrón FindAsync+Add sin transacción atómica. El endpoint captura la excepción y retorna 500. Riesgo mínimo (sólo AdminOps, operación manual).

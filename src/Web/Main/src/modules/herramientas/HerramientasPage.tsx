@@ -5,7 +5,9 @@ import { ArrowUpRight, Plus, Search, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCalculadoraFibras, fetchIndicadores, type CalculadoraFibraDto } from '@/api/fibrasApi'
 import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
+import { latestInpcPct } from '@/shared/lib/inflation-utils'
 import {
+  calcAnnualizedRealReturn,
   calcFibraVsCetes,
   calcMetaRenta,
   calcRetornoTotal,
@@ -35,6 +37,7 @@ export function HerramientasPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
   })
+  const latestInpc = latestInpcPct(indicadoresQuery.data?.inpcHistory)
   const cetesApiValue = normalizeRate(indicadoresQuery.data?.cetes28d)
   const tiieApiValue = normalizeRate(indicadoresQuery.data?.tiie28d)
 
@@ -126,13 +129,22 @@ export function HerramientasPage() {
       selectedFibrasWithYield.map((f) => ({
         ticker: f.ticker,
         yieldPct: f.yieldPct,
+        rendimientoRealPct:
+          latestInpc != null && f.yieldPct != null && fibraMontoValue != null
+            ? calcAnnualizedRealReturn(
+                calcFibraVsCetes(fibraMontoValue, f.yieldPct, fibraCetesValue ?? 0, fibraHorizonte)
+                  .fibra.rendimientoTotalPct,
+                fibraHorizonte,
+                latestInpc,
+              )
+            : null,
         scenario:
           f.yieldPct != null && fibraMontoValue != null
             ? calcFibraVsCetes(fibraMontoValue, f.yieldPct, fibraCetesValue ?? 0, fibraHorizonte)
                 .fibra
             : null,
       })),
-    [selectedFibrasWithYield, fibraMontoValue, fibraCetesValue, fibraHorizonte],
+    [selectedFibrasWithYield, fibraMontoValue, fibraCetesValue, fibraHorizonte, latestInpc],
   )
 
   const metaResults = useMemo(
@@ -172,6 +184,10 @@ export function HerramientasPage() {
       }),
     [selectedFibrasWithYield, retornoPrecioCompraValue, retornoIsrValue],
   )
+  const cetesRealPct =
+    latestInpc != null && cetesScenario != null
+      ? calcAnnualizedRealReturn(cetesScenario.rendimientoTotalPct, fibraHorizonte, latestInpc)
+      : null
 
   usePageTitle('Herramientas — Fibras Inmobiliarias')
 
@@ -351,6 +367,12 @@ export function HerramientasPage() {
                     description="Compara crecimiento compuesto con tasas netas estimadas y horizonte flexible."
                   />
 
+                  {latestInpc != null ? (
+                    <div className="mt-4 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                      Contexto inflación · INPC últimos 12m: {latestInpc.toFixed(1)}%
+                    </div>
+                  ) : null}
+
                   <div className="mt-5 grid gap-4 sm:grid-cols-3">
                     <NumberField
                       label="Monto (MXN)"
@@ -403,9 +425,9 @@ export function HerramientasPage() {
                       <thead className="bg-muted/30 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         <tr>
                           <th className="px-4 py-3 text-left">Métrica</th>
-                          {fibraScenarios.map((f) => (
-                            <th key={f.ticker} className="px-4 py-3 text-right">
-                              <span className="font-mono text-primary">{f.ticker}</span>
+                        {fibraScenarios.map((f) => (
+                          <th key={f.ticker} className="px-4 py-3 text-right">
+                            <span className="font-mono text-primary">{f.ticker}</span>
                               {f.yieldPct != null ? (
                                 <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                                   {f.yieldPct.toFixed(1)}%
@@ -467,6 +489,28 @@ export function HerramientasPage() {
                               : '—'}
                           </td>
                         </tr>
+                        {latestInpc != null ? (
+                          <tr>
+                            <th className="px-4 py-3 text-left font-medium text-foreground">
+                              Rendimiento real anual %
+                            </th>
+                            {fibraScenarios.map((f) => (
+                              <td
+                                key={f.ticker}
+                                className={`px-4 py-3 text-right tabular-nums ${realToneClass(f.rendimientoRealPct)}`}
+                              >
+                                {f.rendimientoRealPct != null
+                                  ? formatPercent(f.rendimientoRealPct)
+                                  : '—'}
+                              </td>
+                            ))}
+                            <td
+                              className={`px-4 py-3 text-right tabular-nums ${realToneClass(cetesRealPct)}`}
+                            >
+                              {cetesRealPct != null ? formatPercent(cetesRealPct) : '—'}
+                            </td>
+                          </tr>
+                        ) : null}
                       </tbody>
                     </table>
                   </div>
@@ -698,4 +742,11 @@ function normalizeRate(value: number | string | null | undefined): number | null
   if (value == null) return null
   const normalized = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(normalized) ? normalized : null
+}
+
+function realToneClass(value: number | null | undefined): string {
+  if (value == null) return 'text-muted-foreground'
+  if (value > 0) return 'text-green-600'
+  if (value < 0) return 'text-red-600'
+  return 'text-muted-foreground'
 }

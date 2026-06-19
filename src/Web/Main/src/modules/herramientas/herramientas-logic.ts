@@ -1,3 +1,5 @@
+import { calcRealReturn } from '../../shared/lib/inflation-utils.ts'
+
 type FibraVsCetesScenario = {
   netRatePct: number
   capitalFinal: number
@@ -122,4 +124,21 @@ export function calcRetornoTotal(
     yieldNetoPct,
     retornoTotalPct: plusvaliaPct + yieldNetoPct,
   }
+}
+
+export function calcAnnualizedRealReturn(
+  rendimientoTotalPct: number,
+  horizonteYears: number,
+  inflationPct: number,
+): number {
+  if (
+    !Number.isFinite(rendimientoTotalPct) ||
+    !Number.isFinite(horizonteYears) ||
+    horizonteYears <= 0
+  ) {
+    return 0
+  }
+
+  const tae = (Math.pow(1 + rendimientoTotalPct / 100, 1 / horizonteYears) - 1) * 100
+  return calcRealReturn(tae, inflationPct)
 }

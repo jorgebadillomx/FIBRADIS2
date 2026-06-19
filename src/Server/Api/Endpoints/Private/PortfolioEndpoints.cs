@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Security.Claims;
 using Application.Fundamentals;
@@ -69,6 +70,7 @@ public static class PortfolioEndpoints
             IPortfolioRepository portfolioRepo,
             IFibraRepository fibraRepo,
             IMarketRepository marketRepo,
+            IInpcRepository inpcRepo,
             HttpContext ctx,
             CancellationToken ct) =>
         {
@@ -77,13 +79,14 @@ public static class PortfolioEndpoints
 
             var positions = await portfolioRepo.GetByUserIdAsync(userId, ct);
             if (positions.Count == 0)
-                return Results.Ok(new PortfolioPerformanceResponseDto([], [], []));
+                return Results.Ok(new PortfolioPerformanceResponseDto([], [], [], null));
 
             var days = ResolvePerformanceDays(range);
             if (days is null)
                 return Results.Problem("Valor de 'range' inválido. Válidos: 30d, 90d, 1y, all.", statusCode: 400);
 
             var portfolioSeries = await BuildPerformanceSeriesAsync(positions, days.Value, marketRepo, ct);
+            var inpcSeries = await BuildInpcSeriesAsync(portfolioSeries, inpcRepo, ct);
             var benchmarkTickers = new[] { "^MXX", "^GSPC" };
             var benchmarkSeries = new Dictionary<string, IReadOnlyList<PortfolioPerformancePointDto>>(StringComparer.OrdinalIgnoreCase);
 
@@ -106,7 +109,8 @@ public static class PortfolioEndpoints
             return Results.Ok(new PortfolioPerformanceResponseDto(
                 portfolioSeries,
                 ipcSeries ?? [],
-                sp500Series ?? []));
+                sp500Series ?? [],
+                inpcSeries));
         })
         .Produces<PortfolioPerformanceResponseDto>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -461,6 +465,47 @@ public static class PortfolioEndpoints
 
         return BuildNormalizedPoints(valuesByDate);
     }
+
+    private static async Task<IReadOnlyList<PortfolioPerformancePointDto>?> BuildInpcSeriesAsync(
+        IReadOnlyList<PortfolioPerformancePointDto> portfolioSeries,
+        IInpcRepository inpcRepo,
+        CancellationToken ct)
+    {
+        if (portfolioSeries.Count == 0)
+            return null;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var firstPortfolioDate = DateOnly.ParseExact(portfolioSeries[0].Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var rangeMonthStart = new DateOnly(firstPortfolioDate.Year, firstPortfolioDate.Month, 1);
+        var from = rangeMonthStart.AddMonths(-1);
+        var entries = await inpcRepo.GetRangeAsync(from, today, ct);
+        if (entries.Count == 0)
+            return null;
+
+        var normalizedEntries = entries
+            .Where(entry => entry.InpcIndex > 0m)
+            .Select(entry => new InpcStepEntry(entry.Periodo, entry.InpcIndex))
+            .ToList();
+
+        if (normalizedEntries.Count == 0)
+            return null;
+
+        var baseEntry = normalizedEntries.LastOrDefault(entry => entry.Periodo <= rangeMonthStart) ?? normalizedEntries[0];
+        var result = new List<PortfolioPerformancePointDto>(portfolioSeries.Count);
+
+        foreach (var point in portfolioSeries)
+        {
+            var date = DateOnly.ParseExact(point.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var month = new DateOnly(date.Year, date.Month, 1);
+            var current = normalizedEntries.LastOrDefault(entry => entry.Periodo <= month) ?? baseEntry;
+            var valuePct = Math.Round((current.InpcIndex / baseEntry.InpcIndex - 1m) * 100m, 4);
+            result.Add(new PortfolioPerformancePointDto(point.Date, valuePct));
+        }
+
+        return result;
+    }
+
+    private sealed record InpcStepEntry(DateOnly Periodo, decimal InpcIndex);
 
     private static IReadOnlyList<PortfolioPerformancePointDto> BuildNormalizedPoints(
         SortedDictionary<DateOnly, decimal> valuesByDate)

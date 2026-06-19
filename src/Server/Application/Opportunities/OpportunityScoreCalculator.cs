@@ -17,11 +17,13 @@ public sealed record OpportunityFibraScore(
     decimal? LtvInvertedScore,
     decimal? NoiMarginScore,
     decimal? Pricevs52wScore,
+    decimal? YieldRealScore,
     decimal? NavDiscountPct,
     decimal? DividendYieldPct,
     decimal? LtvPct,
     decimal? NoiMarginPct,
     decimal? PriceVsAvg52wPct,
+    decimal? YieldRealPct,
     decimal? PrecioActual,
     decimal? NavPerCbfi,
     decimal? Avg52w);
@@ -36,11 +38,12 @@ public static class OpportunityScoreCalculator
         IReadOnlyDictionary<Guid, FundamentalRecord> fundamentalByFibra,
         IReadOnlyDictionary<Guid, decimal> annualDistByFibra,
         IReadOnlyDictionary<Guid, decimal> avg52wByFibra,
-        OpportunityWeights weights)
+        OpportunityWeights weights,
+        decimal? latestInpcAnualPct = null)
     {
         // Step 1: Compute raw values per FIBRA
         var rawItems = activeFibras
-            .Select(f => ComputeRaw(f, snapshotByFibra, fundamentalByFibra, annualDistByFibra, avg52wByFibra))
+            .Select(f => ComputeRaw(f, snapshotByFibra, fundamentalByFibra, annualDistByFibra, avg52wByFibra, latestInpcAnualPct))
             .ToList();
 
         // Step 2: Percentile-normalize each component across all eligible FIBRAs (with price)
@@ -51,6 +54,7 @@ public static class OpportunityScoreCalculator
         var ltvInvertedPercentiles = PercentileNormalize(eligibleItems, r => r.LtvInvertedRaw);
         var noiMarginPercentiles = PercentileNormalize(eligibleItems, r => r.NoiMarginRaw);
         var pricevs52wPercentiles = PercentileNormalize(eligibleItems, r => r.Pricevs52wRaw);
+        var yieldRealPercentiles = PercentileNormalize(eligibleItems, r => r.YieldRealRaw);
 
         // Step 3: Build final scores
         var results = new List<OpportunityFibraScore>(rawItems.Count);
@@ -62,8 +66,9 @@ public static class OpportunityScoreCalculator
             var ltvScore = ltvInvertedPercentiles[i];
             var noiScore = noiMarginPercentiles[i];
             var pvs52Score = pricevs52wPercentiles[i];
+            var yieldRealScore = yieldRealPercentiles[i];
 
-            var componentCount = CountNonNull(navScore, yieldScore, ltvScore, noiScore, pvs52Score);
+            var componentCount = CountNonNull(navScore, yieldScore, ltvScore, noiScore, pvs52Score, yieldRealScore);
             var isExcluded = componentCount == 0;
             var isLimitedData = !isExcluded && componentCount < MinComponentsForRanking;
 
@@ -76,14 +81,15 @@ public static class OpportunityScoreCalculator
                 if (ltvScore.HasValue) score += ltvScore.Value * weights.LtvInverted;
                 if (noiScore.HasValue) score += noiScore.Value * weights.NoiMargin;
                 if (pvs52Score.HasValue) score += pvs52Score.Value * weights.Pricevs52w;
+                if (yieldRealScore.HasValue) score += yieldRealScore.Value * weights.YieldReal;
                 totalScore = Math.Round(score / 100m, 2);
             }
 
             results.Add(new OpportunityFibraScore(
                 raw.FibraId, raw.Ticker, raw.Nombre,
                 totalScore, componentCount, isLimitedData, isExcluded,
-                navScore, yieldScore, ltvScore, noiScore, pvs52Score,
-                raw.NavDiscountRaw, raw.DividendYieldRaw, raw.LtvPct, raw.NoiMarginRaw, raw.Pricevs52wRaw,
+                navScore, yieldScore, ltvScore, noiScore, pvs52Score, yieldRealScore,
+                raw.NavDiscountRaw, raw.DividendYieldRaw, raw.LtvPct, raw.NoiMarginRaw, raw.Pricevs52wRaw, raw.YieldRealRaw,
                 raw.Price, raw.NavPerCbfi, raw.Avg52w));
         }
 
@@ -93,8 +99,8 @@ public static class OpportunityScoreCalculator
             results.Add(new OpportunityFibraScore(
                 raw.FibraId, raw.Ticker, raw.Nombre,
                 null, 0, false, true,
-                null, null, null, null, null,
-                null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 null, null, null));
         }
 
@@ -141,7 +147,8 @@ public static class OpportunityScoreCalculator
         IReadOnlyDictionary<Guid, PriceSnapshot> snapshotByFibra,
         IReadOnlyDictionary<Guid, FundamentalRecord> fundamentalByFibra,
         IReadOnlyDictionary<Guid, decimal> annualDistByFibra,
-        IReadOnlyDictionary<Guid, decimal> avg52wByFibra)
+        IReadOnlyDictionary<Guid, decimal> avg52wByFibra,
+        decimal? latestInpcAnualPct = null)
     {
         snapshotByFibra.TryGetValue(fibra.Id, out var snapshot);
         fundamentalByFibra.TryGetValue(fibra.Id, out var fund);
@@ -186,6 +193,10 @@ public static class OpportunityScoreCalculator
             pricevs52wRaw = Math.Round(Math.Max(0m, (1m - price!.Value / avg52wVal.Value) * 100m), 4);
         }
 
+        decimal? yieldRealRaw = null;
+        if (dividendYieldRaw.HasValue && latestInpcAnualPct.HasValue)
+            yieldRealRaw = Math.Round(dividendYieldRaw.Value - latestInpcAnualPct.Value, 4);
+
         var nombre = fibra.ShortName;
         if (string.IsNullOrWhiteSpace(nombre)) nombre = fibra.FullName;
         if (string.IsNullOrWhiteSpace(nombre)) nombre = fibra.Ticker;
@@ -193,7 +204,7 @@ public static class OpportunityScoreCalculator
         return new RawFibraData(
             fibra.Id, fibra.Ticker, nombre, price,
             hasPrice, navPerCbfi, avg52wVal,
-            navDiscountRaw, dividendYieldRaw, ltvInvertedRaw, ltvPct, noiMarginRaw, pricevs52wRaw);
+            navDiscountRaw, dividendYieldRaw, ltvInvertedRaw, ltvPct, noiMarginRaw, pricevs52wRaw, yieldRealRaw);
     }
 
     private static int CountNonNull(params decimal?[] values) =>
@@ -212,5 +223,6 @@ public static class OpportunityScoreCalculator
         decimal? LtvInvertedRaw,
         decimal? LtvPct,
         decimal? NoiMarginRaw,
-        decimal? Pricevs52wRaw);
+        decimal? Pricevs52wRaw,
+        decimal? YieldRealRaw);
 }

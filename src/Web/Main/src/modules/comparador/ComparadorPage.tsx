@@ -4,9 +4,10 @@ import { LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { useSearchParams } from 'react-router'
-import { fetchAllFibras } from '@/api/fibrasApi'
+import { fetchAllFibras, fetchIndicadores } from '@/api/fibrasApi'
 import { fetchFaqItems } from '@/api/faqApi'
 import { FaqAccordion } from '@/shared/ui/FaqAccordion'
+import { calcRealReturn, latestInpcPct } from '@/shared/lib/inflation-utils'
 import {
   MAX_COMPARE_FIBRAS,
   MIN_COMPARE_FIBRAS,
@@ -23,6 +24,7 @@ type ComparadorFibraDto = components['schemas']['ComparadorFibraDto']
 
 type CompareMetric = {
   label: string
+  title?: string
   getValue?: (row: ComparadorFibraDto) => number | null
   betterWhen?: 'higher' | 'lower'
   renderMargin?: (diff: number, secondTicker: string) => string
@@ -196,6 +198,12 @@ export function ComparadorPage() {
     queryFn: () => fetchFaqItems(FAQ_PAGE_TYPE, FAQ_ENTITY_KEY),
     staleTime: 60 * 60_000,
   })
+  const indicadoresQuery = useQuery({
+    queryKey: ['compare', 'indicadores'],
+    queryFn: fetchIndicadores,
+    staleTime: 5 * 60 * 1000,
+  })
+  const latestInpc = latestInpcPct(indicadoresQuery.data?.inpcHistory)
 
   const { data: comparisonRows = [], isLoading: comparisonLoading, isError, refetch } = useQuery({
     queryKey: ['compare', selectedTickers.join(',')],
@@ -475,7 +483,7 @@ export function ComparadorPage() {
 
                         return (
                           <tr key={`${section.title}-${metric.label}`} className="border-b border-border last:border-0">
-                            <th className="px-4 py-3 text-left font-medium text-foreground">
+                            <th className="px-4 py-3 text-left font-medium text-foreground" title={metric.title}>
                               {metric.label}
                             </th>
                             {comparisonRows.map((row, colIdx) => {
@@ -497,6 +505,45 @@ export function ComparadorPage() {
                           </tr>
                         )
                       })}
+                      {section.title === 'Distribuciones' && latestInpc != null ? (() => {
+                        const yieldRealWinner = computeWinner(
+                          comparisonRows,
+                          (row) => {
+                            const nominal = toNum(row.distribuciones.yieldCalculadoPct)
+                            return nominal != null ? calcRealReturn(nominal, latestInpc) : null
+                          },
+                          'higher',
+                        )
+
+                        return (
+                          <tr className="border-b border-border last:border-0">
+                            <th
+                              className="px-4 py-3 text-left font-medium text-foreground"
+                              title={`Yield calculado ajustado por INPC últimos 12m (${latestInpc.toFixed(1)}%). Fórmula de Fisher.`}
+                            >
+                              Yield real [vs INPC]
+                            </th>
+                            {comparisonRows.map((row, colIdx) => {
+                              const nominal = toNum(row.distribuciones.yieldCalculadoPct)
+                              const yieldReal = nominal != null ? calcRealReturn(nominal, latestInpc) : null
+                              const isWinner = colIdx === yieldRealWinner.winnerIdx
+                              return (
+                                <td
+                                  key={`${section.title}-yield-real-${row.ticker}`}
+                                  className={`px-4 py-3 text-right ${isWinner ? 'bg-emerald-50/70' : ''}`}
+                                >
+                                  {yieldReal != null ? formatComparePercent(yieldReal, 2) : '—'}
+                                  {isWinner && yieldRealWinner.diff !== null && yieldRealWinner.secondTicker ? (
+                                    <div className="mt-0.5 text-[10px] font-medium tabular-nums text-emerald-700">
+                                      +{yieldRealWinner.diff.toFixed(2)} pp vs {yieldRealWinner.secondTicker}
+                                    </div>
+                                  ) : null}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        )
+                      })() : null}
                     </Fragment>
                   ))}
                 </tbody>

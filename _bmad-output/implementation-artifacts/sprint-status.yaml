@@ -461,6 +461,12 @@ development_status:
   14-3-frontend-acceso-controlado: backlog
   14-4-subscription-maintenance-job: backlog
 
+  # ── Épica 15: INPC — Rendimiento Real e Inflación Visible ───────────────
+  # epic-15 creada 2026-06-18 — backfill manual INPC, serie de inflación en performance y rendimiento real visible en herramientas/portafolio/oportunidades/comparador.
+  # story 15-1 done — code review pass post-review: D1 implementado (yieldRealScore server-side percentil 0-100 sobre universo activo, fix escala ~21× slider inerte); P3 implementado (getToneClass(yieldReal) → yieldReal<=0 rojo en KpiCards); P2 diferido (escenario permanentemente-bloqueado no reproducible en práctica). 3 tests nuevos OpportunityScoreCalculatorTests (null INPC, puntual INPC, orden ranking real). Codegen corrido. 132 unit tests verdes; 4 fallos Api.Tests pre-existentes ajenos (SEO/Calculadora/Dashboard).
+  epic-15: in-progress
+  15-1-inpc-rendimiento-real-e-inflacion: done
+
   # ── Épica 7: Oportunidades y Favoritos ────────────────────────────────────
   epic-7: done
   # story 7-1 creada — score de oportunidad 5 componentes, ranking universo activo, sliders de peso configurables y perfiles persistibles

@@ -16,7 +16,7 @@ type PortfolioPerformanceResponseDto = components['schemas']['PortfolioPerforman
 type PortfolioPerformancePointDto = components['schemas']['PortfolioPerformancePointDto']
 
 type PerformanceRange = '30d' | '90d' | '1y' | 'all'
-type SeriesKey = 'portfolio' | 'ipc' | 'sp500'
+type SeriesKey = 'portfolio' | 'ipc' | 'sp500' | 'inpc'
 
 const RANGE_OPTIONS: Array<{ value: PerformanceRange; label: string }> = [
   { value: '30d', label: '30D' },
@@ -29,6 +29,7 @@ const chartConfig = {
   portfolio: { label: 'Mi Portafolio', color: 'var(--primary)' },
   ipc: { label: 'IPC BMV', color: '#0284c7' },
   sp500: { label: 'S&P 500', color: '#8b5cf6' },
+  inpc: { label: 'Inflación (INPC)', color: '#f97316' },
 } as const
 
 const dateShortFmt = new Intl.DateTimeFormat('es-MX', {
@@ -44,7 +45,7 @@ const dateLongFmt = new Intl.DateTimeFormat('es-MX', {
 export function PerformanceChart() {
   const [range, setRange] = useState<PerformanceRange>('30d')
   const [activeLines, setActiveLines] = useState<Set<SeriesKey>>(
-    () => new Set<SeriesKey>(['portfolio', 'ipc', 'sp500'])
+    () => new Set<SeriesKey>(['portfolio', 'ipc', 'sp500', 'inpc'])
   )
 
   const performanceQuery = useQuery<PortfolioPerformanceResponseDto>({
@@ -125,16 +126,20 @@ export function PerformanceChart() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {(['portfolio', 'ipc', 'sp500'] as const).map((key) => {
+        {(['portfolio', 'ipc', 'sp500', 'inpc'] as const).map((key) => {
           const active = activeLines.has(key)
+          const disabled = key === 'inpc' && !performanceQuery.data?.inpcSeries?.length
           return (
             <button
               key={key}
               type="button"
               onClick={() => toggleLine(key)}
+              disabled={disabled}
               className={cn(
                 'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                active
+                disabled
+                  ? 'cursor-not-allowed border-border bg-muted/30 text-muted-foreground'
+                  : active
                   ? 'border-border bg-background text-foreground'
                   : 'border-border bg-muted/40 text-muted-foreground',
               )}
@@ -236,6 +241,19 @@ export function PerformanceChart() {
                 strokeOpacity={activeLines.has('sp500') ? 1 : 0.15}
                 hide={!mergedData.some((point) => point.sp500 != null)}
               />
+              <Line
+                type="monotone"
+                dataKey="inpc"
+                name={chartConfig.inpc.label}
+                stroke="var(--color-inpc)"
+                strokeWidth={2.2}
+                dot={false}
+                activeDot={{ r: 4.5, fill: 'var(--color-inpc)', stroke: 'var(--color-background)', strokeWidth: 2 }}
+                connectNulls={false}
+                isAnimationActive={false}
+                strokeOpacity={activeLines.has('inpc') ? 1 : 0.15}
+                hide={!mergedData.some((point) => point.inpc != null)}
+              />
             </LineChart>
           </ChartContainer>
         </div>
@@ -249,6 +267,7 @@ interface MergedPerformancePoint {
   portfolio: number | null
   ipc: number | null
   sp500: number | null
+  inpc: number | null
 }
 
 function mergeSeries(data: PortfolioPerformanceResponseDto | undefined): MergedPerformancePoint[] {
@@ -259,13 +278,14 @@ function mergeSeries(data: PortfolioPerformanceResponseDto | undefined): MergedP
   addSeries(byDate, data.portfolioSeries, 'portfolio')
   addSeries(byDate, data.ipcSeries, 'ipc')
   addSeries(byDate, data.sp500Series, 'sp500')
+  addSeries(byDate, data.inpcSeries, 'inpc')
 
   return Array.from(byDate.values()).sort((left, right) => left.date.localeCompare(right.date))
 }
 
 function addSeries(
   map: Map<string, MergedPerformancePoint>,
-  series: PortfolioPerformancePointDto[] | undefined,
+  series: PortfolioPerformancePointDto[] | null | undefined,
   key: SeriesKey,
 ) {
   if (!series) return
@@ -275,6 +295,7 @@ function addSeries(
       portfolio: null,
       ipc: null,
       sp500: null,
+      inpc: null,
     }
 
     existing[key] = toNumber(point.valuePct)
@@ -284,7 +305,7 @@ function addSeries(
 
 function computeDomain(data: MergedPerformancePoint[], activeLines: Set<SeriesKey>): [number, number] | ['auto', 'auto'] {
   const values = data.flatMap((point) =>
-    (['portfolio', 'ipc', 'sp500'] as const)
+    (['portfolio', 'ipc', 'sp500', 'inpc'] as const)
       .filter((key) => activeLines.has(key))
       .map((key) => point[key])
       .filter((value): value is number => value != null),

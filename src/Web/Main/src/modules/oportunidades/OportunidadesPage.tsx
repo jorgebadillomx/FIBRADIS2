@@ -3,9 +3,11 @@ import { ChevronRight, BarChart3, AlertTriangle, Star } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
+import { fetchIndicadores } from '@/api/fibrasApi'
 import { PromediarTab } from '@/modules/oportunidades/PromediarTab'
 import { StarButton } from '@/modules/oportunidades/StarButton'
 import { useFavorites } from '@/modules/oportunidades/useFavorites'
+import { latestInpcPct } from '@/shared/lib/inflation-utils'
 
 type OpportunityFibraRowDto = components['schemas']['OpportunityFibraRowDto']
 type OpportunityRankingResponseDto = components['schemas']['OpportunityRankingResponseDto']
@@ -16,12 +18,13 @@ export interface Weights {
   ltvInverted: number
   noiMargin: number
   pricevs52w: number
+  yieldReal: number
 }
 
 const PROFILES: Record<string, Weights & { label: string }> = {
-  default: { label: 'Predeterminado', navDiscount: 30, dividendYield: 30, ltvInverted: 20, noiMargin: 10, pricevs52w: 10 },
-  renta: { label: 'Renta', navDiscount: 20, dividendYield: 50, ltvInverted: 10, noiMargin: 20, pricevs52w: 0 },
-  crecimiento: { label: 'Crecimiento', navDiscount: 40, dividendYield: 15, ltvInverted: 25, noiMargin: 10, pricevs52w: 10 },
+  default: { label: 'Predeterminado', navDiscount: 30, dividendYield: 30, ltvInverted: 20, noiMargin: 10, pricevs52w: 10, yieldReal: 0 },
+  renta: { label: 'Renta', navDiscount: 20, dividendYield: 50, ltvInverted: 10, noiMargin: 20, pricevs52w: 0, yieldReal: 0 },
+  crecimiento: { label: 'Crecimiento', navDiscount: 40, dividendYield: 15, ltvInverted: 25, noiMargin: 10, pricevs52w: 10, yieldReal: 0 },
 }
 
 function toNum(v: null | number | string | undefined): number {
@@ -36,6 +39,7 @@ export function calcLocalScore(row: OpportunityFibraRowDto, w: Weights): number 
   if (row.ltvInvertedScore != null) score += toNum(row.ltvInvertedScore) * w.ltvInverted
   if (row.noiMarginScore != null) score += toNum(row.noiMarginScore) * w.noiMargin
   if (row.pricevs52wScore != null) score += toNum(row.pricevs52wScore) * w.pricevs52w
+  if (row.yieldRealScore != null) score += toNum(row.yieldRealScore) * w.yieldReal
   return Math.round(score) / 100
 }
 
@@ -63,20 +67,36 @@ function ScoreBadge({ score }: { score: number }) {
   )
 }
 
-function ComponentBar({ value, label, weight }: { value: number | null; label: string; weight: number }) {
+function ComponentBar({
+  value,
+  label,
+  weight,
+  detail,
+}: {
+  value: number | null | undefined
+  label: string
+  weight: number
+  detail?: string
+}) {
   if (value == null) return <div className="text-xs text-muted-foreground">— Sin datos</div>
-  const pct = Math.max(0, Math.min(100, value))
-  const contribution = Math.round(pct * weight) / 100
+  const pct = Math.max(0, Math.min(100, Math.abs(value)))
+  const contribution = Math.round(value * weight) / 100
+  const barClass = value >= 0 ? 'bg-primary' : 'bg-rose-500'
   return (
     <div className="flex items-center gap-2">
-      <span className="w-28 shrink-0 text-xs text-muted-foreground">{label}</span>
+      <div className="w-28 shrink-0">
+        <span className="block text-xs text-muted-foreground">{label}</span>
+        {detail ? <span className="block text-[10px] text-muted-foreground">{detail}</span> : null}
+      </div>
       <div className="h-2 flex-1 rounded-full bg-muted">
         <div
-          className="h-2 rounded-full bg-primary transition-all"
+          className={`h-2 rounded-full transition-all ${barClass}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-14 text-right text-xs tabular-nums">{contribution.toFixed(1)} pts</span>
+      <span className={`w-14 text-right text-xs tabular-nums ${contribution >= 0 ? 'text-foreground' : 'text-rose-700'}`}>
+        {contribution.toFixed(1)} pts
+      </span>
     </div>
   )
 }
@@ -85,15 +105,19 @@ function WeightSlider({
   label,
   value,
   onChange,
+  disabled = false,
+  title,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
+  disabled?: boolean
+  title?: string
 }) {
   const id = `weight-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   return (
     <div className="flex items-center gap-3">
-      <label htmlFor={id} className="w-32 shrink-0 text-sm">
+      <label htmlFor={id} className="w-32 shrink-0 text-sm" title={title}>
         {label}
       </label>
       <input
@@ -104,8 +128,10 @@ function WeightSlider({
         max={100}
         step={5}
         value={value}
+        disabled={disabled}
+        title={title}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 flex-1 cursor-pointer accent-primary"
+        className="h-2 flex-1 cursor-pointer accent-primary disabled:cursor-not-allowed disabled:opacity-50"
       />
       <span className="w-10 text-right text-sm font-medium tabular-nums">{value}%</span>
     </div>
@@ -115,6 +141,7 @@ function WeightSlider({
 function RankingTable({
   rows,
   weights,
+  scoreWeights,
   favoriteIds,
   onToggleFavorite,
   favoritasFirst,
@@ -123,6 +150,7 @@ function RankingTable({
 }: {
   rows: OpportunityFibraRowDto[]
   weights: Weights
+  scoreWeights: Weights
   favoriteIds: Set<string>
   onToggleFavorite: (fibraId: string) => void
   favoritasFirst: boolean
@@ -135,7 +163,7 @@ function RankingTable({
     return [...rows]
       .map((r, index) => ({
         ...r,
-        _score: calcLocalScore(r, weights),
+        _score: calcLocalScore(r, scoreWeights),
         _index: index,
         _isFavorite: favoriteIds.has(r.fibraId),
       }))
@@ -149,7 +177,7 @@ function RankingTable({
         if (b._score !== a._score) return b._score - a._score
         return a._index - b._index
       })
-  }, [rows, weights, favoriteIds, favoritasFirst])
+  }, [rows, scoreWeights, favoriteIds, favoritasFirst])
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -269,6 +297,12 @@ function RankingTable({
                           label={`P. vs 52S (${weights.pricevs52w}%)`}
                           weight={weights.pricevs52w}
                         />
+                        <ComponentBar
+                          value={row.yieldRealScore != null ? toNum(row.yieldRealScore) : null}
+                          label={`Yield Real (${weights.yieldReal}%)`}
+                          detail={row.yieldRealPct != null ? `Yield TTM - INPC: ${fmtPct(row.yieldRealPct)}` : undefined}
+                          weight={weights.yieldReal}
+                        />
                         {row.navPerCbfi != null && (
                           <p className="mt-2 text-xs text-muted-foreground">
                             NAV/CBFI: ${fmt(row.navPerCbfi, 2)} · Precio: ${fmt(row.precioActual, 2)}
@@ -302,7 +336,8 @@ function detectProfile(w: Weights): string {
       p.dividendYield === w.dividendYield &&
       p.ltvInverted === w.ltvInverted &&
       p.noiMargin === w.noiMargin &&
-      p.pricevs52w === w.pricevs52w
+      p.pricevs52w === w.pricevs52w &&
+      p.yieldReal === w.yieldReal
     ) return key
   }
   return 'custom'
@@ -313,6 +348,13 @@ export function OportunidadesPage() {
   const [favoritasFirst, setFavoritasFirst] = useState(false)
   const queryClient = useQueryClient()
   const { favoriteIds, toggle: toggleFavorite, isAuthenticated } = useFavorites()
+
+  const indicadoresQuery = useQuery({
+    queryKey: ['opportunities', 'indicadores'],
+    queryFn: fetchIndicadores,
+    staleTime: 5 * 60 * 1000,
+  })
+  const latestInpc = latestInpcPct(indicadoresQuery.data?.inpcHistory)
 
   const rankingQuery = useQuery<OpportunityRankingResponseDto>({
     queryKey: ['opportunities'],
@@ -332,7 +374,9 @@ export function OportunidadesPage() {
     ltvInverted: toNum(serverWeights.ltvInverted),
     noiMargin: toNum(serverWeights.noiMargin),
     pricevs52w: toNum(serverWeights.pricevs52w),
-  } : { navDiscount: 30, dividendYield: 30, ltvInverted: 20, noiMargin: 10, pricevs52w: 10 })
+    yieldReal: toNum(serverWeights.yieldReal),
+  } : { navDiscount: 30, dividendYield: 30, ltvInverted: 20, noiMargin: 10, pricevs52w: 10, yieldReal: 0 })
+  const scoringWeights: Weights = latestInpc != null ? effectiveWeights : { ...effectiveWeights, yieldReal: 0 }
 
   const weightSum = Object.values(effectiveWeights).reduce((a, b) => a + b, 0)
   const isValid = Math.abs(weightSum - 100) < 0.5
@@ -347,6 +391,7 @@ export function OportunidadesPage() {
           ltvInverted: w.ltvInverted,
           noiMargin: w.noiMargin,
           pricevs52w: w.pricevs52w,
+          yieldReal: w.yieldReal,
           profile,
         },
       })
@@ -377,6 +422,7 @@ export function OportunidadesPage() {
       ltvInverted: p.ltvInverted,
       noiMargin: p.noiMargin,
       pricevs52w: p.pricevs52w,
+      yieldReal: p.yieldReal,
     }
     setLocalWeights(w)
     saveWeightsMutation.mutate(w)
@@ -393,7 +439,6 @@ export function OportunidadesPage() {
   const fibrasWithoutPrice = coverage ? toNum(coverage.universeSize) - toNum(coverage.fibrasWithPrice) : 0
   const currentProfile = detectProfile(effectiveWeights)
   const isDirty = localWeights !== null
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 space-y-8">
       {/* Header */}
@@ -490,11 +535,11 @@ export function OportunidadesPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <WeightSlider
-                    label="Descuento NAV"
-                    value={effectiveWeights.navDiscount}
-                    onChange={(v) => handleWeightChange('navDiscount', v)}
+                  <div className="space-y-3">
+                    <WeightSlider
+                      label="Descuento NAV"
+                      value={effectiveWeights.navDiscount}
+                      onChange={(v) => handleWeightChange('navDiscount', v)}
                   />
                   <WeightSlider
                     label="Dividend Yield"
@@ -511,12 +556,23 @@ export function OportunidadesPage() {
                     value={effectiveWeights.noiMargin}
                     onChange={(v) => handleWeightChange('noiMargin', v)}
                   />
-                  <WeightSlider
-                    label="Precio vs AVG 52S"
-                    value={effectiveWeights.pricevs52w}
-                    onChange={(v) => handleWeightChange('pricevs52w', v)}
-                  />
-                </div>
+                    <WeightSlider
+                      label="Precio vs AVG 52S"
+                      value={effectiveWeights.pricevs52w}
+                      onChange={(v) => handleWeightChange('pricevs52w', v)}
+                    />
+                    <WeightSlider
+                      label="Yield Real [INPC]"
+                      value={effectiveWeights.yieldReal}
+                      onChange={(v) => handleWeightChange('yieldReal', v)}
+                      disabled={latestInpc == null}
+                      title={
+                        latestInpc == null
+                          ? 'INPC no disponible temporalmente'
+                          : 'Yield calculado menos INPC anual'
+                      }
+                    />
+                  </div>
 
                 <div className="flex items-center justify-between pt-1">
                   <span className={`text-sm ${weightSum === 100 ? 'text-muted-foreground' : weightSum < 100 ? 'font-medium text-amber-600' : 'font-medium text-destructive'}`}>
@@ -559,6 +615,7 @@ export function OportunidadesPage() {
                     <RankingTable
                       rows={ranked}
                       weights={effectiveWeights}
+                      scoreWeights={scoringWeights}
                       favoriteIds={favoriteIds}
                       onToggleFavorite={toggleFavorite}
                       favoritasFirst={favoritasFirst}
@@ -578,6 +635,7 @@ export function OportunidadesPage() {
                       <RankingTable
                         rows={limitedData}
                         weights={effectiveWeights}
+                        scoreWeights={scoringWeights}
                         favoriteIds={favoriteIds}
                         onToggleFavorite={toggleFavorite}
                         favoritasFirst={favoritasFirst}

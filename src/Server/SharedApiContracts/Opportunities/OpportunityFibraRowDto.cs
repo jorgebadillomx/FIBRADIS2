@@ -13,12 +13,14 @@ public sealed record OpportunityFibraRowDto(
     decimal? LtvInvertedScore,
     decimal? NoiMarginScore,
     decimal? Pricevs52wScore,
+    decimal? YieldRealScore,
     // Raw values for display/tooltip
     decimal? NavDiscountPct,
     decimal? DividendYieldPct,
     decimal? LtvPct,
     decimal? NoiMarginPct,
     decimal? PriceVsAvg52wPct,
+    decimal? YieldRealPct,
     // Price info
     decimal? PrecioActual,
     decimal? NavPerCbfi,

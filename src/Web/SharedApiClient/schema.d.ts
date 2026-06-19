@@ -3200,6 +3200,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/banxico/sync-inpc/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/fundamentals/{ticker}/run": {
         parameters: {
             query?: never;
@@ -7338,6 +7398,8 @@ export interface components {
             /** Format: double */
             pricevs52wScore: null | number | string;
             /** Format: double */
+            yieldRealScore: null | number | string;
+            /** Format: double */
             navDiscountPct: null | number | string;
             /** Format: double */
             dividendYieldPct: null | number | string;
@@ -7347,6 +7409,8 @@ export interface components {
             noiMarginPct: null | number | string;
             /** Format: double */
             priceVsAvg52wPct: null | number | string;
+            /** Format: double */
+            yieldRealPct: null | number | string;
             /** Format: double */
             precioActual: null | number | string;
             /** Format: double */
@@ -7371,6 +7435,8 @@ export interface components {
             noiMargin: number | string;
             /** Format: double */
             pricevs52w: number | string;
+            /** Format: double */
+            yieldReal: number | string;
             profile: string;
         };
         OpsNewsArticleDto: {
@@ -7559,6 +7625,7 @@ export interface components {
             portfolioSeries: components["schemas"]["PortfolioPerformancePointDto"][];
             ipcSeries: components["schemas"]["PortfolioPerformancePointDto"][];
             sp500Series: components["schemas"]["PortfolioPerformancePointDto"][];
+            inpcSeries: null | components["schemas"]["PortfolioPerformancePointDto"][];
         };
         PortfolioPositionDto: {
             /** Format: uuid */

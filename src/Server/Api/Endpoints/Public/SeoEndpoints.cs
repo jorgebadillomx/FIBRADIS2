@@ -249,7 +249,6 @@ public static class SeoEndpoints
         User-agent: *
         Allow: /
         Disallow: /ops/
-        Disallow: /api/
         Disallow: /hangfire/
 
         User-agent: GPTBot

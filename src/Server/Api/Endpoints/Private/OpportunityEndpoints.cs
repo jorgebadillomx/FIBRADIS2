@@ -41,6 +41,7 @@ public static class OpportunityEndpoints
             IMarketRepository marketRepo,
             IFundamentalRepository fundamentalRepo,
             IOperationalConfigRepository configRepo,
+            IInpcRepository inpcRepo,
             IMemoryCache cache,
             HttpContext ctx,
             CancellationToken ct) =>
@@ -80,13 +81,26 @@ public static class OpportunityEndpoints
                 cache.Set(RawDataCacheKey, raw, TimeSpan.FromMinutes(15));
             }
 
+            var inpcEntries = (await inpcRepo.GetLastAsync(14, ct)).OrderBy(x => x.Periodo).ToList();
+            decimal? latestInpcAnualPct = null;
+            if (inpcEntries.Count >= 2)
+            {
+                var latest = inpcEntries[^1];
+                var yearAgo = inpcEntries.FirstOrDefault(e =>
+                    e.Periodo.Year == latest.Periodo.Year - 1 &&
+                    e.Periodo.Month == latest.Periodo.Month);
+                if (yearAgo != null && yearAgo.InpcIndex != 0)
+                    latestInpcAnualPct = Math.Round((latest.InpcIndex / yearAgo.InpcIndex - 1m) * 100m, 2);
+            }
+
             var scores = OpportunityScoreCalculator.Calculate(
                 raw.Fibras,
                 raw.SnapshotByFibra,
                 raw.FundamentalByFibra,
                 raw.AnnualDistByFibra,
                 raw.Avg52wByFibra,
-                weights);
+                weights,
+                latestInpcAnualPct);
 
             var ranked = scores
                 .Where(s => !s.IsLimitedData && !s.IsExcluded)
@@ -149,6 +163,7 @@ public static class OpportunityEndpoints
                     ltvInverted = request.LtvInverted,
                     noiMargin = request.NoiMargin,
                     pricevs52w = request.Pricevs52w,
+                    yieldReal = request.YieldReal,
                 }, JsonOptions),
                 Profile = request.Profile,
                 UpdatedAt = DateTimeOffset.UtcNow,
@@ -187,7 +202,7 @@ public static class OpportunityEndpoints
             var json = JsonSerializer.Deserialize<WeightsJson>(stored.WeightsJson, JsonOptions);
             if (json is null) return OpportunityWeights.Default;
             return new OpportunityWeights(json.NavDiscount, json.DividendYield, json.LtvInverted,
-                json.NoiMargin, json.Pricevs52w, "custom");
+                json.NoiMargin, json.Pricevs52w, json.YieldReal, "custom");
         }
         catch (JsonException)
         {
@@ -197,13 +212,13 @@ public static class OpportunityEndpoints
 
     private static bool ValidateWeights(OpportunityWeightsDto dto, out string problem)
     {
-        var components = new[] { dto.NavDiscount, dto.DividendYield, dto.LtvInverted, dto.NoiMargin, dto.Pricevs52w };
-        if (components.Any(w => w < 0m || w > 100m))
+        var allComponents = new[] { dto.NavDiscount, dto.DividendYield, dto.LtvInverted, dto.NoiMargin, dto.Pricevs52w, dto.YieldReal };
+        if (allComponents.Any(w => w < 0m || w > 100m))
         {
             problem = "Cada peso debe estar entre 0 y 100.";
             return false;
         }
-        var sum = components.Sum();
+        var sum = allComponents.Sum();
         if (Math.Abs(sum - 100m) > 0.01m)
         {
             problem = $"Los pesos deben sumar 100. Suma actual: {sum}.";
@@ -220,15 +235,15 @@ public static class OpportunityEndpoints
     }
 
     private static OpportunityWeightsDto ToDto(OpportunityWeights w) =>
-        new(w.NavDiscount, w.DividendYield, w.LtvInverted, w.NoiMargin, w.Pricevs52w, w.Profile);
+        new(w.NavDiscount, w.DividendYield, w.LtvInverted, w.NoiMargin, w.Pricevs52w, w.YieldReal, w.Profile);
 
     private static OpportunityFibraRowDto ToRowDto(OpportunityFibraScore s) =>
         new(s.FibraId, s.Ticker, s.Nombre, s.Score, s.ComponentCount, s.IsLimitedData,
-            s.NavDiscountScore, s.DividendYieldScore, s.LtvInvertedScore, s.NoiMarginScore, s.Pricevs52wScore,
-            s.NavDiscountPct, s.DividendYieldPct, s.LtvPct, s.NoiMarginPct, s.PriceVsAvg52wPct,
+            s.NavDiscountScore, s.DividendYieldScore, s.LtvInvertedScore, s.NoiMarginScore, s.Pricevs52wScore, s.YieldRealScore,
+            s.NavDiscountPct, s.DividendYieldPct, s.LtvPct, s.NoiMarginPct, s.PriceVsAvg52wPct, s.YieldRealPct,
             s.PrecioActual, s.NavPerCbfi, s.Avg52w);
 
     private sealed record WeightsJson(
         decimal NavDiscount, decimal DividendYield, decimal LtvInverted,
-        decimal NoiMargin, decimal Pricevs52w);
+        decimal NoiMargin, decimal Pricevs52w, decimal YieldReal);
 }

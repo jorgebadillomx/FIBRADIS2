@@ -266,4 +266,92 @@ public class OpportunityScoreCalculatorTests
         Assert.NotNull(score.Pricevs52wScore);             // componente disponible
         Assert.Equal(0m, score.PriceVsAvg52wPct!.Value);   // valor bruto flooreado a 0
     }
+
+    [Fact]
+    public void Calculate_WithoutInpc_YieldRealScoreIsNull()
+    {
+        var fibra = MakeFibra(FunoId, "FUNO11");
+        var snapshot = MakeSnapshot(FunoId, 24.00m);
+        var fund = MakeFundamental(FunoId, nav: 30.00m, ltv: 0.40m, noi: 0.55m);
+
+        // latestInpcAnualPct no proporcionado (null implícito)
+        var scores = OpportunityScoreCalculator.Calculate(
+            [fibra],
+            new Dictionary<Guid, PriceSnapshot> { [FunoId] = snapshot },
+            new Dictionary<Guid, FundamentalRecord> { [FunoId] = fund },
+            new Dictionary<Guid, decimal> { [FunoId] = 1.50m },
+            new Dictionary<Guid, decimal> { [FunoId] = 26.00m },
+            OpportunityWeights.Default);
+
+        var result = scores.Single(s => s.FibraId == FunoId);
+        Assert.Null(result.YieldRealScore);
+        Assert.Null(result.YieldRealPct);
+        Assert.Equal(5, result.ComponentCount); // solo los 5 originales
+    }
+
+    [Fact]
+    public void Calculate_WithInpc_YieldRealScoreIsNotNull()
+    {
+        var fibra = MakeFibra(FunoId, "FUNO11");
+        var snapshot = MakeSnapshot(FunoId, 24.00m);
+        var fund = MakeFundamental(FunoId, nav: 30.00m, ltv: 0.40m, noi: 0.55m);
+        var annualDist = new Dictionary<Guid, decimal> { [FunoId] = 1.50m }; // yield ≈ 6.25%
+
+        var scores = OpportunityScoreCalculator.Calculate(
+            [fibra],
+            new Dictionary<Guid, PriceSnapshot> { [FunoId] = snapshot },
+            new Dictionary<Guid, FundamentalRecord> { [FunoId] = fund },
+            annualDist,
+            new Dictionary<Guid, decimal> { [FunoId] = 26.00m },
+            OpportunityWeights.Default,
+            latestInpcAnualPct: 4.50m); // INPC = 4.5% → yieldReal ≈ 1.75%
+
+        var result = scores.Single(s => s.FibraId == FunoId);
+        Assert.NotNull(result.YieldRealScore);
+        Assert.NotNull(result.YieldRealPct);
+        // Con una sola fibra, el percentil es 50
+        Assert.Equal(50m, result.YieldRealScore!.Value);
+        Assert.Equal(6, result.ComponentCount);
+    }
+
+    [Fact]
+    public void Calculate_WithInpc_HigherRealYieldRanksHigher()
+    {
+        // FUNO: dividendYield alto → mayor yieldReal
+        // VFI: dividendYield bajo → menor yieldReal
+        var fibraFuno = MakeFibra(FunoId, "FUNO11");
+        var fibraVfi = MakeFibra(VfiId, "VFIN");
+        var snapshots = new Dictionary<Guid, PriceSnapshot>
+        {
+            [FunoId] = MakeSnapshot(FunoId, 25.00m),
+            [VfiId] = MakeSnapshot(VfiId, 25.00m),
+        };
+        var annualDist = new Dictionary<Guid, decimal>
+        {
+            [FunoId] = 2.50m,  // yield = 10%
+            [VfiId] = 0.50m,   // yield = 2%
+        };
+
+        // Solo usar yieldReal como componente (los demás en 0)
+        var weightsYieldRealOnly = new OpportunityWeights(0m, 0m, 0m, 0m, 0m, 100m, "custom");
+
+        var scores = OpportunityScoreCalculator.Calculate(
+            [fibraFuno, fibraVfi],
+            snapshots,
+            new Dictionary<Guid, FundamentalRecord>(),
+            annualDist,
+            new Dictionary<Guid, decimal>(),
+            weightsYieldRealOnly,
+            latestInpcAnualPct: 4.00m);
+
+        var funoScore = scores.Single(s => s.FibraId == FunoId);
+        var vfiScore = scores.Single(s => s.FibraId == VfiId);
+
+        // FUNO: yieldReal = 10 - 4 = 6%; VFI: yieldReal = 2 - 4 = -2%
+        // FUNO tiene mayor yieldReal → percentil 100, VFI → percentil 0
+        Assert.True(funoScore.Score > vfiScore.Score,
+            $"FUNO (yieldReal alto) debería superar a VFI ({funoScore.Score} vs {vfiScore.Score})");
+        Assert.Equal(100m, funoScore.YieldRealScore!.Value);
+        Assert.Equal(0m, vfiScore.YieldRealScore!.Value);
+    }
 }

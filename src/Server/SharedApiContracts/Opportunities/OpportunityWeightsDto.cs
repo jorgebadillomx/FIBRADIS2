@@ -6,5 +6,6 @@ public sealed record OpportunityWeightsDto(
     decimal LtvInverted,
     decimal NoiMargin,
     decimal Pricevs52w,
+    decimal YieldReal,
     string Profile
 );

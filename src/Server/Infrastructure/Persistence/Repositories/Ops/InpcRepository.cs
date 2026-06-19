@@ -33,4 +33,10 @@ public class InpcRepository(AppDbContext db) : IInpcRepository
             .OrderByDescending(x => x.Periodo)
             .Take(count)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<InpcMonthlyEntry>> GetRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
+        => await db.InpcMonthlyEntries
+            .Where(x => x.Periodo >= from && x.Periodo <= to)
+            .OrderBy(x => x.Periodo)
+            .ToListAsync(ct);
 }

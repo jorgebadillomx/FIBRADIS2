@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { calcFibraVsCetes, calcMetaRenta, calcRetornoTotal } from './herramientas-logic.ts'
+import { calcAnnualizedRealReturn, calcFibraVsCetes, calcMetaRenta, calcRetornoTotal } from './herramientas-logic.ts'
 
 test('calcFibraVsCetes — monto=0 devuelve capital y renta en cero', () => {
   const result = calcFibraVsCetes(0, 10, 9.5, 5)
@@ -88,4 +88,16 @@ test('calcRetornoTotal — maneja plusvalía negativa correctamente', () => {
 
   assert.ok(Math.abs(result.plusvaliaPct! - (-20)) < 0.001)
   assert.ok(Math.abs(result.retornoTotalPct! - (-13.28)) < 0.001)
+})
+
+test('calcAnnualizedRealReturn — INPC 0% devuelve la tasa anualizada nominal', () => {
+  assert.ok(Math.abs(calcAnnualizedRealReturn(10, 1, 0) - 10) < 0.0001)
+})
+
+test('calcAnnualizedRealReturn — INPC igual a la tasa anualizada devuelve ~0', () => {
+  assert.ok(Math.abs(calcAnnualizedRealReturn(10, 1, 10)) < 0.0001)
+})
+
+test('calcAnnualizedRealReturn — inflación de -100% no divide por cero', () => {
+  assert.equal(calcAnnualizedRealReturn(10, 1, -100), 0)
 })

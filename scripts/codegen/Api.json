@@ -2735,6 +2735,48 @@
         }
       }
     },
+    "/api/v1/ops/banxico/sync-inpc/backfill": {
+      "post": {
+        "tags": [
+          "Ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/fundamentals/{ticker}/run": {
       "post": {
         "tags": [
@@ -8581,11 +8623,13 @@
           "ltvInvertedScore",
           "noiMarginScore",
           "pricevs52wScore",
+          "yieldRealScore",
           "navDiscountPct",
           "dividendYieldPct",
           "ltvPct",
           "noiMarginPct",
           "priceVsAvg52wPct",
+          "yieldRealPct",
           "precioActual",
           "navPerCbfi",
           "avg52w"
@@ -8667,6 +8711,15 @@
             ],
             "format": "double"
           },
+          "yieldRealScore": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
           "navDiscountPct": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
@@ -8704,6 +8757,15 @@
             "format": "double"
           },
           "priceVsAvg52wPct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "yieldRealPct": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
@@ -8777,6 +8839,7 @@
           "ltvInverted",
           "noiMargin",
           "pricevs52w",
+          "yieldReal",
           "profile"
         ],
         "type": "object",
@@ -8814,6 +8877,14 @@
             "format": "double"
           },
           "pricevs52w": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "yieldReal": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "number",
@@ -9647,7 +9718,8 @@
         "required": [
           "portfolioSeries",
           "ipcSeries",
-          "sp500Series"
+          "sp500Series",
+          "inpcSeries"
         ],
         "type": "object",
         "properties": {
@@ -9665,6 +9737,15 @@
           },
           "sp500Series": {
             "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioPerformancePointDto"
+            }
+          },
+          "inpcSeries": {
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "$ref": "#/components/schemas/PortfolioPerformancePointDto"
             }

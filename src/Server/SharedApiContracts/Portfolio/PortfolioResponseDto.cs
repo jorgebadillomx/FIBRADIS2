@@ -70,7 +70,8 @@ public sealed record PortfolioPerformancePointDto(
 public sealed record PortfolioPerformanceResponseDto(
     IReadOnlyList<PortfolioPerformancePointDto> PortfolioSeries,
     IReadOnlyList<PortfolioPerformancePointDto> IpcSeries,
-    IReadOnlyList<PortfolioPerformancePointDto> Sp500Series
+    IReadOnlyList<PortfolioPerformancePointDto> Sp500Series,
+    IReadOnlyList<PortfolioPerformancePointDto>? InpcSeries
 );
 
 public sealed record PortfolioPositionPatchDto(

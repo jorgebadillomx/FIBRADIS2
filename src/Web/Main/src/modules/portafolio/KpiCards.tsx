@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { components } from '@fibradis/shared-api-client'
 import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
+import { calcRealReturn } from '@/shared/lib/inflation-utils'
 import { cn } from '@/shared/lib/utils'
 import { ChevronDown } from 'lucide-react'
 
@@ -10,6 +11,7 @@ const EXTRA_KPIS_KEY = 'portfolio_extra_kpis_open'
 
 interface KpiCardsProps {
   kpis: PortfolioKpisDto | null | undefined
+  inpcAnual?: number | null
 }
 
 function getToneClass(value: number | string | null | undefined): string {
@@ -55,7 +57,7 @@ function KpiCard({
   )
 }
 
-export function KpiCards({ kpis }: KpiCardsProps) {
+export function KpiCards({ kpis, inpcAnual }: KpiCardsProps) {
   const [extraOpen, setExtraOpen] = useState(false)
 
   useEffect(() => {
@@ -71,6 +73,8 @@ export function KpiCards({ kpis }: KpiCardsProps) {
 
   const yieldPortafolio = kpis.yieldPortafolio ?? null
   const ingresoMensual = kpis.ingresoMensual ?? null
+  const yieldReal =
+    yieldPortafolio != null && inpcAnual != null ? calcRealReturn(Number(yieldPortafolio), inpcAnual) : null
 
   return (
     <section className="space-y-4">
@@ -98,6 +102,11 @@ export function KpiCards({ kpis }: KpiCardsProps) {
           value={formatPercent(yieldPortafolio)}
           toneClassName={getToneClass(yieldPortafolio)}
           partial={kpis.isPartial}
+          description={
+            yieldReal != null && inpcAnual != null
+              ? `Real: ${formatPercent(yieldReal)} vs INPC ${formatPercent(inpcAnual)}`
+              : null
+          }
         />
       </div>
 
@@ -119,7 +128,7 @@ export function KpiCards({ kpis }: KpiCardsProps) {
         </button>
 
         {extraOpen ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className={`mt-4 grid gap-3 ${yieldReal != null ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-2 xl:grid-cols-3'}`}>
             <KpiCard
               title="Rentas Anuales Brutas"
               value={formatMoney(kpis.rentasAnualesBrutas)}
@@ -133,6 +142,13 @@ export function KpiCards({ kpis }: KpiCardsProps) {
               title="% Rentas del Portafolio"
               value={formatPercent(kpis.pctRentasPortafolio)}
             />
+            {yieldReal != null ? (
+              <KpiCard
+                title="Yield Real"
+                value={formatPercent(yieldReal)}
+                toneClassName={yieldReal <= 0 ? 'text-red-600' : 'text-green-600'}
+              />
+            ) : null}
           </div>
         ) : null}
       </div>

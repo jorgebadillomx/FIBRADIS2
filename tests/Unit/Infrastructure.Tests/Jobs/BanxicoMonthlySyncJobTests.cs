@@ -142,6 +142,12 @@ public class BanxicoMonthlySyncJobTests
 
         public Task<IReadOnlyList<InpcMonthlyEntry>> GetLastAsync(int count, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<InpcMonthlyEntry>>(Upserted.TakeLast(count).ToList());
+
+        public Task<IReadOnlyList<InpcMonthlyEntry>> GetRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<InpcMonthlyEntry>>(Upserted
+                .Where(entry => entry.Periodo >= from && entry.Periodo <= to)
+                .OrderBy(entry => entry.Periodo)
+                .ToList());
     }
 
     private sealed class NullRunLogRepo : IPipelineRunLogRepository
