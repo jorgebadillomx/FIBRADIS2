@@ -4,6 +4,8 @@ import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { type Weights, calcLocalScore } from '@/modules/oportunidades/OportunidadesPage'
 import { fetchFiscalRates } from '@/api/fiscalRatesApi'
+import { fetchIndicadores } from '@/api/fibrasApi'
+import { calcRealReturn, cumulative2yInflation } from '@/shared/lib/inflation-utils'
 import {
   IVA_FACTOR,
   calcCostoPurchase,
@@ -95,6 +97,13 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     staleTime: 10 * 60_000,
   })
   const ivaFactor = fiscalRatesQuery.data?.ivaRate ?? IVA_FACTOR
+
+  const indicadoresQuery = useQuery({
+    queryKey: ['opportunities', 'indicadores'],
+    queryFn: fetchIndicadores,
+    staleTime: 5 * 60_000,
+  })
+  const inflacion2y = cumulative2yInflation(indicadoresQuery.data?.inpcHistory)
 
   const positions = portfolioQuery.data?.positions ?? []
   const ranked = rankingQuery.data?.ranked ?? []
@@ -297,6 +306,11 @@ export function PromediarTab({ weights }: { weights: Weights }) {
   const rendimientoAnualizado = rendimientoTotalPct > -100
     ? ((1 + rendimientoTotalPct / 100) ** 0.5 - 1) * 100
     : null
+
+  const rendimientoRealAnualizado =
+    rendimientoAnualizado != null && inflacion2y != null
+      ? calcRealReturn(rendimientoAnualizado, inflacion2y > -100 ? ((1 + inflacion2y / 100) ** 0.5 - 1) * 100 : 0)
+      : null
 
   const hasPanelData = precioInicial != null && priceHistory.length > 0
 
@@ -607,6 +621,8 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               rendimientoTotalPesos={rendimientoTotalPesos}
               rendimientoTotalPct={rendimientoTotalPct}
               rendimientoAnualizado={rendimientoAnualizado}
+              inflacion2y={inflacion2y}
+              rendimientoRealAnualizado={rendimientoRealAnualizado}
               hasPanelData={hasPanelData}
               isLoading={historyQuery.isLoading}
             />
@@ -638,8 +654,21 @@ interface RetornoPanelProps {
   rendimientoTotalPesos: number
   rendimientoTotalPct: number
   rendimientoAnualizado: number | null
+  inflacion2y: number | null
+  rendimientoRealAnualizado: number | null
   hasPanelData: boolean
   isLoading: boolean
+}
+
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex items-center cursor-help">
+      <span className="ml-0.5 text-[10px] opacity-50 select-none">ⓘ</span>
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md border border-border bg-popover px-2.5 py-1.5 text-[11px] leading-relaxed text-popover-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-50 normal-case tracking-normal font-normal whitespace-normal">
+        {text}
+      </span>
+    </span>
+  )
 }
 
 function RetornoPanel({
@@ -659,6 +688,8 @@ function RetornoPanel({
   rendimientoTotalPesos,
   rendimientoTotalPct,
   rendimientoAnualizado,
+  inflacion2y,
+  rendimientoRealAnualizado,
   hasPanelData,
   isLoading,
 }: RetornoPanelProps) {
@@ -747,15 +778,36 @@ function RetornoPanel({
             <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
               Rendimiento total
             </p>
-            <div className="mt-1 text-xl font-bold tabular-nums">
+            <div className="mt-1 flex items-center gap-1 text-xl font-bold tabular-nums">
               {montoInvertidoReal > 0 ? `${rendimientoTotalPct >= 0 ? '+' : ''}${rendimientoTotalPct.toFixed(2)}%` : '—'}
+              {montoInvertidoReal > 0 && (
+                <InfoTooltip text="(Variación de precio + dividendos recibidos) ÷ monto invertido. Incluye tanto la ganancia o pérdida del precio del CBFI como los dividendos cobrados en 2 años." />
+              )}
             </div>
-            <div className="text-xs opacity-80 tabular-nums">
+            <div className="flex items-center gap-1 text-xs opacity-80 tabular-nums">
               {montoInvertidoReal > 0 ? fmtMxn(rendimientoTotalPesos) : ''}
+              {montoInvertidoReal > 0 && (
+                <InfoTooltip text={`En pesos: variación de capital (${fmtMxn(variacionCapital)}) + dividendos (${fmtMxn(dividendosRecibidos)}).`} />
+              )}
             </div>
             {rendimientoAnualizado != null && montoInvertidoReal > 0 && (
-              <div className="mt-2 border-t border-primary-foreground/20 pt-2 text-xs">
-                Anualizado: <span className="font-semibold">{rendimientoAnualizado.toFixed(2)}%</span>
+              <div className="mt-2 border-t border-primary-foreground/20 pt-2 text-xs space-y-1">
+                <div className="flex items-center gap-1">
+                  Anualizado: <span className="font-semibold">{rendimientoAnualizado.toFixed(2)}%</span>
+                  <InfoTooltip text="Tasa anual equivalente usando media geométrica del rendimiento total a 2 años: (1 + rendimiento)^0.5 − 1. Permite comparar con otras inversiones anualizadas." />
+                </div>
+                {inflacion2y != null && (
+                  <div className="flex items-center gap-1 opacity-70">
+                    Inflación 2a: <span className="font-semibold">{inflacion2y.toFixed(1)}%</span>
+                    <InfoTooltip text="Inflación acumulada en los últimos 2 años, calculada componiendo las dos tasas anuales del INPC (Banxico). Referencia para medir si tu inversión ganó en términos reales." />
+                  </div>
+                )}
+                {rendimientoRealAnualizado != null && (
+                  <div className={`flex items-center gap-1 ${rendimientoRealAnualizado >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                    Real anual: <span className="font-semibold">{rendimientoRealAnualizado >= 0 ? '+' : ''}{rendimientoRealAnualizado.toFixed(2)}%</span>
+                    <InfoTooltip text="Rendimiento anualizado ajustado por inflación (fórmula Fisher): cuánto ganaste o perdiste en poder adquisitivo real. Positivo = superaste la inflación; negativo = perdiste poder de compra." />
+                  </div>
+                )}
               </div>
             )}
           </div>
