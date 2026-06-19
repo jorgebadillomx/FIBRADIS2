@@ -2,9 +2,11 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { ArrowUpRight, Plus, Search, X } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { fetchCalculadoraFibras, fetchIndicadores, type CalculadoraFibraDto } from '@/api/fibrasApi'
+import { useQuery, useQueries } from '@tanstack/react-query'
+import { fetchCalculadoraFibras, fetchFibraHistory, fetchIndicadores, type CalculadoraFibraDto } from '@/api/fibrasApi'
 import { fetchFaqItems } from '@/api/faqApi'
+import { fetchFiscalRates } from '@/api/fiscalRatesApi'
+import { DEFAULT_ISR_RATE } from '@/modules/herramientas/isrCalculator'
 import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
 import { latestInpcPct } from '@/shared/lib/inflation-utils'
@@ -12,7 +14,7 @@ import {
   calcAnnualizedRealReturn,
   calcFibraVsCetes,
   calcMetaRenta,
-  calcRetornoTotal,
+  calcRetornoDesdeCompra,
   parseNumberInput,
 } from './herramientas-logic'
 
@@ -29,8 +31,7 @@ export function HerramientasPage() {
   const [fibraCetes, setFibraCetes] = useState('')
   const [fibraHorizonte, setFibraHorizonte] = useState<(typeof HORIZON_OPTIONS)[number]>(5)
   const [metaRentaMensual, setMetaRentaMensual] = useState('5000')
-  const [retornoPrecioCompra, setRetornoPrecioCompra] = useState('20')
-  const [retornoIsr, setRetornoIsr] = useState('0')
+  const [retornoFechaCompra, setRetornoFechaCompra] = useState('')
   const [cetesTouched, setCetesTouched] = useState(false)
 
   const indicadoresQuery = useQuery({
@@ -54,6 +55,22 @@ export function HerramientasPage() {
     },
     staleTime: 60 * 60 * 1000,
     retry: false,
+  })
+
+  const fiscalRatesQuery = useQuery({
+    queryKey: ['fiscal-rates'],
+    queryFn: fetchFiscalRates,
+    staleTime: 10 * 60 * 1000,
+  })
+  const isrRate = fiscalRatesQuery.data?.isrRetentionRate ?? DEFAULT_ISR_RATE
+
+  const historyQueries = useQueries({
+    queries: selectedTickers.map(ticker => ({
+      queryKey: ['fibra-history', ticker, '2y'],
+      queryFn: () => fetchFibraHistory(ticker, '2y'),
+      staleTime: 60 * 60 * 1000,
+      enabled: retornoFechaCompra.length > 0,
+    })),
   })
 
   useEffect(() => {
@@ -116,8 +133,9 @@ export function HerramientasPage() {
   const fibraMontoValue = parseNumberInput(fibraMonto)
   const fibraCetesValue = parseNumberInput(fibraCetes)
   const metaRentaMensualValue = parseNumberInput(metaRentaMensual)
-  const retornoPrecioCompraValue = parseNumberInput(retornoPrecioCompra)
-  const retornoIsrValue = parseNumberInput(retornoIsr)
+  const today = new Date()
+  const maxDateStr = new Date(today.getTime() - 86400_000).toISOString().slice(0, 10)
+  const minDateStr = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
 
   const cetesScenario = useMemo(() => {
     if (fibraMontoValue == null || fibraCetesValue == null) return null
@@ -166,23 +184,31 @@ export function HerramientasPage() {
 
   const retornoResults = useMemo(
     () =>
-      selectedFibrasWithYield.map((f) => {
+      selectedFibrasWithYield.map((f, i) => {
         const precioActual = f.precioActual != null ? Number(f.precioActual) : null
-        const distAnual = f.distCbfiAnual != null ? Number(f.distCbfiAnual) : null
+        const histData = historyQueries[i]?.data
         return {
           ticker: f.ticker,
           precioActual,
-          distCbfiAnual: distAnual,
+          isLoading: historyQueries[i]?.isLoading ?? false,
           result:
-            precioActual != null &&
-            distAnual != null &&
-            retornoPrecioCompraValue != null &&
-            retornoIsrValue != null
-              ? calcRetornoTotal(retornoPrecioCompraValue, precioActual, distAnual, retornoIsrValue)
+            precioActual != null && retornoFechaCompra && histData
+              ? calcRetornoDesdeCompra(
+                  retornoFechaCompra,
+                  precioActual,
+                  (histData.priceHistory ?? []).map(p => ({ date: p.date, close: p.close ?? null })),
+                  (histData.distributions ?? []).map(d => ({
+                    date: d.date,
+                    amountPerUnit: Number(d.amountPerUnit),
+                    taxableAmountPerUnit: d.taxableAmountPerUnit != null ? Number(d.taxableAmountPerUnit) : null,
+                  })),
+                  isrRate,
+                )
               : null,
         }
       }),
-    [selectedFibrasWithYield, retornoPrecioCompraValue, retornoIsrValue],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedFibrasWithYield, retornoFechaCompra, isrRate, ...historyQueries.map(q => q.data)],
   )
   const cetesRealPct =
     latestInpc != null && cetesScenario != null
@@ -584,22 +610,29 @@ export function HerramientasPage() {
                 <SectionHeader
                   eyebrow="Retorno real"
                   title="Retorno total"
-                  description="Integra precio de compra e ISR retenido con el precio actual y distribuciones TTM de cada emisora."
+                  description="Elige la fecha en que compraste. El sistema busca el precio histórico, suma las distribuciones recibidas, estima el ISR y calcula el CAGR."
                 />
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <NumberField
-                    label="Precio de compra"
-                    value={retornoPrecioCompra}
-                    onChange={setRetornoPrecioCompra}
-                    placeholder="20"
-                  />
-                  <NumberField
-                    label="ISR retenido total"
-                    value={retornoIsr}
-                    onChange={setRetornoIsr}
-                    placeholder="0"
-                  />
+                <div className="mt-5 max-w-xs">
+                  <div className="space-y-1.5">
+                    <label htmlFor="fecha-compra" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Fecha de compra
+                    </label>
+                    <input
+                      id="fecha-compra"
+                      type="date"
+                      min={minDateStr}
+                      max={maxDateStr}
+                      value={retornoFechaCompra}
+                      onChange={e => setRetornoFechaCompra(e.target.value)}
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  {retornoFechaCompra && (
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      ISR estimado al {(isrRate * 100).toFixed(0)}% sobre distribuciones gravables
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-border">
@@ -607,11 +640,12 @@ export function HerramientasPage() {
                     <thead className="bg-muted/30 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       <tr>
                         <th className="px-4 py-3 text-left">FIBRA</th>
+                        <th className="px-4 py-3 text-right">Precio compra</th>
                         <th className="px-4 py-3 text-right">Precio actual</th>
-                        <th className="px-4 py-3 text-right">Dist TTM</th>
                         <th className="px-4 py-3 text-right">Plusvalía %</th>
                         <th className="px-4 py-3 text-right">Yield neto %</th>
                         <th className="px-4 py-3 text-right">Retorno total %</th>
+                        <th className="px-4 py-3 text-right">CAGR %</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -621,10 +655,14 @@ export function HerramientasPage() {
                             {r.ticker}
                           </th>
                           <td className="px-4 py-3 text-right tabular-nums text-foreground">
-                            {r.precioActual != null ? formatMoney(r.precioActual) : '—'}
+                            {r.isLoading ? (
+                              <span className="text-muted-foreground">…</span>
+                            ) : r.result?.precioCompra != null ? (
+                              formatMoney(r.result.precioCompra)
+                            ) : '—'}
                           </td>
                           <td className="px-4 py-3 text-right tabular-nums text-foreground">
-                            {r.distCbfiAnual != null ? formatMoney(r.distCbfiAnual) : '—'}
+                            {r.precioActual != null ? formatMoney(r.precioActual) : '—'}
                           </td>
                           <td className="px-4 py-3 text-right tabular-nums text-foreground">
                             {r.result ? formatPercent(r.result.plusvaliaPct) : '—'}
@@ -634,6 +672,13 @@ export function HerramientasPage() {
                           </td>
                           <td className="px-4 py-3 text-right tabular-nums text-foreground">
                             {r.result ? formatPercent(r.result.retornoTotalPct) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums font-semibold text-foreground">
+                            {r.isLoading ? (
+                              <span className="text-muted-foreground">…</span>
+                            ) : r.result?.cagrPct != null ? (
+                              formatPercent(r.result.cagrPct)
+                            ) : '—'}
                           </td>
                         </tr>
                       ))}

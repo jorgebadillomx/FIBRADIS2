@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { calcAnnualizedRealReturn, calcFibraVsCetes, calcMetaRenta, calcRetornoTotal } from './herramientas-logic.ts'
+import { calcAnnualizedRealReturn, calcFibraVsCetes, calcMetaRenta, calcRetornoTotal, calcRetornoDesdeCompra } from './herramientas-logic.ts'
 
 test('calcFibraVsCetes — monto=0 devuelve capital y renta en cero', () => {
   const result = calcFibraVsCetes(0, 10, 9.5, 5)
@@ -100,4 +100,48 @@ test('calcAnnualizedRealReturn — INPC igual a la tasa anualizada devuelve ~0',
 
 test('calcAnnualizedRealReturn — inflación de -100% no divide por cero', () => {
   assert.equal(calcAnnualizedRealReturn(10, 1, -100), 0)
+})
+
+const PRICE_HISTORY = [
+  { date: '2024-01-10', close: 20.00 },
+  { date: '2024-01-11', close: 20.10 },
+  { date: '2024-06-01', close: 21.50 },
+]
+const DISTRIBUTIONS = [
+  { date: '2024-02-01', amountPerUnit: 0.50, taxableAmountPerUnit: 0.40 },
+  { date: '2024-05-01', amountPerUnit: 0.50, taxableAmountPerUnit: 0.40 },
+  { date: '2023-12-01', amountPerUnit: 0.50, taxableAmountPerUnit: 0.40 },
+]
+
+test('calcRetornoDesdeCompra — encuentra precio en fecha exacta', () => {
+  const r = calcRetornoDesdeCompra('2024-01-10', 21.50, PRICE_HISTORY, DISTRIBUTIONS, 0.30)
+  assert.equal(r.precioCompra, 20.00)
+})
+
+test('calcRetornoDesdeCompra — usa precio anterior cuando la fecha cae en finde/festivo', () => {
+  const r = calcRetornoDesdeCompra('2024-01-12', 21.50, PRICE_HISTORY, DISTRIBUTIONS, 0.30)
+  assert.equal(r.precioCompra, 20.10)
+})
+
+test('calcRetornoDesdeCompra — suma solo distribuciones desde la fecha de compra', () => {
+  const r = calcRetornoDesdeCompra('2024-01-10', 21.50, PRICE_HISTORY, DISTRIBUTIONS, 0.30)
+  assert.ok(r.distribucionesRecibidas != null)
+  assert.equal(r.distribucionesRecibidas, 1.00)
+})
+
+test('calcRetornoDesdeCompra — calcula ISR sobre monto gravable', () => {
+  const r = calcRetornoDesdeCompra('2024-01-10', 21.50, PRICE_HISTORY, DISTRIBUTIONS, 0.30)
+  assert.ok(r.isrEstimado != null)
+  assert.ok(Math.abs(r.isrEstimado! - 0.80 * 0.30) < 0.0001)
+})
+
+test('calcRetornoDesdeCompra — devuelve EMPTY si no hay precio histórico para la fecha', () => {
+  const r = calcRetornoDesdeCompra('2023-01-01', 21.50, PRICE_HISTORY, DISTRIBUTIONS, 0.30)
+  assert.equal(r.precioCompra, null)
+  assert.equal(r.cagrPct, null)
+})
+
+test('calcRetornoDesdeCompra — devuelve EMPTY si precioActual es 0', () => {
+  const r = calcRetornoDesdeCompra('2024-01-10', 0, PRICE_HISTORY, DISTRIBUTIONS, 0.30)
+  assert.equal(r.plusvaliaPct, null)
 })

@@ -126,6 +126,64 @@ export function calcRetornoTotal(
   }
 }
 
+export type RetornoDesdeCompraResult = {
+  precioCompra: number | null
+  distribucionesRecibidas: number | null
+  isrEstimado: number | null
+  plusvaliaPct: number | null
+  yieldNetoPct: number | null
+  retornoTotalPct: number | null
+  cagrPct: number | null
+}
+
+export function calcRetornoDesdeCompra(
+  fechaCompra: string,
+  precioActual: number,
+  priceHistory: Array<{ date: string; close: number | null }>,
+  distributions: Array<{ date: string; amountPerUnit: number; taxableAmountPerUnit: number | null }>,
+  isrRate: number,
+): RetornoDesdeCompraResult {
+  const EMPTY: RetornoDesdeCompraResult = {
+    precioCompra: null, distribucionesRecibidas: null, isrEstimado: null,
+    plusvaliaPct: null, yieldNetoPct: null, retornoTotalPct: null, cagrPct: null,
+  }
+
+  if (!fechaCompra || !Number.isFinite(precioActual) || precioActual <= 0) return EMPTY
+
+  // Precio en o antes de la fecha de compra (cubre fines de semana/festivos)
+  const precioCompraEntry = priceHistory
+    .filter(p => p.close != null && p.date <= fechaCompra)
+    .sort((a, b) => b.date.localeCompare(a.date))[0]
+
+  if (!precioCompraEntry) return EMPTY
+  const precioCompra = precioCompraEntry.close!
+
+  // Distribuciones recibidas desde la fecha de compra
+  const distsSince = distributions.filter(d => d.date >= fechaCompra)
+  const distribucionesRecibidas = distsSince.reduce((s, d) => s + Number(d.amountPerUnit), 0)
+  const taxableBase = distsSince.reduce(
+    (s, d) => s + Number(d.taxableAmountPerUnit ?? d.amountPerUnit),
+    0,
+  )
+  const isrEstimado = taxableBase * isrRate
+
+  const plusvaliaPct = ((precioActual - precioCompra) / precioCompra) * 100
+  const distribucionesNetas = Math.max(0, distribucionesRecibidas) - Math.max(0, isrEstimado)
+  const yieldNetoPct = (distribucionesNetas / precioCompra) * 100
+  const retornoTotalPct = plusvaliaPct + yieldNetoPct
+
+  // CAGR — requiere al menos 1 mes de tenencia
+  const msPerYear = 365.25 * 24 * 60 * 60 * 1000
+  const years = (Date.now() - new Date(fechaCompra).getTime()) / msPerYear
+  let cagrPct: number | null = null
+  if (years >= 1 / 12) {
+    const totalFactor = (precioActual + distribucionesNetas) / precioCompra
+    if (totalFactor > 0) cagrPct = (Math.pow(totalFactor, 1 / years) - 1) * 100
+  }
+
+  return { precioCompra, distribucionesRecibidas, isrEstimado, plusvaliaPct, yieldNetoPct, retornoTotalPct, cagrPct }
+}
+
 export function calcAnnualizedRealReturn(
   rendimientoTotalPct: number,
   horizonteYears: number,

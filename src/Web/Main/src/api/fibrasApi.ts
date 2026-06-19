@@ -50,7 +50,7 @@ export async function fetchMarketSnapshots() {
   return data ?? []
 }
 
-export async function fetchFibraHistory(ticker: string, period: '1m' | '3m' | '6m' | '1y') {
+export async function fetchFibraHistory(ticker: string, period: '1m' | '3m' | '6m' | '1y' | '2y') {
   const { data, error } = await apiClient.GET('/api/v1/market/fibras/{ticker}/history', {
     params: { path: { ticker }, query: { period } },
   })
