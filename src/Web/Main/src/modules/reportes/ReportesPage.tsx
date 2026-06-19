@@ -4,6 +4,8 @@ import { Search, X } from 'lucide-react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Input } from '@/shared/ui/input'
 import { fetchCalculadoraFibras } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import {
   fetchFundamentalesAvailablePeriods,
   fetchFundamentalesReport,
@@ -111,6 +113,12 @@ export function ReportesPage() {
   const showError = fibrasQuery.isError || periodsQuery.isError || reportQuery.isError
 
   usePageTitle('Reportes trimestrales privados — Fibras Inmobiliarias', 'Reportes trimestrales privados de FIBRAs con KPIs y análisis IA completo tras autenticación.')
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', 'PrivatePage', '/reportes'],
+    queryFn: () => fetchFaqItems('PrivatePage', '/reportes'),
+    staleTime: 60 * 60_000,
+  })
 
   return (
     <div className="relative overflow-hidden bg-[radial-gradient(circle_at_10%_10%,rgba(194,65,12,0.12),transparent_25%),radial-gradient(circle_at_90%_15%,rgba(15,118,110,0.10),transparent_22%),linear-gradient(180deg,rgba(10,14,26,0.02),transparent_30%)]">
@@ -327,6 +335,17 @@ export function ReportesPage() {
               </div>
             </div>
           </section>
+        ) : null}
+
+        {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+          <div className="mt-10">
+            <FaqAccordion
+              items={faqQuery.data}
+              kicker="FAQ de reportes"
+              title="Preguntas frecuentes sobre los reportes"
+              description="Qué contiene cada reporte, cómo leer los KPIs, cómo interpretar el análisis IA y con qué frecuencia se actualizan."
+            />
+          </div>
         ) : null}
       </div>
     </div>

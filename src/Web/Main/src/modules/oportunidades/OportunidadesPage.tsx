@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { fetchIndicadores } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { PromediarTab } from '@/modules/oportunidades/PromediarTab'
 import { StarButton } from '@/modules/oportunidades/StarButton'
 import { useFavorites } from '@/modules/oportunidades/useFavorites'
@@ -433,6 +435,12 @@ export function OportunidadesPage() {
     saveWeightsMutation.mutate(effectiveWeights)
   }
 
+  const faqQuery = useQuery({
+    queryKey: ['faq', 'PrivatePage', '/oportunidades'],
+    queryFn: () => fetchFaqItems('PrivatePage', '/oportunidades'),
+    staleTime: 60 * 60_000,
+  })
+
   const ranked = rankingQuery.data?.ranked ?? []
   const limitedData = rankingQuery.data?.limitedData ?? []
   const coverage = rankingQuery.data?.coverage
@@ -654,6 +662,17 @@ export function OportunidadesPage() {
       {activeTab === 'promediar' && (
         <PromediarTab weights={effectiveWeights} />
       )}
+
+      {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+        <div className="mt-10">
+          <FaqAccordion
+            items={faqQuery.data}
+            kicker="FAQ de oportunidades"
+            title="Preguntas frecuentes sobre el ranking"
+            description="Cómo funciona el score, qué significa cada componente y cómo personalizar los pesos a tu estrategia."
+          />
+        </div>
+      ) : null}
     </div>
   )
 }

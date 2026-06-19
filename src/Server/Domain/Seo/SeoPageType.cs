@@ -4,6 +4,7 @@ public enum SeoPageType
 {
     Home,
     StaticPage,
+    PrivatePage,
     Fibra,
     News,
     Blog,

@@ -184,6 +184,17 @@ dotnet ef migrations add AddSubscriptionFields --project src/Server/Infrastructu
 
 [Source: convenciones-fibradis.md#EF Core Migrations]
 
+### Precios definidos (2026-06-18)
+
+| Plan | Precio |
+| --- | --- |
+| Mensual | 49 MXN/mes |
+| Anual | 299 MXN/año (~25 MXN/mes, ahorro 49%) |
+| Lifetime | 999 MXN (pago único) |
+
+Lifetime se ofrecerá solo como oferta de lanzamiento limitada (~100 cupos); después solo mensual/anual.
+Los usuarios activos en prod al momento del deploy se migran automáticamente a `Lifetime` (ver AC-2 y el script SQL).
+
 ### Historias dependientes
 
 Esta historia es prerequisito de:

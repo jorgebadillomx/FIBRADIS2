@@ -372,10 +372,253 @@ public static class FaqSeedFactory
             "análisis financiero en México."),
     ];
 
+    public static IReadOnlyList<FaqItem> BuildPrivatePagesItems() =>
+    [
+        // /portafolio — Dashboard privado (vista autenticada)
+        CreatePrivateItem("/portafolio", 1,
+            "¿Cómo registro mis posiciones en el portafolio?",
+            "Tienes dos opciones. La más rápida es cargar un archivo **Excel o CSV** con tres columnas: " +
+            "`Ticker` (clave de la FIBRA, por ejemplo FUNO11), `Qty` (número de CBFIs que tienes) y " +
+            "`AvgCost` (tu precio promedio de adquisición en pesos). La zona de carga acepta archivos " +
+            "arrastrados o seleccionados desde el botón. La segunda opción es editar directamente en la " +
+            "tabla: haz clic sobre el campo **Títulos** o **Costo promedio** de cualquier FIBRA, escribe " +
+            "el valor y confirma con Enter. Ambas opciones actualizan el portafolio en tiempo real y " +
+            "recalculan todos los KPIs de forma inmediata."),
+        CreatePrivateItem("/portafolio", 2,
+            "¿Cómo se calcula el rendimiento de mi portafolio?",
+            "La plataforma calcula dos tipos de rendimiento. El **rendimiento en pesos** compara el valor " +
+            "actual de mercado de tus CBFIs (precio actual × número de títulos) contra tu costo total de " +
+            "adquisición (costo promedio × número de títulos): la diferencia es tu ganancia o pérdida de " +
+            "capital. El **rendimiento porcentual** divide esa diferencia entre tu costo total. Las " +
+            "tarjetas superiores resumen: **Valor total de mercado**, **Rendimiento total** y **Renta anual " +
+            "estimada** — calculada a partir de la distribución anualizada por CBFI multiplicada por tus " +
+            "títulos. Todos los valores se actualizan con el precio en tiempo real durante la jornada " +
+            "bursátil de la BMV."),
+        CreatePrivateItem("/portafolio", 3,
+            "¿Qué significa el rendimiento real vs INPC?",
+            "El **rendimiento real** descuenta el efecto de la inflación sobre tu ganancia. Si una FIBRA " +
+            "subió 8 % en precio durante el año pero el INPC del BANXICO fue del 5 %, tu rendimiento real " +
+            "fue del 3 %: la ganancia neta en poder adquisitivo. La plataforma carga automáticamente el " +
+            "INPC de los últimos 12 meses del BANXICO para mostrar este ajuste junto al rendimiento nominal. " +
+            "Un rendimiento real negativo significa que la inversión perdió poder de compra aunque en pesos " +
+            "nominales hayas ganado. Es el indicador más honesto para evaluar si tus FIBRAs están " +
+            "protegiendo tu capital frente a la inflación."),
+        CreatePrivateItem("/portafolio", 4,
+            "¿Puedo cargar mis posiciones desde Excel o CSV?",
+            "Sí. El archivo debe tener exactamente tres columnas: **Ticker** (clave bursátil, por ejemplo " +
+            "FIBRAMQ12 o DANHOS13), **Qty** (número de CBFIs en tu cartera) y **AvgCost** (precio promedio " +
+            "ponderado de adquisición en pesos mexicanos). La primera fila debe ser el encabezado con esos " +
+            "nombres exactos. El sistema valida el archivo antes de importar: si detecta columnas faltantes " +
+            "o valores no numéricos, muestra el error específico fila por fila antes de hacer cambios. Las " +
+            "posiciones importadas se fusionan con las existentes; si ya tenías FUNO11 y el archivo incluye " +
+            "FUNO11, ese registro se actualiza con los valores del archivo."),
+        CreatePrivateItem("/portafolio", 5,
+            "¿Para qué sirve la función de archivar y restaurar?",
+            "**Archivar** guarda una copia completa de tu portafolio actual — todas tus posiciones con " +
+            "títulos y costos — en un respaldo con fecha y hora. Es útil antes de reestructurar tu " +
+            "cartera: archivas primero y puedes volver al estado anterior si cambias de opinión. " +
+            "**Restaurar** carga ese respaldo y reemplaza el portafolio activo; si tienes posiciones " +
+            "activas en ese momento, se sustituyen por las del respaldo. Solo se guarda un respaldo a la " +
+            "vez — archivar de nuevo sobreescribe el anterior. La fecha del archivo aparece en el botón " +
+            "de restaurar para que sepas qué tan reciente es."),
+        CreatePrivateItem("/portafolio", 6,
+            "¿Qué muestra la vista de Calendario?",
+            "La vista **Calendario** proyecta los pagos de distribución de tus FIBRAs en posición durante " +
+            "los próximos 90 días, basándose en las últimas distribuciones trimestrales reportadas por cada " +
+            "emisora. Cada evento muestra la FIBRA, la fecha estimada de pago y el monto proyectado en " +
+            "pesos calculado a partir de tus títulos registrados. Los eventos se ordenan cronológicamente. " +
+            "Es una herramienta de planificación de flujo de efectivo: te permite saber cuándo y " +
+            "aproximadamente cuánto esperar de cada FIBRA. Las fechas son estimadas a partir del patrón " +
+            "histórico; pueden variar según los avisos oficiales que cada emisora publique ante la BMV."),
+
+        // /oportunidades — Ranking privado con score configurable
+        CreatePrivateItem("/oportunidades", 1,
+            "¿Cómo funciona el score de oportunidad?",
+            "El score es una puntuación de 0 a 100 que mide el atractivo relativo de cada FIBRA dentro " +
+            "del universo. Se calcula como la suma ponderada de seis componentes: **Descuento NAV** (qué " +
+            "tan barato cotiza el precio respecto al valor neto de activos), **Dividend Yield** " +
+            "(rendimiento por distribuciones), **LTV invertido** (solidez financiera — menor deuda, mayor " +
+            "puntuación), **Margen NOI** (eficiencia operativa), **Precio vs promedio 52 semanas** " +
+            "(momento de precio) y **Yield Real** (rendimiento ajustado por inflación INPC). Cada " +
+            "componente se normaliza entre 0 y 100 a partir del universo actual y se multiplica por el " +
+            "peso porcentual que tú configures. El score no predice retornos futuros; es una herramienta " +
+            "de priorización comparativa según tus propios criterios."),
+        CreatePrivateItem("/oportunidades", 2,
+            "¿Qué significa cada componente del score?",
+            "— **Descuento NAV**: porcentaje por debajo del valor neto de activos al que cotiza la FIBRA; " +
+            "un descuento alto puntúa mejor. — **Dividend Yield**: distribución anualizada sobre el precio " +
+            "actual; mayor yield, mayor puntuación. — **LTV invertido**: inversa del nivel de deuda sobre " +
+            "valor de propiedades; menor LTV puntúa mejor porque indica menor riesgo financiero. — " +
+            "**Margen NOI**: porcentaje de ingresos que queda tras gastos operativos directos; mayor " +
+            "margen refleja un portafolio más eficiente. — **Precio vs AVG 52S**: distancia del precio " +
+            "actual respecto al promedio de las últimas 52 semanas; una FIBRA por debajo de su media anual " +
+            "puntúa mejor en este componente. — **Yield Real**: diferencia entre el dividend yield y el " +
+            "INPC anual; valores positivos indican que la distribución supera a la inflación."),
+        CreatePrivateItem("/oportunidades", 3,
+            "¿Para qué sirven los perfiles Predeterminado, Renta y Crecimiento?",
+            "Los perfiles son configuraciones predefinidas de pesos que representan diferentes estrategias. " +
+            "**Predeterminado** distribuye de forma balanceada: Descuento NAV 30 %, Yield 30 %, LTV 20 %, " +
+            "útil como punto de partida general. **Renta** prioriza el ingreso por distribuciones: asigna " +
+            "50 % al Dividend Yield y reduce los demás, pensado para quienes buscan flujo de efectivo " +
+            "inmediato. **Crecimiento** enfatiza el Descuento NAV (40 %) y la solidez financiera con LTV " +
+            "(25 %), orientado a quienes buscan apreciación de capital. Puedes elegir cualquier perfil como " +
+            "punto de partida y ajustar los sliders manualmente para refinar la configuración a tu " +
+            "estrategia personal."),
+        CreatePrivateItem("/oportunidades", 4,
+            "¿Qué es la vista Promediar y cuándo usarla?",
+            "La vista **Promediar** es un simulador de estrategia de promediación: calcula cuánto capital " +
+            "adicional necesitarías invertir en una FIBRA que ya tienes para bajar tu costo promedio a un " +
+            "precio objetivo. Ingresas tu posición actual (títulos y costo promedio), el precio objetivo " +
+            "al que quieres promediar y el precio actual de mercado. El simulador calcula el capital " +
+            "adicional necesario, el número de CBFIs adicionales y el nuevo costo promedio resultante. " +
+            "Es útil cuando una FIBRA en tu portafolio baja de precio y evalúas si conviene comprar más " +
+            "para reducir el punto de equilibrio antes de una recuperación."),
+        CreatePrivateItem("/oportunidades", 5,
+            "¿Por qué algunas FIBRAs aparecen en la sección Datos Limitados?",
+            "Una FIBRA aparece en **Datos Limitados** cuando tiene información disponible para uno o dos " +
+            "componentes del score pero no para todos. Ocurre principalmente con emisoras que tienen " +
+            "fundamentales trimestrales incompletos — por ejemplo, una FIBRA que aún no ha reportado " +
+            "suficientes trimestres para calcular el NAV/CBFI, o cuyo LTV no está disponible en el período " +
+            "más reciente. El score de estas FIBRAs no es comparable directamente con el de la tabla " +
+            "principal porque no refleja los mismos criterios. Se muestran por separado para que puedas " +
+            "consultarlas sin que distorsionen el ranking del universo principal."),
+        CreatePrivateItem("/oportunidades", 6,
+            "¿Puedo guardar mis propios pesos personalizados?",
+            "Sí. Una vez que ajustes los sliders a tu configuración — asegurándote de que la suma de todos " +
+            "los pesos sea exactamente 100 % —, haz clic en **Guardar configuración**. Los pesos se " +
+            "almacenan en tu cuenta y se cargan automáticamente la próxima vez que ingreses a Oportunidades. " +
+            "Si quieres volver a los pesos del sistema, selecciona el perfil **Predeterminado** y guarda " +
+            "de nuevo. La configuración guardada no afecta el score público visible en el Comparador; " +
+            "solo modifica el ranking en tu vista privada."),
+
+        // /herramientas — Hub de calculadoras privadas
+        CreatePrivateItem("/herramientas", 1,
+            "¿Cómo funciona la calculadora FIBRAs vs CETES?",
+            "Compara el crecimiento de capital e ingresos por distribuciones de hasta cuatro FIBRAs " +
+            "seleccionadas contra los CETES a 28 días en un horizonte de 1, 3, 5 o 10 años. Ingresas el " +
+            "**monto inicial en pesos** y la calculadora proyecta para cada instrumento: el **capital final " +
+            "estimado** (asumiendo reinversión de distribuciones), la **renta acumulada neta de ISR** — " +
+            "descontando retención del 30 % para FIBRAs y 20 % para CETES conforme a la Ley del ISR — y " +
+            "el **rendimiento real anual** si el INPC está disponible. La tasa de CETES se carga " +
+            "automáticamente desde los indicadores del mercado. Las distribuciones se obtienen de la " +
+            "última distribución trimestral reportada. La proyección es lineal y no modela variaciones " +
+            "de precio ni cambios en las tasas de distribución futuras."),
+        CreatePrivateItem("/herramientas", 2,
+            "¿Qué me dice la calculadora de Meta de Renta?",
+            "Calcula cuánto capital necesitas invertir en cada FIBRA para generar una renta mensual " +
+            "objetivo específica. Ingresas el **monto de renta mensual en pesos** que deseas recibir y " +
+            "la calculadora muestra, para cada FIBRA seleccionada: el **Yield TTM** (distribución de los " +
+            "últimos 12 meses sobre el precio actual), el **capital necesario** en pesos para que ese yield " +
+            "cubra tu meta mensual y el **número estimado de CBFIs** a ese precio. Es útil para planificar " +
+            "cuánto destinar al sector de FIBRAs para alcanzar un flujo de renta pasiva específico. Los " +
+            "cálculos usan el Yield TTM y el precio en tiempo real; si alguno cambia, el capital necesario " +
+            "se actualiza automáticamente."),
+        CreatePrivateItem("/herramientas", 3,
+            "¿Cómo se calcula el Retorno Total y para qué sirve?",
+            "El retorno total combina dos fuentes de rendimiento: la **plusvalía** (ganancia o pérdida por " +
+            "cambio en el precio) y la **renta acumulada** (distribuciones recibidas). Ingresas tu **precio " +
+            "de compra original** en pesos y el **ISR total retenido** acumulado (dato que generalmente " +
+            "aparece en tu estado de cuenta de la casa de bolsa). La calculadora muestra el precio actual, " +
+            "las distribuciones TTM, la plusvalía porcentual desde tu precio de compra, el yield neto " +
+            "sobre tu costo y el **retorno total**: suma de plusvalía más renta recibida menos ISR. Permite " +
+            "evaluar el rendimiento real considerando no solo el precio sino también el flujo de ingresos " +
+            "generado durante el tiempo que has tenido la posición."),
+        CreatePrivateItem("/herramientas", 4,
+            "¿Por qué la calculadora descuenta el ISR?",
+            "Las distribuciones de FIBRAs están sujetas a retención de **ISR del 30 %** sobre la parte " +
+            "correspondiente al resultado fiscal distribuido, conforme a la Ley del ISR vigente. Los CETES " +
+            "tienen retención del **20 % sobre los intereses** generados. La calculadora aplica estas tasas " +
+            "para que la comparación sea sobre ingresos netos reales — el dinero que efectivamente recibes. " +
+            "Sin descontar el ISR, la comparación sería entre cifras brutas que no reflejan lo que queda " +
+            "disponible. Si tu régimen fiscal implica tasas distintas — por ejemplo si presentas declaración " +
+            "anual con tasa efectiva diferente —, los resultados netos en tu caso real pueden variar " +
+            "respecto a lo que muestra la calculadora."),
+        CreatePrivateItem("/herramientas", 5,
+            "¿Cada cuánto se actualizan los precios y tasas en las calculadoras?",
+            "Los **precios actuales** de las FIBRAs se actualizan en tiempo real durante la jornada " +
+            "bursátil de la BMV y se cargan automáticamente al seleccionar cada emisora. Las " +
+            "**distribuciones TTM** se actualizan cada vez que una FIBRA publica su reporte trimestral " +
+            "ante la CNBV — generalmente una vez por trimestre. La **tasa CETES 28d** se obtiene de los " +
+            "indicadores del mercado y se actualiza periódicamente. El **INPC** para el rendimiento real " +
+            "se carga de los datos más recientes del BANXICO. Si algún dato no está disponible para una " +
+            "FIBRA, el campo correspondiente aparece como '—' y ese componente del cálculo se omite."),
+
+        // /reportes — Reportes trimestrales con análisis IA
+        CreatePrivateItem("/reportes", 1,
+            "¿Qué información contiene un reporte trimestral de fundamentales?",
+            "Cada reporte agrupa la información clave que una FIBRA publica ante la CNBV en dos capas. " +
+            "La primera es la **tabla de KPIs**: seis métricas cuantitativas — Cap Rate, NAV por CBFI, " +
+            "LTV, Margen NOI, Margen FFO y Distribución trimestral — con el valor del período seleccionado " +
+            "y notas aclaratorias cuando la FIBRA reportó condiciones atípicas. La segunda es el **análisis " +
+            "IA**: un resumen ejecutivo en lenguaje claro, señales operacionales y financieras detectadas " +
+            "en el texto del reporte, alertas de riesgo si las hay, y la perspectiva del analista sobre " +
+            "lo más relevante para el inversionista. Puedes navegar entre trimestres del mismo ticker para " +
+            "comparar la evolución de los KPIs en el tiempo."),
+        CreatePrivateItem("/reportes", 2,
+            "¿Qué significa cada KPI del reporte?",
+            "— **Cap Rate**: rendimiento operativo neto sobre el valor de propiedades; mayor Cap Rate " +
+            "indica más rendimiento bruto, generalmente en activos de mayor riesgo o ubicaciones " +
+            "secundarias. — **NAV por CBFI**: valor neto de activos por certificado; compáralo con el " +
+            "precio de mercado para saber si la FIBRA cotiza con descuento o prima sobre sus activos " +
+            "reales. — **LTV**: deuda sobre valor de propiedades; el límite CNBV es 60 %, pero la mayoría " +
+            "de FIBRAs saludables opera bajo 45 %. — **Margen NOI**: porcentaje de ingresos que queda " +
+            "tras gastos operativos directos; FIBRAs industriales bien administradas superan el 75 %. — " +
+            "**Margen FFO**: fondos de operación sobre ingresos, corrige la utilidad neta eliminando " +
+            "distorsiones contables no monetarias. — **Distribución trimestral**: monto en pesos por CBFI " +
+            "pagado en el trimestre; puede incluir parte fiscal y reembolso de capital."),
+        CreatePrivateItem("/reportes", 3,
+            "¿Qué es el análisis de IA y cómo interpretarlo?",
+            "El análisis IA procesa el texto completo del reporte trimestral publicado por la FIBRA ante " +
+            "la CNBV y extrae cuatro secciones estructuradas. El **Resumen ejecutivo** condensa los puntos " +
+            "más relevantes del trimestre. Las **Señales operacionales** son eventos en el portafolio — " +
+            "cambios en ocupación, nuevos contratos, adquisiciones, desinversiones. Las **Señales " +
+            "financieras** detectan movimientos en métricas clave: aumento en LTV, compresión de NOI, " +
+            "variaciones en distribución. Las **Alertas de riesgo** identifican factores negativos: " +
+            "concentración de inquilinos, vencimientos de contratos relevantes, presión de refinanciamiento " +
+            "o comentarios del auditor. El análisis IA es una herramienta de síntesis, no de asesoría; " +
+            "contrasta siempre las señales con los estados financieros completos y, ante cualquier " +
+            "decisión de inversión, consulta con un asesor financiero registrado ante la CNBV."),
+        CreatePrivateItem("/reportes", 4,
+            "¿Con qué frecuencia se actualizan los reportes?",
+            "Los reportes se actualizan conforme cada FIBRA publica sus resultados trimestrales ante la " +
+            "CNBV, generalmente entre 30 y 60 días después del cierre de cada trimestre fiscal. El " +
+            "calendario habitual es: resultados del **1T** disponibles en mayo, **2T** en agosto, **3T** " +
+            "en noviembre y **4T** (informe anual) entre febrero y abril del siguiente año. El selector de " +
+            "períodos muestra todos los trimestres disponibles para la FIBRA elegida. Cuando la plataforma " +
+            "procesa un nuevo reporte, el análisis IA se genera automáticamente y el período aparece " +
+            "disponible en el selector. Si el procesamiento está en curso, el resumen puede aparecer " +
+            "como pendiente por unas horas."),
+        CreatePrivateItem("/reportes", 5,
+            "¿Qué son las señales operacionales, financieras y las alertas de riesgo?",
+            "Son tres categorías que el análisis IA organiza a partir del contenido literal del reporte " +
+            "trimestral. Las **señales operacionales** describen hechos concretos sobre el portafolio: " +
+            "nuevas adquisiciones o ventas de inmuebles, cambios en la tasa de ocupación, renovación o " +
+            "vencimiento de contratos relevantes, obras de expansión. Las **señales financieras** reflejan " +
+            "movimientos en la estructura económica: variaciones en la deuda y el LTV, cambios en el " +
+            "costo de fondeo, ajustes en el perfil de vencimientos, impacto de tipos de cambio en FIBRAs " +
+            "con deuda en dólares. Las **alertas de riesgo** concentran los factores identificados como " +
+            "potencialmente negativos: concentración de ingresos en pocos inquilinos, vencimientos " +
+            "próximos de contratos importantes, comentarios del auditor o presión sobre la capacidad de " +
+            "mantener el nivel de distribuciones."),
+    ];
+
     private static FaqItem CreateStaticItem(string entityKey, int order, string question, string answer) => new()
     {
         Id = Guid.NewGuid(),
         PageType = SeoPageType.StaticPage,
+        EntityKey = entityKey,
+        Question = question,
+        Answer = answer.Trim(),
+        Order = order,
+        IsActive = true,
+        UpdatedAt = SeedUpdatedAt,
+        UpdatedBy = "system",
+    };
+
+    private static FaqItem CreatePrivateItem(string entityKey, int order, string question, string answer) => new()
+    {
+        Id = Guid.NewGuid(),
+        PageType = SeoPageType.PrivatePage,
         EntityKey = entityKey,
         Question = question,
         Answer = answer.Trim(),

@@ -4,6 +4,8 @@ import { Link } from 'react-router'
 import { ArrowUpRight, Plus, Search, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCalculadoraFibras, fetchIndicadores, type CalculadoraFibraDto } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { formatMoney, formatPercent } from '@/modules/portafolio/portfolio-format'
 import { latestInpcPct } from '@/shared/lib/inflation-utils'
 import {
@@ -190,6 +192,12 @@ export function HerramientasPage() {
       : null
 
   usePageTitle('Herramientas — Fibras Inmobiliarias')
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', 'PrivatePage', '/herramientas'],
+    queryFn: () => fetchFaqItems('PrivatePage', '/herramientas'),
+    staleTime: 60 * 60_000,
+  })
 
   return (
     <>
@@ -637,6 +645,17 @@ export function HerramientasPage() {
               </section>
             </>
           )}
+
+          {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+            <div className="mt-10">
+              <FaqAccordion
+                items={faqQuery.data}
+                kicker="FAQ de herramientas"
+                title="Preguntas frecuentes sobre las calculadoras"
+                description="Cómo interpretar cada calculadora, cómo se aplica el ISR y con qué frecuencia se actualizan los datos."
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </>

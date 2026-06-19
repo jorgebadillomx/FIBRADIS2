@@ -137,6 +137,7 @@ app.MapFallback(async ctx =>
     }
 
     // El cliente renderiza su propia pantalla NotFound; el status HTTP es el que importa para crawlers.
+    ctx.Response.ContentType = "text/html; charset=utf-8";
     await ctx.Response.SendFileAsync(
         app.Environment.WebRootFileProvider.GetFileInfo("index.html"));
 });

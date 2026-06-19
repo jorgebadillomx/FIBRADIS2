@@ -248,6 +248,7 @@ public static class OpsSeoFaqEndpoints
             var seedItems = FaqSeedFactory.BuildEditorialItems(editorialPages)
                 .Concat(FaqSeedFactory.BuildFundamentalsItems())
                 .Concat(FaqSeedFactory.BuildStaticPagesItems())
+                .Concat(FaqSeedFactory.BuildPrivatePagesItems())
                 .ToList();
 
             var createdCount = 0;
