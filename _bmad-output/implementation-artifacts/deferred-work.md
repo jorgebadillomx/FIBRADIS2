@@ -192,3 +192,8 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 - **"balanceado" en FromProfile pero bloqueado en ValidateWeights** — `OpportunityWeightsConfig.cs` + `OpportunityEndpoints.cs`: inconsistencia dead code. Si se decide exponer "Balanceado" en frontend, añadir a ValidateWeights y a PROFILES. Si no, remover de FromProfile.
 - **Race condition midnight en BanxicoInpcBackfillEndpointTests** — calcular expectedFrom/To dentro del scope de la respuesta o usar un clock inyectado en el factory.
 - **TOCTOU UpsertManyAsync backfill concurrente** — `InpcRepository.cs`: reemplazar FindAsync+Add con ExecuteUpdate atómico (ON CONFLICT UPDATE o ExecuteUpsertAsync) para prevenir PK violation en llamadas paralelas de AdminOps.
+
+## Deferred from: code review of 13-10-disclaimer-ymyl-lmv-amefibra (2026-06-19)
+
+- **WCAG 1.4.1 — enlace AMEFIBRA sin subrayado en reposo** — `text-primary hover:underline` es la convención de links inline del proyecto (misma clase en email de la misma página). Sin subrayado permanente, el color es el único diferenciador visual de los links inline, violando WCAG 1.4.1. Requiere decisión de diseño transversal para todos los `text-primary hover:underline` del proyecto.
+- **A11y — falta advertencia sr-only "abre en nueva pestaña"** — El link `<a target="_blank">` a amefibra.com no informa a lectores de pantalla que abrirá en nueva pestaña (WCAG 2.4.4 advisory). Aplica a todos los links `target="_blank"` del proyecto. Unificar patrón cuando se toque a11y transversal.

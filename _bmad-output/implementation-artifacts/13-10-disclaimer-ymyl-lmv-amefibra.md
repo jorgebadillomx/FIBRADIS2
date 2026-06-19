@@ -1,6 +1,6 @@
 # Story 13.10: Disclaimer YMYL — fecha de revisión, LMV y AMEFIBRA
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -22,13 +22,13 @@ so that **confío en la solidez regulatoria y actualidad de la información ante
 
 ## Tasks / Subtasks
 
-- [ ] T1 — Actualizar sección "Aviso" en `AcercaPage.tsx` (AC-1, AC-2, AC-3)
-  - [ ] Sustituir el párrafo actual del aviso por texto enriquecido con fecha, LMV y enlace AMEFIBRA
-  - [ ] Usar la fecha hardcodeada `18 de junio de 2026` (no dinámica — es fecha de autoría del contenido, no de deploy)
-- [ ] T2 — Actualizar pie de fecha en `AcercaPage.tsx` (AC-4)
-  - [ ] Cambiar `<p>Actualizado: Junio 2026</p>` a `<p>Revisado: 18 de junio de 2026</p>`
-- [ ] T3 — Build y verificación (AC-5)
-  - [ ] `npm run build --workspace=src/Web/Main` sin errores
+- [x] T1 — Actualizar sección "Aviso" en `AcercaPage.tsx` (AC-1, AC-2, AC-3)
+  - [x] Sustituir el párrafo actual del aviso por texto enriquecido con fecha, LMV y enlace AMEFIBRA
+  - [x] Usar la fecha hardcodeada `18 de junio de 2026` (no dinámica — es fecha de autoría del contenido, no de deploy)
+- [x] T2 — Actualizar pie de fecha en `AcercaPage.tsx` (AC-4)
+  - [x] Cambiar `<p>Actualizado: Junio 2026</p>` a `<p>Revisado: 18 de junio de 2026</p>`
+- [x] T3 — Build y verificación (AC-5)
+  - [x] `npm run build --workspace=src/Web/Main` sin errores
 
 ## Dev Notes
 
@@ -106,9 +106,9 @@ Story 12-4 ya implementó E-E-A-T base (autoría editorial, schema Organization,
 
 ### Security Checklist — completar antes del primer commit
 
-- [ ] **TOCTOU doble-request**: N/A — cambio estático JSX, sin endpoints.
-- [ ] **Auth-gating UI**: N/A — `/acerca` es ruta pública.
-- [ ] **Denominador cero**: N/A — sin cálculos financieros.
+- [x] **TOCTOU doble-request**: N/A — cambio estático JSX, sin endpoints.
+- [x] **Auth-gating UI**: N/A — `/acerca` es ruta pública.
+- [x] **Denominador cero**: N/A — sin cálculos financieros.
 
 ### Archivos a modificar (UPDATE)
 
@@ -126,14 +126,35 @@ Sin cambios en: backend, BD, migraciones EF, endpoints, sprint-status.
 - AMEFIBRA: https://amefibra.com
 - Ley del Mercado de Valores: DOF 30-12-2005, última reforma 2024
 
+## Senior Developer Review (AI)
+
+### Review Findings
+
+- [x] [Review][Defer] WCAG 1.4.1 — enlace AMEFIBRA sin subrayado en reposo (color como único diferenciador) [src/Web/Main/src/modules/acerca/AcercaPage.tsx:150–157] — deferred, pre-existing. El patrón `text-primary hover:underline` es convención del proyecto (misma clase en el mailto de la misma página). Requiere una decisión transversal de diseño, no local a esta historia.
+- [x] [Review][Defer] A11y — falta advertencia sr-only "abre en nueva pestaña" para lectores de pantalla [src/Web/Main/src/modules/acerca/AcercaPage.tsx:150–157] — deferred, pre-existing. Aplica a todos los links `target="_blank"` del proyecto. Fuera de alcance de esta historia.
+
+### Action Items
+
+*(ninguno — 0 patches, story aprobada para `done`)*
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-_pendiente_
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Historia parcialmente avanzada en commit `150f3e1`: ya tenía LMV y AMEFIBRA como texto, pero sin enlace externo y sin fecha exacta.
+- Completados los 3 gaps: (1) enlace `<a href="https://amefibra.com" target="_blank" rel="noopener noreferrer">` en AMEFIBRA, (2) fecha "18 de junio de 2026" en el párrafo del aviso, (3) pie cambiado de "Actualizado: Junio 2026" → "Revisado: 18 de junio de 2026".
+- Build Main: ✓ limpio en 11.61s, 0 errores TypeScript.
+
 ### File List
+
+- src/Web/Main/src/modules/acerca/AcercaPage.tsx
+
+### Change Log
+
+- 2026-06-19: Completar AC-1/AC-3/AC-4: enlace externo AMEFIBRA, fecha exacta en aviso y pie.

@@ -145,13 +145,21 @@ export function AcercaPage() {
           <h2 className="font-semibold text-base text-foreground">Aviso</h2>
           <p className="mt-2">
             La información publicada en Fibras Inmobiliarias es de referencia y orientativa, basada en datos
-            públicos disponibles conforme a la <strong>Ley del Mercado de Valores</strong> y los reportes
-            emitidos ante la CNBV y la <strong>AMEFIBRA</strong> (Asociación Mexicana de Fideicomisos de
-            Inversión en Bienes Raíces). No constituye asesoría de inversión, recomendación de compra o
-            venta de valores, ni ningún servicio regulado. Consulte a un asesor financiero certificado
+            públicos disponibles conforme a la <strong>Ley del Mercado de Valores (LMV)</strong> y los reportes
+            emitidos ante la CNBV y la{' '}
+            <a
+              href="https://amefibra.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              AMEFIBRA
+            </a>{' '}
+            (Asociación Mexicana de FIBRAs Inmobiliarias). No constituye asesoría de inversión, recomendación de compra o
+            venta de valores, ni ningún servicio regulado. Revisado el{' '}
+            <strong>18 de junio de 2026</strong>. Consulte a un asesor financiero certificado
             antes de tomar decisiones de inversión.
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">Revisado: Junio 2026</p>
         </section>
 
         <section>
@@ -164,7 +172,7 @@ export function AcercaPage() {
           </p>
         </section>
 
-        <p className="mt-4 text-xs text-muted-foreground/60">Actualizado: Junio 2026</p>
+        <p className="mt-4 text-xs text-muted-foreground/60">Revisado: 18 de junio de 2026</p>
 
       </div>
     </div>
