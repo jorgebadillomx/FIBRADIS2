@@ -65,7 +65,9 @@ public partial class SpaMetadataMiddleware(
         var normalizedPath = NormalizePath(path);
         var pageType = normalizedPath == "/" ? SeoPageType.Home : SeoPageType.StaticPage;
         var noticiasPage = normalizedPath == "/noticias" ? GetNoticiasPageNumber(context.Request.Query["page"]) : 1;
-        var robotsDirectives = normalizedPath == "/noticias" && noticiasPage > 1 ? "noindex,follow" : null;
+        var robotsDirectives = normalizedPath == "/confirmar-email" || normalizedPath == "/noticias" && noticiasPage > 1
+            ? "noindex,follow"
+            : null;
 
         SeoMetadata? seoMetadata;
         string breadcrumbJsonLdBlock = string.Empty;
@@ -95,6 +97,9 @@ public partial class SpaMetadataMiddleware(
                 _baseUrl,
                 DateTimeOffset.UtcNow,
                 "system");
+
+            if (meta.RobotsDirectives is not null)
+                seoMetadata.RobotsDirectives = meta.RobotsDirectives;
         }
 
         if (seoMetadata is null)

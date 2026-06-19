@@ -18,6 +18,15 @@ const HerramientasPage = lazy(() => import('@/modules/herramientas/HerramientasP
 const CalculadoraPage = lazy(() => import('@/modules/calculadora/CalculadoraPage').then(m => ({ default: m.CalculadoraPage })))
 const OportunidadesPage = lazy(() => import('@/modules/oportunidades/OportunidadesPage').then(m => ({ default: m.OportunidadesPage })))
 const LoginPage = lazy(() => import('@/modules/auth/LoginPage').then(m => ({ default: m.LoginPage })))
+const ConfirmarEmailPage = lazy(() =>
+  import('@/pages/ConfirmarEmailPage').then(m => ({ default: m.ConfirmarEmailPage })),
+)
+const RegistroPage = lazy(() =>
+  import('@/pages/RegistroPage').then(m => ({ default: m.RegistroPage })),
+)
+const ActivarPage = lazy(() =>
+  import('@/pages/ActivarPage').then(m => ({ default: m.ActivarPage })),
+)
 const PrivacidadPage = lazy(() => import('@/modules/privacidad/PrivacidadPage').then(m => ({ default: m.PrivacidadPage })))
 const AcercaPage = lazy(() => import('@/modules/acerca/AcercaPage').then(m => ({ default: m.AcercaPage })))
 const ContactoPage = lazy(() => import('@/modules/contacto/ContactoPage').then(m => ({ default: m.ContactoPage })))
@@ -54,6 +63,9 @@ export const routes: RouteObject[] = [
       { path: '/fundamentales', element: p(<FundamentalesPage />) },
       { path: '/plataforma', element: p(<PlataformaPage />) },
       { path: '/portafolio', element: <PortafolioRoute /> },
+      { path: '/confirmar-email', element: p(<ConfirmarEmailPage />) },
+      { path: '/registro', element: p(<RegistroPage />) },
+      { path: '/activar', element: p(<ActivarPage />) },
       { path: '/login', element: p(<LoginPage />) },
       { path: '/privacidad', element: p(<PrivacidadPage />) },
       { path: '/acerca', element: p(<AcercaPage />) },

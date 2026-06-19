@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Email;
 using Domain.Auth;
 using Domain.Auth.Exceptions;
 using Infrastructure.Persistence.SqlServer;
@@ -8,6 +9,58 @@ namespace Infrastructure.Security;
 
 public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUserService
 {
+    public async Task<UserData> RegisterAsync(
+        string email,
+        string password,
+        string? apodo,
+        HowDidYouHear? howDidYouHear,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new InvalidUserDataException("El correo electrónico es requerido.");
+
+        ValidateStrongPassword(password);
+
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        if (!IsValidEmailFormat(normalizedEmail))
+            throw new InvalidUserDataException("El formato del correo electrónico no es válido.");
+
+        if (DisposableEmailDomains.IsDisposable(normalizedEmail))
+            throw new DisposableEmailException();
+
+        var encryptedEmail = emailEncryptor.Encrypt(normalizedEmail);
+        var exists = await db.Users.AnyAsync(u => u.Email == encryptedEmail, ct);
+        if (exists)
+            throw new DuplicateEmailException();
+
+        var normalizedApodo = NormalizeApodo(apodo);
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = encryptedEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            Role = UserRole.User,
+            IsActive = false,
+            CreatedAt = DateTime.UtcNow,
+            Apodo = normalizedApodo,
+            HowDidYouHear = howDidYouHear,
+            EmailConfirmedAt = null,
+            TrialEndsAt = null,
+        };
+
+        try
+        {
+            db.Users.Add(user);
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            throw new DuplicateEmailException();
+        }
+
+        return ToData(user);
+    }
+
     public async Task<UserData> CreateUserAsync(
         string email,
         string password,
@@ -75,6 +128,31 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         return ToData(user);
     }
 
+    public async Task<UserData> ConfirmEmailAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([userId], ct)
+            ?? throw new UserNotFoundException();
+
+        // Riesgo de race condition aceptado por spec (security checklist 14.2): en caso de dos
+        // requests concurrentes, el segundo retornará token_already_used al leer EmailConfirmedAt != null.
+        if (user.EmailConfirmedAt is not null)
+            throw new EmailAlreadyConfirmedException();
+
+        var confirmedAt = DateTime.UtcNow;
+        user.EmailConfirmedAt = confirmedAt;
+        user.TrialEndsAt = confirmedAt.AddDays(14);
+        user.IsActive = user.ComputedIsActive;
+
+        await db.SaveChangesAsync(ct);
+        return ToData(user);
+    }
+
+    public async Task<UserData?> FindByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([id], ct);
+        return user is null ? null : ToData(user);
+    }
+
     public async Task ChangePasswordAsync(Guid id, string newPassword, CancellationToken ct = default)
     {
         var user = await db.Users.FindAsync([id], ct)
@@ -95,7 +173,10 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
             user.Id,
             emailEncryptor.Decrypt(user.Email),
             user.Role.ToString(),
-            user.Apodo);
+            user.Apodo,
+            user.IsActive,
+            user.TrialEndsAt,
+            user.FechaPago);
     }
 
     public async Task UpdateApodoAsync(Guid userId, string? apodo, CancellationToken ct = default)
@@ -180,6 +261,32 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task ResendConfirmationAsync(
+        string email,
+        IEmailConfirmationTokenService tokenService,
+        IEmailService emailService,
+        string baseUrl,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var encryptedEmail = emailEncryptor.Encrypt(normalizedEmail);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
+
+            if (user is null || user.EmailConfirmedAt is not null)
+                return;
+
+            var token = tokenService.GenerateToken(user.Id);
+            var confirmationUrl = $"{baseUrl}/confirmar-email?token={Uri.EscapeDataString(token)}";
+            await emailService.SendEmailConfirmationAsync(normalizedEmail, confirmationUrl, ct);
+        }
+        catch (Exception)
+        {
+            // Silenciar cualquier excepción — nunca revelar estado al caller
+        }
+    }
+
     private UserData ToData(User u) =>
         new(
             u.Id,
@@ -207,5 +314,31 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
             throw new InvalidUserDataException("La contraseña debe contener al menos un número.");
         if (!password.Any(c => !char.IsLetterOrDigit(c)))
             throw new InvalidUserDataException("La contraseña debe contener al menos un carácter especial.");
+    }
+
+    private static string? NormalizeApodo(string? apodo)
+    {
+        if (string.IsNullOrWhiteSpace(apodo))
+            return null;
+
+        var normalized = apodo.Trim();
+        if (normalized.Length > 50)
+            throw new InvalidUserDataException("El apodo no puede tener más de 50 caracteres.");
+
+        if (normalized.Any(char.IsControl))
+            throw new InvalidUserDataException("El apodo contiene caracteres no permitidos.");
+
+        return normalized;
+    }
+
+    private static bool IsValidEmailFormat(string email)
+    {
+        var atIndex = email.LastIndexOf('@');
+        if (atIndex <= 0 || atIndex == email.Length - 1)
+            return false;
+
+        var domain = email[(atIndex + 1)..];
+        var dotIndex = domain.IndexOf('.');
+        return dotIndex > 0 && dotIndex < domain.Length - 1;
     }
 }

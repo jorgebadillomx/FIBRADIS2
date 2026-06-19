@@ -14,6 +14,22 @@ const authClient = createPathBasedClient<paths>({ baseUrl: '' })
 export type UserProfileResponse = components['schemas']['UserProfileResponse']
 export type UpdateApodoRequest = components['schemas']['UpdateApodoRequest']
 export type ChangeOwnPasswordRequest = components['schemas']['ChangeOwnPasswordRequest']
+export type ConfirmEmailResponse = components['schemas']['ConfirmEmailResponse']
+export type RegisterResponse = components['schemas']['RegisterResponse']
+
+export class AuthApiError extends Error {
+  public readonly code: string
+
+  constructor(
+    code: string,
+    message: string,
+  ) {
+    super(message)
+    this.code = code
+    this.name = 'AuthApiError'
+    Object.setPrototypeOf(this, new.target.prototype)
+  }
+}
 
 type ApiErrorShape = {
   detail?: string
@@ -159,4 +175,75 @@ export async function changePassword(currentPassword: string, newPassword: strin
   if (error) {
     throw new Error(getMainApiErrorMessage(error, 'No se pudo cambiar la contraseña.'))
   }
+}
+
+export async function registerUser(
+  email: string,
+  password: string,
+  apodo?: string | null,
+  howDidYouHear?: string | null,
+): Promise<RegisterResponse> {
+  const { data, error, response } = await authClient['/api/v1/auth/register'].POST({
+    body: { email, password, apodo: apodo ?? null, howDidYouHear: howDidYouHear ?? null },
+  })
+
+  if (error) {
+    const typedError = error as { code?: unknown; message?: unknown }
+    const code =
+      typeof typedError.code === 'string'
+        ? typedError.code
+        : response.status === 422
+          ? 'disposable_email'
+          : response.status === 409
+            ? 'duplicate_email'
+            : 'register_failed'
+    const message =
+      code === 'invalid_user_data' && typeof typedError.message === 'string' && typedError.message.length > 0
+        ? typedError.message
+        : 'No se pudo completar el registro.'
+    throw new AuthApiError(code, message)
+  }
+
+  if (!data) throw new AuthApiError('register_failed', 'La API no devolvió datos.')
+  return data
+}
+
+export async function notifyPayment(): Promise<void> {
+  const res = await fetch('/api/v1/account/notify-payment', {
+    method: 'POST',
+    headers: { ...getMainAuthHeaders() },
+  })
+  if (!res.ok) throw new AuthApiError('notify_payment_failed', 'Error al notificar el pago.')
+}
+
+export async function resendConfirmation(email: string): Promise<void> {
+  await fetch('/api/v1/auth/resend-confirmation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function confirmEmail(token: string): Promise<ConfirmEmailResponse> {
+  const { data, error, response } = await authClient['/api/v1/auth/confirm-email'].GET({
+    params: { query: { token } },
+  })
+
+  if (error) {
+    const typedError = error as { code?: unknown }
+    const code =
+      typeof typedError.code === 'string'
+        ? typedError.code
+        : response.status === 400
+          ? 'token_invalid'
+          : 'confirm_email_failed'
+
+    throw new AuthApiError(code, 'No se pudo confirmar el correo.')
+  }
+
+  if (!data) {
+    throw new AuthApiError('confirm_email_failed', 'La API no devolvió datos.')
+  }
+
+  return data
 }

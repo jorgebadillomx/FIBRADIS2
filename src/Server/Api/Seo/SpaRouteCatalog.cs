@@ -33,6 +33,9 @@ public static class SpaRouteCatalog
         "/herramientas",
         "/reportes",
         "/perfil",
+        "/confirmar-email",
+        "/registro",
+        "/activar",
     };
 
     // Prefijos de rutas dinámicas con detalle por slug; la validez del slug la decide su middleware.

@@ -683,6 +683,28 @@
         }
       }
     },
+    "/api/v1/account/notify-payment": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/faq": {
       "get": {
         "tags": [
@@ -727,6 +749,78 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/confirm-email": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmEmailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }
@@ -795,6 +889,28 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/resend-confirmation": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendConfirmationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -6795,6 +6911,18 @@
           }
         }
       },
+      "ConfirmEmailResponse": {
+        "required": [
+          "trialEndsAt"
+        ],
+        "type": "object",
+        "properties": {
+          "trialEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "CreateBlocklistTermRequest": {
         "required": [
           "term"
@@ -10470,6 +10598,46 @@
           }
         }
       },
+      "RegisterRequest": {
+        "required": [
+          "email",
+          "password",
+          "apodo",
+          "howDidYouHear"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "apodo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "howDidYouHear": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RegisterResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "RelatedFibra": {
         "required": [
           "ticker",
@@ -10489,6 +10657,17 @@
             "type": "string"
           },
           "sector": {
+            "type": "string"
+          }
+        }
+      },
+      "ResendConfirmationRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
             "type": "string"
           }
         }
@@ -11290,7 +11469,10 @@
         "required": [
           "email",
           "role",
-          "apodo"
+          "apodo",
+          "isActive",
+          "trialEndsAt",
+          "paidAt"
         ],
         "type": "object",
         "properties": {
@@ -11301,6 +11483,21 @@
             "type": "string"
           },
           "apodo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "trialEndsAt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paidAt": {
             "type": [
               "null",
               "string"

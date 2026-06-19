@@ -17,23 +17,73 @@ public class YahooFinanceClient(
         if (symbols.Count == 0)
             return [];
 
-        IReadOnlyDictionary<string, Snapshot?> snapshots;
-        try
+        IReadOnlyDictionary<string, Snapshot?>? snapshots = null;
+        for (var attempt = 1; attempt <= 2; attempt++)
         {
-            snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
+            try
+            {
+                snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
+                break;
+            }
+            catch (Exception ex) when (Is429(ex))
+            {
+                if (attempt == 1)
+                {
+                    logger.LogWarning("Yahoo Finance devolvió 429 en batch; reintentando en 60s");
+                    await Task.Delay(TimeSpan.FromSeconds(60), ct);
+                }
+                else
+                {
+                    logger.LogWarning("Yahoo Finance devolvió 429 en segundo intento batch; cambiando a modo individual ({Count} tickers)", symbols.Count);
+                    return await GetQuotesIndividuallyAsync(symbols, ct);
+                }
+            }
         }
-        catch (Exception ex) when (Is429(ex))
-        {
-            logger.LogWarning("Yahoo Finance devolvió 429 en batch de precios; reintentando en 60s");
-            await Task.Delay(TimeSpan.FromSeconds(60), ct);
-            snapshots = await yahooQuotes.GetSnapshotAsync(symbols, ct);
-        }
+
+        snapshots ??= new Dictionary<string, Snapshot?>();
 
         var nullSymbols = snapshots.Where(kv => kv.Value is null).Select(kv => kv.Key).ToList();
         if (nullSymbols.Count > 0)
             logger.LogWarning("Yahoo devolvió null para {Count}/{Total} símbolos: {Symbols}",
                 nullSymbols.Count, snapshots.Count, string.Join(", ", nullSymbols));
 
+        return BuildResults(snapshots);
+    }
+
+    private async Task<IReadOnlyList<YahooQuoteResult>> GetQuotesIndividuallyAsync(
+        IList<string> symbols,
+        CancellationToken ct)
+    {
+        var results = new List<YahooQuoteResult>(symbols.Count);
+        for (var i = 0; i < symbols.Count; i++)
+        {
+            if (i > 0)
+                await Task.Delay(TimeSpan.FromSeconds(10), ct);
+
+            var symbol = symbols[i];
+            try
+            {
+                var snapshots = await yahooQuotes.GetSnapshotAsync([symbol], ct);
+                results.AddRange(BuildResults(snapshots));
+                logger.LogDebug("Yahoo individual OK: {Symbol} ({Index}/{Total})", symbol, i + 1, symbols.Count);
+            }
+            catch (Exception ex) when (Is429(ex))
+            {
+                logger.LogWarning("Yahoo devolvió 429 para {Symbol} en modo individual; esperando 30s adicionales", symbol);
+                await Task.Delay(TimeSpan.FromSeconds(30), ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Error obteniendo cotización individual para {Symbol}", symbol);
+            }
+        }
+
+        logger.LogInformation("Modo individual completado: {Ok}/{Total} tickers obtenidos", results.Count, symbols.Count);
+        return results;
+    }
+
+    private static List<YahooQuoteResult> BuildResults(IReadOnlyDictionary<string, Snapshot?> snapshots)
+    {
         var results = new List<YahooQuoteResult>(snapshots.Count);
         foreach (var (symbol, snapshot) in snapshots)
         {

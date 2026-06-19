@@ -1,7 +1,16 @@
+using Application.Email;
+
 namespace Application.Auth;
 
 public interface IUserService
 {
+    Task<UserData> RegisterAsync(
+        string email,
+        string password,
+        string? apodo,
+        global::Domain.Auth.HowDidYouHear? howDidYouHear,
+        CancellationToken ct = default);
+
     Task<UserData> CreateUserAsync(
         string email,
         string password,
@@ -13,6 +22,10 @@ public interface IUserService
     Task<IReadOnlyList<UserData>> GetAllUsersAsync(CancellationToken ct = default);
 
     Task<UserData> SetUserActiveAsync(Guid id, bool isActive, CancellationToken ct = default);
+
+    Task<UserData> ConfirmEmailAsync(Guid userId, CancellationToken ct = default);
+
+    Task<UserData?> FindByIdAsync(Guid id, CancellationToken ct = default);
 
     Task ChangePasswordAsync(Guid id, string newPassword, CancellationToken ct = default);
 
@@ -27,4 +40,11 @@ public interface IUserService
     Task<UserData> UpdateSubscriptionAsync(Guid id, string type, DateTime startedAt, DateTime? endsAt, CancellationToken ct = default);
 
     Task AcceptTermsAsync(Guid userId, CancellationToken ct = default);
+
+    Task ResendConfirmationAsync(
+        string email,
+        IEmailConfirmationTokenService tokenService,
+        IEmailService emailService,
+        string baseUrl,
+        CancellationToken ct = default);
 }

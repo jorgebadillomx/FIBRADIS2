@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Email;
 using Domain.Auth.Exceptions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using SharedApiContracts.Auth;
@@ -24,7 +25,17 @@ public static class AccountEndpoints
             try
             {
                 var profile = await svc.GetProfileAsync(userId, ct);
-                return Results.Ok(new UserProfileResponse(profile.Email, profile.Role, profile.Apodo));
+                return Results.Ok(new UserProfileResponse(
+                    profile.Email,
+                    profile.Role,
+                    profile.Apodo,
+                    profile.IsActive,
+                    profile.TrialEndsAt.HasValue
+                        ? DateTime.SpecifyKind(profile.TrialEndsAt.Value, DateTimeKind.Utc).ToString("O")
+                        : null,
+                    profile.FechaPago.HasValue
+                        ? DateTime.SpecifyKind(profile.FechaPago.Value, DateTimeKind.Utc).ToString("O")
+                        : null));
             }
             catch (UserNotFoundException)
             {
@@ -135,6 +146,26 @@ public static class AccountEndpoints
             {
                 return Results.Unauthorized();
             }
+
+            return Results.NoContent();
+        })
+        .RequireAuthorization()
+        .WithTags("Account")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        app.MapPost("/api/v1/account/notify-payment", async (
+            IEmailService emailService,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            var sub = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? ctx.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+            if (!Guid.TryParse(sub, out var userId))
+                return Results.Unauthorized();
+
+            await emailService.SendPaymentNotificationAsync(userId, ct);
 
             return Results.NoContent();
         })

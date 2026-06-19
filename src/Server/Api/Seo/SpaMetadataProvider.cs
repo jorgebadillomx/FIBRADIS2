@@ -38,6 +38,12 @@ public class SpaMetadataProvider(
         "Conoce la metodología de Fibras Inmobiliarias: fuentes de datos, cálculo de fundamentales (Cap Rate, NAV, NOI) y scores de oportunidad para FIBRAs mexicanas.";
     private const string ContactDescription =
         "Contacta con Fibras Inmobiliarias para reportar errores en datos, solicitar eliminación de cuenta o cualquier consulta sobre la plataforma.";
+    private const string ConfirmEmailDescription =
+        "Confirma tu correo para activar tu prueba gratuita de 14 días en Fibras Inmobiliarias y completar el registro de tu cuenta.";
+    private const string RegistroDescription =
+        "Crea tu cuenta en Fibras Inmobiliarias y comienza tu prueba gratuita de 14 días para acceder a portafolio, reportes, herramientas y más.";
+    private const string ActivarDescription =
+        "Activa tu cuenta en Fibras Inmobiliarias para acceder al portafolio, reportes trimestrales, oportunidades y herramientas de análisis.";
 
     private static readonly JsonSerializerOptions JsonLdOptions = new()
     {
@@ -55,6 +61,7 @@ public class SpaMetadataProvider(
     [
         "/", "/calculadora", "/comparar", "/fibras", "/noticias", "/conoce-las-fibras",
         "/calendario", "/fundamentales", "/plataforma", "/portafolio", "/privacidad", "/acerca", "/contacto",
+        "/confirmar-email",
     ];
 
     public async Task<SpaPageMeta?> GetMetaForPathAsync(string path, CancellationToken ct = default)
@@ -124,6 +131,24 @@ public class SpaMetadataProvider(
                 ContactDescription,
                 "/contacto",
                 await BuildContactJsonLdAsync(ct)),
+            "/confirmar-email" => new SpaPageMeta(
+                "Confirma tu email | Fibras Inmobiliarias",
+                ConfirmEmailDescription,
+                "/confirmar-email",
+                null,
+                "noindex,follow"),
+            "/registro" => new SpaPageMeta(
+                "Registro | Fibras Inmobiliarias",
+                RegistroDescription,
+                "/registro",
+                null,
+                "noindex,nofollow"),
+            "/activar" => new SpaPageMeta(
+                "Activa tu cuenta | Fibras Inmobiliarias",
+                ActivarDescription,
+                "/activar",
+                null,
+                "noindex,nofollow"),
             _ => null,
         };
     }
