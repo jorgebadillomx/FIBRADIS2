@@ -169,6 +169,11 @@ public static class OpsSeoEndpoints
                     var metadata = seoDefaults.BuildStaticPage(
                         SeoPageType.StaticPage, entityKey, meta.Title, meta.Description,
                         meta.CanonicalPath, meta.JsonLd, baseUrl, now);
+                    if (meta.RobotsDirectives is not null)
+                    {
+                        metadata.RobotsDirectives = meta.RobotsDirectives;
+                        metadata.RobotsDirectivesIsOverridden = true;
+                    }
                     await seoRepo.UpsertAsync(metadata, overrideMode: false, ct);
                     staticPages++;
                 }

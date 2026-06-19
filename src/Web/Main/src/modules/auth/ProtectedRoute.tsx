@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from './AuthContext'
 
 export function ProtectedRoute() {
-  const { status } = useAuth()
+  const { status, isActive, trialEndsAt } = useAuth()
   const location = useLocation()
 
   if (status === 'checking') {
@@ -23,6 +23,11 @@ export function ProtectedRoute() {
         replace
       />
     )
+  }
+
+  if (!isActive) {
+    const reason = trialEndsAt === null ? 'trial_not_started' : 'trial_expired'
+    return <Navigate to={`/activar?reason=${reason}`} replace />
   }
 
   return <Outlet />

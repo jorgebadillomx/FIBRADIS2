@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
+import { Navigate } from 'react-router'
 import { useAuth } from '@/modules/auth/AuthContext'
-import { resolvePortafolioRouteView } from './portafolio-route'
 
 const PortafolioPage = lazy(() => import('@/modules/portafolio/PortafolioPage').then((module) => ({ default: module.PortafolioPage })))
 const PortafolioLanding = lazy(() => import('@/modules/portafolio/PortafolioLanding').then((module) => ({ default: module.PortafolioLanding })))
@@ -22,16 +22,20 @@ function PortafolioRouteLoader() {
 }
 
 export function PortafolioRoute() {
-  const { status } = useAuth()
-  const view = resolvePortafolioRouteView(status)
+  const { status, isActive, trialEndsAt } = useAuth()
 
-  if (view === 'loading') {
+  if (status === 'checking') {
     return <PortafolioRouteLoader />
+  }
+
+  if (status === 'authenticated' && !isActive) {
+    const reason = trialEndsAt === null ? 'trial_not_started' : 'trial_expired'
+    return <Navigate to={`/activar?reason=${reason}`} replace />
   }
 
   return (
     <Suspense fallback={<PortafolioRouteLoader />}>
-      {view === 'dashboard' ? <PortafolioPage /> : <PortafolioLanding />}
+      {status === 'authenticated' ? <PortafolioPage /> : <PortafolioLanding />}
     </Suspense>
   )
 }

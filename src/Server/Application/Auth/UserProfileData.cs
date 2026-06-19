@@ -4,4 +4,7 @@ public sealed record UserProfileData(
     Guid Id,
     string Email,
     string Role,
-    string? Apodo);
+    string? Apodo,
+    bool IsActive,
+    DateTime? TrialEndsAt,
+    DateTime? FechaPago);

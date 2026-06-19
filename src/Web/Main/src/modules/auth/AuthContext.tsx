@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { loginMain, logoutMain, refreshMainSession } from './authApi'
+import { fetchProfile, loginMain, logoutMain, refreshMainSession } from './authApi'
 import {
   MAIN_AUTH_REQUIRED_EVENT,
   clearMainAccessToken,
@@ -17,6 +17,8 @@ interface AuthContextValue {
   status: AuthStatus
   isAuthenticated: boolean
   hasAcceptedTerms: boolean
+  isActive: boolean
+  trialEndsAt: string | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   acceptTerms: () => Promise<void>
@@ -30,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<AuthStatus>('checking')
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
+  const [isActive, setIsActive] = useState(true)
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -47,6 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isAuth) {
           setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
           void queryClient.invalidateQueries()
+          try {
+            const profile = await fetchProfile()
+            if (!active) return
+            setIsActive(profile.isActive)
+            setTrialEndsAt(profile.trialEndsAt ?? null)
+          } catch {
+            if (!active) return
+            // Si falla el perfil, asumir activo (degraded mode)
+            setIsActive(true)
+            setTrialEndsAt(null)
+          }
         }
       } catch {
         if (!active) return
@@ -66,6 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear()
       setStatus('anonymous')
       setHasAcceptedTerms(false)
+      setIsActive(true)
+      setTrialEndsAt(null)
     }
 
     window.addEventListener(MAIN_AUTH_REQUIRED_EVENT, handleAuthRequired)
@@ -85,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           queryClient.clear()
           setStatus('anonymous')
           setHasAcceptedTerms(false)
+          setIsActive(true)
+          setTrialEndsAt(null)
         } else {
           setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
         }
@@ -104,6 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('authenticated')
     setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
     await queryClient.invalidateQueries()
+    try {
+      const profile = await fetchProfile()
+      setIsActive(profile.isActive)
+      setTrialEndsAt(profile.trialEndsAt ?? null)
+    } catch {
+      setIsActive(true)
+      setTrialEndsAt(null)
+    }
   }
 
   function logout() {
@@ -111,6 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear()
     setStatus('anonymous')
     setHasAcceptedTerms(false)
+    setIsActive(true)
+    setTrialEndsAt(null)
   }
 
   async function acceptTerms() {
@@ -129,6 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status,
         isAuthenticated: status === 'authenticated',
         hasAcceptedTerms,
+        isActive,
+        trialEndsAt,
         login,
         logout,
         acceptTerms,
