@@ -25,6 +25,7 @@ using YahooQuotesApi;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
 using Infrastructure.Jobs.Fundamentals;
+using Infrastructure.Jobs.Subscriptions;
 using Application.Fundamentals;
 using Infrastructure.Persistence.Repositories.Catalog;
 using Application.Ai;
@@ -98,6 +99,7 @@ public static class ApiServiceExtensions
         builder.Services.AddScoped<NewsPipelineJob>();
         builder.Services.AddScoped<NewsBodyTextRetryJob>();
         builder.Services.AddScoped<FundamentalsPipelineJob>();
+        builder.Services.AddScoped<SubscriptionMaintenanceJob>();
         builder.Services.AddScoped<INewsRepository, NewsRepository>();
         builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
         builder.Services.AddScoped<IAiModeRepository, AiModeRepository>();

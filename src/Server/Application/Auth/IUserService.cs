@@ -39,6 +39,14 @@ public interface IUserService
 
     Task<UserData> UpdateSubscriptionAsync(Guid id, string type, DateTime startedAt, DateTime? endsAt, CancellationToken ct = default);
 
+    Task<IReadOnlyList<UserData>> FindUsersToDeactivateAsync(CancellationToken ct = default);
+
+    Task BulkDeactivateUsersAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
+
+    Task<IReadOnlyList<UserData>> FindUsersWithExpiringTrialAsync(int daysAhead, CancellationToken ct = default);
+
+    Task<IReadOnlyList<UserData>> FindUsersWithExpiringSubscriptionAsync(int daysAhead, global::Domain.Auth.SubscriptionType type, CancellationToken ct = default);
+
     Task AcceptTermsAsync(Guid userId, CancellationToken ct = default);
 
     Task ResendConfirmationAsync(

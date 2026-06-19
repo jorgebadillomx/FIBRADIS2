@@ -10,6 +10,7 @@ using Hangfire;
 using Infrastructure.Jobs.Fundamentals;
 using Infrastructure.Jobs.Market;
 using Infrastructure.Jobs.News;
+using Infrastructure.Jobs.Subscriptions;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -165,6 +166,12 @@ if (!useInMemoryHangfire && !string.IsNullOrEmpty(hangfireConnStr))
         "daily-snapshot-incremental",
         j => j.ExecuteAsync(CancellationToken.None),
         "15 22 * * 1-5",
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+    RecurringJob.AddOrUpdate<SubscriptionMaintenanceJob>(
+        "subscription-maintenance",
+        j => j.ExecuteAsync(CancellationToken.None),
+        "0 2 * * *",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
     RecurringJob.AddOrUpdate<NewsPipelineJob>(

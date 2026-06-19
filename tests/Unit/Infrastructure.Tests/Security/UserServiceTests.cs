@@ -23,6 +23,34 @@ public class UserServiceTests
         public string Decrypt(string storedEmail) => storedEmail;
     }
 
+    private static async Task<User> SeedUserAsync(
+        AppDbContext db,
+        string email,
+        bool isActive,
+        DateTime? trialEndsAt = null,
+        SubscriptionType? subscriptionType = null,
+        DateTime? subscriptionEndsAt = null,
+        DateTime? subscriptionStartedAt = null)
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Fuerte1!"),
+            Role = UserRole.User,
+            IsActive = isActive,
+            CreatedAt = DateTime.UtcNow,
+            TrialEndsAt = trialEndsAt,
+            SubscriptionType = subscriptionType,
+            SubscriptionEndsAt = subscriptionEndsAt,
+            SubscriptionStartedAt = subscriptionStartedAt ?? (subscriptionType == SubscriptionType.Lifetime ? DateTime.UtcNow : null),
+        };
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user;
+    }
+
     // ── Create ──────────────────────────────────────────────────────────────
 
     [Fact]
@@ -238,6 +266,184 @@ public class UserServiceTests
         Assert.Equal(2, users.Count);
         Assert.Equal("a@fibradis.mx", users[0].Email);
         Assert.Equal("b@fibradis.mx", users[1].Email);
+    }
+
+    // ── Subscription maintenance queries ───────────────────────────────────
+
+    [Fact]
+    public async Task FindUsersToDeactivateAsync_ReturnsExpiredSubscription()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await SeedUserAsync(
+            db,
+            "expired-subscription@fibradis.mx",
+            true,
+            subscriptionType: SubscriptionType.Monthly,
+            subscriptionEndsAt: DateTime.UtcNow.AddHours(-1));
+
+        var result = await svc.FindUsersToDeactivateAsync();
+
+        Assert.Single(result);
+        Assert.Equal(user.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task FindUsersToDeactivateAsync_ExcludesLifetime()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        await SeedUserAsync(
+            db,
+            "lifetime@fibradis.mx",
+            true,
+            subscriptionType: SubscriptionType.Lifetime,
+            subscriptionStartedAt: DateTime.UtcNow.AddDays(-30));
+
+        var result = await svc.FindUsersToDeactivateAsync();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task FindUsersToDeactivateAsync_ReturnsExpiredTrial()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await SeedUserAsync(
+            db,
+            "expired-trial@fibradis.mx",
+            true,
+            trialEndsAt: DateTime.UtcNow.AddHours(-2));
+
+        var result = await svc.FindUsersToDeactivateAsync();
+
+        Assert.Single(result);
+        Assert.Equal(user.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task FindUsersToDeactivateAsync_ExcludesActiveUsers()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        await SeedUserAsync(
+            db,
+            "active-trial@fibradis.mx",
+            true,
+            trialEndsAt: DateTime.UtcNow.AddDays(2));
+
+        var result = await svc.FindUsersToDeactivateAsync();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task FindUsersWithExpiringTrialAsync_ReturnsUsersInWindow()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var userInWindow = await SeedUserAsync(
+            db,
+            "trial-window@fibradis.mx",
+            true,
+            trialEndsAt: DateTime.UtcNow.Date.AddDays(3).AddHours(9));
+        await SeedUserAsync(
+            db,
+            "trial-outside@fibradis.mx",
+            true,
+            trialEndsAt: DateTime.UtcNow.Date.AddDays(4));
+
+        var result = await svc.FindUsersWithExpiringTrialAsync(3);
+
+        Assert.Single(result);
+        Assert.Equal(userInWindow.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task FindUsersWithExpiringSubscriptionAsync_Monthly()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var monthly = await SeedUserAsync(
+            db,
+            "monthly-window@fibradis.mx",
+            true,
+            subscriptionType: SubscriptionType.Monthly,
+            subscriptionEndsAt: DateTime.UtcNow.Date.AddDays(3).AddHours(14));
+        await SeedUserAsync(
+            db,
+            "annual-window@fibradis.mx",
+            true,
+            subscriptionType: SubscriptionType.Annual,
+            subscriptionEndsAt: DateTime.UtcNow.Date.AddDays(3).AddHours(14));
+
+        var result = await svc.FindUsersWithExpiringSubscriptionAsync(3, SubscriptionType.Monthly);
+
+        Assert.Single(result);
+        Assert.Equal(monthly.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task FindUsersWithExpiringSubscriptionAsync_Annual_30Days()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var annual = await SeedUserAsync(
+            db,
+            "annual-30@fibradis.mx",
+            true,
+            subscriptionType: SubscriptionType.Annual,
+            subscriptionEndsAt: DateTime.UtcNow.Date.AddDays(30).AddHours(6));
+        await SeedUserAsync(
+            db,
+            "annual-31@fibradis.mx",
+            true,
+            subscriptionType: SubscriptionType.Annual,
+            subscriptionEndsAt: DateTime.UtcNow.Date.AddDays(31));
+
+        var result = await svc.FindUsersWithExpiringSubscriptionAsync(30, SubscriptionType.Annual);
+
+        Assert.Single(result);
+        Assert.Equal(annual.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task FindUsersToDeactivateAsync_ExcludesConvertedMidTrialUser()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        await SeedUserAsync(
+            db,
+            "converted@fibradis.mx",
+            true,
+            trialEndsAt: DateTime.UtcNow.AddHours(-1),
+            subscriptionType: SubscriptionType.Monthly,
+            subscriptionEndsAt: DateTime.UtcNow.AddDays(20));
+
+        var result = await svc.FindUsersToDeactivateAsync();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task BulkDeactivateUsersAsync_SetsIsActiveFalse()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user1 = await SeedUserAsync(db, "bulk-1@fibradis.mx", true);
+        var user2 = await SeedUserAsync(db, "bulk-2@fibradis.mx", true);
+        var user3 = await SeedUserAsync(db, "bulk-3@fibradis.mx", true);
+
+        await svc.BulkDeactivateUsersAsync([user1.Id, user2.Id]);
+
+        var stored1 = await db.Users.FindAsync([user1.Id]);
+        var stored2 = await db.Users.FindAsync([user2.Id]);
+        var stored3 = await db.Users.FindAsync([user3.Id]);
+
+        Assert.False(stored1!.IsActive);
+        Assert.False(stored2!.IsActive);
+        Assert.True(stored3!.IsActive);
     }
 
     // ── SetUserActive ────────────────────────────────────────────────────────

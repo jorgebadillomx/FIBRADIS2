@@ -1,4 +1,6 @@
 using Application.Auth;
+using Application.Email;
+using Microsoft.Extensions.Logging;
 using SharedApiContracts.Auth;
 
 namespace Api.Endpoints.Ops;
@@ -87,9 +89,24 @@ public static class OpsUserEndpoints
             Guid id,
             UpdateSubscriptionRequest req,
             IUserService svc,
+            IEmailService emailService,
+            ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
+            var logger = loggerFactory.CreateLogger(nameof(OpsUserEndpoints));
             var user = await svc.UpdateSubscriptionAsync(id, req.Type, req.StartedAt, req.EndsAt, ct);
+            if (user.IsActive)
+            {
+                try
+                {
+                    await emailService.SendAccessActivatedAsync(user.Email, ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "No se pudo enviar email de activación a userId={UserId}", id);
+                }
+            }
+
             return Results.Ok(ToDto(user));
         })
         .RequireAuthorization("AdminOps")
