@@ -34,7 +34,13 @@ public class NewsPipelineJob(
         "mercado inmobiliario México renta",
     ];
 
-    public async Task ExecuteAsync(CancellationToken ct = default)
+    public Task ExecuteAsync(CancellationToken ct = default)
+        => ExecuteInternalAsync(null, ct);
+
+    public Task ExecuteForFibrasAsync(Guid[] fibraFilter, CancellationToken ct = default)
+        => ExecuteInternalAsync(fibraFilter, ct);
+
+    private async Task ExecuteInternalAsync(IReadOnlyList<Guid>? fibraFilter, CancellationToken ct)
     {
         var startedAt = DateTimeOffset.UtcNow;
         var status = "Failed";
@@ -71,8 +77,11 @@ public class NewsPipelineJob(
                 catch (Exception logEx) { logger.LogWarning(logEx, "No se pudo guardar PipelineErrorLog para fallo de AiModeConfig."); }
             }
 
-            var fibras = await fibraRepo.GetAllActiveAsync(ct);
-            var fibraMatchInfos = fibras
+            var allFibras = await fibraRepo.GetAllActiveAsync(ct);
+            var queryFibras = fibraFilter is { Count: > 0 }
+                ? allFibras.Where(f => fibraFilter.Contains(f.Id)).ToList()
+                : allFibras;
+            var fibraMatchInfos = allFibras
                 .Select(f => new FibraMatchInfo(f.Id, f.Ticker, f.NameVariants.AsReadOnly()))
                 .ToList();
             var blocklistTerms = await blocklistRepo.GetAllTermsAsync(ct);
@@ -80,7 +89,7 @@ public class NewsPipelineJob(
 
             var allItems = new List<RssItem>();
 
-            foreach (var fibra in fibras)
+            foreach (var fibra in queryFibras)
             {
                 foreach (var query in BuildFibraQueries(fibra))
                 {

@@ -1,5 +1,12 @@
 # Deferred Work
 
+## ~~Deuda A2 — Consolidar triple slugify~~ [CANCELADA 2026-06-19]
+
+~~`FibraSlug.cs`, `fibra-slug.ts`, `SlugGenerator.cs` — 3 implementaciones sin helper compartido.~~
+**Decisión:** Cerrada por Jorge en retro de Épica 13. Costo de mantener 3 implementaciones es bajo mientras no haya bug de paridad entre ellas. Reabrirla solo si surge un fallo concreto. No bloquea Épica 14.
+
+---
+
 ## Deferred from: ops-config-tasas-fiscales-isr-iva (2026-06-19)
 
 - D1: **FiscalRatesEndpoint.cs separación** — el endpoint `GET /api/v1/config/fiscal-rates` vive en `OpsConfigEndpoints.cs` en lugar de un archivo dedicado `Public/FiscalRatesEndpoint.cs`. Mover en limpieza técnica para consistencia con el patrón `Public/` del proyecto.

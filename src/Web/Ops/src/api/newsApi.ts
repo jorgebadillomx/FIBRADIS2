@@ -124,3 +124,18 @@ export async function deleteNewsArticle(id: string): Promise<void> {
     throw new Error(text || `Error al eliminar noticia (${response.status})`)
   }
 }
+
+export async function triggerNewsPipeline(fibraIds: string[]): Promise<void> {
+  assertOpsAccessToken()
+
+  const response = await fetch('/api/v1/ops/news/trigger-pipeline', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getOpsAuthHeaders() },
+    body: JSON.stringify({ fibraIds }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `Error al disparar el pipeline (${response.status})`)
+  }
+}

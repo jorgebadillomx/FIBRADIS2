@@ -6,6 +6,7 @@ import {
   fetchOpsNewsBody,
   updateNewsBodyText,
   deleteNewsArticle,
+  triggerNewsPipeline,
   type OpsNewsArticle,
   type NewsKeyFigure,
 } from '@/api/newsApi'
@@ -87,6 +88,16 @@ export function NewsBodyTextSection() {
   const [hasAiSummaryFilter, setHasAiSummaryFilter] = useState<'all' | 'with' | 'without'>('all')
   const [editedFilter, setEditedFilter] = useState<'all' | 'edited' | 'not-edited'>('all')
   const [fibraId, setFibraId] = useState<string>('')
+
+  const [triggerQueued, setTriggerQueued] = useState(false)
+
+  const triggerMutation = useMutation({
+    mutationFn: (ids: string[]) => triggerNewsPipeline(ids),
+    onSuccess: () => {
+      setTriggerQueued(true)
+      window.setTimeout(() => setTriggerQueued(false), 4000)
+    },
+  })
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState<string>('')
@@ -256,6 +267,25 @@ export function NewsBodyTextSection() {
                 <option value="edited">Editados</option>
                 <option value="not-edited">Sin editar</option>
               </select>
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <button
+                className="h-11 whitespace-nowrap rounded-xl border border-teal-600 bg-teal-50 px-4 text-sm font-medium text-teal-700 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:border-border disabled:bg-slate-50 disabled:text-slate-400"
+                disabled={!fibraId || triggerMutation.isPending}
+                onClick={() => { if (fibraId) triggerMutation.mutate([fibraId]) }}
+                title={fibraId ? 'Disparar pipeline de noticias para esta fibra' : 'Selecciona una fibra primero'}
+                type="button"
+              >
+                {triggerMutation.isPending
+                  ? 'Iniciando...'
+                  : triggerQueued
+                    ? '✓ En cola'
+                    : 'Buscar noticias'}
+              </button>
+              {triggerMutation.isError ? (
+                <p className="mt-1 text-xs text-destructive">{triggerMutation.error.message}</p>
+              ) : null}
             </div>
           </div>
         </div>

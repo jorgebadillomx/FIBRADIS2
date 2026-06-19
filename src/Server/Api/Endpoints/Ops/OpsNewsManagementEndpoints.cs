@@ -1,4 +1,6 @@
 using Application.News;
+using Hangfire;
+using Infrastructure.Jobs.News;
 using SharedApiContracts.News;
 
 namespace Api.Endpoints.Ops;
@@ -58,6 +60,21 @@ public static class OpsNewsManagementEndpoints
             return Results.Ok(new BackfillSlugsResultDto(count));
         })
         .Produces<BackfillSlugsResultDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        group.MapPost("/trigger-pipeline", (
+            TriggerPipelineRequestDto req,
+            IBackgroundJobClient jobClient) =>
+        {
+            if (req.FibraIds is { Length: > 0 })
+                jobClient.Enqueue<NewsPipelineJob>(j => j.ExecuteForFibrasAsync(req.FibraIds, CancellationToken.None));
+            else
+                jobClient.Enqueue<NewsPipelineJob>(j => j.ExecuteAsync(CancellationToken.None));
+
+            return Results.Accepted();
+        })
+        .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden);
 

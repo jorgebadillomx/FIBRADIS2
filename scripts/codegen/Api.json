@@ -5045,6 +5045,48 @@
         }
       }
     },
+    "/api/v1/ops/news/trigger-pipeline": {
+      "post": {
+        "tags": [
+          "OpsNewsManagement"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerPipelineRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ops/seo/faq": {
       "get": {
         "tags": [
@@ -10565,6 +10607,21 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "TriggerPipelineRequestDto": {
+        "type": "object",
+        "properties": {
+          "fibraIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
