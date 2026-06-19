@@ -2,6 +2,7 @@ using Api.Authentication;
 using Api.HealthChecks;
 using Api.Seo;
 using Application.Auth;
+using Application.Email;
 using Application.Integrations;
 using Application.Catalog;
 using Application.Jobs;
@@ -13,6 +14,7 @@ using Hangfire.SqlServer;
 using Infrastructure.Integrations.Ai;
 using Infrastructure.Integrations.Articles;
 using Infrastructure.Integrations.Banxico;
+using Infrastructure.Integrations.Email;
 using Infrastructure.Integrations.GoogleNews;
 using Infrastructure.Integrations.OgImage;
 using Infrastructure.Integrations.MasDividendos;
@@ -84,6 +86,7 @@ public static class ApiServiceExtensions
         builder.Services.AddSingleton<ISpaMetadataProvider, SpaMetadataProvider>();
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
+        builder.Services.AddSingleton<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
         builder.Services.AddSingleton<IEmailEncryptor, EmailEncryptor>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IUserService, UserService>();
@@ -113,6 +116,8 @@ public static class ApiServiceExtensions
         builder.Services.AddSingleton<SeoSitemapCacheState>();
         builder.Services.AddHttpClient<IIndexNowService, IndexNowService>(c =>
             c.Timeout = TimeSpan.FromSeconds(10));
+        builder.Services.Configure<ResendOptions>(builder.Configuration.GetSection("Resend"));
+        builder.Services.AddHttpClient<IEmailService, ResendEmailService>();
         builder.Services.AddScoped<IFaqRepository, FaqRepository>();
         builder.Services.AddScoped<IRedirectRepository, RedirectRepository>();
         builder.Services.AddSingleton<ISeoDefaultsBuilder, SeoDefaultsBuilder>();

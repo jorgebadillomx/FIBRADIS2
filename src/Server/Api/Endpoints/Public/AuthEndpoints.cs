@@ -1,4 +1,7 @@
 using Application.Auth;
+using Application.Email;
+using Domain.Auth;
+using Domain.Auth.Exceptions;
 using SharedApiContracts.Auth;
 
 namespace Api.Endpoints.Public;
@@ -13,6 +16,105 @@ public static class AuthEndpoints
     public static IEndpointRouteBuilder MapAuth(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/auth").WithTags("Auth");
+
+        group.MapPost("/register", async (
+            RegisterRequest request,
+            IUserService userService,
+            IEmailConfirmationTokenService tokenService,
+            IEmailService emailService,
+            IConfiguration config,
+            CancellationToken ct) =>
+        {
+            // P1: Validar App:BaseUrl antes de persistir el usuario para evitar estado huérfano
+            var baseUrl = config["App:BaseUrl"]?.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                return Results.Problem(
+                    detail: "App:BaseUrl no está configurado.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+
+            if (DisposableEmailDomains.IsDisposable(request.Email))
+                return Results.UnprocessableEntity(new { code = "disposable_email" });
+
+            HowDidYouHear? howDidYouHear = null;
+            if (!string.IsNullOrWhiteSpace(request.HowDidYouHear))
+            {
+                if (!Enum.TryParse<HowDidYouHear>(request.HowDidYouHear, ignoreCase: true, out var parsedHowDidYouHear))
+                    return Results.BadRequest(new { code = "invalid_user_data" });
+
+                howDidYouHear = parsedHowDidYouHear;
+            }
+
+            try
+            {
+                var user = await userService.RegisterAsync(
+                    request.Email,
+                    request.Password,
+                    request.Apodo,
+                    howDidYouHear,
+                    ct);
+
+                var token = tokenService.GenerateToken(user.Id);
+                var confirmationUrl = $"{baseUrl}/confirmar-email?token={Uri.EscapeDataString(token)}";
+                await emailService.SendEmailConfirmationAsync(user.Email, confirmationUrl, ct);
+
+                return Results.Ok(new RegisterResponse("Revisa tu email para confirmar tu cuenta."));
+            }
+            catch (DisposableEmailException)
+            {
+                return Results.UnprocessableEntity(new { code = "disposable_email" });
+            }
+            catch (DuplicateEmailException)
+            {
+                return Results.Conflict(new { code = "duplicate_email" });
+            }
+            catch (InvalidUserDataException ex)
+            {
+                return Results.BadRequest(new { code = "invalid_user_data", message = ex.Message });
+            }
+        })
+        .AllowAnonymous()
+        .Produces<RegisterResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapGet("/confirm-email", async (
+            string? token,
+            IEmailConfirmationTokenService tokenService,
+            IUserService userService,
+            CancellationToken ct) =>
+        {
+            var validation = tokenService.ValidateToken(token ?? string.Empty);
+            if (!validation.IsValid)
+                return Results.BadRequest(new { code = "token_invalid" });
+
+            if (validation.IsExpired)
+                return Results.BadRequest(new { code = "token_expired" });
+
+            var user = await userService.FindByIdAsync(validation.UserId, ct);
+            if (user is null)
+                return Results.NotFound();
+
+            if (user.EmailConfirmedAt is not null)
+                return Results.BadRequest(new { code = "token_already_used" });
+
+            try
+            {
+                var confirmed = await userService.ConfirmEmailAsync(validation.UserId, ct);
+                var trialEndsAt = confirmed.TrialEndsAt
+                    ?? throw new InvalidOperationException("ConfirmEmailAsync no asignó TrialEndsAt.");
+                return Results.Ok(new ConfirmEmailResponse(new DateTimeOffset(
+                    DateTime.SpecifyKind(trialEndsAt, DateTimeKind.Utc))));
+            }
+            catch (EmailAlreadyConfirmedException)
+            {
+                return Results.BadRequest(new { code = "token_already_used" });
+            }
+        })
+        .AllowAnonymous()
+        .Produces<ConfirmEmailResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/login", async (
             LoginRequest request,
@@ -44,6 +146,27 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Produces<RefreshResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/resend-confirmation", async (
+            ResendConfirmationRequest request,
+            IUserService userService,
+            IEmailConfirmationTokenService tokenService,
+            IEmailService emailService,
+            IConfiguration config,
+            CancellationToken ct) =>
+        {
+            var baseUrl = config["App:BaseUrl"]?.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                return Results.Problem(
+                    detail: "App:BaseUrl no está configurado.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+
+            await userService.ResendConfirmationAsync(
+                request.Email, tokenService, emailService, baseUrl, ct);
+            return Results.Ok(new { message = "Si el email existe, recibirás un enlace de confirmación." });
+        })
+        .AllowAnonymous()
+        .Produces(StatusCodes.Status200OK);
 
         group.MapPost("/logout", async (
             IAuthService authService,

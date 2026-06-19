@@ -3,6 +3,7 @@ using Domain.Catalog;
 using Domain.Fundamentals;
 using Domain.Market;
 using Domain.News;
+using Application.Email;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -21,6 +22,8 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     // aunque EF Core InMemory use cachés estáticas por nombre.
     private readonly InMemoryDatabaseRoot _dbRoot = new();
     private readonly string _databaseName = $"ApiTests-{Guid.NewGuid():N}";
+
+    public CapturingEmailService EmailService { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -56,6 +59,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_databaseName, _dbRoot));
+            services.AddSingleton<IEmailService>(EmailService);
         });
     }
 
@@ -92,6 +96,32 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 CreatedAt = DateTime.UtcNow,
             });
         await db.SaveChangesAsync();
+    }
+
+    public sealed record CapturedEmail(string ToEmail, string ConfirmationUrl);
+
+    public sealed class CapturingEmailService : IEmailService
+    {
+        public List<CapturedEmail> Emails { get; } = [];
+        public List<Guid> PaymentNotifications { get; } = [];
+
+        public Task SendEmailConfirmationAsync(string toEmail, string confirmationUrl, CancellationToken ct)
+        {
+            Emails.Add(new CapturedEmail(toEmail, confirmationUrl));
+            return Task.CompletedTask;
+        }
+
+        public Task SendPaymentNotificationAsync(Guid userId, CancellationToken ct)
+        {
+            PaymentNotifications.Add(userId);
+            return Task.CompletedTask;
+        }
+
+        public void Clear()
+        {
+            Emails.Clear();
+            PaymentNotifications.Clear();
+        }
     }
 
     public static readonly Guid TestNewsArticleId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");

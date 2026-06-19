@@ -96,6 +96,70 @@ public class UserServiceTests
         Assert.Equal(fecha, result.FechaPago);
     }
 
+    // ── Register ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task RegisterAsync_ValidInputs_CreatesInactiveUserWithTrialFieldsNull()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+
+        var result = await svc.RegisterAsync(
+            "nuevo@fibradis.mx",
+            "Fuerte1!",
+            "Apodo",
+            HowDidYouHear.Google);
+
+        Assert.Equal("nuevo@fibradis.mx", result.Email);
+        Assert.Equal("User", result.Role);
+        Assert.False(result.IsActive);
+        Assert.Null(result.TrialEndsAt);
+        Assert.Null(result.EmailConfirmedAt);
+
+        var stored = await db.Users.FindAsync([result.Id]);
+        Assert.NotNull(stored);
+        Assert.False(stored!.IsActive);
+        Assert.Equal("Apodo", stored.Apodo);
+        Assert.Equal(HowDidYouHear.Google, stored.HowDidYouHear);
+        Assert.Null(stored.EmailConfirmedAt);
+        Assert.Null(stored.TrialEndsAt);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_DisposableEmail_ThrowsDisposableEmailException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+
+        await Assert.ThrowsAsync<DisposableEmailException>(
+            () => svc.RegisterAsync("user@mailinator.com", "Fuerte1!", null, null));
+    }
+
+    [Fact]
+    public async Task RegisterAsync_DuplicateEmail_ThrowsDuplicateEmailException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+
+        await svc.RegisterAsync("dup@fibradis.mx", "Fuerte1!", null, null);
+
+        await Assert.ThrowsAsync<DuplicateEmailException>(
+            () => svc.RegisterAsync("dup@fibradis.mx", "Fuerte2@", null, null));
+    }
+
+    [Theory]
+    [InlineData("notanemail")]
+    [InlineData("user@")]
+    [InlineData("@domain.com")]
+    public async Task RegisterAsync_InvalidEmailFormat_ThrowsInvalidUserDataException(string email)
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+
+        await Assert.ThrowsAsync<InvalidUserDataException>(
+            () => svc.RegisterAsync(email, "Fuerte1!", null, null));
+    }
+
     // ── Password validation ──────────────────────────────────────────────────
 
     [Fact]
@@ -327,6 +391,42 @@ public class UserServiceTests
         Assert.False(result.IsActive, "Un ban manual no debe ser revertido por UpdateSubscriptionAsync.");
     }
 
+    // ── ConfirmEmail ────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ConfirmEmailAsync_ValidUser_SetsConfirmationAndTrial()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.RegisterAsync("confirm@fibradis.mx", "Fuerte1!", null, null);
+
+        var confirmed = await svc.ConfirmEmailAsync(user.Id);
+
+        Assert.NotNull(confirmed.EmailConfirmedAt);
+        Assert.NotNull(confirmed.TrialEndsAt);
+        Assert.True(confirmed.IsActive);
+        Assert.Equal(TimeSpan.FromDays(14), confirmed.TrialEndsAt!.Value - confirmed.EmailConfirmedAt!.Value);
+
+        var stored = await db.Users.FindAsync([user.Id]);
+        Assert.NotNull(stored);
+        Assert.True(stored!.IsActive);
+        Assert.NotNull(stored.EmailConfirmedAt);
+        Assert.NotNull(stored.TrialEndsAt);
+    }
+
+    [Fact]
+    public async Task ConfirmEmailAsync_AlreadyConfirmed_ThrowsEmailAlreadyConfirmedException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.RegisterAsync("already@fibradis.mx", "Fuerte1!", null, null);
+
+        await svc.ConfirmEmailAsync(user.Id);
+
+        await Assert.ThrowsAsync<EmailAlreadyConfirmedException>(
+            () => svc.ConfirmEmailAsync(user.Id));
+    }
+
     // ── AcceptTerms ──────────────────────────────────────────────────────────
 
     [Fact]
@@ -368,5 +468,62 @@ public class UserServiceTests
 
         await Assert.ThrowsAsync<UserNotFoundException>(
             () => svc.AcceptTermsAsync(Guid.NewGuid()));
+    }
+
+    // ── GetProfileAsync — 14.3 ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetProfileAsync_ActiveUser_ReturnsIsActiveTrue()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("perfil@fibradis.mx", "Fuerte1!", "User");
+
+        var profile = await svc.GetProfileAsync(user.Id);
+
+        Assert.True(profile.IsActive);
+        Assert.Null(profile.TrialEndsAt);
+        Assert.Null(profile.FechaPago);
+    }
+
+    [Fact]
+    public async Task GetProfileAsync_TrialUser_ReturnsTrialEndsAt()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.RegisterAsync("trial@fibradis.mx", "Fuerte1!", null, null);
+        await svc.ConfirmEmailAsync(user.Id);
+
+        var profile = await svc.GetProfileAsync(user.Id);
+
+        Assert.True(profile.IsActive);
+        Assert.NotNull(profile.TrialEndsAt);
+    }
+
+    [Fact]
+    public async Task GetProfileAsync_UserWithPayment_ReturnsFechaPago()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var fecha = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+        var user = await svc.CreateUserAsync("pago-perfil@fibradis.mx", "Fuerte1!", "User", 299m, fecha);
+
+        var profile = await svc.GetProfileAsync(user.Id);
+
+        Assert.Equal(fecha, profile.FechaPago);
+    }
+
+    [Fact]
+    public async Task GetProfileAsync_InactiveUserNoTrial_ReturnsIsActiveFalse()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.RegisterAsync("inactivo@fibradis.mx", "Fuerte1!", null, null);
+        // Usuario registrado pero sin confirmar email: IsActive=false, TrialEndsAt=null
+
+        var profile = await svc.GetProfileAsync(user.Id);
+
+        Assert.False(profile.IsActive);
+        Assert.Null(profile.TrialEndsAt);
     }
 }
