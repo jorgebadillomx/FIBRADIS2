@@ -78,6 +78,7 @@ public static class MarketEndpoints
                 "3m" => 90,
                 "6m" => 180,
                 "1y" => 365,
+                "2y" => 730,
                 _ => 30,
             };
 

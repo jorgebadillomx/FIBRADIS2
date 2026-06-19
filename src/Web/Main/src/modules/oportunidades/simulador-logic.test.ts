@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  calcCostoPurchase,
   calcNewAvgCost,
   calcNuevoAvg,
   calcNuevaPlusvaliaPct,
@@ -133,4 +134,22 @@ test('calcTitulosParaRentaTarget — sin datos de renta devuelve null', () => {
 test('calcTitulosParaRentaTarget — target ≤ 0 devuelve null', () => {
   const result = calcTitulosParaRentaTarget(0, 100, 5.2, 1000, 11000)
   assert.equal(result, null)
+})
+
+// calcCostoPurchase
+
+test('calcCostoPurchase — ejemplo real: 10 × $28.38 × commission 0.0025 + IVA 16%', () => {
+  const result = calcCostoPurchase(28.38, 10, 0.0025)
+  // 283.80 + 0.7095 + 0.1135 = 284.623
+  assert.ok(Math.abs(result - 284.623) < 0.001)
+})
+
+test('calcCostoPurchase — comisión cero: solo precio × cantidad', () => {
+  const result = calcCostoPurchase(28.38, 10, 0)
+  assert.ok(Math.abs(result - 283.80) < 0.001)
+})
+
+test('calcCostoPurchase — cantidad cero devuelve 0', () => {
+  const result = calcCostoPurchase(28.38, 0, 0.0025)
+  assert.equal(result, 0)
 })

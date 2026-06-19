@@ -174,12 +174,12 @@ export function ConfigPage() {
                 <input
                   {...register('commissionFactor', {
                     required: 'commission_factor es requerido.',
-                    min: { value: 0.001, message: 'Mínimo 0.001.' },
+                    min: { value: 0.0001, message: 'Mínimo 0.0001.' },
                     max: { value: 0.1, message: 'Máximo 0.1.' },
                     valueAsNumber: true,
                   })}
                   className={inputClassName}
-                  step="0.001"
+                  step="0.0001"
                   type="number"
                 />
               </Field>

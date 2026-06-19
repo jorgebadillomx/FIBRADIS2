@@ -1,3 +1,14 @@
+export const IVA_FACTOR = 0.16
+
+export function calcCostoPurchase(
+  precio: number,
+  cantidad: number,
+  commissionFactor: number,
+  ivaFactor = IVA_FACTOR,
+): number {
+  return precio * cantidad * (1 + commissionFactor * (1 + ivaFactor))
+}
+
 export function calcNuevoAvg(
   titulos: number,
   costoPromedio: number,

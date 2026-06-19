@@ -4,6 +4,8 @@ import type { components } from '@fibradis/shared-api-client'
 import { apiClient } from '@/api/fibrasApi'
 import { type Weights, calcLocalScore } from '@/modules/oportunidades/OportunidadesPage'
 import {
+  IVA_FACTOR,
+  calcCostoPurchase,
   calcNewAvgCost,
   calcNuevoAvg,
   calcNuevaPlusvaliaPct,
@@ -18,6 +20,7 @@ type PortfolioResponseDto = components['schemas']['PortfolioResponseDto']
 type PortfolioConfigDto = components['schemas']['PortfolioConfigDto']
 type OpportunityFibraRowDto = components['schemas']['OpportunityFibraRowDto']
 type OpportunityRankingResponseDto = components['schemas']['OpportunityRankingResponseDto']
+type FibraHistoryDto = components['schemas']['FibraHistoryDto']
 
 function toNum(v: null | number | string | undefined): number {
   if (v == null) return 0
@@ -85,12 +88,12 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     retry: false,
   })
 
-  // All hooks must be called before any conditional return
   const positions = portfolioQuery.data?.positions ?? []
   const ranked = rankingQuery.data?.ranked ?? []
   const limitedData = rankingQuery.data?.limitedData ?? []
   const allOpportunityRows = [...ranked, ...limitedData]
   const rowByFibraId = new Map(allOpportunityRows.map((r) => [r.fibraId, r]))
+  const positionByFibraId = new Map(positions.map((p) => [p.fibraId, p]))
 
   const promediarRows: PromediarRow[] = useMemo(() => (
     positions
@@ -107,10 +110,33 @@ export function PromediarTab({ weights }: { weights: Weights }) {
   ), [positions, weights])
 
   useEffect(() => {
-    if (!whatIfFibraId && promediarRows[0]) {
-      setWhatIfFibraId(promediarRows[0].position.fibraId)
+    if (!whatIfFibraId && allOpportunityRows[0]) {
+      setWhatIfFibraId(allOpportunityRows[0].fibraId)
     }
-  }, [promediarRows, whatIfFibraId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allOpportunityRows, whatIfFibraId])
+
+  // Find selected what-if opportunity row (all fibras)
+  const selectedOpportunityRow = allOpportunityRows.find((r) => r.fibraId === whatIfFibraId) ?? allOpportunityRows[0] ?? null
+  // Find portfolio position if user holds this fibra
+  const selectedPosition = selectedOpportunityRow ? positionByFibraId.get(selectedOpportunityRow.fibraId) ?? null : null
+
+  const selectedTicker = selectedOpportunityRow?.ticker ?? ''
+
+  // History query for 2-year return panel
+  const historyQuery = useQuery<FibraHistoryDto | null>({
+    queryKey: ['market', 'history', selectedTicker, '2y'],
+    queryFn: async () => {
+      if (!selectedTicker) return null
+      const { data, error } = await apiClient.GET('/api/v1/market/fibras/{ticker}/history', {
+        params: { path: { ticker: selectedTicker }, query: { period: '2y' } },
+      })
+      if (error || !data) return null
+      return data
+    },
+    enabled: !!selectedTicker,
+    staleTime: 5 * 60 * 1000,
+  })
 
   if (portfolioQuery.isLoading || rankingQuery.isLoading) {
     return (
@@ -136,46 +162,48 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     )
   }
 
-  const selectedWhatIfRow = promediarRows.find((row) => row.position.fibraId === whatIfFibraId) ?? promediarRows[0] ?? null
   const commissionFactor = toNum(configQuery.data?.commissionFactor) ?? 0
   const additionalWhatIfTitles = parseInt(whatIfTitulos, 10)
-  const currentTitulos = selectedWhatIfRow ? toNum(selectedWhatIfRow.position.titulos) : null
-  const currentAvgCost = selectedWhatIfRow ? toNum(selectedWhatIfRow.position.costoPromedio) : null
-  const currentPrice = selectedWhatIfRow ? toNum(selectedWhatIfRow.position.precioActual) : null
+  const currentTitulos = selectedPosition ? toNum(selectedPosition.titulos) : 0
+  const currentAvgCost = selectedPosition ? toNum(selectedPosition.costoPromedio) : 0
+  const currentPrice = selectedOpportunityRow?.precioActual != null
+    ? toNum(selectedOpportunityRow.precioActual)
+    : (selectedPosition?.precioActual != null ? toNum(selectedPosition.precioActual) : null)
   const portfolioValue = toNum(portfolioQuery.data?.kpis?.valorTotal)
+
   const canSimulateWhatIf =
-    selectedWhatIfRow != null &&
+    selectedOpportunityRow != null &&
     Number.isInteger(additionalWhatIfTitles) &&
     additionalWhatIfTitles > 0 &&
-    currentTitulos != null &&
-    currentAvgCost != null &&
     currentPrice != null
 
   const newAvgCost = canSimulateWhatIf
     ? calcNewAvgCost(
-        currentTitulos!,
-        currentAvgCost!,
+        currentTitulos,
+        currentAvgCost,
         currentPrice!,
         additionalWhatIfTitles,
         commissionFactor,
       )
     : null
+
   const deltaVsPricePct =
     newAvgCost != null && currentPrice != null && currentPrice > 0
       ? ((newAvgCost - currentPrice) / currentPrice) * 100
       : null
+
   const newPortfolioPct =
     canSimulateWhatIf && portfolioValue != null && portfolioValue > 0
-      ? (((currentTitulos! + additionalWhatIfTitles) * currentPrice!) /
+      ? (((currentTitulos + additionalWhatIfTitles) * currentPrice!) /
           (portfolioValue + additionalWhatIfTitles * currentPrice!)) * 100
       : null
 
-  const dividendYieldPct = selectedWhatIfRow?.opportunityRow?.dividendYieldPct != null
-    ? toNum(selectedWhatIfRow.opportunityRow.dividendYieldPct)
+  const dividendYieldPct = selectedOpportunityRow?.dividendYieldPct != null
+    ? toNum(selectedOpportunityRow.dividendYieldPct)
     : null
-  const currentRentaAnual = toNum(selectedWhatIfRow?.position.rentaAnual)
+  const currentRentaAnual = toNum(selectedPosition?.rentaAnual)
 
-  const rentaAnualEstimada = canSimulateWhatIf && currentTitulos != null && currentPrice != null
+  const rentaAnualEstimada = canSimulateWhatIf && currentPrice != null
     ? calcRentaProyectadaAnual(
         currentRentaAnual,
         additionalWhatIfTitles,
@@ -186,45 +214,107 @@ export function PromediarTab({ weights }: { weights: Weights }) {
     : null
   const rentaMensualEstimada = rentaAnualEstimada != null ? rentaAnualEstimada / 12 : null
 
+  const costoPurchaseWhatIf = canSimulateWhatIf && currentPrice != null
+    ? calcCostoPurchase(currentPrice, additionalWhatIfTitles, commissionFactor)
+    : null
+
   const targetRentaMensualNum = parseFloat(whatIfTargetRenta)
   const hasTargetRenta = !isNaN(targetRentaMensualNum) && targetRentaMensualNum > 0
-  const titulosTotalesParaTarget = hasTargetRenta && selectedWhatIfRow != null
+
+  const titulosTotalesParaTarget = hasTargetRenta && selectedOpportunityRow != null
     ? calcTitulosParaRentaTarget(
         targetRentaMensualNum,
         currentPrice ?? 0,
         dividendYieldPct,
-        currentTitulos ?? 0,
+        currentTitulos,
         currentRentaAnual,
       )
     : null
-  const titulosAdicionalesParaTarget = titulosTotalesParaTarget != null && currentTitulos != null
+  const titulosAdicionalesParaTarget = titulosTotalesParaTarget != null
     ? Math.max(0, titulosTotalesParaTarget - currentTitulos)
     : null
   const costoInversionParaTarget = titulosAdicionalesParaTarget != null
-    ? titulosAdicionalesParaTarget * (currentPrice ?? 0) * (1 + commissionFactor)
+    ? calcCostoPurchase(currentPrice ?? 0, titulosAdicionalesParaTarget, commissionFactor)
     : null
   const targetYaCumplido = hasTargetRenta && titulosTotalesParaTarget != null
-    && currentTitulos != null && currentTitulos >= titulosTotalesParaTarget
-  const sinDatosRenta = hasTargetRenta && selectedWhatIfRow != null && titulosTotalesParaTarget === null
+    && currentTitulos >= titulosTotalesParaTarget
+  const sinDatosRenta = hasTargetRenta && selectedOpportunityRow != null && titulosTotalesParaTarget === null
+
+  // Handlers with bidirectional sync
+  function handleTitulosChange(value: string) {
+    setWhatIfTitulos(value)
+    const n = parseInt(value, 10)
+    if (Number.isInteger(n) && n > 0 && currentPrice != null) {
+      const renta = calcRentaProyectadaAnual(currentRentaAnual, n, currentPrice, dividendYieldPct, currentTitulos) / 12
+      setWhatIfTargetRenta(String(Math.round(renta)))
+    } else if (value === '' || value === '0') {
+      setWhatIfTargetRenta('')
+    }
+  }
+
+  function handleRentaChange(value: string) {
+    setWhatIfTargetRenta(value)
+    const target = parseFloat(value)
+    if (!isNaN(target) && target > 0 && selectedOpportunityRow != null) {
+      const total = calcTitulosParaRentaTarget(target, currentPrice ?? 0, dividendYieldPct, currentTitulos, currentRentaAnual)
+      const adicionales = total != null ? Math.max(0, total - currentTitulos) : null
+      setWhatIfTitulos(adicionales != null ? String(adicionales) : '')
+    } else if (value === '' || value === '0') {
+      setWhatIfTitulos('')
+    }
+  }
+
+  // Panel retorno 2 años
+  const priceHistory = historyQuery.data?.priceHistory ?? []
+  const distributions = historyQuery.data?.distributions ?? []
+  const twoYearsAgo = new Date()
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
+  const twoYearsAgoStr = twoYearsAgo.toISOString().slice(0, 10)
+
+  const precioInicial = priceHistory.length > 0 ? toNum(priceHistory[0].close) : null
+  const invertidoPanel = Math.max(0, parseFloat(whatIfTargetRenta) || 0)
+  const cbfisPanel = precioInicial != null && precioInicial > 0 && invertidoPanel > 0
+    ? Math.floor(invertidoPanel / precioInicial)
+    : 0
+  const montoInvertidoReal = cbfisPanel > 0 && precioInicial != null ? cbfisPanel * precioInicial : 0
+
+  const distIn2y = distributions.filter((d) => (d.date ?? '') >= twoYearsAgoStr)
+  const dividendosPorCbfi = distIn2y.reduce((sum, d) => sum + toNum(d.amountPerUnit), 0)
+  const dividendosRecibidos = cbfisPanel * dividendosPorCbfi
+  const valorHoyPanel = cbfisPanel * (currentPrice ?? 0)
+  const variacionCapital = montoInvertidoReal > 0 ? valorHoyPanel - montoInvertidoReal : 0
+  const variacionPorcentual = montoInvertidoReal > 0 ? (variacionCapital / montoInvertidoReal) * 100 : 0
+  const rendimientoTotalPesos = variacionCapital + dividendosRecibidos
+  const rendimientoTotalPct = montoInvertidoReal > 0 ? (rendimientoTotalPesos / montoInvertidoReal) * 100 : 0
+  const rendimientoAnualizado = rendimientoTotalPct > -100
+    ? ((1 + rendimientoTotalPct / 100) ** 0.5 - 1) * 100
+    : null
+
+  const hasPanelData = precioInicial != null && priceHistory.length > 0
+
+  const todayStr = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const twoYearsAgoDisplay = twoYearsAgo.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
   return (
     <div className="space-y-4">
+      {/* Listing table */}
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
-              <th className="px-3 py-2 text-left">#</th>
-              <th className="px-3 py-2 text-left">FIBRA</th>
-              <th className="px-3 py-2 text-right">Costo prom.</th>
-              <th className="px-3 py-2 text-right">Precio actual</th>
-              <th className="px-3 py-2 text-right">Dif. %</th>
-              <th className="px-3 py-2 text-right">Score</th>
-              <th className="px-3 py-2 text-right">Yield</th>
-              <th className="px-3 py-2 text-right">Títulos adicionales</th>
-              <th className="px-3 py-2 text-right">Nuevo avg</th>
-              <th className="px-3 py-2 text-right">Nuevo valor</th>
-              <th className="px-3 py-2 text-right">Nueva plusvalía</th>
-              <th className="px-3 py-2 text-right">Costo compra</th>
+              <th className="px-3 py-2 text-left" title="Posición en el ranking">#</th>
+              <th className="px-3 py-2 text-left" title="Ticker y nombre de la FIBRA">FIBRA</th>
+              <th className="px-3 py-2 text-right" title="Precio promedio de compra en tu portafolio">Costo prom.</th>
+              <th className="px-3 py-2 text-right" title="Precio de mercado más reciente">Precio actual</th>
+              <th className="px-3 py-2 text-right" title="Diferencia porcentual entre precio actual y costo promedio">Dif. %</th>
+              <th className="px-3 py-2 text-right" title="Score de oportunidad calculado con los pesos configurados">Score</th>
+              <th className="px-3 py-2 text-right" title="Dividend yield anualizado (distribuciones / precio)">Yield</th>
+              <th className="px-3 py-2 text-right" title="Número de títulos adicionales a comprar en esta simulación">Títulos adicionales</th>
+              <th className="px-3 py-2 text-right" title="Nuevo costo promedio ponderado incluyendo comisión">Nuevo avg</th>
+              <th className="px-3 py-2 text-right" title="Valor total de la posición (actuales + adicionales) al precio actual">Nuevo valor</th>
+              <th className="px-3 py-2 text-right" title="Plusvalía porcentual del nuevo costo promedio respecto al precio actual">Nueva plusvalía</th>
+              <th className="px-3 py-2 text-right" title="Renta mensual estimada con los títulos adicionales (basada en yield anualizado)">Renta mens.</th>
+              <th className="px-3 py-2 text-right" title={`Costo total de compra incluyendo comisión (${(commissionFactor * 100).toFixed(2)}%) e IVA (${(IVA_FACTOR * 100).toFixed(0)}%)`}>Costo compra</th>
             </tr>
           </thead>
           <tbody>
@@ -241,7 +331,20 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               const yieldPct = opportunityRow?.dividendYieldPct != null
                 ? toNum(opportunityRow.dividendYieldPct)
                 : null
-              const costoCompra = hasSimulacion && precioActual != null ? adicionalesNum * precioActual : null
+
+              const costoCompraRow = hasSimulacion && precioActual != null
+                ? calcCostoPurchase(precioActual, adicionalesNum, commissionFactor)
+                : null
+
+              const rentaMensualRow = hasSimulacion && precioActual != null
+                ? calcRentaProyectadaAnual(
+                    toNum(position.rentaAnual),
+                    adicionalesNum,
+                    precioActual,
+                    yieldPct,
+                    titulos,
+                  ) / 12
+                : null
 
               const difPct = precioActual != null && costoPromedio > 0
                 ? ((precioActual - costoPromedio) / costoPromedio) * 100
@@ -288,13 +391,13 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                     {yieldPct != null ? `${yieldPct.toFixed(1)}%` : '—'}
                   </td>
                   <td className="px-3 py-2 text-right">
-                      <input
-                        id={`adicionales-${position.fibraId}`}
-                        name={`adicionales-${position.fibraId}`}
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={adicionalesStr}
+                    <input
+                      id={`adicionales-${position.fibraId}`}
+                      name={`adicionales-${position.fibraId}`}
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={adicionalesStr}
                       aria-label={`Títulos adicionales para ${position.ticker}`}
                       onChange={(e) =>
                         setAdicionales((prev) => ({ ...prev, [position.fibraId]: e.target.value }))
@@ -314,8 +417,11 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                   }`}>
                     {nuevaPlusvalia != null ? `${nuevaPlusvalia.toFixed(1)}%` : '—'}
                   </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-xs text-muted-foreground">
+                    {rentaMensualRow != null ? fmtMxnNoDecimals(rentaMensualRow) : '—'}
+                  </td>
                   <td className="px-3 py-2 text-right tabular-nums text-xs">
-                    {costoCompra != null ? fmtMxnNoDecimals(costoCompra) : '—'}
+                    {costoCompraRow != null ? fmtMxnNoDecimals(costoCompraRow) : '—'}
                   </td>
                 </tr>
               )
@@ -324,6 +430,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
         </table>
       </div>
 
+      {/* ¿Qué pasaría si? */}
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -338,12 +445,20 @@ export function PromediarTab({ weights }: { weights: Weights }) {
             </p>
           </div>
 
-          <div className="text-sm text-muted-foreground">
-            Comisión aplicada: <span className="font-medium text-foreground">{formatPercent(commissionFactor * 100)}</span>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>
+              Comisión aplicada:{' '}
+              <span className="font-semibold text-foreground">{(commissionFactor * 100).toFixed(2)}%</span>
+            </span>
+            <span>
+              IVA:{' '}
+              <span className="font-semibold text-foreground">{(IVA_FACTOR * 100).toFixed(0)}%</span>
+            </span>
           </div>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)]">
+          {/* Left: FIBRA selector + inputs */}
           <div className="space-y-3 rounded-xl border border-border/70 bg-background p-4">
             <label className="space-y-1.5">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -356,9 +471,10 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                 onChange={(e) => setWhatIfFibraId(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
               >
-                {promediarRows.map(({ position }) => (
-                  <option key={position.fibraId} value={position.fibraId}>
-                    {position.ticker} - {position.nombre}
+                {allOpportunityRows.map((row) => (
+                  <option key={row.fibraId} value={row.fibraId}>
+                    {row.ticker} - {row.nombre}
+                    {positionByFibraId.has(row.fibraId) ? '' : ' (sin posición)'}
                   </option>
                 ))}
               </select>
@@ -375,7 +491,7 @@ export function PromediarTab({ weights }: { weights: Weights }) {
                 min={0}
                 step={1}
                 value={whatIfTitulos}
-                onChange={(e) => setWhatIfTitulos(e.target.value)}
+                onChange={(e) => handleTitulosChange(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
                 placeholder="0"
               />
@@ -386,7 +502,8 @@ export function PromediarTab({ weights }: { weights: Weights }) {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Right: 5 metric cards */}
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <MetricCard title="Nuevo costo promedio" value={formatMoney(newAvgCost)} />
             <MetricCard
               title="Delta vs precio actual"
@@ -409,52 +526,82 @@ export function PromediarTab({ weights }: { weights: Weights }) {
               title="Renta mensual estimada"
               value={formatMoney(rentaMensualEstimada)}
             />
+            <MetricCard
+              title="Costo compra"
+              value={costoPurchaseWhatIf != null ? fmtMxnNoDecimals(costoPurchaseWhatIf) : '—'}
+            />
           </div>
 
-          <div className="mt-4 border-t pt-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Calcular objetivo de renta
-            </p>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">
-                Renta mensual objetivo (MXN)
-              </span>
-              <input
-                id="promediar-renta-mensual-objetivo"
-                name="whatIfTargetRenta"
-                type="number"
-                min={0}
-                step={100}
-                value={whatIfTargetRenta}
-                onChange={(e) => setWhatIfTargetRenta(e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
-                placeholder="0"
-              />
-            </label>
-            {targetYaCumplido && (
-              <p className="text-sm text-green-700 font-medium">
-                Ya cumples el objetivo con tus posiciones actuales.
+          {/* Calcular objetivo de renta + panel retorno */}
+          <div className="col-span-full mt-4 grid gap-4 border-t pt-4 lg:grid-cols-2">
+            {/* Left: renta objetivo */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Calcular objetivo de renta
               </p>
-            )}
-            {sinDatosRenta && (
-              <p className="text-sm text-muted-foreground">
-                Datos de renta no disponibles para esta FIBRA.
-              </p>
-            )}
-            {!targetYaCumplido && !sinDatosRenta && titulosAdicionalesParaTarget != null && (
-              <p className="text-sm text-foreground">
-                Necesitas{' '}
-                <span className="font-semibold">
-                  {titulosAdicionalesParaTarget.toLocaleString('es-MX')}
-                </span>{' '}
-                títulos adicionales
-                {costoInversionParaTarget != null && costoInversionParaTarget > 0 && (
-                  <span className="text-muted-foreground">
-                    {' '}(~{fmtMxnNoDecimals(costoInversionParaTarget)} de inversión)
-                  </span>
-                )}
-              </p>
-            )}
+              <label className="block space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Renta mensual objetivo (MXN)
+                </span>
+                <input
+                  id="promediar-renta-mensual-objetivo"
+                  name="whatIfTargetRenta"
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={whatIfTargetRenta}
+                  onChange={(e) => handleRentaChange(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-ring"
+                  placeholder="0"
+                />
+              </label>
+              {targetYaCumplido && (
+                <p className="text-sm text-green-700 font-medium">
+                  Ya cumples el objetivo con tus posiciones actuales.
+                </p>
+              )}
+              {sinDatosRenta && (
+                <p className="text-sm text-muted-foreground">
+                  Datos de renta no disponibles para esta FIBRA.
+                </p>
+              )}
+              {!targetYaCumplido && !sinDatosRenta && titulosAdicionalesParaTarget != null && (
+                <p className="text-sm text-foreground">
+                  Necesitas{' '}
+                  <span className="font-semibold">
+                    {titulosAdicionalesParaTarget.toLocaleString('es-MX')}
+                  </span>{' '}
+                  títulos adicionales
+                  {costoInversionParaTarget != null && costoInversionParaTarget > 0 && (
+                    <span className="text-muted-foreground">
+                      {' '}(~{fmtMxnNoDecimals(costoInversionParaTarget)} de inversión)
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+
+            {/* Right: retorno histórico 2 años */}
+            <RetornoPanel
+              ticker={selectedTicker}
+              invertido={invertidoPanel}
+              fechaInicio={twoYearsAgoDisplay}
+              fechaFin={todayStr}
+              cbfis={cbfisPanel}
+              precioInicial={precioInicial}
+              precioFinal={currentPrice}
+              montoInvertidoReal={montoInvertidoReal}
+              dividendosPorCbfi={dividendosPorCbfi}
+              dividendosRecibidos={dividendosRecibidos}
+              valorHoy={valorHoyPanel}
+              variacionCapital={variacionCapital}
+              variacionPorcentual={variacionPorcentual}
+              rendimientoTotalPesos={rendimientoTotalPesos}
+              rendimientoTotalPct={rendimientoTotalPct}
+              rendimientoAnualizado={rendimientoAnualizado}
+              hasPanelData={hasPanelData}
+              isLoading={historyQuery.isLoading}
+            />
           </div>
         </div>
       </section>
@@ -462,6 +609,150 @@ export function PromediarTab({ weights }: { weights: Weights }) {
       <p className="mt-3 text-xs text-muted-foreground text-center">
         Este simulador es informativo. No constituye una recomendación de compra o venta.
       </p>
+    </div>
+  )
+}
+
+interface RetornoPanelProps {
+  ticker: string
+  invertido: number
+  fechaInicio: string
+  fechaFin: string
+  cbfis: number
+  precioInicial: number | null
+  precioFinal: number | null
+  montoInvertidoReal: number
+  dividendosPorCbfi: number
+  dividendosRecibidos: number
+  valorHoy: number
+  variacionCapital: number
+  variacionPorcentual: number
+  rendimientoTotalPesos: number
+  rendimientoTotalPct: number
+  rendimientoAnualizado: number | null
+  hasPanelData: boolean
+  isLoading: boolean
+}
+
+function RetornoPanel({
+  ticker,
+  invertido,
+  fechaInicio,
+  fechaFin,
+  cbfis,
+  precioInicial,
+  precioFinal,
+  montoInvertidoReal,
+  dividendosPorCbfi,
+  dividendosRecibidos,
+  valorHoy,
+  variacionCapital,
+  variacionPorcentual,
+  rendimientoTotalPesos,
+  rendimientoTotalPct,
+  rendimientoAnualizado,
+  hasPanelData,
+  isLoading,
+}: RetornoPanelProps) {
+  return (
+    <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Retorno histórico — {ticker}
+        </p>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {fechaInicio} → {fechaFin}
+        </span>
+      </div>
+
+      {isLoading && (
+        <p className="text-xs text-muted-foreground py-4 text-center">Cargando historial…</p>
+      )}
+
+      {!isLoading && !hasPanelData && (
+        <p className="text-xs text-muted-foreground py-4 text-center">Sin datos históricos suficientes.</p>
+      )}
+
+      {!isLoading && hasPanelData && (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Inversión inicial */}
+          <div className="space-y-1.5 rounded-lg border border-border/60 bg-muted/20 p-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Inversión inicial
+            </p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Precio CBFI:</span>
+                <span className="tabular-nums font-medium">{precioInicial != null ? fmtMxn(precioInicial) : '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Núm. CBFIs:</span>
+                <span className="tabular-nums font-medium">{cbfis > 0 ? cbfis.toLocaleString('es-MX') : '—'}</span>
+              </div>
+              <div className="flex justify-between border-t border-border/40 pt-1 mt-1">
+                <span className="text-muted-foreground">Monto invertido:</span>
+                <span className="tabular-nums font-semibold">{montoInvertidoReal > 0 ? fmtMxn(montoInvertidoReal) : invertido > 0 ? fmtMxn(invertido) : '$0.00'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Capital */}
+          <div className="space-y-1.5 rounded-lg border border-border/60 bg-muted/20 p-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Inversión del capital
+            </p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Precio CBFI final:</span>
+                <span className="tabular-nums font-medium">{precioFinal != null ? fmtMxn(precioFinal) : '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Valor hoy:</span>
+                <span className="tabular-nums font-medium">{valorHoy > 0 ? fmtMxn(valorHoy) : '—'}</span>
+              </div>
+              <div className={`flex justify-between border-t border-border/40 pt-1 mt-1 font-medium ${variacionCapital >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                <span>Variación:</span>
+                <span className="tabular-nums">{montoInvertidoReal > 0 ? `${variacionPorcentual >= 0 ? '+' : ''}${variacionPorcentual.toFixed(2)}%` : '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dividendos */}
+          <div className="space-y-1.5 rounded-lg border border-green-200 bg-green-50/50 p-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Dividendos recibidos
+            </p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Por CBFI:</span>
+                <span className="tabular-nums font-medium">{dividendosPorCbfi > 0 ? fmtMxn(dividendosPorCbfi) : '—'}</span>
+              </div>
+              <div className="flex justify-between border-t border-border/40 pt-1 mt-1 font-semibold text-green-800">
+                <span>Total:</span>
+                <span className="tabular-nums">{dividendosRecibidos > 0 ? fmtMxn(dividendosRecibidos) : '$0.00'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rendimiento total */}
+          <div className="space-y-1.5 rounded-lg bg-primary p-3 text-primary-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
+              Rendimiento total
+            </p>
+            <div className="mt-1 text-xl font-bold tabular-nums">
+              {montoInvertidoReal > 0 ? `${rendimientoTotalPct >= 0 ? '+' : ''}${rendimientoTotalPct.toFixed(2)}%` : '—'}
+            </div>
+            <div className="text-xs opacity-80 tabular-nums">
+              {montoInvertidoReal > 0 ? fmtMxn(rendimientoTotalPesos) : ''}
+            </div>
+            {rendimientoAnualizado != null && montoInvertidoReal > 0 && (
+              <div className="mt-2 border-t border-primary-foreground/20 pt-2 text-xs">
+                Anualizado: <span className="font-semibold">{rendimientoAnualizado.toFixed(2)}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
