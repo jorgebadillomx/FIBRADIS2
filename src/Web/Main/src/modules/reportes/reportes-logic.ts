@@ -8,8 +8,6 @@ export interface ReportFibraSuggestion {
   empresa: string
 }
 
-export const REPORT_FIBRA_SUGGESTION_LIMIT = 8
-
 const FUNDAMENTAL_PERIOD_RE = /^Q([1-4])-(\d{4})$/
 
 export function buildFundamentalPeriodOptions(periods: string[]): string[] {
@@ -37,7 +35,6 @@ export function buildFibraSuggestions(
 
   return [...filtered]
     .sort((a, b) => a.ticker.localeCompare(b.ticker))
-    .slice(0, REPORT_FIBRA_SUGGESTION_LIMIT)
 }
 
 export function sortFundamentalPeriods(periods: string[]): string[] {

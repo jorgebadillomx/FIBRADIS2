@@ -91,13 +91,11 @@ export function HerramientasPage() {
   const suggestionRows = useMemo(() => {
     const term = search.trim().toLowerCase()
     const pool = allFibras.filter((f) => !selectedSet.has(f.ticker.toUpperCase()))
-    if (!term) return pool.slice(0, 8)
-    return pool
-      .filter(
-        (f) =>
-          f.ticker.toLowerCase().includes(term) || f.empresa.toLowerCase().includes(term),
-      )
-      .slice(0, 8)
+    if (!term) return pool
+    return pool.filter(
+      (f) =>
+        f.ticker.toLowerCase().includes(term) || f.empresa.toLowerCase().includes(term),
+    )
   }, [allFibras, search, selectedSet])
 
   function addTicker(ticker: string) {
