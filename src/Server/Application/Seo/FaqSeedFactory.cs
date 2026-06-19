@@ -5,7 +5,7 @@ namespace Application.Seo;
 
 public static class FaqSeedFactory
 {
-    private static readonly DateTimeOffset SeedUpdatedAt = new(2026, 6, 18, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset SeedUpdatedAt = new(2026, 6, 19, 0, 0, 0, TimeSpan.Zero);
 
     private static readonly IReadOnlyDictionary<string, string> EditorialQuestions =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -474,15 +474,15 @@ public static class FaqSeedFactory
             "**Títulos adicionales** puedes ingresar cuántos CBFIs más deseas comprar por fila; la " +
             "tabla recalcula en tiempo real el **nuevo costo promedio ponderado** (incluyendo comisión " +
             "e IVA), el **nuevo valor total** de la posición, la **nueva plusvalía** respecto al precio " +
-            "actual y la **renta mensual estimada** con los títulos adicionales. La segunda zona es el " +
-            "panel **¿Qué pasaría si?**: seleccionas cualquier FIBRA del universo de oportunidades — " +
-            "la tengas o no en cartera —, ingresas **Títulos a comprar** o directamente una **Renta " +
-            "mensual objetivo**, y el simulador funciona de forma bidireccional: cambiar títulos " +
-            "actualiza la renta estimada; cambiar la renta calcula los títulos necesarios y el capital " +
-            "requerido. El costo de compra siempre incluye la comisión e IVA configurados en Ops. " +
-            "Adicionalmente, el panel **Retorno histórico** muestra cómo habría evolucionado esa FIBRA " +
-            "en los últimos 2 años: variación de capital, distribuciones acumuladas y rendimiento total " +
-            "anualizado, para poner en perspectiva la decisión de promediar."),
+            "actual y la **renta mensual estimada** con los títulos adicionales. La segunda zona es la " +
+            "**Calculadora con comisión e IVA**: muestra todas las FIBRAs con al menos una distribución " +
+            "en los últimos 4 trimestres. Ingresa el presupuesto por FIBRA — pre-llenado en $1,000 — y " +
+            "la calculadora muestra los **CBFIs que puedes comprar** y el **sobrante**, incorporando la " +
+            "comisión e IVA configurados en Ops al precio efectivo de compra. Un indicador en la cabecera " +
+            "confirma que los cálculos ya contemplan esos costos. Para el simulador bidireccional " +
+            "**¿Qué pasaría si?** — donde puedes explorar cualquier FIBRA con una renta objetivo o " +
+            "número de títulos específico y ver el retorno histórico a 2 años — visita la sección " +
+            "**Herramientas**, disponible en el menú principal."),
         CreatePrivateItem("/oportunidades", 5,
             "¿Por qué algunas FIBRAs aparecen en la sección Datos Limitados?",
             "Una FIBRA aparece en **Datos Limitados** cuando tiene información disponible para uno o dos " +
@@ -527,13 +527,15 @@ public static class FaqSeedFactory
         CreatePrivateItem("/herramientas", 3,
             "¿Cómo se calcula el Retorno Total y para qué sirve?",
             "El retorno total combina dos fuentes de rendimiento: la **plusvalía** (ganancia o pérdida por " +
-            "cambio en el precio) y la **renta acumulada** (distribuciones recibidas). Ingresas tu **precio " +
-            "de compra original** en pesos y el **ISR total retenido** acumulado (dato que generalmente " +
-            "aparece en tu estado de cuenta de la casa de bolsa). La calculadora muestra el precio actual, " +
-            "las distribuciones TTM, la plusvalía porcentual desde tu precio de compra, el yield neto " +
-            "sobre tu costo y el **retorno total**: suma de plusvalía más renta recibida menos ISR. Permite " +
-            "evaluar el rendimiento real considerando no solo el precio sino también el flujo de ingresos " +
-            "generado durante el tiempo que has tenido la posición."),
+            "cambio en el precio) y la **renta acumulada** (distribuciones recibidas). Seleccionas la " +
+            "**fecha de compra** con el selector de fecha — que arranca pre-llenado en hoy menos 1 año y " +
+            "acepta fechas entre 2 años atrás y 1 año atrás, período con suficiente historial para un " +
+            "análisis representativo. La calculadora usa el precio de mercado en esa fecha, calcula cuántos " +
+            "CBFIs habrías comprado con tu inversión, suma las distribuciones recibidas en ese lapso y " +
+            "muestra: la **plusvalía** de capital, las **distribuciones acumuladas netas de ISR**, el " +
+            "**retorno total** en pesos y porcentaje, y el rendimiento **anualizado**. También incluye el " +
+            "rendimiento real ajustado por el INPC si el dato de inflación está disponible, para saber si " +
+            "la inversión superó a la inflación en ese período."),
         CreatePrivateItem("/herramientas", 4,
             "¿Por qué la calculadora descuenta el ISR?",
             "Las distribuciones de FIBRAs están sujetas a retención de **ISR del 30 %** sobre la parte " +
@@ -545,6 +547,17 @@ public static class FaqSeedFactory
             "anual con tasa efectiva diferente —, los resultados netos en tu caso real pueden variar " +
             "respecto a lo que muestra la calculadora."),
         CreatePrivateItem("/herramientas", 5,
+            "¿Qué es el panel ¿Qué pasaría si? y cómo funciona?",
+            "El panel **¿Qué pasaría si?** aparece en Herramientas justo antes del selector de FIBRAs. " +
+            "Permite simular el impacto de comprar CBFIs adicionales de cualquier FIBRA del universo de " +
+            "oportunidades — la tengas o no en cartera. Seleccionas la emisora, ingresas los " +
+            "**Títulos a comprar** o directamente la **Renta mensual objetivo** y el simulador funciona " +
+            "de forma bidireccional: cambiar los títulos actualiza la renta estimada; cambiar la renta " +
+            "calcula los títulos necesarios y el capital requerido incluyendo comisión e IVA configurados " +
+            "en Ops. El panel también muestra el **Retorno histórico** de la emisora seleccionada: " +
+            "variación de capital, distribuciones acumuladas y rendimiento total anualizado en los últimos " +
+            "2 años, para poner en perspectiva la decisión de promediar o iniciar posición."),
+        CreatePrivateItem("/herramientas", 6,
             "¿Cada cuánto se actualizan los precios y tasas en las calculadoras?",
             "Los **precios actuales** de las FIBRAs se actualizan en tiempo real durante la jornada " +
             "bursátil de la BMV y se cargan automáticamente al seleccionar cada emisora. Las " +

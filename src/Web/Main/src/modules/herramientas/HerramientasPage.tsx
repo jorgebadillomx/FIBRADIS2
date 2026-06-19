@@ -17,6 +17,7 @@ import {
   calcRetornoDesdeCompra,
   parseNumberInput,
 } from './herramientas-logic'
+import { QuePasariaSection } from '@/modules/oportunidades/QuePasariaSection'
 
 const HORIZON_OPTIONS = [1, 3, 5, 10] as const
 const MAX_FIBRAS = 4
@@ -24,6 +25,9 @@ const MAX_FIBRAS = 4
 type FibraWithYield = CalculadoraFibraDto & { yieldPct: number | null }
 
 export function HerramientasPage() {
+  const today = new Date()
+  const maxDateStr = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
+
   const [selectedTickers, setSelectedTickers] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -31,7 +35,7 @@ export function HerramientasPage() {
   const [fibraCetes, setFibraCetes] = useState('')
   const [fibraHorizonte, setFibraHorizonte] = useState<(typeof HORIZON_OPTIONS)[number]>(5)
   const [metaRentaMensual, setMetaRentaMensual] = useState('5000')
-  const [retornoFechaCompra, setRetornoFechaCompra] = useState('')
+  const [retornoFechaCompra, setRetornoFechaCompra] = useState(maxDateStr)
   const [cetesTouched, setCetesTouched] = useState(false)
 
   const indicadoresQuery = useQuery({
@@ -133,8 +137,6 @@ export function HerramientasPage() {
   const fibraMontoValue = parseNumberInput(fibraMonto)
   const fibraCetesValue = parseNumberInput(fibraCetes)
   const metaRentaMensualValue = parseNumberInput(metaRentaMensual)
-  const today = new Date()
-  const maxDateStr = new Date(today.getTime() - 86400_000).toISOString().slice(0, 10)
   const minDateStr = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
 
   const cetesScenario = useMemo(() => {
@@ -270,6 +272,8 @@ export function HerramientasPage() {
             </div>
           </section>
 
+          <QuePasariaSection />
+
           {/* Selector de FIBRAs */}
           <section className="mt-8 rounded-3xl border border-border bg-surface-elevated/95 p-5 shadow-sm backdrop-blur">
             <SectionHeader
@@ -390,7 +394,7 @@ export function HerramientasPage() {
             </div>
           ) : (
             <>
-              <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+              <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
                 {/* FIBRAs vs CETES */}
                 <section className="rounded-3xl border border-border bg-surface-elevated p-5 shadow-sm">
                   <SectionHeader
