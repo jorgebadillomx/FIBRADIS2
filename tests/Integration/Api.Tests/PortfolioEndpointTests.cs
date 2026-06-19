@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using Domain.Market;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.Extensions.DependencyInjection;
 using SharedApiContracts.Auth;
@@ -341,6 +342,67 @@ public class PortfolioEndpointTests : IAsyncLifetime
 
         Assert.Contains("capRate", body!.Columns);
         Assert.DoesNotContain("columnaInvalida", body.Columns);
+    }
+
+    // ── GET /api/v1/portfolio/calendar ───────────────────────────────────────
+
+    [Fact]
+    public async Task GetCalendar_WithoutToken_Returns401()
+    {
+        var response = await _anonClient.GetAsync("/api/v1/portfolio/calendar");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetCalendar_WithNoPositions_ReturnsEmptyList()
+    {
+        var client = await CreateFreshUserClientAsync();
+
+        var response = await client.GetAsync("/api/v1/portfolio/calendar");
+        var body = await response.Content.ReadFromJsonAsync<List<PortfolioCalendarEventDto>>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Empty(body!);
+    }
+
+    [Fact]
+    public async Task GetCalendar_WithPositionAndDistribution_ReturnsTotalAmountCorrect()
+    {
+        var paymentDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-15));
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Distributions.Add(new Distribution
+            {
+                Id = Guid.NewGuid(),
+                FibraId = _funoFibraId,
+                Ticker = "FUNO11",
+                PaymentDate = paymentDate,
+                AmountPerUnit = 0.82m,
+                TaxableAmount = 0.50m,
+                CapitalReturnAmount = 0.32m,
+                Currency = "MXN",
+                Source = "test",
+                CapturedAt = DateTimeOffset.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var client = await CreateFreshUserClientAsync();
+        var csv = "Ticker,Qty,AvgCost\nFUNO11,100,24.50\n";
+        await client.PostAsync("/api/v1/portfolio/upload", BuildCsvUpload(csv, "p.csv"));
+
+        var response = await client.GetAsync("/api/v1/portfolio/calendar");
+        var body = await response.Content.ReadFromJsonAsync<List<PortfolioCalendarEventDto>>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        var evt = Assert.Single(body!);
+        Assert.Equal("FUNO11", evt.Ticker);
+        Assert.Equal(82.00m, evt.TotalAmount);
+        Assert.Equal(50.00m, evt.TotalTaxable);
+        Assert.Equal(32.00m, evt.TotalCapital);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

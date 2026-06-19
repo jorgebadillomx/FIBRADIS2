@@ -268,6 +268,67 @@ public static class PortfolioEndpoints
         .Produces<PortfolioResponseDto>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/calendar", async (
+            DateOnly? from,
+            DateOnly? to,
+            IPortfolioRepository portfolioRepo,
+            IMarketRepository marketRepo,
+            IFibraRepository fibraRepo,
+            HttpContext ctx,
+            CancellationToken ct) =>
+        {
+            if (TryGetUserId(ctx) is not { } userId)
+                return Results.Problem(statusCode: StatusCodes.Status401Unauthorized);
+
+            var positions = await portfolioRepo.GetByUserIdAsync(userId, ct);
+            if (positions.Count == 0)
+                return Results.Ok(Array.Empty<PortfolioCalendarEventDto>());
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var rangeFrom = from ?? today.AddMonths(-2);
+            var rangeTo = to ?? today.AddMonths(1);
+
+            var fibraIds = positions.Select(p => p.FibraId).ToHashSet();
+            var distributions = await marketRepo.GetDistributionsByRangeAsync(rangeFrom, rangeTo, ct);
+            var relevantDists = distributions
+                .Where(d => fibraIds.Contains(d.FibraId) && d.PaymentDate >= rangeFrom && d.PaymentDate <= rangeTo)
+                .ToList();
+
+            if (relevantDists.Count == 0)
+                return Results.Ok(Array.Empty<PortfolioCalendarEventDto>());
+
+            var allFibras = await fibraRepo.GetAllActiveAsync(ct);
+            var fibraById = allFibras.ToDictionary(f => f.Id);
+            var posByFibra = positions.ToDictionary(p => p.FibraId);
+
+            var events = relevantDists
+                .Select(d =>
+                {
+                    var pos = posByFibra[d.FibraId];
+                    fibraById.TryGetValue(d.FibraId, out var fibra);
+                    return new PortfolioCalendarEventDto(
+                        Ticker: d.Ticker,
+                        Nombre: fibra?.ShortName ?? fibra?.FullName ?? d.Ticker,
+                        LogoUrl: $"/logos/{d.Ticker.ToLowerInvariant()}.png",
+                        PaymentDate: d.PaymentDate.ToString("yyyy-MM-dd"),
+                        AmountPerUnit: d.AmountPerUnit,
+                        TaxableAmount: d.TaxableAmount,
+                        CapitalReturnAmount: d.CapitalReturnAmount,
+                        Titulos: pos.Titulos,
+                        TotalAmount: d.AmountPerUnit * pos.Titulos,
+                        TotalTaxable: d.TaxableAmount.HasValue ? d.TaxableAmount.Value * pos.Titulos : null,
+                        TotalCapital: d.CapitalReturnAmount.HasValue ? d.CapitalReturnAmount.Value * pos.Titulos : null
+                    );
+                })
+                .OrderBy(e => e.PaymentDate)
+                .ThenBy(e => e.Ticker)
+                .ToList();
+
+            return Results.Ok(events);
+        })
+        .Produces<IReadOnlyList<PortfolioCalendarEventDto>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         group.MapGet("/column-config", async (
             IPortfolioRepository portfolioRepo,
             HttpContext ctx,
@@ -490,7 +551,9 @@ public static class PortfolioEndpoints
         if (normalizedEntries.Count == 0)
             return null;
 
-        var baseEntry = normalizedEntries.LastOrDefault(entry => entry.Periodo <= rangeMonthStart) ?? normalizedEntries[0];
+        var baseEntry = normalizedEntries.LastOrDefault(entry => entry.Periodo < rangeMonthStart)
+            ?? normalizedEntries.LastOrDefault(entry => entry.Periodo <= rangeMonthStart)
+            ?? normalizedEntries[0];
         var result = new List<PortfolioPerformancePointDto>(portfolioSeries.Count);
 
         foreach (var point in portfolioSeries)

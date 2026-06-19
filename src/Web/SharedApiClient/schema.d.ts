@@ -5255,6 +5255,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portfolio/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioCalendarEventDto"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolio/column-config": {
         parameters: {
             query?: never;
@@ -7582,6 +7629,26 @@ export interface components {
             /** Format: int32 */
             lastErrorCount: null | number | string;
             recentRuns: components["schemas"]["PipelineRunLogDto"][];
+        };
+        PortfolioCalendarEventDto: {
+            ticker: string;
+            nombre: string;
+            logoUrl: null | string;
+            paymentDate: string;
+            /** Format: double */
+            amountPerUnit: number | string;
+            /** Format: double */
+            taxableAmount: null | number | string;
+            /** Format: double */
+            capitalReturnAmount: null | number | string;
+            /** Format: int32 */
+            titulos: number | string;
+            /** Format: double */
+            totalAmount: number | string;
+            /** Format: double */
+            totalTaxable: null | number | string;
+            /** Format: double */
+            totalCapital: null | number | string;
         };
         PortfolioColumnConfigDto: {
             columns: string[];

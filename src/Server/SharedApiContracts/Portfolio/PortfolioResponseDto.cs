@@ -78,3 +78,17 @@ public sealed record PortfolioPositionPatchDto(
     int Titulos,
     decimal CostoPromedio
 );
+
+public sealed record PortfolioCalendarEventDto(
+    string Ticker,
+    string Nombre,
+    string? LogoUrl,
+    string PaymentDate,
+    decimal AmountPerUnit,
+    decimal? TaxableAmount,
+    decimal? CapitalReturnAmount,
+    int Titulos,
+    decimal TotalAmount,
+    decimal? TotalTaxable,
+    decimal? TotalCapital
+);

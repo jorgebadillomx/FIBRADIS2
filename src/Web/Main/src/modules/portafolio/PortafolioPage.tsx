@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { Star } from 'lucide-react'
 import type { components } from '@fibradis/shared-api-client'
 import { apiClient, fetchIndicadores } from '@/api/fibrasApi'
+import { fetchFaqItems } from '@/api/faqApi'
+import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { KpiCards } from '@/modules/portafolio/KpiCards'
 import { ColumnPicker } from '@/modules/portafolio/ColumnPicker'
 import { PerformanceChart } from '@/modules/portafolio/PerformanceChart'
@@ -72,6 +74,12 @@ export function PortafolioPage() {
       if (error || !data) throw new Error('No se pudo cargar el respaldo del portafolio.')
       return data
     },
+  })
+
+  const faqQuery = useQuery({
+    queryKey: ['faq', 'PrivatePage', '/portafolio'],
+    queryFn: () => fetchFaqItems('PrivatePage', '/portafolio'),
+    staleTime: 60 * 60_000,
   })
 
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
@@ -332,14 +340,25 @@ export function PortafolioPage() {
               <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
                 <h2 className="text-lg font-semibold">Calendario de pagos</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Proyección de los próximos 90 días basada en las distribuciones recientes registradas.
+                  Distribuciones confirmadas de los últimos 2 meses y el próximo mes, con desglose fiscal e ISR estimado.
                 </p>
               </div>
-              <PortafolioCalendario positions={positions} />
+              <PortafolioCalendario />
             </div>
           )}
         </div>
       )}
+
+      {faqQuery.isSuccess && faqQuery.data.length > 0 ? (
+        <div className="mt-10">
+          <FaqAccordion
+            items={faqQuery.data}
+            kicker="FAQ del portafolio"
+            title="Preguntas frecuentes sobre tu portafolio"
+            description="Cómo registrar posiciones, interpretar rendimientos y sacar partido a todas las funciones del dashboard."
+          />
+        </div>
+      ) : null}
 
       <Dialog open={showArchiveDialog} onOpenChange={(open) => { if (!open) setShowArchiveDialog(false) }}>
         <DialogContent showCloseButton={false}>

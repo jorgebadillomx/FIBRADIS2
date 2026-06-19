@@ -1,101 +1,87 @@
-import { useMemo, useState } from 'react'
-import type { components } from '@fibradis/shared-api-client'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchPortfolioCalendar } from '@/api/portfolioCalendarApi'
+import type { PortfolioCalendarEvent } from '@/api/portfolioCalendarApi'
 import { formatMoney } from '@/modules/portafolio/portfolio-format'
-import { projectNextPayments } from '@/modules/portafolio/portfolio-calendar'
 
-type PortfolioPositionDto = components['schemas']['PortfolioPositionDto']
+const ISR_RATE = 0.30
 
 const monthYearFmt = new Intl.DateTimeFormat('es-MX', {
   month: 'long',
   year: 'numeric',
+  timeZone: 'UTC',
 })
 const dayMonthFmt = new Intl.DateTimeFormat('es-MX', {
   day: '2-digit',
   month: 'short',
+  timeZone: 'UTC',
 })
 
-interface PortafolioCalendarioProps {
-  positions: PortfolioPositionDto[]
+function parseDate(value: string): Date {
+  return new Date(`${value}T00:00:00Z`)
 }
 
-export function PortafolioCalendario({ positions }: PortafolioCalendarioProps) {
-  const payments = useMemo(
-    () => projectNextPayments(positions, new Date()),
-    [positions],
-  )
+function toNumber(value: number | string | null | undefined): number | null {
+  if (value == null || value === '') return null
+  const n = typeof value === 'string' ? Number(value) : value
+  return Number.isFinite(n) ? n : null
+}
 
-  if (payments.length === 0) {
+export function PortafolioCalendario() {
+  const { data: events = [], isLoading, isError } = useQuery({
+    queryKey: ['portfolio', 'calendar'],
+    queryFn: () => fetchPortfolioCalendar(),
+    staleTime: 5 * 60_000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-border bg-card px-6 py-10 text-center">
+        <p className="text-sm text-muted-foreground">Cargando distribuciones…</p>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-2xl border border-border bg-card px-6 py-10 text-center">
+        <p className="text-sm text-muted-foreground">No se pudieron cargar las distribuciones.</p>
+      </div>
+    )
+  }
+
+  if (events.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
         <p className="text-sm font-medium text-foreground">
-          No hay suficientes datos de distribuciones para proyectar pagos.
+          No hay distribuciones confirmadas en este período.
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cuando existan pagos recientes, el calendario mostrará las próximas fechas estimadas.
+          Los datos provienen del registro oficial de la BMV. Pueden tardar en reflejarse.
         </p>
       </div>
     )
   }
 
-  const grouped = payments.reduce((acc, payment) => {
-    const key = monthYearFmt.format(payment.fechaEstimada)
+  const grouped = events.reduce((acc, evt) => {
+    const key = monthYearFmt.format(parseDate(evt.paymentDate))
     const bucket = acc.get(key) ?? []
-    bucket.push(payment)
+    bucket.push(evt)
     acc.set(key, bucket)
     return acc
-  }, new Map<string, typeof payments>())
+  }, new Map<string, PortfolioCalendarEvent[]>())
 
   return (
     <div className="space-y-5">
-      {Array.from(grouped.entries()).map(([monthLabel, monthPayments]) => (
+      {Array.from(grouped.entries()).map(([monthLabel, monthEvents]) => (
         <section key={monthLabel} className="rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-4 py-3">
             <h3 className="text-sm font-semibold capitalize text-foreground">{monthLabel}</h3>
           </div>
 
           <div className="divide-y divide-border">
-            {monthPayments.map((payment) => (
-              <article key={`${payment.fibraId}-${payment.fechaEstimada.toISOString()}`} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <PaymentLogo ticker={payment.ticker} logoUrl={payment.logoUrl} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-foreground">{payment.ticker}</span>
-                      <span className="rounded-full border border-violet-200 bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-900">
-                        {payment.cadencia}
-                      </span>
-                    </div>
-                    <p className="truncate text-sm text-muted-foreground">{payment.nombre}</p>
-                  </div>
-                </div>
-
-                <div className="grid gap-2 text-sm sm:grid-cols-3 sm:items-center sm:gap-4 sm:text-right">
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      Fecha estimada
-                    </div>
-                    <div className="mt-1 font-medium text-foreground tabular-nums">
-                      {dayMonthFmt.format(payment.fechaEstimada)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      Monto por título
-                    </div>
-                    <div className="mt-1 font-medium text-foreground tabular-nums">
-                      {formatMoney(payment.montoPorTitulo)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      Total estimado
-                    </div>
-                    <div className="mt-1 font-medium text-foreground tabular-nums">
-                      {formatMoney(payment.montoTotal)}
-                    </div>
-                  </div>
-                </div>
-              </article>
+            {monthEvents.map((evt) => (
+              <CalendarEventRow key={`${evt.ticker}-${evt.paymentDate}`} evt={evt} />
             ))}
           </div>
         </section>
@@ -104,7 +90,86 @@ export function PortafolioCalendario({ positions }: PortafolioCalendarioProps) {
   )
 }
 
-function PaymentLogo({ ticker, logoUrl }: { ticker: string; logoUrl: string | null }) {
+function CalendarEventRow({ evt }: { evt: PortfolioCalendarEvent }) {
+  const titulos = toNumber(evt.titulos) ?? 0
+  const totalAmount = toNumber(evt.totalAmount) ?? 0
+  const totalTaxable = toNumber(evt.totalTaxable)
+  const totalCapital = toNumber(evt.totalCapital)
+  const hasBreakdown = totalTaxable !== null || totalCapital !== null
+  const isr = totalTaxable !== null ? totalTaxable * ISR_RATE : null
+  const netEstimado = isr !== null
+    ? (totalCapital ?? 0) + (totalTaxable ?? 0) - isr
+    : null
+
+  return (
+    <article className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex items-center gap-3">
+        <EventLogo ticker={evt.ticker} logoUrl={evt.logoUrl} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-semibold text-foreground">{evt.ticker}</span>
+            <span className="text-xs text-muted-foreground">
+              {titulos.toLocaleString('es-MX')} CBFIs
+            </span>
+          </div>
+          <p className="truncate text-sm text-muted-foreground">{evt.nombre}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {dayMonthFmt.format(parseDate(evt.paymentDate))}
+          </p>
+        </div>
+      </div>
+
+      <div className="min-w-[220px] space-y-1 text-sm sm:text-right">
+        {hasBreakdown ? (
+          <>
+            <div className="flex justify-between gap-4 sm:justify-end">
+              <span className="text-muted-foreground">Bruto</span>
+              <span className="font-medium tabular-nums text-foreground">{formatMoney(totalAmount)}</span>
+            </div>
+            {totalTaxable !== null && (
+              <>
+                <div className="flex justify-between gap-4 sm:justify-end">
+                  <span className="text-muted-foreground">Componente CUFIN</span>
+                  <span className="tabular-nums text-foreground">{formatMoney(totalTaxable)}</span>
+                </div>
+                <div className="flex justify-between gap-4 sm:justify-end">
+                  <span className="text-muted-foreground">ISR 30%</span>
+                  <span className="tabular-nums text-red-600">-{formatMoney(isr!)}</span>
+                </div>
+              </>
+            )}
+            {totalCapital !== null && (
+              <div className="flex justify-between gap-4 sm:justify-end">
+                <span className="text-muted-foreground">Retorno capital</span>
+                <span className="tabular-nums text-foreground">{formatMoney(totalCapital)}</span>
+              </div>
+            )}
+            {netEstimado !== null && (
+              <div className="flex justify-between gap-4 border-t border-border pt-1 sm:justify-end">
+                <span className="font-semibold text-foreground">Neto estimado</span>
+                <span className="font-semibold tabular-nums text-foreground">{formatMoney(netEstimado)}</span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex justify-between gap-4 sm:justify-end">
+              <span className="text-muted-foreground">Total bruto</span>
+              <span className="font-medium tabular-nums text-foreground">{formatMoney(totalAmount)}</span>
+            </div>
+            <div className="flex justify-end">
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-amber-800">
+                clasificación fiscal pendiente
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function EventLogo({ ticker, logoUrl }: { ticker: string; logoUrl: string | null }) {
   const [failed, setFailed] = useState(false)
 
   if (logoUrl && !failed) {
