@@ -280,6 +280,71 @@ public class OpsUserEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebF
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    // ── PATCH /api/v1/ops/users/{id}/subscription ──────────────────────────
+
+    [Fact]
+    public async Task UpdateSubscription_AnnualPlan_Returns200WithUpdatedData()
+    {
+        var userId = await CreateTestUserAndGetIdAsync("subscription@fibradis.mx");
+        var startedAt = new DateTime(2026, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+        var endsAt = new DateTime(2027, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+
+        var response = await _adminClient.PatchAsJsonAsync(
+            $"/api/v1/ops/users/{userId}/subscription",
+            new UpdateSubscriptionRequest("Annual", startedAt, endsAt));
+        var body = await response.Content.ReadFromJsonAsync<UserSummaryDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal("Annual", body!.SubscriptionType);
+        Assert.Equal(startedAt, body.SubscriptionStartedAt);
+        Assert.Equal(endsAt, body.SubscriptionEndsAt);
+        Assert.True(body.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateSubscription_LifetimePlan_WithNullEndsAt_Returns200()
+    {
+        var userId = await CreateTestUserAndGetIdAsync("lifetime-subscription@fibradis.mx");
+        var startedAt = new DateTime(2026, 6, 18, 0, 0, 0, DateTimeKind.Utc);
+
+        var response = await _adminClient.PatchAsJsonAsync(
+            $"/api/v1/ops/users/{userId}/subscription",
+            new UpdateSubscriptionRequest("Lifetime", startedAt, null));
+        var body = await response.Content.ReadFromJsonAsync<UserSummaryDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal("Lifetime", body!.SubscriptionType);
+        Assert.Equal(startedAt, body.SubscriptionStartedAt);
+        Assert.Null(body.SubscriptionEndsAt);
+        Assert.True(body.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateSubscription_InvalidType_Returns422()
+    {
+        var userId = await CreateTestUserAndGetIdAsync("invalid-subscription@fibradis.mx");
+
+        var response = await _adminClient.PatchAsJsonAsync(
+            $"/api/v1/ops/users/{userId}/subscription",
+            new UpdateSubscriptionRequest("Quarterly", DateTime.UtcNow, null));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateSubscription_MonthlyWithNullEndsAt_Returns422()
+    {
+        var userId = await CreateTestUserAndGetIdAsync("monthly-noends-int@fibradis.mx");
+
+        var response = await _adminClient.PatchAsJsonAsync(
+            $"/api/v1/ops/users/{userId}/subscription",
+            new UpdateSubscriptionRequest("Monthly", DateTime.UtcNow, null));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
     // ── Login con cuenta deshabilitada (AC-9) ─────────────────────────────
 
     [Fact]

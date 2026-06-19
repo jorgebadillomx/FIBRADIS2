@@ -19,6 +19,18 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.TermsAcceptedAt);
         builder.Property(u => u.Pago).HasPrecision(18, 2);
         builder.Property(u => u.FechaPago);
+        builder.Property(u => u.EmailConfirmedAt).HasColumnName("email_confirmed_at");
+        builder.Property(u => u.TrialEndsAt).HasColumnName("trial_ends_at");
+        builder.Property(u => u.SubscriptionType)
+               .HasColumnName("subscription_type")
+               .HasMaxLength(16)
+               .HasConversion<string>();
+        builder.Property(u => u.SubscriptionStartedAt).HasColumnName("subscription_started_at");
+        builder.Property(u => u.SubscriptionEndsAt).HasColumnName("subscription_ends_at");
+        builder.Property(u => u.HowDidYouHear)
+               .HasColumnName("how_did_you_hear")
+               .HasMaxLength(32)
+               .HasConversion<string>();
         builder.HasMany(u => u.RefreshTokens)
                .WithOne(rt => rt.User)
                .HasForeignKey(rt => rt.UserId);

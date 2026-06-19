@@ -24,5 +24,7 @@ public interface IUserService
 
     Task<UserData> UpdatePaymentAsync(Guid id, decimal? pago, DateTime? fechaPago, CancellationToken ct = default);
 
+    Task<UserData> UpdateSubscriptionAsync(Guid id, string type, DateTime startedAt, DateTime? endsAt, CancellationToken ct = default);
+
     Task AcceptTermsAsync(Guid userId, CancellationToken ct = default);
 }

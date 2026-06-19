@@ -142,6 +142,31 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         return ToData(user);
     }
 
+    public async Task<UserData> UpdateSubscriptionAsync(
+        Guid id,
+        string type,
+        DateTime startedAt,
+        DateTime? endsAt,
+        CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([id], ct)
+            ?? throw new UserNotFoundException();
+
+        if (!Enum.TryParse<SubscriptionType>(type, ignoreCase: true, out var subscriptionType))
+            throw new InvalidUserDataException($"Tipo de suscripción inválido: {type}. Valores válidos: Monthly, Annual, Lifetime.");
+
+        if (subscriptionType != SubscriptionType.Lifetime && !endsAt.HasValue)
+            throw new InvalidUserDataException("EndsAt es obligatorio para suscripciones Monthly y Annual.");
+
+        user.SubscriptionType = subscriptionType;
+        user.SubscriptionStartedAt = DateTime.SpecifyKind(startedAt, DateTimeKind.Utc);
+        user.SubscriptionEndsAt = endsAt.HasValue ? DateTime.SpecifyKind(endsAt.Value, DateTimeKind.Utc) : null;
+        user.TrialEndsAt = null;
+
+        await db.SaveChangesAsync(ct);
+        return ToData(user);
+    }
+
     public async Task AcceptTermsAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await db.Users.FindAsync([userId], ct)
@@ -156,7 +181,19 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
     }
 
     private UserData ToData(User u) =>
-        new(u.Id, emailEncryptor.Decrypt(u.Email), u.Role.ToString(), u.IsActive, u.CreatedAt, u.Pago, u.FechaPago);
+        new(
+            u.Id,
+            emailEncryptor.Decrypt(u.Email),
+            u.Role.ToString(),
+            u.IsActive,
+            u.CreatedAt,
+            u.Pago,
+            u.FechaPago,
+            u.SubscriptionType?.ToString(),
+            u.SubscriptionStartedAt,
+            u.SubscriptionEndsAt,
+            u.TrialEndsAt,
+            u.EmailConfirmedAt);
 
     private static void ValidateStrongPassword(string password)
     {
