@@ -54,6 +54,6 @@ public static class IndicadoresEndpoints
             result.Add(new InpcMonthlyDto(current.Periodo.ToString("yyyy-MM", CultureInfo.InvariantCulture), anualPct));
         }
 
-        return result.TakeLast(12).ToList();
+        return result.TakeLast(13).ToList();
     }
 }

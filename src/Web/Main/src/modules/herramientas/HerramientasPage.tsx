@@ -196,7 +196,7 @@ export function HerramientasPage() {
               ? calcRetornoDesdeCompra(
                   retornoFechaCompra,
                   precioActual,
-                  (histData.priceHistory ?? []).map(p => ({ date: p.date, close: p.close ?? null })),
+                  (histData.priceHistory ?? []).map(p => ({ date: p.date, close: p.close != null ? Number(p.close) : null })),
                   (histData.distributions ?? []).map(d => ({
                     date: d.date,
                     amountPerUnit: Number(d.amountPerUnit),

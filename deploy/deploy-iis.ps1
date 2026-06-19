@@ -33,8 +33,8 @@ if (Test-Path $OutZip)     { Remove-Item -Force $OutZip }
 # -- 2. Build frontend --
 Write-Host "=== Build frontend (Main + Ops) ===" -ForegroundColor Cyan
 Set-Location $Root
-npm run build:main
-npm run build:ops
+npm run build:main; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+npm run build:ops;  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # -- 3. Publicar API .NET (clean fuerza recompilación total) --
 Write-Host "=== Publicar API ===" -ForegroundColor Cyan
