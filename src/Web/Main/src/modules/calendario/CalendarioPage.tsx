@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -13,9 +13,21 @@ import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 const FAQ_PAGE_TYPE = 'StaticPage'
 const FAQ_ENTITY_KEY = '/calendario'
 
+type FilterKey = 'Pago' | 'ExDerecho' | 'Aviso'
+
 export function CalendarioPage() {
   const [monthOffset, setMonthOffset] = useState(0)
+  const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set())
   const { slugFor } = useFibraSlugMap()
+
+  const toggleFilter = useCallback((key: FilterKey) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
 
   const faqQuery = useQuery({
     queryKey: ['faq', FAQ_PAGE_TYPE, FAQ_ENTITY_KEY],
@@ -34,15 +46,16 @@ export function CalendarioPage() {
   const eventsQuery = useCalendarEvents(year, month)
 
   const events = eventsQuery.data ?? []
-  const groupedEvents = useMemo(() => groupEventsByDate(events), [events])
+  const filteredEvents = useMemo(() => applyFilters(events, activeFilters), [events, activeFilters])
+  const groupedEvents = useMemo(() => groupEventsByDate(filteredEvents), [filteredEvents])
   const monthLabel = monthAnchor.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
-  const summary = useMemo(() => buildSummary(events), [events])
+  const summary = useMemo(() => buildSummary(filteredEvents), [filteredEvents])
   const upcomingEvents = useMemo(
     () =>
-      [...events]
+      [...filteredEvents]
         .sort((a, b) => a.date.localeCompare(b.date) || a.ticker.localeCompare(b.ticker))
         .slice(0, 10),
-    [events],
+    [filteredEvents],
   )
 
   usePageTitle(
@@ -124,6 +137,8 @@ export function CalendarioPage() {
                 </button>
               </div>
             </div>
+
+            <FilterBar activeFilters={activeFilters} onToggle={toggleFilter} />
 
             {eventsQuery.isLoading ? (
               <div className="mt-4 grid grid-cols-7 gap-px overflow-hidden rounded-2xl border border-border bg-border">
@@ -241,6 +256,66 @@ export function CalendarioPage() {
         ) : null}
       </div>
     </>
+  )
+}
+
+const FILTER_OPTIONS: { key: FilterKey; label: string; activeClass: string }[] = [
+  { key: 'Pago', label: 'Pagos', activeClass: 'border-green-300 bg-green-100 text-green-800' },
+  { key: 'ExDerecho', label: 'Ex derechos', activeClass: 'border-blue-300 bg-blue-100 text-blue-800' },
+  { key: 'Aviso', label: 'Avisos BMV', activeClass: 'border-slate-300 bg-slate-100 text-slate-700' },
+]
+
+function FilterBar({
+  activeFilters,
+  onToggle,
+}: {
+  activeFilters: Set<FilterKey>
+  onToggle: (key: FilterKey) => void
+}) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        Filtrar:
+      </span>
+      {FILTER_OPTIONS.map(({ key, label, activeClass }) => {
+        const isActive = activeFilters.has(key)
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onToggle(key)}
+            aria-pressed={isActive ? 'true' : 'false'}
+            className={[
+              'rounded-full border px-3 py-1 text-xs font-semibold transition',
+              isActive
+                ? activeClass
+                : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground',
+            ].join(' ')}
+          >
+            {label}
+          </button>
+        )
+      })}
+      {activeFilters.size > 0 && (
+        <button
+          type="button"
+          onClick={() => FILTER_OPTIONS.forEach(({ key }) => activeFilters.has(key) && onToggle(key))}
+          className="text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        >
+          Limpiar
+        </button>
+      )}
+    </div>
+  )
+}
+
+function applyFilters(events: MarketCalendarEvent[], active: Set<FilterKey>): MarketCalendarEvent[] {
+  if (active.size === 0) return events
+  return events.filter(
+    (e) =>
+      (active.has('Pago') && e.eventType === 'Pago') ||
+      (active.has('ExDerecho') && e.eventType === 'ExDerecho') ||
+      (active.has('Aviso') && e.avisoUrl != null),
   )
 }
 
