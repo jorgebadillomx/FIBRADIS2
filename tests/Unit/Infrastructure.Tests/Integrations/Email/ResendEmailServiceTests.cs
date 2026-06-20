@@ -11,6 +11,7 @@ public class ResendEmailServiceTests
     private static readonly ResendTemplateIds AllTemplates = new()
     {
         EmailConfirmation = "tmpl_confirm",
+        PasswordReset = "tmpl_reset",
         PaymentNotification = "tmpl_payment",
         AccessExpired = "tmpl_expired",
         AccessActivated = "tmpl_activated",
@@ -97,6 +98,33 @@ public class ResendEmailServiceTests
         Assert.Equal("tmpl_confirm", tmpl.GetProperty("id").GetString());
         Assert.Equal("https://example.com/confirm",
             tmpl.GetProperty("variables").GetProperty("CONFIRMATION_URL").GetString());
+    }
+
+    [Fact]
+    public async Task SendPasswordResetAsync_SendsCorrectPayloadAndPreview()
+    {
+        string? capturedBody = null;
+        var service = CreateService(async req =>
+        {
+            capturedBody = await req.Content!.ReadAsStringAsync();
+            return await Ok();
+        });
+
+        await service.SendPasswordResetAsync("user@test.com", "https://example.com/reset", CancellationToken.None);
+
+        Assert.NotNull(capturedBody);
+        using var doc = JsonDocument.Parse(capturedBody);
+        var root = doc.RootElement;
+
+        Assert.Equal("user@test.com", root.GetProperty("to")[0].GetString());
+
+        var template = root.GetProperty("template");
+        Assert.Equal("tmpl_reset", template.GetProperty("id").GetString());
+
+        var vars = template.GetProperty("variables");
+        Assert.Equal("https://example.com/reset", vars.GetProperty("RESET_URL").GetString());
+        Assert.Equal("60", vars.GetProperty("EXPIRY_MINUTES").GetString());
+        Assert.Equal("Tienes 60 minutos para restablecer tu contraseña en Fibras Inmobiliarias.", vars.GetProperty("PREVIEW").GetString());
     }
 
     [Fact]

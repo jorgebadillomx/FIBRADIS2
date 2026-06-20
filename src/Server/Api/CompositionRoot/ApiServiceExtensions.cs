@@ -88,6 +88,7 @@ public static class ApiServiceExtensions
 
         builder.Services.AddSingleton<ITokenService, TokenService>();
         builder.Services.AddSingleton<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
+        builder.Services.AddSingleton<IPasswordResetTokenService, PasswordResetTokenService>();
         builder.Services.AddSingleton<IEmailEncryptor, EmailEncryptor>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IUserService, UserService>();

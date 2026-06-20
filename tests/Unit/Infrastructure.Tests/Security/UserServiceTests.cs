@@ -493,6 +493,32 @@ public class UserServiceTests
             () => svc.ChangePasswordAsync(Guid.NewGuid(), "Fuerte1!"));
     }
 
+    [Fact]
+    public async Task ResetPasswordAsync_ValidUser_UpdatesPasswordHash()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("reset@fibradis.mx", "Fuerte1!", "User");
+
+        await svc.ResetPasswordAsync(user.Id, "Nueva1!x");
+
+        var stored = await db.Users.FindAsync([user.Id]);
+        Assert.NotNull(stored);
+        Assert.True(BCrypt.Net.BCrypt.Verify("Nueva1!x", stored!.PasswordHash));
+        Assert.False(BCrypt.Net.BCrypt.Verify("Fuerte1!", stored.PasswordHash));
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WeakPassword_ThrowsInvalidUserDataException()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        var user = await svc.CreateUserAsync("weak-reset@fibradis.mx", "Fuerte1!", "User");
+
+        await Assert.ThrowsAsync<InvalidUserDataException>(
+            () => svc.ResetPasswordAsync(user.Id, "sinmayuscula1!"));
+    }
+
     // ── UpdatePayment ────────────────────────────────────────────────────────
 
     [Fact]

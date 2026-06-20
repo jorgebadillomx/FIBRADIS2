@@ -99,10 +99,12 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     }
 
     public sealed record CapturedEmail(string ToEmail, string ConfirmationUrl);
+    public sealed record CapturedPasswordResetEmail(string ToEmail, string ResetUrl);
 
     public sealed class CapturingEmailService : IEmailService
     {
         public List<CapturedEmail> Emails { get; } = [];
+        public List<CapturedPasswordResetEmail> PasswordResetEmails { get; } = [];
         public List<(Guid UserId, string UserEmail)> PaymentNotifications { get; } = [];
         public List<string> AccessExpiredEmails { get; } = [];
         public List<string> AccessActivatedEmails { get; } = [];
@@ -112,6 +114,12 @@ public class ApiWebFactory : WebApplicationFactory<Program>
         public Task SendEmailConfirmationAsync(string toEmail, string confirmationUrl, CancellationToken ct)
         {
             Emails.Add(new CapturedEmail(toEmail, confirmationUrl));
+            return Task.CompletedTask;
+        }
+
+        public Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct)
+        {
+            PasswordResetEmails.Add(new CapturedPasswordResetEmail(toEmail, resetUrl));
             return Task.CompletedTask;
         }
 
@@ -148,6 +156,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
         public void Clear()
         {
             Emails.Clear();
+            PasswordResetEmails.Clear();
             PaymentNotifications.Clear();
             AccessExpiredEmails.Clear();
             AccessActivatedEmails.Clear();
@@ -219,6 +228,28 @@ public class ApiWebFactory : WebApplicationFactory<Program>
         // Obtener la fibra FUNO11 seeded por HasData para usar su ID real
         var funo = await db.Fibras.FirstOrDefaultAsync(f => f.Ticker == "FUNO11");
         if (funo is null) return;
+
+        if (!await db.Fibras.AnyAsync(f => f.Ticker == "FMTY14"))
+        {
+            db.Fibras.Add(new Fibra
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000005"),
+                Ticker = "FMTY14",
+                YahooTicker = "FMTY14.MX",
+                FullName = "Fibra Monterrey",
+                ShortName = "Fibra MTY",
+                Sector = "Industrial",
+                Market = "BMV",
+                Currency = "MXN",
+                State = FibraState.Active,
+                SiteUrl = "https://fibramty.com",
+                InvestorUrl = "https://fibramty.com/inversionistas",
+                ReportsUrl = "https://www.fibramty.com/en/inversionistas",
+                NameVariants = ["Fibra Monterrey", "FibraMTY", "FMTY"],
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            });
+            await db.SaveChangesAsync();
+        }
 
         if (!await db.PriceSnapshots.AnyAsync(p => p.FibraId == funo.Id))
         {

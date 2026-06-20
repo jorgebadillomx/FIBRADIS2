@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { useAuth } from './AuthContext'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -118,6 +119,18 @@ export function LoginForm({
         >
           {isPending ? 'Iniciando sesión...' : 'Iniciar sesión'}
         </Button>
+
+        <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <Link
+            to="/recuperar-contrasena"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+          <Link to="/registro" className="text-foreground transition-colors hover:underline">
+            ¿No tienes cuenta? <span className="font-semibold">Crear cuenta</span>
+          </Link>
+        </div>
       </form>
     </section>
   )

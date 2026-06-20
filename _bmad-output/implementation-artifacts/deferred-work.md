@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 14-8-cta-auth-recuperar-contrasena (2026-06-20)
+
+- **D1** BCrypt hash prefix en `PasswordResetTokenService.BuildKey` usa solo ~5 chars de entropía real (los primeros 7 chars siempre son `$2b$10$`). Diseño intencional per spec; `64^5 ≈ 10^9` combinaciones es suficiente para invalidación stateless de tokens. Documentar en `PasswordResetTokenService.cs` para futuros reviewers.
+- **D2** Clock skew entre nodos puede hacer que tokens expiren antes del límite declarado de 60 minutos. Concern de infraestructura (NTP sync); no accionable en código sin añadir grace period que complica el contrato del servicio.
+- **D3** `NuevaContrasenaPage` inicializa `tokenError` con `useState(initialError)` una sola vez — si el componente se reutiliza sin desmontarse ante cambios de query params, el estado no se resetea. En la práctica React Router desmonta en navegación entre rutas; edge case teórico en historial del mismo path.
+
+---
+
 Items deferred from story reviews. Each entry includes the source story, the finding, and why it was deferred.
 
 ---

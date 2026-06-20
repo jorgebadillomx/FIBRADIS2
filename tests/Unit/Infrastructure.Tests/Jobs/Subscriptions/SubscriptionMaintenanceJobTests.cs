@@ -148,6 +148,7 @@ public class SubscriptionMaintenanceJobTests
         public Task<UserData> ConfirmEmailAsync(Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<UserData?> FindByIdAsync(Guid id, CancellationToken ct = default) => throw new NotImplementedException();
         public Task ChangePasswordAsync(Guid id, string newPassword, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<UserProfileData> GetProfileAsync(Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task UpdateApodoAsync(Guid userId, string? apodo, CancellationToken ct = default) => throw new NotImplementedException();
         public Task ChangeOwnPasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default) => throw new NotImplementedException();
@@ -164,6 +165,7 @@ public class SubscriptionMaintenanceJobTests
         public List<(string ToEmail, int DaysLeft)> SubscriptionExpiringEmails { get; } = [];
 
         public Task SendEmailConfirmationAsync(string toEmail, string confirmationUrl, CancellationToken ct) => Task.CompletedTask;
+        public Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct) => Task.CompletedTask;
         public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct) => Task.CompletedTask;
 
         public Task SendAccessExpiredAsync(string toEmail, CancellationToken ct)

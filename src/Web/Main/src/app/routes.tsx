@@ -21,6 +21,12 @@ const LoginPage = lazy(() => import('@/modules/auth/LoginPage').then(m => ({ def
 const ConfirmarEmailPage = lazy(() =>
   import('@/pages/ConfirmarEmailPage').then(m => ({ default: m.ConfirmarEmailPage })),
 )
+const RecuperarContrasenaPage = lazy(() =>
+  import('@/pages/RecuperarContrasenaPage').then(m => ({ default: m.RecuperarContrasenaPage })),
+)
+const NuevaContrasenaPage = lazy(() =>
+  import('@/pages/NuevaContrasenaPage').then(m => ({ default: m.NuevaContrasenaPage })),
+)
 const RegistroPage = lazy(() =>
   import('@/pages/RegistroPage').then(m => ({ default: m.RegistroPage })),
 )
@@ -64,6 +70,8 @@ export const routes: RouteObject[] = [
       { path: '/plataforma', element: p(<PlataformaPage />) },
       { path: '/portafolio', element: <PortafolioRoute /> },
       { path: '/confirmar-email', element: p(<ConfirmarEmailPage />) },
+      { path: '/recuperar-contrasena', element: p(<RecuperarContrasenaPage />) },
+      { path: '/nueva-contrasena', element: p(<NuevaContrasenaPage />) },
       { path: '/registro', element: p(<RegistroPage />) },
       { path: '/activar', element: p(<ActivarPage />) },
       { path: '/login', element: p(<LoginPage />) },

@@ -29,6 +29,8 @@ public interface IUserService
 
     Task ChangePasswordAsync(Guid id, string newPassword, CancellationToken ct = default);
 
+    Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default);
+
     Task<UserProfileData> GetProfileAsync(Guid userId, CancellationToken ct = default);
 
     Task UpdateApodoAsync(Guid userId, string? apodo, CancellationToken ct = default);

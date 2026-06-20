@@ -10,6 +10,7 @@ public sealed class ResendOptions
 public sealed record ResendTemplateIds
 {
     public string EmailConfirmation { get; init; } = "";
+    public string PasswordReset { get; init; } = "";
     public string PaymentNotification { get; init; } = "";
     public string AccessExpired { get; init; } = "";
     public string AccessActivated { get; init; } = "";
