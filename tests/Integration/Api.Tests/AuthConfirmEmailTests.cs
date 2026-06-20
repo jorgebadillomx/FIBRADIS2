@@ -119,7 +119,7 @@ public class AuthConfirmEmailTests : IAsyncLifetime
         const string secret = "test-secret-key-must-be-at-least-32-chars-long!!!";
         var payload = $"{userId}|{expiryUnix}";
 
-        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(secret));
+        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes("fibradis-email-confirmation:" + secret));
         var signature = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
         return $"{Base64UrlEncode(Encoding.UTF8.GetBytes(payload))}.{Base64UrlEncode(signature)}";
     }

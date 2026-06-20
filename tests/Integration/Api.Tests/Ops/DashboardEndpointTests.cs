@@ -32,11 +32,14 @@ public class DashboardEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWe
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(body);
-        Assert.Equal(4, body!.Pipelines.Count);
+        Assert.Equal(7, body!.Pipelines.Count);
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "Market");
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "News");
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "Distribution");
         Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "Fundamentals");
+        Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "BanxicoSync");
+        Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "BanxicoInpc");
+        Assert.Contains(body.Pipelines, pipeline => pipeline.Pipeline == "DailySnapshot");
         Assert.NotNull(body.RecentErrors);
     }
 

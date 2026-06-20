@@ -27,6 +27,8 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
         "Compara hasta 4 FIBRAs mexicanas lado a lado en precio, yield, fundamentales y score de oportunidad público.";
     private const string FundamentalsDescription =
         "Dataset con las métricas fundamentales más recientes de FIBRAs mexicanas: Cap Rate, NAV por CBFI, LTV, NOI Margin y FFO Margin.";
+    private const string NewsTitleSuffix = " — Noticias | " + BrandName;
+    private const int NewsTitleMaxLength = 120;
     private const int NewsMaxDescriptionLength = 160;
     private const int NewsMinDescriptionLength = 120;
     private const int FibraMaxDescriptionLength = 155;
@@ -136,7 +138,10 @@ public partial class SeoDefaultsBuilder : ISeoDefaultsBuilder
     {
         var analysis = TryDeserializeAnalysis(article.AiAnalysisJson);
         var headline = analysis?.Headline ?? article.Title;
-        var title = $"{headline} — Noticias | {BrandName}";
+        var maxHeadlineLength = NewsTitleMaxLength - NewsTitleSuffix.Length - 1;
+        if (headline.Length > maxHeadlineLength + 1)
+            headline = TruncateAtWordBoundary(headline, maxHeadlineLength);
+        var title = $"{headline}{NewsTitleSuffix}";
         var description = BuildNewsDescription(
             analysis?.SummaryMarkdown ?? article.AiSummary ?? article.Snippet ?? string.Empty);
         var canonicalKey = article.Slug ?? article.Id.ToString();

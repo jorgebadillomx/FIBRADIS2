@@ -69,7 +69,7 @@ public class EmailConfirmationTokenServiceTests
     private static string CreateToken(Guid userId, long expiryUnix)
     {
         var payload = $"{userId}|{expiryUnix}";
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(Secret));
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("fibradis-email-confirmation:" + Secret));
         var signature = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
         return $"{Base64UrlEncode(Encoding.UTF8.GetBytes(payload))}.{Base64UrlEncode(signature)}";
     }

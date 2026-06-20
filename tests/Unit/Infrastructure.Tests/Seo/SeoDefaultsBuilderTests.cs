@@ -551,6 +551,34 @@ public class SeoDefaultsBuilderTests
     }
 
     [Fact]
+    public void BuildNews_TitleAndOgTitle_NeverExceed120Chars_WhenHeadlineIsLong()
+    {
+        var article = new NewsArticle
+        {
+            Id = Guid.NewGuid(),
+            Title = "Tres ciudades, un mismo dilema: cuánto cuesta habitar el mercado residencial - Inmobiliare",
+            TitleNormalized = "tres ciudades un mismo dilema",
+            Slug = "tres-ciudades-un-mismo-dilema",
+            Source = "Inmobiliare",
+            PublishedAt = new DateTimeOffset(2026, 6, 19, 0, 0, 0, TimeSpan.Zero),
+            Url = "https://example.com/nota",
+            Snippet = "Texto de prueba.",
+            Status = NewsArticleStatus.Processed,
+            CapturedAt = DateTimeOffset.UtcNow,
+        };
+
+        var result = _builder.BuildNews(
+            article,
+            "https://fibrasinmobiliarias.com",
+            Now,
+            "system");
+
+        Assert.True(result.Title.Length <= 120, $"Title tiene {result.Title.Length} chars: '{result.Title}'");
+        Assert.True(result.OgTitle.Length <= 120, $"OgTitle tiene {result.OgTitle.Length} chars: '{result.OgTitle}'");
+        Assert.Equal(result.Title, result.OgTitle);
+    }
+
+    [Fact]
     public void BuildFaqPageJsonLd_UsesOnlyActiveItems_AndStripsMarkdown()
     {
         var items = new List<FaqItem>

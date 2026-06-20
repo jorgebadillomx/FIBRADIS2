@@ -23,10 +23,8 @@ public static class CalculadoraDistributionCalculator
         var paymentQuarter = QuarterOf(lastDate);
         var paymentYear = lastDate.Year;
 
-        // El periodo reportado es el trimestre anterior al pago (FIBRAs pagan Q+1)
-        var reportQuarter = paymentQuarter - 1;
+        var reportQuarter = paymentQuarter;
         var reportYear = paymentYear;
-        if (reportQuarter == 0) { reportQuarter = 4; reportYear--; }
 
         var distCbfi = ordered
             .Where(d => d.PaymentDate.Year == paymentYear && QuarterOf(d.PaymentDate) == paymentQuarter)

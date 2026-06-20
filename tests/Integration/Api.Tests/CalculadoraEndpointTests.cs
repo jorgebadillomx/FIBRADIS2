@@ -52,7 +52,7 @@ public class CalculadoraEndpointTests(ApiWebFactory factory)
         Assert.Equal(16.20m, fmty.GetProperty("precioActual").GetDecimal());
         Assert.Equal("Q2-2026", fmty.GetProperty("ultimoPeriodo").GetString());
         Assert.Equal(0.40m, fmty.GetProperty("distCbfi").GetDecimal());
-        Assert.Equal(0.45m, fmty.GetProperty("distCbfiAnual").GetDecimal());
+        Assert.Equal(0.65m, fmty.GetProperty("distCbfiAnual").GetDecimal());
         Assert.True(fmty.TryGetProperty("freshnessStatus", out _));
     }
 

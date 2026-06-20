@@ -1,8 +1,10 @@
 namespace Infrastructure.Integrations.Email;
 
-public sealed record ResendOptions(string ApiKey, string SenderEmail)
+public sealed class ResendOptions
 {
-    public ResendTemplateIds Templates { get; init; } = new();
+    public string ApiKey { get; set; } = "";
+    public string SenderEmail { get; set; } = "";
+    public ResendTemplateIds Templates { get; set; } = new();
 }
 
 public sealed record ResendTemplateIds

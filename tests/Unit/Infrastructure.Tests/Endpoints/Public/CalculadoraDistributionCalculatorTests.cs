@@ -16,7 +16,7 @@ public class CalculadoraDistributionCalculatorTests
     }
 
     [Fact]
-    public void Calculate_ReturnsReportingPeriodMinusOneAndSumsTrailing12Months()
+    public void Calculate_ReturnsPaymentQuarterAndSumsTrailing12Months()
     {
         var distributions = new[]
         {
@@ -28,8 +28,7 @@ public class CalculadoraDistributionCalculatorTests
 
         var result = CalculadoraDistributionCalculator.Calculate(distributions);
 
-        // Pagos en Q2-2026 → periodo reportado Q1-2026 (pagan un trimestre después)
-        Assert.Equal("Q1-2026", result.UltimoPeriodo);
+        Assert.Equal("Q2-2026", result.UltimoPeriodo);
         Assert.NotNull(result.DistCbfi);
         Assert.NotNull(result.DistCbfiAnual);
         Assert.Equal(0.40m, result.DistCbfi.Value);

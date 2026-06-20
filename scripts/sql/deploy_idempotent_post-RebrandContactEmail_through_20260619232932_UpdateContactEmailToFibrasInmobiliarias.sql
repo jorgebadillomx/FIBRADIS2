@@ -1,0 +1,409 @@
+﻿BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618180316_AddFibraEXIAndAGRO'
+)
+BEGIN
+    IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'created_at', N'currency', N'description', N'full_name', N'investor_url', N'market', N'name_variants', N'reports_url', N'sector', N'short_name', N'site_url', N'state', N'ticker', N'yahoo_ticker') AND [object_id] = OBJECT_ID(N'[catalog].[Fibra]'))
+        SET IDENTITY_INSERT [catalog].[Fibra] ON;
+    EXEC(N'INSERT INTO [catalog].[Fibra] ([Id], [created_at], [currency], [description], [full_name], [investor_url], [market], [name_variants], [reports_url], [sector], [short_name], [site_url], [state], [ticker], [yahoo_ticker])
+    VALUES (''28717c15-5e9a-367f-7079-4eb5013c9369'', ''2026-01-01T00:00:00.0000000+00:00'', N''MXN'', ''Fibra EXI es un fideicomiso de inversión en energía e infraestructura (Fibra E) especializado en concesiones de autopistas de peaje. Su portafolio comprende más de 400 km de carreteras concesionadas en el centro del país, incluyendo la autopista Salamanca-León en Guanajuato. Cotiza en la BMV bajo el ticker FEXI21.'', N''Fibra EXI'', N''https://fibraexi.com/es/inversionistas/'', N''BMV'', ''["Fibra EXI","FEXI","FEXI21"]'', N''http://www.economatica.mx/FEXI/REPORTES%20TRIMESTRALES/'', N''Infraestructura'', N''Fibra EXI'', N''https://fibraexi.com/es/'', N''Active'', N''FEXI21'', N''FEXI21.MX''),
+    (''53273c63-873a-3788-88ad-dca50bffca6e'', ''2026-01-01T00:00:00.0000000+00:00'', N''MXN'', ''AgroFibra es el primer fideicomiso de inversión en bienes raíces en México especializado en el sector agroalimentario. Su portafolio incluye propiedades agrícolas arrendadas a productores y empresas de la cadena agroalimentaria en diversas regiones del país. Cotiza en BIVA bajo el ticker AGRO22.'', N''AgroFibra'', N''https://agrofibra.com/inversionistas/'', N''BIVA'', ''["AgroFibra","Fibra AGRO","AGRO","AGRO22"]'', N''http://www.economatica.mx/AGRO/REPORTES%20TRIMESTRALES%20/'', N''Agroalimentario'', N''AgroFibra'', N''https://agrofibra.com/'', N''Active'', N''AGRO22'', N''AGRO22.MX'')');
+    IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'created_at', N'currency', N'description', N'full_name', N'investor_url', N'market', N'name_variants', N'reports_url', N'sector', N'short_name', N'site_url', N'state', N'ticker', N'yahoo_ticker') AND [object_id] = OBJECT_ID(N'[catalog].[Fibra]'))
+        SET IDENTITY_INSERT [catalog].[Fibra] OFF;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618180316_AddFibraEXIAndAGRO'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260618180316_AddFibraEXIAndAGRO', N'10.0.8');
+END;
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# FHipo | FHIPO14'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FHIPO14'', char(10), ''> **Fecha de constitución:** 3 de julio de 2014'', char(10), ''> **Inicio de operaciones:** Noviembre de 2014 (OPI en la Bolsa Mexicana de Valores)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Hipotecario |'', char(10), ''| Estrategia | Adquirir, originar, coparticipar, administrar y gestionar portafolios de créditos hipotecarios residenciales en México, principalmente en cofinanciamiento con organismos públicos de vivienda |'', char(10), ''| Cobertura geográfica | Nacional — los 32 estados de México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> FHipo (Fideicomiso Irrevocable F/2061) fue constituido el 3 de julio de 2014 como el primer fideicomiso de inversión hipotecario estructurado conforme a la legislación mexicana y listado en los mercados de capitales del país. Su fideicomitente es CH Asset Management, S.A.P.I. de C.V., una entidad fundada por profesionales con amplia experiencia en la industria hipotecaria y financiera de México. En noviembre de 2014 realizó su oferta pública inicial (OPI) en la Bolsa Mexicana de Valores (BMV), captando capital por 8,625 millones de pesos a un precio de 25 pesos por certificado. En 2021 se convirtió en la primera emisora en transferir su listado de la BMV a la Bolsa Institucional de Valores (BIVA), donde actualmente cotiza con la clave FHIPO14.'', char(10), ''>'', char(10), ''> El modelo de negocio de FHipo consiste en la originación, adquisición y administración de portafolios hipotecarios garantizados por bienes raíces residenciales en México, con un perfil de riesgo conservador. FHipo cofinancia créditos hipotecarios otorgados a través de los principales organismos públicos de vivienda del país: el Instituto del Fondo Nacional de la Vivienda para los Trabajadores (INFONAVIT) y el Fondo de la Vivienda del Instituto de Seguridad y Servicios Sociales de los Trabajadores del Estado (FOVISSSTE). Esta estructura de cofinanciamiento con entidades gubernamentales representa su principal fuente de originación y un elemento diferenciador de su estrategia crediticia.'', char(10), ''>'', char(10), ''> FHipo es el único fideicomiso de certificados bursátiles fiduciarios inmobiliarios (CBFIs) en México dedicado exclusivamente al sector hipotecario residencial, posicionándose como el vehículo de referencia para que el público inversionista acceda a este segmento a través del mercado de capitales. Su cobertura geográfica es de alcance nacional, con un portafolio diversificado en los 32 estados del país.'', char(10), ''>'', char(10), ''> La fiduciaria y administradora del fideicomiso es CH Asset Management, S.A.P.I. de C.V., cuyos directivos acumulan colectivamente más de 50 años de experiencia en el sector financiero e hipotecario mexicano. FHipo cuenta también con alianzas estratégicas con organismos internacionales de desarrollo, entre ellas un financiamiento de la Corporación Financiera Internacional (IFC, miembro del Grupo Banco Mundial), orientado a ampliar el acceso a financiamiento para vivienda asequible en México.'')
+    WHERE [Id] = ''055c422a-c2df-ec0f-ab61-2b5c3ede52c2'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Upsite | FIBRAUP18'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FIBRAUP18'', char(10), ''> **Fecha de constitución:** 12 de junio de 2018 (Fideicomiso Irrevocable de Administración No. F3218)'', char(10), ''> **Inicio de operaciones:** 21 de junio de 2018 (debut en la Bolsa Mexicana de Valores)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Desarrollo, adquisición, arrendamiento y administración de inmuebles industriales para PYMEs bajo el modelo de economía compartida (co-working industrial) |'', char(10), ''| Cobertura geográfica | Tijuana (Baja California), Ciudad Juárez (Chihuahua), Tlaxcala, Irapuato (Guanajuato), Naucalpan (Estado de México) y corredores industriales del Bajío y centro-norte del país |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Upsite es un Fideicomiso de Inversión en Bienes Raíces (FIBRA) mexicano constituido en junio de 2018, con Banco Actinver como fiduciario emisor. Debutó en la Bolsa Mexicana de Valores el 21 de junio de 2018, convirtiéndose en el primer vehículo inmobiliario bursátil en México dedicado exclusivamente al segmento industrial bajo un modelo de economía compartida aplicado a la industria manufacturera.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Upsite se basa en el desarrollo, arrendamiento y administración de inmuebles industriales orientados principalmente a Pequeñas y Medianas Empresas (PYMEs) de sectores de alto valor agregado. La plataforma articula cuatro productos: Co-Working Industrial, Clusters industriales, edificios industriales tradicionales y espacios de oficinas dentro de los mismos desarrollos. Su estrategia de inversión incorpora inteligencia de mercado mediante un enfoque de demanda documentada (Pull Approach), diseño basado en ingeniería de valor y reciclaje selectivo de activos a valuaciones atractivas.'', char(10), ''>'', char(10), ''> Fibra Upsite se posiciona como el único FIBRA mexicano enfocado en el desarrollo de inmuebles industriales de manufactura ligera para arrendamiento, con presencia en los principales corredores exportadores del país: frontera norte (Tijuana y Ciudad Juárez), centro (Tlaxcala) y Bajío (Irapuato, Guanajuato). Su expansión contempla además el mercado del Estado de México con el proyecto Centro II en Naucalpan, concebido como el primer inmueble de co-working industrial en la Zona Metropolitana del Valle de México.'', char(10), ''>'', char(10), ''> Las industrias objetivo incluyen dispositivos médicos, farmacéutica, biotecnología, alimentos y bebidas, automotriz, aeroespacial y manufactura avanzada. La estructura del fideicomiso fue promovida por un equipo fundador encabezado por Rodolfo Balmaceda García, Roque Trujillo Quintana y Alejandro Ituarte Egea, entre otros, con BTG Pactual Casa de Bolsa como intermediario colocador en su oferta pública inicial.'')
+    WHERE [Id] = ''132f2dbd-1a77-3ca5-01eb-c65b7a03b14b'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# CFE Fibra E | FCFE18'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FCFE18'', char(10), ''> **Fecha de constitución:** 22 de enero de 2018'', char(10), ''> **Inicio de operaciones:** 8 de febrero de 2018'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Infraestructura |'', char(10), ''| Estrategia | Monetización de flujos futuros asociados al negocio de transmisión de energía eléctrica de la Red Nacional de Transmisión de la CFE, sin cesión de activos físicos |'', char(10), ''| Cobertura geográfica | Nacional — Red Nacional de Transmisión de México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> CFE Fibra E (Fideicomiso Irrevocable número CIB/2919) fue constituido el 22 de enero de 2018 en la Ciudad de México mediante la firma del contrato de fideicomiso irrevocable suscrito ante CIBanco, S.A. como fiduciario. El 8 de febrero de 2018 realizó su colocación pública inicial en la Bolsa Mexicana de Valores (BMV) y en la Bolsa Institucional de Valores (BIVA) bajo el código de cotización FCFE18, convirtiéndose en el primer Fideicomiso de Inversión en Energía e Infraestructura (Fibra E) especializado en el sector eléctrico de México.'', char(10), ''>'', char(10), ''> El modelo de negocio se fundamenta en la adquisición de derechos fideicomisarios sobre flujos futuros derivados del servicio público de transmisión de energía eléctrica, sin que implique una cesión de activos físicos. La Comisión Federal de Electricidad mantiene en todo momento la propiedad y operación total de la Red Nacional de Transmisión; los tenedores de los Certificados Bursátiles Fiduciarios de Inversión en Energía e Infraestructura (CBFE) adquieren el derecho a recibir una proporción de los ingresos generados por dicha red durante un plazo de 30 años, con vencimiento en 2048.'', char(10), ''>'', char(10), ''> CFE Fibra E es el único vehículo de inversión que otorga acceso indirecto a la Red Nacional de Transmisión, infraestructura estratégica del Estado mexicano que abarca más de 110,000 km de líneas de transmisión a lo largo de todo el territorio nacional. Esta exclusividad, junto con la naturaleza permanente de los contratos subyacentes, confiere al instrumento una alta certidumbre en sus flujos de ingresos y un posicionamiento singular dentro del mercado mexicano de capitales.'', char(10), ''>'', char(10), ''> La administración del fideicomiso recae en CFECapital, S. de R.L. de C.V., subsidiaria de la Comisión Federal de Electricidad, en su carácter de fideicomitente y administrador. CIBanco, S.A., Institución de Banca Múltiple, funge como fiduciario emisor, y Monex Casa de Bolsa, S.A. de C.V., Monex Grupo Financiero, actúa como representante común de los tenedores de los CBFE.'')
+    WHERE [Id] = ''15d3465f-5ff4-a84c-c883-1dd381fd22f0'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Storage | STORAGE18'' AS varchar(max)), char(10), char(10), ''> **Ticker:** STORAGE18'', char(10), ''> **Fecha de constitución del fideicomiso:** 13 de febrero de 2014'', char(10), ''> **Inicio de operaciones en bolsa:** 15 de agosto de 2018'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Autoalmacenaje |'', char(10), ''| Estrategia | Adquirir, desarrollar y administrar propiedades de autoalmacenaje (self-storage) en México, operando bajo una plataforma verticalmente integrada que cubre toda la cadena de valor del negocio |'', char(10), ''| Cobertura geográfica | Nacional: Ciudad de México, Estado de México, Jalisco, Querétaro, Puebla, Guerrero, San Luis Potosí, Aguascalientes, Yucatán, Sonora, Guanajuato y Baja California |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Storage es el primer fideicomiso de inversión en bienes raíces de México —y de América Latina— especializado en el sector de autoalmacenaje (self-storage). Tiene su origen en U-Storage, empresa fundada en 2002 dedicada al arrendamiento de minibodegas y lockers bajo el concepto de auto-almacenaje. El fideicomiso fue constituido el 13 de febrero de 2014 y realizó su oferta pública inicial en la Bolsa Mexicana de Valores (BMV) el 15 de agosto de 2018, colocando certificados bursátiles fiduciarios inmobiliarios bajo la clave de cotización STORAGE18.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Storage se basa en la adquisición, desarrollo y administración de propiedades destinadas al autoalmacenaje, ofreciendo soluciones de espacio flexible para personas físicas y empresas. Opera a través de una plataforma verticalmente integrada que le permite gestionar el ciclo completo del negocio —desde el desarrollo inmobiliario hasta la operación directa de las instalaciones—, lo que le otorga control sobre la generación de valor en cada etapa de la cadena.'', char(10), ''>'', char(10), ''> Su estrategia de expansión está orientada tanto al crecimiento en las principales zonas metropolitanas del país como a la penetración en ciudades medianas mediante modelos de operación adaptados, como la marca Guardabox. El fideicomiso ha consolidado presencia en múltiples estados de la República Mexicana, posicionándose como el único vehículo institucional del sector de autoalmacenaje en el mercado bursátil mexicano.'', char(10), ''>'', char(10), ''> Fibra Storage opera bajo una estructura de administración internalizada, tras haber concluido en 2022 el contrato con el administrador externo Self Storage Management. La administración interna quedó formalizada a través del Fideicomiso Irrevocable de Administración número CIB/2981, lo que le permite alinear los intereses de la gestión operativa directamente con los de los tenedores de certificados. El fideicomiso fiduciario es parte del esquema regulado por los artículos 187 y 188 de la Ley del Impuesto sobre la Renta.'')
+    WHERE [Id] = ''17e765b2-df1e-6842-3dcf-ec7506563c89'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Macquarie | FIBRAMQ12'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FIBRAMQ12'', char(10), ''> **Fecha de constitución:** 11 de diciembre de 2012'', char(10), ''> **Inicio de operaciones:** 14 de diciembre de 2012'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Adquisición, propiedad, arrendamiento y administración de inmuebles industriales, comerciales y de oficinas en México, con enfoque principal en activos industriales clase A generadores de ingresos estables |'', char(10), ''| Cobertura geográfica | Nacional — 20 ciudades en 16 estados de la República Mexicana, con presencia en mercados fronterizos y del interior del país |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Macquarie fue constituida el 11 de diciembre de 2012 mediante el Fideicomiso Irrevocable No. F/1622, celebrado entre Macquarie México Real Estate Management, S.A. de C.V. como fideicomitente y administrador original, y CIBanco, S.A. como institución fiduciaria. El 14 de diciembre de 2012 realizó su oferta pública inicial en la Bolsa Mexicana de Valores, convirtiéndose en la tercera FIBRA en listar en México. La colocación —con clave de pizarra FIBRAMQ12— captó 14,715.9 millones de pesos mediante 588.6 millones de Certificados Bursátiles Inmobiliarios Fiduciarios (CBFIs), la mayor colocación inicial registrada por una FIBRA en su momento.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Macquarie se basa en la adquisición, administración y arrendamiento de propiedades industriales, comerciales y de oficinas en los principales mercados de México. La estrategia prioriza activos de clase A con inquilinos de largo plazo en sectores de manufactura, distribución y logística, complementada con desarrollos a medida (build-to-suit) y con un límite disciplinado de exposición a construcción simultánea de hasta 5% del valor total de los activos.'', char(10), ''>'', char(10), ''> Fibra Macquarie ocupa un posicionamiento estratégico en los corredores industriales más dinámicos del país, con presencia en ciudades fronterizas clave como Reynosa, Ciudad Juárez y Matamoros, así como en mercados del interior como Tecámac y otros centros de manufactura y logística. Esta diversificación geográfica permite capturar la demanda de nearshoring y la actividad exportadora hacia América del Norte.'', char(10), ''>'', char(10), ''> La administración del fideicomiso recae en Macquarie Asset Management México, S.A. de C.V. (entidad sucesora por fusión de Macquarie México Real Estate Management, S.A. de C.V.), subsidiaria indirecta al 100% de Macquarie Group Limited, firma global de gestión de activos con sede en Sídney, Australia. La plataforma institucional del grupo respalda la gestión operativa mediante equipos locales de administración de propiedades presentes en cada mercado en que opera el fideicomiso.'')
+    WHERE [Id] = ''2799e174-1233-93ba-87ce-ade15c0c4010'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra EXI | FEXI21'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FEXI21'', char(10), ''> **Fecha de constitución:** 22 de julio de 2021'', char(10), ''> **Inicio de operaciones:** 3 de agosto de 2021'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Infraestructura y energía |'', char(10), ''| Estrategia | Establecer una plataforma para invertir en Sociedades Elegibles y brindar a los tenedores acceso al flujo generado por proyectos de energía e infraestructura mediante concesiones, contratos de prestación de servicios u otros esquemas contractuales |'', char(10), ''| Cobertura geográfica | México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra EXI es una Fibra E listada en la Bolsa Mexicana de Valores, estructurada para canalizar inversión hacia activos y proyectos de infraestructura y energía en México.'', char(10), ''>'', char(10), ''> Su enfoque se centra en participar en Sociedades Elegibles y en capturar los flujos derivados de proyectos operados bajo concesiones, contratos de prestación de servicios y otros esquemas contractuales de largo plazo.'', char(10), ''>'', char(10), ''> La estructura del vehículo utiliza una serie única de certificados, con una lógica de inversión propia de las Fibras E y con vocación de permanencia en activos estratégicos.'', char(10), ''>'', char(10), ''> En su origen, Fibra EXI fue impulsada por Mexico Infrastructure Partners, con una plataforma orientada a infraestructura productiva y a la operación de activos vinculados con movilidad y energía.'')
+    WHERE [Id] = ''28717c15-5e9a-367f-7079-4eb5013c9369'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Next | NEXT25'' AS varchar(max)), char(10), char(10), ''> **Ticker:** NEXT25'', char(10), ''> **Fecha de constitución:** 2023'', char(10), ''> **Inicio de operaciones:** 24 de julio de 2025'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Adquirir, desarrollar y administrar propiedades industriales y logísticas Clase A en los principales corredores del país, con foco en el mercado de nearshoring |'', char(10), ''| Cobertura geográfica | Valle de México, Guadalajara, Querétaro, Cancún, norte del país y mercados secundarios |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Next (Nearshoring Experts & Technology), registrado como Fideicomiso Irrevocable No. 7401, es un fideicomiso de inversión en bienes raíces especializado en el segmento industrial y logístico. Su origen se encuentra en el portafolio industrial de Fibra Uno (FUNO), del cual fue desgajado y estructurado como entidad independiente a partir de 2023, debutando en la Bolsa Mexicana de Valores el 24 de julio de 2025 mediante una Oferta Pública Inicial que captó aproximadamente 8,000 millones de pesos con una participación mayoritaria de inversionistas institucionales mexicanos.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Next consiste en la adquisición, desarrollo y administración de inmuebles industriales Clase A estratégicamente ubicados en los corredores logísticos más relevantes de México. Sus activos atienden a arrendatarios nacionales e internacionales de sectores como manufactura, distribución, comercio electrónico y cadenas de suministro, bajo esquemas de arrendamiento de largo plazo que generan flujos estables y predecibles.'', char(10), ''>'', char(10), ''> Fibra Next se posiciona como un vehículo de inversión diseñado para capitalizar el fenómeno del nearshoring en América del Norte, el cual ha impulsado una demanda sostenida de infraestructura logística e industrial de alto estándar en México. Su ambición declarada es consolidarse entre las tres fibras industriales más grandes del mundo, con un plan de expansión que contempla corredores en la región centro, norte, Bajío y mercados secundarios del país.'', char(10), ''>'', char(10), ''> El fideicomiso fue estructurado por Nearshoring Experts & Technology, S.C., entidad vinculada al ecosistema directivo de Fibra Uno, y cuenta con un modelo de gestión interna que integra capacidades de desarrollo, arrendamiento y administración de activos industriales Clase A. La colocación contó con el respaldo de los principales intermediarios bursátiles del mercado mexicano.'')
+    WHERE [Id] = ''2f25d292-5a8d-a262-1cdc-093621c7471c'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Educa | EDUCA18'' AS varchar(max)), char(10), char(10), ''> **Ticker:** EDUCA18'', char(10), ''> **Fecha de constitución:** 19 de septiembre de 2017'', char(10), ''> **Inicio de operaciones:** 27 de junio de 2018 (debut en BMV — Oferta Pública Inicial)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Educativo |'', char(10), ''| Estrategia | Adquirir, desarrollar, arrendar y operar inmuebles destinados preponderantemente a espacios educativos en México, bajo contratos de arrendamiento de largo plazo |'', char(10), ''| Cobertura geográfica | Nacional — presencia en 20 de los 32 estados de la República Mexicana, con concentración predominante en el centro del país |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Educa es el primer fideicomiso de inversión en bienes raíces (FIBRA) en México especializado exclusivamente en el sector educativo, y el primero de este tipo en el mundo. Fue constituido el 19 de septiembre de 2017 como Fideicomiso Irrevocable No. F/3277, con Banco INVEX, S.A., Institución de Banca Múltiple, como fiduciario. Su Oferta Pública Inicial se realizó el 27 de junio de 2018 en la Bolsa Mexicana de Valores, con una colocación de Certificados Bursátiles Fiduciarios Inmobiliarios (CBFIs) por un monto de aproximadamente 9,430 millones de pesos, convirtiéndose en la decimotercera FIBRA listada en el mercado mexicano.'', char(10), ''>'', char(10), ''> Su modelo de negocio consiste en adquirir y gestionar inmuebles con vocación educativa — incluyendo campus universitarios, planteles de nivel básico y medio superior, y centros de aprendizaje — que son arrendados a instituciones educativas privadas de reconocida trayectoria mediante contratos de largo plazo. Esta estructura genera flujos de ingresos estables y predecibles, respaldados por la ocupación sostenida de su portafolio.'', char(10), ''>'', char(10), ''> Fibra Educa busca consolidar un mercado históricamente fragmentado: la infraestructura inmobiliaria del sector educativo privado en México. Al ofrecer a las instituciones educativas la posibilidad de monetizar sus activos inmobiliarios y liberar capital para destinarlo a su actividad académica principal, la FIBRA actúa como un habilitador estructural del sector, con una propuesta de valor diferenciada frente a los vehículos de inversión inmobiliaria de corte comercial o industrial.'', char(10), ''>'', char(10), ''> El fideicomitente original es Grupo Nagoin, S.A. de C.V., y la administración interna del vehículo está a cargo de Fibra Educa Management, S.C., cuyo Director General es Raúl Patricio Martínez Solares Piña. El vehículo cuenta con administración interna y un esquema de gobierno corporativo alineado a las mejores prácticas del mercado de valores mexicano.'')
+    WHERE [Id] = ''3129ee4f-d156-04c8-a03f-42bdc468ff27'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Prologis | FIBRAPL14'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FIBRAPL14'', char(10), ''> **Fecha de constitución:** 13 de agosto de 2013'', char(10), ''> **Inicio de operaciones:** Junio de 2014'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Adquirir, poseer y administrar bienes raíces industriales de Clase A en México, con enfoque en mercados de logística, consumo, comercio electrónico y manufactura ligera |'', char(10), ''| Cobertura geográfica | Ciudad de México, Guadalajara, Monterrey, Tijuana, Ciudad Juárez y Reynosa |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> FIBRA Prologis es un Fideicomiso de Inversión en Bienes Raíces constituido el 13 de agosto de 2013 en México, con clave de cotización FIBRAPL14 en la Bolsa Mexicana de Valores. Su oferta pública inicial cerró en junio de 2014, convirtiéndose en la primera IPO de una FIBRA industrial en América Latina. El fideicomiso surge como vehículo para capitalizar la experiencia acumulada por Prologis en el mercado industrial mexicano, donde opera desde 1997.'', char(10), ''>'', char(10), ''> El modelo de negocio de FIBRA Prologis se centra en la adquisición, desarrollo y administración de inmuebles industriales de Clase A estratégicamente ubicados en los principales corredores logísticos y manufactureros de México. Su portafolio atiende a dos grandes segmentos: clientes de logística, consumo y comercio electrónico, que representan aproximadamente dos terceras partes de su base de inquilinos, y clientes del sector de manufactura ligera, que constituyen el tercio restante.'', char(10), ''>'', char(10), ''> El posicionamiento estratégico de FIBRA Prologis se sustenta en la selección disciplinada de mercados con alta demanda industrial y conectividad logística probada. Sus seis mercados objetivo concentran infraestructura de distribución vinculada tanto al mercado interno de consumo como a cadenas de suministro de exportación hacia América del Norte, lo que otorga al portafolio resiliencia ante distintos ciclos económicos.'', char(10), ''>'', char(10), ''> FIBRA Prologis es administrada externamente por Prologis México, subsidiaria de Prologis, Inc., compañía global líder en bienes raíces industriales con presencia en 20 países. Las decisiones estratégicas de adquisición, disposición y política de distribuciones son supervisadas por un Comité Técnico compuesto por 11 miembros con experiencia en finanzas, bienes raíces, gobierno corporativo y gestión de riesgos. Esta estructura garantiza alineación entre los intereses de los tenedores de CBFI y las mejores prácticas de gobierno corporativo del patrocinador global.'')
+    WHERE [Id] = ''32377b6d-9244-a715-0279-2660cc6b62a5'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Plus | FPLUS16'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FPLUS16'', char(10), ''> **Fecha de constitución:** 13 de julio de 2016'', char(10), ''> **Inicio de operaciones:** 3 de noviembre de 2016'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Diversificado |'', char(10), ''| Estrategia | Integración vertical de la cadena de valor inmobiliaria: identificación, desarrollo, comercialización, operación y desinversión de activos en arrendamiento |'', char(10), ''| Cobertura geográfica | Nacional — presencia en 20 entidades federativas, con mayor concentración en Ciudad de México, Estado de México y Sonora |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Plus (Fideicomiso F/1110) fue constituido el 13 de julio de 2016 mediante un Contrato de Fideicomiso Irrevocable entre NFD, S.A. de C.V. como fideicomitente, Banco Azteca, S.A., Banca Múltiple, División Fiduciaria como fiduciario, y CI Banco, S.A. como representante común. Sus Certificados Bursátiles Fiduciarios Inmobiliarios (CBFIs) debutaron en la Bolsa Mexicana de Valores el 3 de noviembre de 2016 bajo la clave de pizarra FPLUS16, con una oferta pública inicial de 105 millones de CBFIs a un valor unitario de 15 pesos, por un monto total de 1,575 millones de pesos.'', char(10), ''>'', char(10), ''> Fibra Plus fue el primer FIBRA en México en adoptar un modelo de integración vertical que abarca todo el ciclo inmobiliario: desde la identificación de conceptos y ubicaciones, el seguimiento al desarrollo y ejecución de obra, el proceso de comercialización y arrendamiento, la operación de los activos estabilizados, y la eventual captura de plusvalía mediante desinversión cuando las condiciones de mercado lo justifican. A diferencia de las fibras que lo precedieron, Fibra Plus salió al mercado con activos en distintas etapas de desarrollo, no exclusivamente con portafolios estabilizados.'', char(10), ''>'', char(10), ''> El portafolio es de naturaleza diversificada, con presencia en los segmentos industrial, comercial, oficinas, educativo y vivienda en arrendamiento, distribuido en 20 entidades federativas de la República Mexicana. Esta diversificación sectorial y geográfica es un elemento central de su estrategia de gestión de riesgo y generación de valor a largo plazo.'', char(10), ''>'', char(10), ''> Fibra Plus opera bajo un esquema de administración interna, lo que lo distingue de otros vehículos del mercado que delegan la gestión a asesores externos. Este modelo de gobernanza fue diseñado con el propósito de ofrecer una estructura transparente, con rendición de cuentas directa y alta capacidad de ejecución, alineando los incentivos del equipo directivo con los de los tenedores de CBFIs.'')
+    WHERE [Id] = ''32418186-9e2c-942b-8f4a-1e61388760a4'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Inn | FINN13'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FINN13'', char(10), ''> **Fecha de constitución:** 23 de octubre de 2012'', char(10), ''> **Inicio de operaciones:** 12 de marzo de 2013'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Hotelero |'', char(10), ''| Estrategia | Adquirir, desarrollar y arrendar propiedades destinadas a la industria hotelera en México, con enfoque en el segmento de viajeros de negocios y bajo acuerdos de franquicia con cadenas internacionales |'', char(10), ''| Cobertura geográfica | Nacional — presencia en múltiples ciudades de México con concentración en mercados de rápido crecimiento y mercados donde la operación conjunta genera economías de escala |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Inn es el primer fideicomiso de inversión en bienes raíces de carácter hotelero en México. Constituido el 23 de octubre de 2012 como Fideicomiso Irrevocable DB/1616 ante CIBanco, S.A. como institución fiduciaria, inició operaciones bursátiles el 12 de marzo de 2013 mediante una oferta pública inicial en la Bolsa Mexicana de Valores, donde cotiza sus Certificados Bursátiles Fiduciarios Inmobiliarios bajo la clave de pizarra FINN13.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Inn consiste en adquirir, desarrollar y arrendar propiedades comerciales destinadas exclusivamente a la industria hotelera. Para la operación de sus activos, la fibra suscribe acuerdos de franquicia, licencia y uso de marca con cadenas internacionales de primer nivel, entre las que se encuentran IHG (Holiday Inn, Holiday Inn Express), Hilton (Hampton Inn by Hilton), Marriott International y Wyndham Hotel Group, así como marcas nacionales seleccionadas.'', char(10), ''>'', char(10), ''> La estrategia de adquisición se orienta prioritariamente hacia propiedades con operaciones en marcha ubicadas en mercados de alto crecimiento o en plazas donde la escala operativa existente permite generar economías de escala. El portafolio está dirigido principalmente al viajero de negocios, lo que le confiere una demanda estructuralmente estable y diferenciada de los destinos turísticos de playa.'', char(10), ''>'', char(10), ''> Fibra Inn opera bajo una estructura de administración internalizada a través de su subsidiaria Administradora de Activos Fibra Inn, S.C. (AAFI), lo que la distingue como la primera fibra mexicana con este esquema de gobierno. Esta estructura elimina los conflictos de interés inherentes a los modelos de administración externa y alinea los incentivos de la administración con los de los tenedores de CBFIs.'')
+    WHERE [Id] = ''38a237f5-9065-f4ec-7b19-c116a9642c6f'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra AGRO | AGRO22'' AS varchar(max)), char(10), char(10), ''> **Ticker:** AGRO22'', char(10), ''> **Fecha de constitución:** 12 de diciembre de 2020'', char(10), ''> **Inicio de operaciones:** 9 de diciembre de 2022'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Agroalimentario |'', char(10), ''| Estrategia | Adquirir, desarrollar, poseer y arrendar inmuebles vinculados con la actividad agroalimentaria y servicios relacionados o complementarios, priorizando activos con respaldo operativo y potencial de generación de valor |'', char(10), ''| Cobertura geográfica | México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra AGRO es un fideicomiso de inversión en bienes raíces enfocado al sector agroalimentario en México. Su propuesta consiste en canalizar capital hacia inmuebles ligados a la cadena productiva del campo y la agroindustria, con una tesis especializada dentro del mercado inmobiliario.'', char(10), ''>'', char(10), ''> Su estrategia se centra en propiedades que permiten actividades de producción primaria y secundaria, así como usos complementarios relacionados con operación, comercialización y logística. La lógica del vehículo es respaldar su crecimiento con activos que tengan sustento operativo y relación directa con arrendatarios del sector.'', char(10), ''>'', char(10), ''> La Fibra se presenta como el primer vehículo inmobiliario especializado en el segmento agroalimentario del país. Su enfoque busca combinar arrendamiento de activos, desarrollo de infraestructura productiva y una disciplina de inversión orientada a la creación de valor de largo plazo.'', char(10), ''>'', char(10), ''> La cobertura geográfica es nacional, con atención a ubicaciones en México que ofrezcan potencial de plusvalía y conexión con cadenas de suministro agroalimentarias. En su tesis también contempla inmuebles complementarios que apoyen el funcionamiento del ecosistema productivo.'')
+    WHERE [Id] = ''53273c63-873a-3788-88ad-dca50bffca6e'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Danhos | DANHOS13'' AS varchar(max)), char(10), char(10), ''> **Ticker:** DANHOS13'', char(10), ''> **Fecha de constitución:** 10 de junio de 2013'', char(10), ''> **Inicio de operaciones:** 8 de octubre de 2013 (debut en la BMV)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Comercial |'', char(10), ''| Estrategia | Desarrollar, adquirir, arrendar, operar y administrar activos inmobiliarios comerciales, de oficinas y de uso mixto de calidad premier e icónicos en México |'', char(10), ''| Cobertura geográfica | Zona Metropolitana de la Ciudad de México (ZMCDMX) y Zona Metropolitana de la Ciudad de Puebla (ZMCP) |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Danhos (Fideicomiso Irrevocable Número 17416-3) fue constituido el 10 de junio de 2013 como el vehículo de inversión inmobiliaria de Grupo Danhos, desarrollador mexicano fundado en 1976 por los hermanos David y José Daniel, quienes diversificaron su negocio original en la industria textil hacia el desarrollo de bienes raíces. En octubre de 2013, tan solo ocho meses después de su constitución, realizó su oferta pública inicial en la Bolsa Mexicana de Valores, convirtiéndose así en el primer fideicomiso de inversión en bienes raíces especializado en inmuebles comerciales y de oficinas de calidad premier en México.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Danhos se centra en el desarrollo, adquisición, arrendamiento y administración de propiedades icónicas: centros comerciales de formato abierto y cerrado, edificios de oficinas y desarrollos de uso mixto. Fibra Danhos se distingue en el mercado por su enfoque en activos de calidad premier, segmento diferenciado del resto de FIBRAs comerciales en México, privilegiando la operación integral de sus inmuebles por encima de la adquisición masiva de activos.'', char(10), ''>'', char(10), ''> Estratégicamente, Fibra Danhos concentra su portafolio en los dos mercados urbanos de mayor demanda de espacios comerciales y de oficinas premium del país: la Zona Metropolitana de la Ciudad de México y la Zona Metropolitana de la Ciudad de Puebla. Esta concentración geográfica le permite gestionar sus activos con profundo conocimiento del mercado local, asegurar sinergias operativas entre propiedades y mantener estándares consistentes de experiencia para arrendatarios y visitantes.'', char(10), ''>'', char(10), ''> El fideicomiso es administrado por Concentradora Fibra Danhos, S.A. de C.V., filial de Grupo Danhos, quien actúa como administrador y asesor del fideicomiso. Esta alineación entre el sponsor fundador y la administración del vehículo cotizado otorga continuidad estratégica y alinea los incentivos del equipo directivo con los de los tenedores de certificados bursátiles fiduciarios inmobiliarios (CBFIs).'')
+    WHERE [Id] = ''5d911406-8042-d1db-90b0-6c5aebb882bf'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Hotel | FIHO12'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FIHO12'', char(10), ''> **Fecha de constitución:** 31 de julio de 2012'', char(10), ''> **Inicio de operaciones:** 30 de noviembre de 2012 (OPI en BMV)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Hotelero |'', char(10), ''| Estrategia | Desarrollar, adquirir, poseer y operar hoteles en México, con portafolio diversificado por marca, operador y segmento (urbano y resort de playa), orientado a generar rendimientos a través de distribuciones y apreciación de activos |'', char(10), ''| Cobertura geográfica | Nacional — presencia en 26 estados de la República Mexicana |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> FibraHotel es el primer fideicomiso de inversión en bienes raíces especializado en hoteles en México. Fue constituido el 31 de julio de 2012 a través de Concentradora Fibra Hotelera Mexicana, S.A. de C.V., sociedad creada expresamente como fideicomitente del Fideicomiso 1596. El 30 de noviembre de 2012 llevó a cabo su Oferta Pública Inicial en la Bolsa Mexicana de Valores bajo la clave de cotización FIHO12, siendo el primer instrumento de este tipo enfocado exclusivamente en el segmento hotelero urbano en el país.'', char(10), ''>'', char(10), ''> El modelo de negocio de FibraHotel se basa en la adquisición, desarrollo y operación de hoteles a través de alianzas con operadores y marcas de reconocido prestigio internacional y nacional. Su estructura de comisiones está diseñada predominantemente de forma variable, vinculada a la utilidad bruta de operación de cada propiedad, lo que alinea los incentivos del fideicomiso con los de los operadores hoteleros y los tenedores de Certificados Bursátiles Fiduciarios Inmobiliarios (CBFIs).'', char(10), ''>'', char(10), ''> La estrategia de inversión contempla diversificación geográfica a nivel nacional y diversificación por segmento de mercado, abarcando desde hoteles de negocios en centros urbanos hasta resorts de playa. El portafolio opera bajo marcas de operadores como Grupo Posadas, Grupo Real Turismo y Marriott International, entre otros, con presencia en los principales corredores de negocios y destinos turísticos del país.'', char(10), ''>'', char(10), ''> FibraHotel está estructurado como fideicomiso irrevocable de administración e inversión, con Concentradora Fibra Hotelera Mexicana, S.A. de C.V. fungiendo como fideicomitente y administrador. Su gestión se orienta a maximizar el valor de los activos hoteleros a largo plazo, manteniendo estándares de calidad y servicio alineados con las marcas internacionales con las que opera.'')
+    WHERE [Id] = ''6cbe26c2-2ed0-6df0-6242-1c78d011e9fc'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Uno | FUNO11'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FUNO11'', char(10), ''> **Fecha de constitución:** 10 de enero de 2011'', char(10), ''> **Inicio de operaciones:** 18 de marzo de 2011 (debut en BMV)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Diversificado |'', char(10), ''| Estrategia | Adquisición, desarrollo, arrendamiento y administración de bienes raíces comerciales en los segmentos industrial, comercial (centros comerciales), oficinas, uso mixto y reservas estratégicas de tierra |'', char(10), ''| Cobertura geográfica | Nacional — presencia en todos los estados de la República Mexicana |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Uno es el primer Fideicomiso de Inversión en Bienes Raíces (FIBRA) listado en México. Fue constituido el 10 de enero de 2011 mediante escritura pública ante el Notario Público número 89 de la Ciudad de México, bajo el número de fideicomiso F1401, con Banco Actinver como fiduciario. Su oferta pública inicial se realizó el 18 de marzo de 2011 en la Bolsa Mexicana de Valores, marcando el nacimiento del mercado de FIBRAs en México y América Latina.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Uno consiste en la adquisición, desarrollo y administración de inmuebles destinados al arrendamiento, con presencia en los segmentos industrial, comercial, oficinas, uso mixto y reservas de tierra. La estrategia de diversificación —por segmento, geografía e inquilino— constituye el eje central de su operación, buscando en todo momento las mejores ubicaciones e inmuebles de la más alta calidad en el territorio nacional.'', char(10), ''>'', char(10), ''> Como referente del mercado inmobiliario institucional en México, Fibra Uno ha impulsado la consolidación del sector de FIBRAs en el país. Desde su debut, sentó el precedente regulatorio y operativo que permitió el listado de más de quince FIBRAs adicionales en la BMV entre 2012 y 2020, consolidándose como el mayor fideicomiso inmobiliario de América Latina.'', char(10), ''>'', char(10), ''> El fideicomiso opera bajo la denominación legal Fideicomiso Irrevocable No. F1401, con Banco Actinver, S.A., Institución de Banca Múltiple, Grupo Financiero Actinver, como fiduciario. La gestión del portafolio es llevada a cabo por F1 Management, S.C., como administrador interno, con el apoyo de Fibra Uno Administración, S.A. de C.V., como asesor externo.'')
+    WHERE [Id] = ''7347fc56-b1d8-1853-7712-ac4dc204564c'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Monterrey | FMTY14'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FMTY14'', char(10), ''> **Fecha de constitución:** 2014 (Fideicomiso Irrevocable No. F/2157)'', char(10), ''> **Inicio de operaciones:** 11 de diciembre de 2014'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Adquisición, administración, desarrollo y operación de propiedades industriales y corporativas en arrendamiento a lo largo de la República Mexicana |'', char(10), ''| Cobertura geográfica | Nacional, con presencia destacada en Chihuahua, Nuevo León, Baja California, Tamaulipas y Puebla |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Mty (BMV: FMTY14) es un fideicomiso de inversión en bienes raíces constituido en 2014 e inscrito en la Bolsa Mexicana de Valores el 11 de diciembre de ese mismo año bajo el Fideicomiso Irrevocable No. F/2157. Nació en el norte de México con vocación industrial y corporativa, convirtiéndose en un vehículo de inversión sin precedentes dentro del mercado de FIBRAs en México.'', char(10), ''>'', char(10), ''> Su modelo de negocio se centra en la adquisición, administración, desarrollo y operación de un portafolio diversificado de inmuebles no residenciales —principalmente naves industriales y espacios de oficinas corporativas— destinados al arrendamiento a largo plazo. Este enfoque permite generación de flujos estables y predecibles para sus tenedores de CBFIs.'', char(10), ''>'', char(10), ''> Fibra Mty se posiciona estratégicamente en mercados industriales con alta demanda estructural, particularmente en corredores del norte de México expuestos a los flujos de manufactura y logística binacional. Su portafolio refleja una apuesta por regiones con dinamismo industrial sostenido, incluyendo plazas clave como Monterrey, Ciudad Juárez y Tijuana.'', char(10), ''>'', char(10), ''> Fibra Mty es el primer fideicomiso de inversión en bienes raíces administrado y asesorado 100% internamente en México. Su administrador, Fibra MTY, S.C., gestiona los activos sin cobrar comisiones externas proporcionales al tamaño de los activos, las adquisiciones o la capitalización de mercado, lo que alinea los intereses del equipo operativo directamente con los de los inversionistas y genera economías de escala conforme crece el portafolio.'')
+    WHERE [Id] = ''7882f6d3-304f-5de6-2211-60508c2021c6'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Terra | TERRA13'' AS varchar(max)), char(10), char(10), ''> **Ticker:** TERRA13'', char(10), ''> **Fecha de constitución:** 29 de enero de 2013'', char(10), ''> **Inicio de operaciones:** Marzo de 2013'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Adquirir, desarrollar, arrendar y administrar propiedades inmobiliarias industriales en México, generando ingresos recurrentes mediante contratos de arrendamiento a largo plazo |'', char(10), ''| Cobertura geográfica | Regiones Centro, Bajío y Norte de México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Terrafina (BMV: TERRA13) es un Fideicomiso de Inversión en Bienes Raíces (FIBRA) constituido el 29 de enero de 2013 mediante el Fideicomiso Irrevocable número F/00939, con CIBanco, S.A. como institución fiduciaria. Debutó en la Bolsa Mexicana de Valores en marzo de 2013 a través de una Oferta Pública Inicial (OPI) que captó aproximadamente 8,300 millones de pesos (665 millones de dólares), convirtiéndose en la quinta FIBRA en listarse en México y la primera especializada exclusivamente en el segmento industrial.'', char(10), ''>'', char(10), ''> El modelo de negocio de Terrafina se centra en la adquisición, desarrollo, arrendamiento y administración de naves industriales y propiedades de manufactura ligera ubicadas estratégicamente en los principales corredores industriales del país. Su portafolio está orientado a atender la demanda de empresas manufactureras, de logística y de comercio electrónico que requieren instalaciones modernas en mercados con alta conectividad y acceso a cadenas de suministro globales.'', char(10), ''>'', char(10), ''> La cobertura geográfica de Terrafina se concentra en tres macrorregiones con alta actividad industrial: la región Norte —que incluye mercados fronterizos como Monterrey, Juárez y Tijuana—, la región Bajío —con presencia en parques industriales de Guanajuato, Querétaro y San Luis Potosí— y la región Centro, que comprende los corredores logísticos del Valle de México. Esta distribución responde a la proximidad con Estados Unidos, la infraestructura carretera y ferroviaria, y la concentración de manufactura orientada a la exportación.'', char(10), ''>'', char(10), ''> Terrafina es administrada internamente por un equipo especializado en bienes raíces industriales y cuenta con el asesoramiento externo de PGIM Real Estate (anteriormente Prudential Real Estate Investors — PREI), el área de inversión inmobiliaria de Prudential Financial, Inc. (NYSE: PRU). Esta estructura combina la alineación de intereses propia de la administración interna con la perspectiva global y el respaldo institucional de uno de los gestores de activos inmobiliarios más grandes del mundo.'')
+    WHERE [Id] = ''894a2120-2ad3-d3f4-44fd-0d0c423b849f'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Nova | FNOVA17'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FNOVA17'', char(10), ''> **Fecha de constitución:** 10 de julio de 2017'', char(10), ''> **Inicio de operaciones:** 3 de agosto de 2017'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Diversificado |'', char(10), ''| Estrategia | Adquisición, desarrollo, operación y arrendamiento de inmuebles en los segmentos industrial, agroindustrial, logístico, comercial y educativo, con enfoque en edificios construidos a la medida (Build-to-Suit) para arrendatarios de perfil clase A |'', char(10), ''| Cobertura geográfica | Nacional, con presencia en 44 ciudades de 20 entidades federativas; concentración histórica en el norte de México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra Nova es un Fideicomiso de Inversión en Bienes Raíces (FIBRA) constituido el 10 de julio de 2017 bajo el Fideicomiso Irrevocable No. F/2870, con Banco Actinver como fiduciario. Realizó su Oferta Pública Inicial (OPI) el 3 de agosto de 2017 en la Bolsa Mexicana de Valores bajo el símbolo FNOVA17. Su portafolio inicial fue aportado por Proyectos Inmobiliarios Carne Mart, S.A. de C.V., entidad vinculada a Grupo Bafar, y comprendía 81 activos inmobiliarios distribuidos en 40 ciudades de 19 estados de la República.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra Nova se basa en la adquisición, desarrollo y arrendamiento de inmuebles en múltiples segmentos: industrial, logístico, comercial, educativo, centros de ingeniería y agroindustrial. La plataforma prioriza la modalidad Build-to-Suit, mediante la cual desarrolla edificios diseñados y construidos conforme a las especificaciones del usuario final, quien posteriormente los arrienda. Esta metodología permite atraer arrendatarios de perfil clase A con contratos de largo plazo y alta estabilidad de flujos.'', char(10), ''>'', char(10), ''> La estrategia de crecimiento de Fibra Nova se sustenta en la diversificación geográfica y sectorial, con presencia extendida a lo largo del territorio nacional y foco particular en mercados del norte de México, región que concentra una alta actividad manufacturera e industrial por su proximidad con Estados Unidos. El fideicomiso ha aprovechado el fenómeno de nearshoring para expandir su segmento industrial mediante la atracción de empresas globales que relocalizan operaciones en México.'', char(10), ''>'', char(10), ''> La administración y asesoría del fideicomiso está a cargo de Administradora FIBRA Norte, S.C. Monex Casa de Bolsa actúa como representante común de los tenedores de Certificados Bursátiles Fiduciarios Inmobiliarios (CBFIs). El fideicomiso cotiza tanto en la Bolsa Mexicana de Valores (BMV) como en BIVA, y cumple con los estándares de gobierno corporativo y reporte financiero exigidos por ambas bolsas.'')
+    WHERE [Id] = ''8d7ad206-8591-fd28-f33f-d0b887817b5c'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Shop | FSHOP13'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FSHOP13'', char(10), ''> **Fecha de constitución:** 21 de junio de 2013'', char(10), ''> **Inicio de operaciones:** Junio de 2013 (IPO en BMV)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Comercial |'', char(10), ''| Estrategia | Adquisición, desarrollo y administración de centros comerciales en México, operando formatos Super Regional, Regional y Urban Center dirigidos a consumidores de clase media y media-alta |'', char(10), ''| Cobertura geográfica | Nacional: Ciudad de México, Querétaro, Guanajuato, Baja California Sur, Quintana Roo, Veracruz y otros estados de la República Mexicana |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> FibraShop es el primer Fideicomiso de Inversión en Bienes Raíces (FIBRA) en México especializado exclusivamente en inmuebles comerciales. Fue constituido el 21 de junio de 2013 mediante escritura pública otorgada ante notario en el Distrito Federal, con CI Banco como institución fiduciaria original. Su oferta pública inicial en la Bolsa Mexicana de Valores se realizó en junio de 2013, con un portafolio inicial conformado por ocho centros comerciales estratégicamente ubicados en cuatro estados de la República y en la Ciudad de México.'', char(10), ''>'', char(10), ''> El modelo de negocio de FibraShop se basa en la adquisición, posesión, administración y desarrollo de propiedades comerciales bajo el concepto de "Centros de Vida", buscando proporcionar a sus inversionistas retornos atractivos a través de distribuciones estables y apreciación de capital. El fideicomiso opera a través de distintos formatos comerciales que incluyen centros Super Regionales, Regionales y Urban Centers, todos orientados a segmentos de consumo de clase media y media-alta.'', char(10), ''>'', char(10), ''> El posicionamiento estratégico de FibraShop se fundamenta en su carácter pionero como primera FIBRA comercial en México, combinado con una diversificación geográfica nacional y una gestión especializada a cargo de FibraShop Portafolios Inmobiliarios, S.C. en calidad de asesor externo. Esta estructura le permite enfocarse en mercados con alta densidad poblacional y demanda sostenida de espacios comerciales de calidad en el territorio mexicano.'', char(10), ''>'', char(10), ''> El fideicomiso cuenta con el respaldo de los grupos empresariales Cayón y Frel como principales sponsors, quienes tienen facultad de designar miembros del Comité Técnico y otros órganos de gobierno del Fideicomiso de Control. La administración está a cargo de especialistas con amplia trayectoria en la industria inmobiliaria comercial mexicana.'')
+    WHERE [Id] = ''933f9202-f943-0342-0e05-5cfd283a5bbc'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra SOMA | SOMA21'' AS varchar(max)), char(10), char(10), ''> **Ticker:** SOMA21'', char(10), ''> **Fecha de constitución:** 10 de septiembre de 2019'', char(10), ''> **Inicio de operaciones:** 23 de febrero de 2021 (debut en BIVA)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Comercial |'', char(10), ''| Estrategia | Adquisición, desarrollo, arrendamiento y administración de propiedades inmobiliarias premium en México, con enfoque en centros comerciales, oficinas, hoteles y desarrollos de usos mixtos |'', char(10), ''| Cobertura geográfica | Ciudad de México y Área Metropolitana, Puebla, Querétaro, Veracruz; con presencia en los principales corredores comerciales y de oficinas del país |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra SOMA es un Fideicomiso de Inversión en Bienes Raíces constituido el 10 de septiembre de 2019 bajo el Fideicomiso Irrevocable No. 3332 administrado por CIBanco, S.A. Su origen se sustenta en el legado de Grupo Sordo Madaleno, firma de arquitectura y desarrollo inmobiliario con trayectoria que se remonta a 1937 y con más de ocho décadas de presencia en el mercado inmobiliario mexicano. SOMA Management, S.A.P.I. de C.V. actúa como fideicomitente y gestor del vehículo.'', char(10), ''>'', char(10), ''> El modelo de negocio de Fibra SOMA se centra en la adquisición, construcción, desarrollo, arrendamiento y operación de activos inmobiliarios de uso mixto y premium en México. Su portafolio incluye centros comerciales, espacios de oficinas, hoteles de marca y desarrollos de usos mixtos, orientados a inquilinos nacionales e internacionales. La estrategia privilegia ubicaciones en corredores comerciales y de oficinas de alto dinamismo económico, como Pedregal y Polanco en Ciudad de México, Boca del Río en Veracruz, y Juriquilla en Querétaro.'', char(10), ''>'', char(10), ''> Fibra SOMA marcó un hito en el mercado de capitales mexicano al convertirse, en febrero de 2021, en la primera FIBRA en cotizar en la Bolsa Institucional de Valores (BIVA), diferenciándose así del resto de FIBRAs listadas en la Bolsa Mexicana de Valores (BMV). Su oferta pública inicial, realizada el 23 de febrero de 2021, colocó 135.5 millones de certificados bursátiles fiduciarios inmobiliarios (CBFIs) por un monto total de aproximadamente 6,769 millones de pesos.'', char(10), ''>'', char(10), ''> La gestión del fideicomiso recae en SOMA Management, S.A.P.I. de C.V., entidad vinculada a Grupo Sordo Madaleno, que aporta su experiencia en diseño, desarrollo y operación de activos inmobiliarios de alta calidad. La estructura del fideicomiso sigue el esquema regulatorio de las FIBRAs mexicanas, con CIBanco como fiduciario institucional, lo que garantiza la separación patrimonial y la transparencia requerida por la normativa bursátil mexicana.'')
+    WHERE [Id] = ''9797ad53-1324-9a81-6102-992b9f07e92c'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Vesta | VESTA15'' AS varchar(max)), char(10), char(10), ''> **Ticker:** VESTA15'', char(10), ''> **Fecha de constitución:** 1997 (incorporada como Corporación Inmobiliaria Vesta, S.A.B. de C.V.)'', char(10), ''> **Inicio de operaciones / debut en bolsa:** 2007 (Bolsa Mexicana de Valores)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Industrial |'', char(10), ''| Estrategia | Adquisición, desarrollo, operación y arrendamiento de naves industriales, edificios build-to-suit y centros de distribución clase mundial en México |'', char(10), ''| Cobertura geográfica | Nacional: Tijuana, Ciudad Juárez, Monterrey, Guadalajara, Aguascalientes, Guanajuato, Querétaro, San Miguel de Allende, Toluca, Ciudad de México y otras plazas industriales clave; presencia en 16 estados |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Corporación Inmobiliaria Vesta, S.A.B. de C.V. fue fundada en 1997 con el propósito de desarrollar y consolidar infraestructura inmobiliaria industrial en México. Desde sus inicios, la compañía orientó su actividad hacia la creación de parques industriales y naves de manufactura ligera, posicionándose como uno de los desarrolladores privados de mayor envergadura en el país. En 2007 realizó su oferta pública inicial en la Bolsa Mexicana de Valores (BMV: VESTA), y posteriormente amplió su presencia al mercado de capitales de Estados Unidos a través de la Bolsa de Nueva York (NYSE: VTMX).'', char(10), ''>'', char(10), ''> El modelo de negocio de Vesta integra verticalmente el diseño, la construcción, el arrendamiento y la administración de inmuebles industriales, lo que le permite capturar valor en cada etapa del ciclo inmobiliario. La empresa desarrolla propiedades orientadas a tres segmentos principales: manufactura ligera, logística y comercio electrónico (e-commerce), ofreciendo tanto espacios especulativos como soluciones personalizadas de tipo build-to-suit para clientes corporativos nacionales e internacionales. Su gestión es interna, lo que le otorga mayor flexibilidad operativa y control directo sobre las decisiones estratégicas en comparación con vehículos de gestión externa.'', char(10), ''>'', char(10), ''> Vesta se posiciona como un actor estratégico en el ecosistema industrial mexicano, sustentando su crecimiento en la demanda estructural derivada del nearshoring y el reshoring de cadenas de suministro globales. Sus parques industriales se ubican en los principales corredores logísticos y manufactureros del país, cubriendo la franja norte, el Bajío y el centro de México, regiones que concentran la mayor actividad exportadora y de manufactura avanzada. La empresa ha definido una hoja de ruta de crecimiento a largo plazo, denominada Route 2030, orientada al desarrollo de reservas de tierra estratégicamente adquiridas para atender la demanda futura de espacio industrial.'', char(10), ''>'', char(10), ''> La compañía opera bajo la figura de Sociedad Anónima Bursátil (SAB), diferenciándose de los fideicomisos de inversión en bienes raíces (FIBRAs) por su estructura corporativa, aunque comparte con estos vehículos el enfoque en la generación de ingresos recurrentes por arrendamiento de activos inmobiliarios. Vesta cuenta con un consejo de administración con participación de consejeros independientes y adopta estándares de gobierno corporativo alineados con las mejores prácticas del mercado mexicano e internacional.'')
+    WHERE [Id] = ''ae26cf6f-b4dc-be5a-3355-f4f4a9165499'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    EXEC(N'UPDATE [catalog].[Fibra] SET [description] = CONCAT(CAST(''# Fibra Hotel City Express | HCITY17'' AS varchar(max)), char(10), char(10), ''> **Ticker:** HCITY17'', char(10), ''> **Fecha de constitución:** 31 de julio de 2012'', char(10), ''> **Inicio de operaciones:** 28 de noviembre de 2012 (debut en BMV: 30 de noviembre de 2012)'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Hotelero |'', char(10), ''| Estrategia | Adquirir, desarrollar, poseer y operar hoteles de negocio en México bajo un modelo de arquitectura abierta, asociándose con diversas cadenas hoteleras y operadores de prestigio |'', char(10), ''| Cobertura geográfica | Nacional — presencia en 26 estados de la República Mexicana |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> FibraHotel es el primer fideicomiso de inversión en bienes raíces (FIBRA) especializado en el sector hotelero que cotizó en la Bolsa Mexicana de Valores (BMV). Fue constituido el 31 de julio de 2012 y realizó su Oferta Pública Inicial el 28 de noviembre de ese mismo año, convirtiéndose en el primer REIT hotelero de América Latina en listarse en un mercado de valores.'', char(10), ''>'', char(10), ''> El modelo de negocio de FibraHotel se basa en la propiedad de los inmuebles hoteleros sin ser operador directo, lo que le permite asociarse con múltiples cadenas y operadores reconocidos a nivel nacional e internacional. Las relaciones con operadores se estructuran mediante esquemas de comisiones predominantemente variables vinculadas a la utilidad bruta de operación de cada hotel, alineando los incentivos del operador con el desempeño del activo.'', char(10), ''>'', char(10), ''> El portafolio abarca cuatro segmentos del mercado hotelero: servicio limitado, servicio selecto, servicio completo y estancia prolongada. Esta diversificación por segmento permite al fideicomiso atender distintos perfiles de viajero de negocios y capturar demanda en múltiples rangos de precio, reduciendo la concentración de riesgo en un solo nicho del mercado.'', char(10), ''>'', char(10), ''> La gestión del fideicomiso recae en Concentradora Fibra Hotelera Mexicana, S.A. de C.V., que actúa como administrador externo. El portafolio opera bajo marcas de reconocimiento nacional e internacional, incluyendo Fiesta Inn, One Hotels, Fiesta Americana, AC by Marriott, Sheraton, Camino Real, Real Inn y otras, administradas por operadores como Grupo Posadas, Marriott International, Camino Real Hoteles, Aimbridge Hospitality e InHouse Hotels.'')
+    WHERE [Id] = ''d96dd899-9a7e-3c95-a9ba-bbf62577a241'';
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'created_at', N'currency', N'description', N'full_name', N'investor_url', N'market', N'name_variants', N'reports_url', N'sector', N'short_name', N'site_url', N'state', N'ticker', N'yahoo_ticker') AND [object_id] = OBJECT_ID(N'[catalog].[Fibra]'))
+        SET IDENTITY_INSERT [catalog].[Fibra] ON;
+    EXEC(N'INSERT INTO [catalog].[Fibra] ([Id], [created_at], [currency], [description], [full_name], [investor_url], [market], [name_variants], [reports_url], [sector], [short_name], [site_url], [state], [ticker], [yahoo_ticker])
+    VALUES (''40f0f9ec-0089-75fe-07b7-be289f0889fc'', ''2026-01-01T00:00:00.0000000+00:00'', N''MXN'', CONCAT(CAST(''# Fibra VIA | FVIA16'' AS varchar(max)), char(10), char(10), ''> **Ticker:** FVIA16'', char(10), ''> **Fecha de constitución:** 13 de octubre de 2016'', char(10), ''> **Inicio de operaciones:** 19 de octubre de 2016'', char(10), char(10), ''| Campo | Detalle |'', char(10), ''|-------|---------|'', char(10), ''| Sector | Infraestructura |'', char(10), ''| Estrategia | Inversión en energía e infraestructura en personas morales que cumplan requisitos en materia de Fibra-E |'', char(10), ''| Cobertura geográfica | Nacional, con inversiones en proyectos ubicados en México |'', char(10), char(10), ''> **Descripción**'', char(10), ''>'', char(10), ''> Fibra VIA es un fideicomiso de inversión en energía e infraestructura listado en la Bolsa Mexicana de Valores bajo la clave FVIA16. Su propósito es canalizar capital hacia proyectos elegibles de largo plazo dentro del marco regulatorio de las Fibra-E.'', char(10), ''>'', char(10), ''> El vehículo fue estructurado para participar en activos y sociedades vinculados con infraestructura estratégica, con una orientación marcada hacia el sector carretero y otras inversiones de infraestructura en México. Su diseño busca vincular el mercado de capitales con proyectos productivos de carácter permanente.'', char(10), ''>'', char(10), ''> La administración del fideicomiso recae en Infraestructura Viable, S.A. de C.V., lo que le da continuidad operativa y especialización sectorial. Su esquema fiduciario permite concentrar la estrategia en inversiones compatibles con los requisitos aplicables a las Fibra-E.'', char(10), ''>'', char(10), ''> Por su naturaleza, Fibra VIA mantiene una cobertura geográfica nacional y su universo de inversión se ubica en México. Se trata de un vehículo institucional enfocado en infraestructura y energía, con una estructura pensada para sostenerse en el tiempo.''), N''Fibra VIA'', NULL, N''BMV'', ''["Fibra VIA","FVIA","FVIA16"]'', NULL, N''Infraestructura'', N''Fibra VIA'', NULL, N''Active'', N''FVIA16'', N''FVIA16.MX'')');
+    IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'Id', N'created_at', N'currency', N'description', N'full_name', N'investor_url', N'market', N'name_variants', N'reports_url', N'sector', N'short_name', N'site_url', N'state', N'ticker', N'yahoo_ticker') AND [object_id] = OBJECT_ID(N'[catalog].[Fibra]'))
+        SET IDENTITY_INSERT [catalog].[Fibra] OFF;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260618201335_SyncFibraDescriptions'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260618201335_SyncFibraDescriptions', N'10.0.8');
+END;
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619061714_AddFiscalRatesConfig'
+)
+BEGIN
+    ALTER TABLE [ops].[OperationalConfig] ADD [isr_retention_rate] decimal(5,4) NOT NULL DEFAULT 0.0;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619061714_AddFiscalRatesConfig'
+)
+BEGIN
+    ALTER TABLE [ops].[OperationalConfig] ADD [iva_rate] decimal(5,4) NOT NULL DEFAULT 0.0;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619061714_AddFiscalRatesConfig'
+)
+BEGIN
+    EXEC(N'UPDATE [ops].[OperationalConfig] SET [isr_retention_rate] = 0.3, [iva_rate] = 0.16
+    WHERE [id] = 1;
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619061714_AddFiscalRatesConfig'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260619061714_AddFiscalRatesConfig', N'10.0.8');
+END;
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    ALTER TABLE [auth].[User] ADD [email_confirmed_at] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    ALTER TABLE [auth].[User] ADD [how_did_you_hear] nvarchar(32) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    ALTER TABLE [auth].[User] ADD [subscription_ends_at] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    ALTER TABLE [auth].[User] ADD [subscription_started_at] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    ALTER TABLE [auth].[User] ADD [subscription_type] nvarchar(16) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    ALTER TABLE [auth].[User] ADD [trial_ends_at] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    UPDATE [auth].[User]
+    SET subscription_type = 'Lifetime',
+        subscription_started_at = COALESCE(FechaPago, SYSUTCDATETIME()),
+        subscription_ends_at = NULL,
+        IsActive = 1
+    WHERE IsActive = 1;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619161559_AddSubscriptionFields'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260619161559_AddSubscriptionFields', N'10.0.8');
+END;
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619232932_UpdateContactEmailToFibrasInmobiliarias'
+)
+BEGIN
+    EXEC(N'UPDATE [ops].[OperationalConfig] SET [contact_email] = N''contacto@fibrasinmobiliarias.com''
+    WHERE [id] = 1;
+    SELECT @@ROWCOUNT');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260619232932_UpdateContactEmailToFibrasInmobiliarias'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260619232932_UpdateContactEmailToFibrasInmobiliarias', N'10.0.8');
+END;
+
+COMMIT;
+GO
+

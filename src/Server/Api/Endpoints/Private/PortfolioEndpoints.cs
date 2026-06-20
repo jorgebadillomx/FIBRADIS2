@@ -551,8 +551,7 @@ public static class PortfolioEndpoints
         if (normalizedEntries.Count == 0)
             return null;
 
-        var baseEntry = normalizedEntries.LastOrDefault(entry => entry.Periodo < rangeMonthStart)
-            ?? normalizedEntries.LastOrDefault(entry => entry.Periodo <= rangeMonthStart)
+        var baseEntry = normalizedEntries.LastOrDefault(entry => entry.Periodo <= rangeMonthStart)
             ?? normalizedEntries[0];
         var result = new List<PortfolioPerformancePointDto>(portfolioSeries.Count);
 

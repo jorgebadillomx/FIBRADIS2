@@ -151,8 +151,10 @@ public class ResendEmailServiceTests
         string senderEmail = "noreply@test.com",
         ResendTemplateIds? templates = null)
     {
-        var opts = Options.Create(new ResendOptions(apiKey, senderEmail)
+        var opts = Options.Create(new ResendOptions
         {
+            ApiKey = apiKey,
+            SenderEmail = senderEmail,
             Templates = templates ?? AllTemplates,
         });
         var httpClient = new HttpClient(new StubHttpMessageHandler(factory));

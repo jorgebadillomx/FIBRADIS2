@@ -23,6 +23,7 @@ public static class AuthEndpoints
             IEmailConfirmationTokenService tokenService,
             IEmailService emailService,
             IConfiguration config,
+            ILogger<Program> logger,
             CancellationToken ct) =>
         {
             // P1: Validar App:BaseUrl antes de persistir el usuario para evitar estado huérfano
@@ -53,9 +54,16 @@ public static class AuthEndpoints
                     howDidYouHear,
                     ct);
 
-                var token = tokenService.GenerateToken(user.Id);
-                var confirmationUrl = $"{baseUrl}/confirmar-email?token={Uri.EscapeDataString(token)}";
-                await emailService.SendEmailConfirmationAsync(user.Email, confirmationUrl, ct);
+                try
+                {
+                    var token = tokenService.GenerateToken(user.Id);
+                    var confirmationUrl = $"{baseUrl}/confirmar-email?token={Uri.EscapeDataString(token)}";
+                    await emailService.SendEmailConfirmationAsync(user.Email, confirmationUrl, ct);
+                }
+                catch (Exception emailEx)
+                {
+                    logger.LogError(emailEx, "Error al enviar email de confirmación tras registro de {UserId}.", user.Id);
+                }
 
                 return Results.Ok(new RegisterResponse("Revisa tu email para confirmar tu cuenta."));
             }
