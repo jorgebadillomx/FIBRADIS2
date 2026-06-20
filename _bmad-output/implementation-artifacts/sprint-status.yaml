@@ -92,7 +92,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-15
-last_updated: 2026-06-20  # 14-10 → done (code review: 1 decisión resuelta [D1 orden menú per AC1], 4 patches [P1 formatDate guard Invalid Date, P2 daysRemaining Math.max(0), P3 modo degradado isActive=true→trial en lugar de expired, P4 Lifetime sin isActive], 2 defers, 10 dismissed; 203/203 tests verdes, build limpio). Antes: 14-9 → done (code review: 2 patches aplicados [P1 e2e status=error, P2 formatTrialEndsAt null para fecha inválida]; 3 defers; build 0 errores). Antes: 14-8 → done (code review: 10 patches aplicados [P1+P2 forgot-password always-200 + IsActive guard, P3 UserNotFoundException→token_invalid, P4 DbUpdateException→500 retry, P5 BCrypt 72-byte limit, P6 test CreateToken lee secret de factory, P7 redirect-endpoint try-catch + URL relativa fallback, P8 password sin trim en NuevaContrasenaPage]; 3 defers; build 0 errores). Antes: 14-7 → done (code review: 0 patches, 3 defers, 10 dismisses; build limpio).
+last_updated: 2026-06-20  # 14-11 → done (code review: 0 patches, 4 defers [D1 dev-mode pollution, D2 consent gate GDPR, D3 CSP pre-existente, D4 SSR footgun doc=document], 7 dismissed; 205/205 tests verdes, build limpio). Antes: 14-10 → done (code review: 1 decisión resuelta [D1 orden menú per AC1], 4 patches [P1 formatDate guard Invalid Date, P2 daysRemaining Math.max(0), P3 modo degradado isActive=true→trial en lugar de expired, P4 Lifetime sin isActive], 2 defers, 10 dismissed; 203/203 tests verdes, build limpio). Antes: 14-9 → done (code review: 2 patches aplicados [P1 e2e status=error, P2 formatTrialEndsAt null para fecha inválida]; 3 defers; build 0 errores). Antes: 14-8 → done (code review: 10 patches aplicados [P1+P2 forgot-password always-200 + IsActive guard, P3 UserNotFoundException→token_invalid, P4 DbUpdateException→500 retry, P5 BCrypt 72-byte limit, P6 test CreateToken lee secret de factory, P7 redirect-endpoint try-catch + URL relativa fallback, P8 password sin trim en NuevaContrasenaPage]; 3 defers; build 0 errores). Antes: 14-7 → done (code review: 0 patches, 3 defers, 10 dismisses; build limpio).
 # story 3-6 done — code review pass (3 patches: P1 cron TimeZoneInfo.Utc en lugar de mexicoTz, P2 TryLogQueuedRunAsync en reset endpoint, P3 DbScope EnsureDeletedAsync en MarketRepositoryTests). 2 defers.
 # story 11-5 done — code review pass (3 patches: P1 parseMonto replace(/,/g,'') miles-separador, P2 sobra=0 cuando precioActual null, P3 calcCbfis guard monto<=0 + test). 4 defers. 10/10 frontend tests + 2/2 C# unit tests verdes
 # story 10-2 done — code review pass (10 patches: P1 taxableBase cap comment, P2 calcYield JSDoc, P3 calcYield(0,price)→null, P4 estimate fila taxableGross directo, P5 ISR_RATE_LABEL en UI labels, P6 og:url herramientas, P7 parseInput exportada/deduplicada, P8 dead code reportedTaxablePerUnit estimado, P9 Math.floor units, P10 AC4 label "por CBFI"). 4 defers. 105/105 unit tests verdes.
@@ -456,7 +456,7 @@ development_status:
   # ── Épica 14: Registro, Trial y Suscripción de Usuarios ───────────────────
   # epic-14 creada 2026-06-18 — modelo freemium: registro público, trial 14d, suscripción Monthly/Annual/Lifetime, bloqueo rutas privadas, job mantenimiento. Fase 1: pago manual. Fase 2: pasarela.
   epic-14: in-progress
-  14-1-modelo-suscripcion-backend: review
+  14-1-modelo-suscripcion-backend: done
   14-2-registro-y-confirmacion-email: done
   14-3-frontend-acceso-controlado: done
   14-4-subscription-maintenance-job: done
@@ -471,7 +471,7 @@ development_status:
   # story 14-10 done — página /suscripcion: estado trial/suscripción + instrucciones de pago + botón "Ya pagué"; expone subscriptionType y subscriptionEndsAt en UserProfileResponse y AuthContext; code review: 1 decisión [D1 orden menú per AC1], 4 patches [P1 formatDate guard, P2 daysRemaining Math.max(0), P3 modo degradado, P4 Lifetime sin isActive], 2 defers; 203/203 tests verdes
   14-10-pagina-suscripcion: done
   # story 14-11 creada — Microsoft Clarity: ClarityLoader inyecta el script dinámicamente en PublicLayout sin dependencia de auth (carga para todos los visitantes). Patrón idéntico a AdSense (clarity.ts + ClarityLoader.tsx + clarity.test.ts). ID: hd9ip85air.
-  14-11-microsoft-clarity: ready-for-dev
+  14-11-microsoft-clarity: done
 
   # ── Épica 15: INPC — Rendimiento Real e Inflación Visible ───────────────
   # epic-15 creada 2026-06-18 — backfill manual INPC, serie de inflación en performance y rendimiento real visible en herramientas/portafolio/oportunidades/comparador.

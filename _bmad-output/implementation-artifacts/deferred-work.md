@@ -1,5 +1,12 @@
 # Deferred Work
 
+## Deferred from: code review of 14-11-microsoft-clarity (2026-06-20)
+
+- **D1** Sin guard de entorno en `ClarityLoader`: el ID de producción `hd9ip85air` se inyecta en dev/staging. Patrón idéntico a AdSense. Riesgo de ruido en dashboard de Clarity durante desarrollo.
+- **D2** Sin consent gate (GDPR/LGPD): Clarity registra grabaciones de sesión para todos los visitantes sin comprobación de consentimiento explícito. Decisión product/legal consciente documentada en el Security Checklist del story file; cubierta por /privacidad. Patrón idéntico a AdSense.
+- **D3** Sin CSP (`script-src` allowlist): ni Clarity ni AdSense están declarados. Brecha pre-existente; no introducida por esta historia.
+- **D4** Footgun SSR en `injectClarityScript`: parámetro por defecto `doc = document` lanzaría `ReferenceError` si se invoca fuera de `useEffect` en Node.js. `useEffect` no corre en SSR — no hay crash hoy. Patrón idéntico a `syncAdSenseScript` en `adsense.ts`.
+
 ## Deferred from: code review of 14-9-confirmacion-email-resiliente (2026-06-20)
 
 - **D1** `DateTime.SpecifyKind(trialEndsAt, DateTimeKind.Utc)` en el endpoint `/confirm-email-redirect` asume que `TrialEndsAt` de EF Core es UTC. Si EF devuelve `DateTimeKind.Unspecified` (común con `datetime2` en SQL Server), `SpecifyKind` fuerza UTC sin conversión. Patrón idéntico pre-existente en `/confirm-email`. Riesgo bajo en práctica.

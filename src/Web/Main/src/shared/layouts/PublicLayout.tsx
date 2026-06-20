@@ -8,6 +8,7 @@ import { useProfile } from '@/modules/auth/useProfile'
 import { useSiteContent } from '@/shared/hooks/useSiteContent'
 import { cn } from '@/shared/lib/utils'
 import { AdSenseLoader } from '@/shared/ui/AdSenseLoader'
+import { ClarityLoader } from '@/shared/ui/ClarityLoader'
 import {
   isMenuEntryLink,
   MAIN_INVESTMENT_LINKS,
@@ -216,6 +217,7 @@ export function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <AdSenseLoader />
+      <ClarityLoader />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-background focus:border focus:border-border focus:rounded focus:text-sm focus:text-foreground"
