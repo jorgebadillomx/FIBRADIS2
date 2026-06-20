@@ -140,7 +140,10 @@ export function PlataformaPage() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="cursor-pointer">
-                <Link to="/portafolio">Crear cuenta / Iniciar sesión</Link>
+                <Link to="/registro">Crear cuenta</Link>
+              </Button>
+              <Button asChild size="lg" variant="ghost" className="cursor-pointer">
+                <Link to="/portafolio">Iniciar sesión</Link>
               </Button>
             </div>
 

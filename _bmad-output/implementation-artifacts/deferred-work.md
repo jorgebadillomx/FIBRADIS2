@@ -212,6 +212,12 @@ El widget usa el pago individual más reciente (`distributions[0]?.amountPerUnit
 - **Race condition midnight en BanxicoInpcBackfillEndpointTests** — calcular expectedFrom/To dentro del scope de la respuesta o usar un clock inyectado en el factory.
 - **TOCTOU UpsertManyAsync backfill concurrente** — `InpcRepository.cs`: reemplazar FindAsync+Add con ExecuteUpdate atómico (ON CONFLICT UPDATE o ExecuteUpsertAsync) para prevenir PK violation en llamadas paralelas de AdminOps.
 
+## Deferred from: code review of 14-7-cta-registro-plataforma (2026-06-19)
+
+- **D1** `AdBanner` llama `.push({})` durante `status='checking'` para usuarios que terminarán autenticados — AC-8 solo aplica cuando `status === 'authenticated'`; el `try/catch` atrapa el no-op; el componente no está montado en ninguna página todavía. Revisitar cuando se use `AdBanner` en alguna ruta.
+- **D2** `AdSenseAuthStatus` en `adsense.ts` es un tipo independiente de `AuthContext`, podría divergir si se añaden nuevos estados de auth. Los valores actuales son estables. Considerar importar/reexportar el tipo desde `AuthContext` si la lista de estados crece.
+- **D3** `AdSenseLoader` no remueve script existente cuando `status='checking'` con cookie de sesión presente. Impacto nulo en la práctica (el script estático fue eliminado de `index.html`; la remoción ocurre en el siguiente ciclo cuando `status='authenticated'`). Revisar si la lógica de AdSense se extiende o si surgen reportes de flash de ads en login.
+
 ## Deferred from: code review of 13-10-disclaimer-ymyl-lmv-amefibra (2026-06-19)
 
 - **WCAG 1.4.1 — enlace AMEFIBRA sin subrayado en reposo** — `text-primary hover:underline` es la convención de links inline del proyecto (misma clase en email de la misma página). Sin subrayado permanente, el color es el único diferenciador visual de los links inline, violando WCAG 1.4.1. Requiere decisión de diseño transversal para todos los `text-primary hover:underline` del proyecto.
