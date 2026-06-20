@@ -1,16 +1,17 @@
 # =============================================================
 # OPCIÓN IIS — Windows + SQL Server
-# Genera el ZIP de producción listo para subir a site4now.net.
+# Genera el ZIP de producción y lo sube automáticamente por FTP.
 # Para Linux + Docker, usa deploy/deploy.sh en su lugar.
 # =============================================================
 # Uso (desde cualquier directorio):
 #   .\deploy\deploy-iis.ps1
 #
-# Pasos posteriores (manual en site4now.net):
-#   1. DETÉN el Application Pool (IIS bloquea los DLLs mientras está activo)
-#   2. Sube deploy/release/fibradis.zip al panel de control
-#   3. Extrae en el directorio raíz del sitio (reemplaza todo)
-#   4. INICIA el Application Pool
+# Credenciales FTP: deploy/ftp.env (no se commitea, ver .gitignore)
+# Formato del archivo:
+#   FTP_HOST=win8232.site4now.net
+#   FTP_USER=usuario
+#   FTP_PASS=contraseña
+#   FTP_PATH=/FIBRADIS
 # =============================================================
 
 $ErrorActionPreference = "Stop"
@@ -84,5 +85,71 @@ Compress-Archive -Path (Join-Path $PublishDir "*") -DestinationPath $OutZip
 
 $sizeMb = [math]::Round((Get-Item $OutZip).Length / 1MB, 1)
 Write-Host ""
-Write-Host "=== Listo === ZIP: $OutZip ($sizeMb MB)" -ForegroundColor Green
-Write-Host "Sube el ZIP al panel de site4now.net y reinicia el Application Pool."
+Write-Host "=== ZIP generado: $OutZip ($sizeMb MB) ===" -ForegroundColor Green
+
+# -- 7. Cargar credenciales FTP --
+Write-Host "=== Subir por FTP ===" -ForegroundColor Cyan
+$FtpEnvFile = Join-Path $PSScriptRoot "ftp.env"
+if (-not (Test-Path $FtpEnvFile)) {
+    Write-Warning "No se encontró deploy/ftp.env. Coloca el archivo con FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH para activar la subida automática."
+    Write-Host "ZIP listo en: $OutZip" -ForegroundColor Yellow
+    exit 0
+}
+$ftpCreds = @{}
+Get-Content $FtpEnvFile | Where-Object { $_ -match '^\s*([^#=]+)=(.+)$' } | ForEach-Object {
+    $key, $val = $_ -split '=', 2
+    $ftpCreds[$key.Trim()] = $val.Trim()
+}
+$FtpHost = $ftpCreds['FTP_HOST']
+$FtpUser = $ftpCreds['FTP_USER']
+$FtpPass = $ftpCreds['FTP_PASS']
+$FtpPath = $ftpCreds['FTP_PATH']
+
+if (-not ($FtpHost -and $FtpUser -and $FtpPass -and $FtpPath)) {
+    Write-Error "deploy/ftp.env incompleto. Requiere: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH."
+    exit 1
+}
+
+$RemoteFile = "$($FtpPath.TrimEnd('/'))/fibradis.zip"
+$FtpUri     = "ftp://$FtpHost$RemoteFile"
+Write-Host "  Destino: $FtpUri"
+Write-Host "  Tamaño:  $sizeMb MB — iniciando transferencia..."
+
+try {
+    $request = [System.Net.FtpWebRequest]::Create($FtpUri)
+    $request.Method      = [System.Net.WebRequestMethods+Ftp]::UploadFile
+    $request.Credentials = New-Object System.Net.NetworkCredential($FtpUser, $FtpPass)
+    $request.UseBinary   = $true
+    $request.UsePassive  = $true
+    $request.KeepAlive   = $false
+    $request.ContentLength = (Get-Item $OutZip).Length
+
+    $fs     = [System.IO.File]::OpenRead($OutZip)
+    $rs     = $request.GetRequestStream()
+    $buffer = New-Object byte[] 65536
+    $sent   = 0
+    $total  = $request.ContentLength
+    while (($read = $fs.Read($buffer, 0, $buffer.Length)) -gt 0) {
+        $rs.Write($buffer, 0, $read)
+        $sent += $read
+        $pct   = [math]::Round($sent / $total * 100, 0)
+        Write-Progress -Activity "Subiendo fibradis.zip a FTP" -PercentComplete $pct -Status "$pct%  ($([math]::Round($sent/1MB,1)) / $sizeMb MB)"
+    }
+    $rs.Close()
+    $fs.Close()
+
+    $response = $request.GetResponse()
+    Write-Progress -Activity "Subiendo fibradis.zip a FTP" -Completed
+    Write-Host "  FTP respuesta: $($response.StatusDescription.Trim())" -ForegroundColor Green
+    $response.Close()
+}
+catch {
+    Write-Progress -Activity "Subiendo fibradis.zip a FTP" -Completed
+    Write-Error "ERROR en FTP: $_"
+    exit 1
+}
+
+Write-Host ""
+Write-Host "=== Deploy completo ===" -ForegroundColor Green
+Write-Host "El ZIP fue subido a $FtpUri"
+Write-Host "Recuerda reiniciar el Application Pool en site4now.net si es necesario."

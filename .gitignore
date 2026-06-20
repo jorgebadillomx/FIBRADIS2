@@ -60,6 +60,8 @@ project-memory/chroma_db/
 project-memory/mem0.db
 deploy/release/fibradis.zip
 deploy/iis-publish/
+deploy/ftp.env
+deploy/msdeploy.env
 scripts/seo_fetch.ps1
 scripts/sql/deploy_idempotent_post-AddOrganizationSameAsJson_through_20260616171543_RebrandContactEmail.sql
 
@@ -68,3 +70,5 @@ screenshots/
 SEO-REPORT-*.html
 lighthouse-13-9-review.json
 scripts/migrations/prod_20260619_AddFiscalRatesConfig.sql
+deploy/msdeploy-log.txt
+deploy/msdeploy-log.txt.err
