@@ -103,7 +103,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     public sealed class CapturingEmailService : IEmailService
     {
         public List<CapturedEmail> Emails { get; } = [];
-        public List<Guid> PaymentNotifications { get; } = [];
+        public List<(Guid UserId, string UserEmail)> PaymentNotifications { get; } = [];
         public List<string> AccessExpiredEmails { get; } = [];
         public List<string> AccessActivatedEmails { get; } = [];
         public List<(string ToEmail, int DaysLeft)> TrialExpiringEmails { get; } = [];
@@ -115,9 +115,9 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             return Task.CompletedTask;
         }
 
-        public Task SendPaymentNotificationAsync(Guid userId, CancellationToken ct)
+        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct)
         {
-            PaymentNotifications.Add(userId);
+            PaymentNotifications.Add((userId, userEmail));
             return Task.CompletedTask;
         }
 

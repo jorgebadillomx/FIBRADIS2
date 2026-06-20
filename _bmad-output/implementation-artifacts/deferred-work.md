@@ -4,6 +4,14 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 14-5-email-templates-resend (2026-06-19)
+
+- **D2** `ResendEmailService` sin tests unitarios — la clase nunca fue unit-tested; no hay cobertura para el shape del payload ni para el comportamiento de throwOnFailure. Pre-existente, no introducido en 14.5.
+- **D3** `SendPaymentNotificationAsync` envía solo el GUID al email de contacto — sin email del usuario ni monto; el admin debe buscar el usuario manualmente en Ops. Pre-existente desde 14.2.
+- **D4** Inconsistencia `||` vs `??` en fallback de email en frontend: `ContactoPage.tsx` captura string vacía con `||`, `ConfigPage.tsx` no la captura con `??`. LOW, pre-existente.
+
+---
+
 ## Deferred from: code review of 13-6-portafolio-landing-publico (2026-06-16)
 
 - JSON-LD `ItemList` del `CollectionPage` de `/portafolio` apunta a rutas privadas `/reportes` y `/oportunidades` (`SpaMetadataProvider.cs`). Esas rutas no están en el sitemap y el riesgo SEO de empujar crawl es marginal; las tarjetas del landing ya usan `#login`. Considerar apuntar el itemList a anclas públicas o a `#login` si en el futuro importa.

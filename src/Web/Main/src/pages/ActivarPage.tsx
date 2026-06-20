@@ -108,7 +108,7 @@ function TrialExpiredView() {
             </div>
             <div className="flex gap-2">
               <dt className="font-medium text-muted-foreground w-16 shrink-0">Contacto:</dt>
-              <dd>portafoliodefibras@gmail.com</dd>
+              <dd>contacto@fibrasinmobiliarias.com</dd>
             </div>
           </dl>
         </div>
@@ -127,7 +127,7 @@ function TrialExpiredView() {
             </Button>
             {notifyStatus === 'error' ? (
               <p role="alert" className="text-sm text-destructive">
-                No se pudo enviar la notificación. Escríbenos a portafoliodefibras@gmail.com.
+                No se pudo enviar la notificación. Escríbenos a contacto@fibrasinmobiliarias.com.
               </p>
             ) : null}
           </div>

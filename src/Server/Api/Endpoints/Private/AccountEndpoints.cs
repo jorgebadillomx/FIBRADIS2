@@ -165,7 +165,8 @@ public static class AccountEndpoints
             if (!Guid.TryParse(sub, out var userId))
                 return Results.Unauthorized();
 
-            await emailService.SendPaymentNotificationAsync(userId, ct);
+            var userEmail = ctx.User.FindFirstValue(JwtRegisteredClaimNames.Email) ?? "";
+            await emailService.SendPaymentNotificationAsync(userId, userEmail, ct);
 
             return Results.NoContent();
         })
