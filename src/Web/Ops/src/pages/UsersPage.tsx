@@ -7,12 +7,24 @@ import {
   setUserActive,
   updateUserPayment,
   type UserSummaryDto,
+  updateUserSubscription,
 } from '@/api/usersApi'
+import {
+  getSubscriptionStatus,
+  getTodayDateInput,
+  toDateInput,
+} from '@/utils/subscriptionStatus'
 
 const ROLES = [
   { value: 'User', label: 'Main (portafolio)' },
   { value: 'AdminOps', label: 'AdminOps' },
 ]
+
+const SUBSCRIPTION_STATUS_CLASSES = {
+  green: 'bg-emerald-100 text-emerald-800',
+  amber: 'bg-amber-100 text-amber-800',
+  gray: 'bg-slate-100 text-slate-600',
+} as const
 
 function validatePassword(pwd: string): string | null {
   if (pwd.length < 8) return 'Debe tener al menos 8 caracteres.'
@@ -276,6 +288,134 @@ function ChangePasswordDialog({ userId, onClose }: { userId: string; onClose: ()
   )
 }
 
+// ── Subscription modal ──────────────────────────────────────────────────────
+
+type SubscriptionModalProps = {
+  userId: string
+  current: UserSummaryDto
+  onClose: () => void
+  onSaved?: (message: string) => void
+}
+
+function SubscriptionModal({ userId, current, onClose, onSaved }: SubscriptionModalProps) {
+  const queryClient = useQueryClient()
+  const [type, setType] = useState<'Monthly' | 'Annual' | 'Lifetime'>(
+    current.subscriptionType === 'Monthly' || current.subscriptionType === 'Annual' || current.subscriptionType === 'Lifetime'
+      ? current.subscriptionType
+      : 'Monthly',
+  )
+  const [startedAt, setStartedAt] = useState(
+    current.subscriptionStartedAt ? toDateInput(current.subscriptionStartedAt) : getTodayDateInput(),
+  )
+  const [endsAt, setEndsAt] = useState(current.subscriptionEndsAt ? toDateInput(current.subscriptionEndsAt) : '')
+  const [error, setError] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () => updateUserSubscription(userId, {
+      type,
+      startedAt: new Date(startedAt).toISOString(),
+      endsAt: type === 'Lifetime' ? null : new Date(endsAt).toISOString(),
+    }),
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData<UserSummaryDto[]>(['ops-users'], (currentUsers) => (
+        currentUsers?.map((user) => (user.id === updatedUser.id ? updatedUser : user)) ?? currentUsers
+      ))
+      void queryClient.invalidateQueries({ queryKey: ['ops-users'] })
+      onSaved?.('Suscripción actualizada correctamente.')
+      onClose()
+    },
+    onError: (e: Error) => setError(e.message),
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (type !== 'Lifetime' && !endsAt) {
+      setError('Indica la fecha fin.')
+      return
+    }
+    mutation.mutate()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-sm rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <h3 className="text-base font-semibold text-slate-900">Editar suscripción</h3>
+        <form className="mt-4 flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500" htmlFor="sub-type">
+              Tipo
+            </label>
+            <select
+              autoFocus
+              className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+              disabled={mutation.isPending}
+              id="sub-type"
+              onChange={(e) => setType(e.target.value as 'Monthly' | 'Annual' | 'Lifetime')}
+              value={type}
+            >
+              <option value="Monthly">Monthly</option>
+              <option value="Annual">Annual</option>
+              <option value="Lifetime">Lifetime</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500" htmlFor="sub-started">
+              Fecha inicio
+            </label>
+            <input
+              className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+              disabled={mutation.isPending}
+              id="sub-started"
+              onChange={(e) => setStartedAt(e.target.value)}
+              required
+              type="date"
+              value={startedAt}
+            />
+          </div>
+
+          {type !== 'Lifetime' ? (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500" htmlFor="sub-ends">
+                Fecha fin
+              </label>
+              <input
+                className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                disabled={mutation.isPending}
+                id="sub-ends"
+                onChange={(e) => setEndsAt(e.target.value)}
+                required
+                type="date"
+                value={endsAt}
+              />
+            </div>
+          ) : null}
+
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+          <div className="flex gap-3">
+            <button
+              className="h-10 flex-1 rounded-2xl bg-slate-950 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+              disabled={mutation.isPending}
+              type="submit"
+            >
+              {mutation.isPending ? 'Guardando...' : 'Guardar'}
+            </button>
+            <button
+              className="h-10 flex-1 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={onClose}
+              type="button"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Payment inline edit ──────────────────────────────────────────────────────
 
 function PaymentCell({ user }: { user: UserSummaryDto }) {
@@ -350,6 +490,8 @@ function PaymentCell({ user }: { user: UserSummaryDto }) {
 export function UsersPage() {
   const queryClient = useQueryClient()
   const [changePwdUserId, setChangePwdUserId] = useState<string | null>(null)
+  const [subscriptionModalUserId, setSubscriptionModalUserId] = useState<string | null>(null)
+  const [subscriptionNotice, setSubscriptionNotice] = useState<string | null>(null)
 
   const usersQuery = useQuery({
     queryKey: ['ops-users'],
@@ -364,6 +506,7 @@ export function UsersPage() {
   })
 
   const users = usersQuery.data ?? []
+  const subscriptionModalUser = subscriptionModalUserId ? users.find((user) => user.id === subscriptionModalUserId) ?? null : null
 
   return (
     <section className="space-y-6">
@@ -383,6 +526,12 @@ export function UsersPage() {
           <span className="text-sm text-slate-500">{users.length} usuario{users.length !== 1 ? 's' : ''}</span>
         </div>
 
+        {subscriptionNotice ? (
+          <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" aria-live="polite">
+            {subscriptionNotice}
+          </p>
+        ) : null}
+
         {usersQuery.isLoading ? <p className="mt-4 text-sm text-slate-500">Cargando usuarios...</p> : null}
         {usersQuery.isError ? <p className="mt-4 text-sm text-red-600">{usersQuery.error.message}</p> : null}
 
@@ -398,66 +547,103 @@ export function UsersPage() {
                   <th className="px-4 py-3 font-medium">Correo</th>
                   <th className="px-4 py-3 font-medium">Tipo</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">Suscripción</th>
                   <th className="px-4 py-3 font-medium">Pago / Fecha</th>
                   <th className="px-4 py-3 font-medium">Creado</th>
                   <th className="px-4 py-3 font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {users.map((user) => (
-                  <tr className="border-t border-slate-200 text-slate-700" key={user.id}>
-                    <td className="px-4 py-3 font-medium text-slate-900">{user.email}</td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">
-                        {user.role === 'AdminOps' ? 'AdminOps' : 'Main'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={
-                          user.isActive
-                            ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800'
-                            : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600'
-                        }
-                      >
-                        {user.isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {user.role === 'User' ? (
-                        <PaymentCell user={user} />
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">
-                      {new Date(user.createdAt).toLocaleDateString('es-MX', { dateStyle: 'medium' })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button
-                          className={`rounded-xl px-3 py-1 text-xs font-semibold transition ${
+                {users.map((user) => {
+                  const subscriptionStatus = getSubscriptionStatus(user)
+
+                  return (
+                    <tr className="border-t border-slate-200 text-slate-700" key={user.id}>
+                      <td className="px-4 py-3 font-medium text-slate-900">{user.email}</td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">
+                          {user.role === 'AdminOps' ? 'AdminOps' : 'Main'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={
                             user.isActive
-                              ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                              : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                          }`}
-                          disabled={toggleActiveMutation.isPending}
-                          onClick={() => toggleActiveMutation.mutate({ id: user.id, isActive: !user.isActive })}
-                          type="button"
+                              ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800'
+                              : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600'
+                          }
                         >
-                          {user.isActive ? 'Deshabilitar' : 'Habilitar'}
-                        </button>
-                        <button
-                          className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                          onClick={() => setChangePwdUserId(user.id)}
-                          type="button"
+                          {user.isActive ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {user.role === 'User' ? (
+                          <span
+                            className={
+                              user.emailConfirmedAt != null
+                                ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700'
+                                : 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500'
+                            }
+                          >
+                            {user.emailConfirmedAt != null ? '✓' : '✗'}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${SUBSCRIPTION_STATUS_CLASSES[subscriptionStatus.color]}`}
                         >
-                          Contraseña
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {subscriptionStatus.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {user.role === 'User' ? (
+                          <PaymentCell user={user} />
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {new Date(user.createdAt).toLocaleDateString('es-MX', { dateStyle: 'medium' })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            className={`rounded-xl px-3 py-1 text-xs font-semibold transition ${
+                              user.isActive
+                                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            }`}
+                            disabled={toggleActiveMutation.isPending}
+                            onClick={() => toggleActiveMutation.mutate({ id: user.id, isActive: !user.isActive })}
+                            type="button"
+                          >
+                            {user.isActive ? 'Deshabilitar' : 'Habilitar'}
+                          </button>
+                          <button
+                            className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                            onClick={() => setChangePwdUserId(user.id)}
+                            type="button"
+                          >
+                            Contraseña
+                          </button>
+                          {user.role === 'User' ? (
+                            <button
+                              className="rounded-xl bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-800 transition hover:bg-teal-200"
+                              onClick={() => { setSubscriptionNotice(null); setSubscriptionModalUserId(user.id) }}
+                              type="button"
+                            >
+                              Suscripción
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -468,6 +654,15 @@ export function UsersPage() {
         <ChangePasswordDialog
           onClose={() => setChangePwdUserId(null)}
           userId={changePwdUserId}
+        />
+      ) : null}
+
+      {subscriptionModalUser && subscriptionModalUserId ? (
+        <SubscriptionModal
+          current={subscriptionModalUser}
+          onClose={() => setSubscriptionModalUserId(null)}
+          onSaved={(message) => setSubscriptionNotice(message)}
+          userId={subscriptionModalUserId}
         />
       ) : null}
     </section>

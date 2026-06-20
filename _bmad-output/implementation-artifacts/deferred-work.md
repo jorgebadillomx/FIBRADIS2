@@ -12,6 +12,17 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 14-6-ops-users-subscription-ui (2026-06-19)
+
+- **D1** `subscriptionType` no-Lifetime + `subscriptionEndsAt === null` → muestra "Sin acceso" silenciosamente. Requiere aclarar si el backend garantiza que siempre se envía `subscriptionEndsAt` en planes activos. `subscriptionStatus.ts`.
+- **D2** `subscriptionType` con valor no reconocido (ej. futuro enum) → cae a "Sin acceso" sin indicar dato inválido. Riesgo de evolución de contrato de API. `subscriptionStatus.ts`.
+- **D3** `SubscriptionModal` no cierra con Escape ni click en overlay. Mejora WCAG 2.1 y UX fuera del scope del AC. `UsersPage.tsx`.
+- **D4** Sin atributos ARIA `role="dialog"` / `aria-modal` / `aria-labelledby` en `SubscriptionModal`. Deuda de accesibilidad. `UsersPage.tsx`.
+- **D5** Sin validación `endsAt > startedAt` en frontend — el backend podría rechazar o crear datos inconsistentes. `UsersPage.tsx SubscriptionModal`.
+- **D6** Estado `endsAt` stale al ciclar Monthly→Lifetime→Monthly: el guard `!endsAt` previene envío vacío, pero el campo reaparece con valor anterior. UX confuso. `UsersPage.tsx`.
+- **D7** Race condition entre `queryClient.setQueryData` optimista e `invalidateQueries` en `SubscriptionModal.onSuccess`. Patrón pre-existente del módulo. `UsersPage.tsx`.
+- **D8** Presionar Enter en input de fecha puede disparar `submit` mientras `mutation.isPending` (botón deshabilitado no bloquea evento de formulario por teclado). `UsersPage.tsx`.
+
 ## Deferred from: code review of 13-6-portafolio-landing-publico (2026-06-16)
 
 - JSON-LD `ItemList` del `CollectionPage` de `/portafolio` apunta a rutas privadas `/reportes` y `/oportunidades` (`SpaMetadataProvider.cs`). Esas rutas no están en el sitemap y el riesgo SEO de empujar crawl es marginal; las tarjetas del landing ya usan `#login`. Considerar apuntar el itemList a anclas públicas o a `#login` si en el futuro importa.
