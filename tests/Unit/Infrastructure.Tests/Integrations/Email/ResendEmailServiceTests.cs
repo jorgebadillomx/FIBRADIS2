@@ -138,7 +138,7 @@ public class ResendEmailServiceTests
             return await Ok();
         });
 
-        await service.SendPaymentNotificationAsync(userId, "payer@test.com", CancellationToken.None);
+        await service.SendPaymentNotificationAsync(userId, "payer@test.com", null, null, CancellationToken.None);
 
         Assert.NotNull(capturedBody);
         using var doc = JsonDocument.Parse(capturedBody);

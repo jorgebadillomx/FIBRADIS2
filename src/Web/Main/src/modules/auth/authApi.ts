@@ -208,10 +208,21 @@ export async function registerUser(
   return data
 }
 
-export async function notifyPayment(): Promise<void> {
+export async function notifyPayment(comprobante?: File): Promise<void> {
+  const headers = { ...getMainAuthHeaders() }
+
+  let body: BodyInit | undefined
+  if (comprobante) {
+    const formData = new FormData()
+    formData.append('comprobante', comprobante)
+    body = formData
+    // NO establecer Content-Type: el navegador lo pone con boundary automáticamente
+  }
+
   const res = await fetch('/api/v1/account/notify-payment', {
     method: 'POST',
-    headers: { ...getMainAuthHeaders() },
+    headers,
+    body,
   })
   if (!res.ok) throw new AuthApiError('notify_payment_failed', 'Error al notificar el pago.')
 }

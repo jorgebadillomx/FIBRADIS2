@@ -792,7 +792,7 @@ public class UserServiceTests
         }
 
         public Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct) => Task.CompletedTask;
-        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct) => Task.CompletedTask;
+        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, byte[]? fileContent, string? fileName, CancellationToken ct) => Task.CompletedTask;
         public Task SendAccessExpiredAsync(string toEmail, CancellationToken ct) => Task.CompletedTask;
         public Task SendAccessActivatedAsync(string toEmail, CancellationToken ct) => Task.CompletedTask;
         public Task SendTrialExpiringAsync(string toEmail, int daysLeft, CancellationToken ct) => Task.CompletedTask;
