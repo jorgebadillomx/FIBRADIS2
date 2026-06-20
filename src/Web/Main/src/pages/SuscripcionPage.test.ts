@@ -62,3 +62,24 @@ test('resolveSubscriptionState: trial activo SÍ requiere sección de pago (kind
   const state = resolveSubscriptionState(true, null, FUTURE, null)
   assert.notEqual(state.kind, 'lifetime')
 })
+
+test('resolveSubscriptionState: Lifetime desactivado (isActive=false) → kind=lifetime (P4)', () => {
+  const state = resolveSubscriptionState(false, 'Lifetime', null, null)
+  assert.equal(state.kind, 'lifetime')
+})
+
+test('resolveSubscriptionState: modo degradado (isActive=true, sin datos) → kind=trial, daysRemaining=0 (P3)', () => {
+  const state = resolveSubscriptionState(true, null, null, null)
+  assert.equal(state.kind, 'trial')
+  if (state.kind === 'trial') {
+    assert.equal(state.daysRemaining, 0)
+  }
+})
+
+test('resolveSubscriptionState: trial con trialEndsAt pasado pero isActive=true → daysRemaining=0, no negativo (P2)', () => {
+  const state = resolveSubscriptionState(true, null, PAST, null)
+  assert.equal(state.kind, 'trial')
+  if (state.kind === 'trial') {
+    assert.ok(state.daysRemaining >= 0, 'daysRemaining no debe ser negativo')
+  }
+})

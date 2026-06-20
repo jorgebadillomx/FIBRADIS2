@@ -4,6 +4,13 @@ Items deferred from story reviews. Each entry includes the source story, the fin
 
 ---
 
+## Deferred from: code review of 14-10-pagina-suscripcion (2026-06-20)
+
+- **D2** `handleNotifyPayment` catch block con ramas idénticas — ambas hacen `setNotifyStatus('error')` sin diferenciar tipo de error. Funcional, copiado de ActivarPage.tsx. `SuscripcionPage.tsx:77`
+- **D3** Test de integración `GetProfile_WhenUserHasMonthlySubscription_ReturnsSubscriptionTypeAndEndsAt` muta seed user sin cleanup explícito — riesgo de interferencia en orden de ejecución dentro de `AccountEndpointTests`. `AccountEndpointTests.cs:149`
+
+---
+
 ## Deferred from: code review of 14-5-email-templates-resend (2026-06-19)
 
 - **D2** `ResendEmailService` sin tests unitarios — la clase nunca fue unit-tested; no hay cobertura para el shape del payload ni para el comportamiento de throwOnFailure. Pre-existente, no introducido en 14.5.

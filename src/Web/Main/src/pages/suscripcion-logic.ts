@@ -10,7 +10,8 @@ export function resolveSubscriptionState(
   trialEndsAt: string | null,
   subscriptionEndsAt: string | null,
 ): SubscriptionState {
-  if (isActive && subscriptionType === 'Lifetime') {
+  // P4: Lifetime es permanente — no depende de isActive
+  if (subscriptionType === 'Lifetime') {
     return { kind: 'lifetime' }
   }
   if (isActive && subscriptionType) {
@@ -21,10 +22,15 @@ export function resolveSubscriptionState(
     }
   }
   if (isActive && !subscriptionType && trialEndsAt) {
-    const daysRemaining = Math.ceil(
+    // P2: daysRemaining nunca negativo (lag del job / grace period del servidor)
+    const daysRemaining = Math.max(0, Math.ceil(
       (new Date(trialEndsAt).getTime() - Date.now()) / 86400000,
-    )
+    ))
     return { kind: 'trial', trialEndsAt, daysRemaining }
+  }
+  // P3: usuario activo sin datos de suscripción (modo degradado — fetchProfile falló)
+  if (isActive) {
+    return { kind: 'trial', trialEndsAt: trialEndsAt ?? '', daysRemaining: 0 }
   }
   return { kind: 'expired', hadTrial: trialEndsAt !== null }
 }

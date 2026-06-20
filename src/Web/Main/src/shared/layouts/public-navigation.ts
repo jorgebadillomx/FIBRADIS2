@@ -33,8 +33,8 @@ export const MAIN_INVESTMENT_LINKS: NavLinkItem[] = [
 ]
 
 export const MAIN_ACCOUNT_LINKS: MenuEntry[] = [
-  { label: 'Suscripción', to: '/suscripcion' },
   { label: 'Mi perfil', to: '/perfil' },
+  { label: 'Suscripción', to: '/suscripcion' },
 ]
 
 export function buildMainMobileSections(

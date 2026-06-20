@@ -1,6 +1,6 @@
 # Story 14.10: Página de Suscripción en el menú de usuario
 
-Status: review
+Status: done
 
 ## Story
 
@@ -226,3 +226,15 @@ claude-sonnet-4-6
 ### Change Log
 
 - feat(14.10): página /suscripcion — estado trial/active/lifetime/expired + instrucciones de pago + botón notificar — 2026-06-20
+
+## Senior Developer Review (AI)
+
+### Review Findings
+
+- [x] **Decision D1** — Orden del menú corregido per AC1: Mi perfil → Suscripción → Cerrar sesión. `PublicLayout.tsx` + `public-navigation.ts` + `PublicLayout.test.ts`
+- [x] **Patch P1** (HIGH) `formatDate` ahora retorna `'—'` para string vacío o fecha inválida — `SuscripcionPage.tsx:22`
+- [x] **Patch P2** (MEDIUM) `daysRemaining = Math.max(0, Math.ceil(…))` — nunca negativo — `suscripcion-logic.ts:24`
+- [x] **Patch P3** (HIGH) Rama `if (isActive)` añadida antes del fallback `expired` — modo degradado retorna `kind: 'trial'` en lugar de `expired` — `suscripcion-logic.ts`
+- [x] **Patch P4** (MEDIUM) Rama Lifetime ya no requiere `isActive` — cuenta Lifetime desactivada sigue mostrando "Acceso de por vida" — `suscripcion-logic.ts:13`
+- [x] **Defer D2** — Catch block con ramas idénticas en `handleNotifyPayment` — ambas hacen `setNotifyStatus('error')`, copiado del patrón de ActivarPage.tsx; funcional pero ruidoso — `SuscripcionPage.tsx:77`
+- [x] **Defer D3** — Test de integración muta seed user (`11111111-…-0001`) sin cleanup explícito — riesgo de interferencia si otro test en la clase lee ese usuario posterior — `AccountEndpointTests.cs:149`
