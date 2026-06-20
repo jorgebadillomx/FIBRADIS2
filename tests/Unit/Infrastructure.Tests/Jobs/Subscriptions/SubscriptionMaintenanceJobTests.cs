@@ -166,7 +166,7 @@ public class SubscriptionMaintenanceJobTests
 
         public Task SendEmailConfirmationAsync(string toEmail, string confirmationUrl, CancellationToken ct) => Task.CompletedTask;
         public Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct) => Task.CompletedTask;
-        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct) => Task.CompletedTask;
+        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, byte[]? fileContent, string? fileName, CancellationToken ct) => Task.CompletedTask;
 
         public Task SendAccessExpiredAsync(string toEmail, CancellationToken ct)
         {

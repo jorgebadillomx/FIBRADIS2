@@ -39,14 +39,31 @@ public sealed class ResendEmailService(
             throwOnFailure: false,
             ct);
 
-    public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct)
-        => SendTemplatedEmailAsync(
+    public Task SendPaymentNotificationAsync(
+        Guid userId, string userEmail,
+        byte[]? fileContent, string? fileName,
+        CancellationToken ct)
+    {
+        if (fileContent is null)
+        {
+            return SendTemplatedEmailAsync(
+                ContactEmail,
+                options.Value.Templates.PaymentNotification,
+                new { USER_ID = userId.ToString(), USER_EMAIL = userEmail },
+                $"notificación de pago para userId={userId}",
+                throwOnFailure: false,
+                ct);
+        }
+
+        return SendRawEmailWithAttachmentAsync(
             ContactEmail,
-            options.Value.Templates.PaymentNotification,
-            new { USER_ID = userId.ToString(), USER_EMAIL = userEmail },
-            $"notificación de pago para userId={userId}",
-            throwOnFailure: false,
+            subject: $"Comprobante de pago — {userEmail}",
+            html: $"<p>El usuario <strong>{userEmail}</strong> (ID: {userId}) ha notificado un pago y adjuntó un comprobante.</p>",
+            fileName: !string.IsNullOrWhiteSpace(fileName) ? fileName : "comprobante",
+            fileContent: fileContent,
+            operation: $"notificación de pago con adjunto para userId={userId}",
             ct);
+    }
 
     public Task SendAccessExpiredAsync(string toEmail, CancellationToken ct)
         => SendTemplatedEmailAsync(
@@ -149,5 +166,53 @@ public sealed class ResendEmailService(
 
         if (failure is not null)
             throw failure;
+    }
+
+    private async Task SendRawEmailWithAttachmentAsync(
+        string toEmail,
+        string subject,
+        string html,
+        string fileName,
+        byte[] fileContent,
+        string operation,
+        CancellationToken ct)
+    {
+        var opt = options.Value;
+
+        if (string.IsNullOrWhiteSpace(opt.ApiKey) || string.IsNullOrWhiteSpace(opt.SenderEmail))
+        {
+            logger.LogError("Resend no configurado; se omite {Operation}.", operation);
+            return;
+        }
+
+        var base64Content = Convert.ToBase64String(fileContent);
+        var payload = new
+        {
+            from = opt.SenderEmail,
+            to = new[] { toEmail },
+            subject,
+            html,
+            attachments = new[] { new { filename = fileName, content = base64Content } }
+        };
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, ResendEmailsUri);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", opt.ApiKey);
+            request.Content = JsonContent.Create(payload, options: JsonOptions);
+
+            using var response = await httpClient.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct);
+                logger.LogError(
+                    "Resend rechazó {Operation} con status {StatusCode}. Body: {Body}",
+                    operation, (int)response.StatusCode, body);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException)
+        {
+            logger.LogError(ex, "No se pudo enviar {Operation}.", operation);
+        }
     }
 }

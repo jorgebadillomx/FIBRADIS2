@@ -1,5 +1,21 @@
 # Deferred Work
 
+## Deferred from: code review of 14-12-precios-clabe-y-comprobante (2026-06-20)
+
+- **D1** Rate limiting / `MaxRequestBodySize` explícito en el endpoint de notificación de pago. Kestrel default de 30 MB ya limita la superficie; rate limiting requiere infraestructura transversal.
+- **D2** CLABE (`722969010321418243`) hardcodeada en el bundle del cliente en lugar de `OperationalConfig`. El story spec la prescribió como constante; moverla requiere un endpoint público adicional.
+- **D3** Sin log de éxito en `SendRawEmailWithAttachmentAsync` — en caso de 200 de Resend no queda traza del `id` del email enviado. Mejora de observabilidad.
+- **D4** Sin botón "Cancelar/Volver" en estado `uploading` de `NotifyWithReceiptButton` — el usuario no puede resetear el estado sin recargar la página. Mejora de UX fuera del spec.
+- **D5** `TrialNotStartedView` en `ActivarPage` no muestra planes ni instrucciones de pago — comportamiento pre-existente; esa vista es para usuarios que aún no confirmaron su email, no para pago.
+- **D6** `SuscripcionPage` oculta `PaymentSection` a usuarios con suscripción lifetime — diseño pre-existente de story 14-10; AC1 dice "cualquier usuario autenticado" pero el diseño excluyó intencionalmente a lifetime.
+- **D7** Errores de Resend en ruta con adjunto se silencian (`logger.LogError` pero no re-throw) — patrón idéntico a la ruta sin adjunto (`throwOnFailure: false`). Usuario siempre ve "Comprobante enviado" aunque Resend haya fallado.
+- **D8** `navigate('/login', { replace: true })` en `handleFirstClick` sin parámetro `?redirect=` de retorno — comportamiento pre-existente de `ActivarPage`; bajo impacto (el usuario llega de regreso a la misma vista tras login).
+- **D9** Sin tests de componente para estados de UI de `NotifyWithReceiptButton` (error/sent/disabled) — AC10 solo requiere tests de validación de archivo; tests de render del componente son out-of-scope del spec.
+- **D10** `CopyToAsync` sin try/catch explícito para `IOException` — cubierto por el handler 500 global de ASP.NET Core; no añade valor documentar el edge case en el endpoint.
+- **D11** `ReadAsStringAsync` en el branch de error de Resend puede lanzar — edge case en código de logging no crítico; error original ya está capturado en el log.
+- **D12** Race condition de doble envío — mitigado por React disabled state (`isSending`) y transición de estado síncrona; la ventana es prácticamente nula.
+- **D13** `userEmail` puede ser cadena vacía si el claim JWT está ausente — patrón pre-existente del endpoint (`?? ""`); ya existía antes de este story.
+
 ## Deferred from: code review of 14-11-microsoft-clarity (2026-06-20)
 
 - **D1** Sin guard de entorno en `ClarityLoader`: el ID de producción `hd9ip85air` se inyecta en dev/staging. Patrón idéntico a AdSense. Riesgo de ruido en dashboard de Clarity durante desarrollo.

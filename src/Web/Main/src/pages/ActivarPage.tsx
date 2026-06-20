@@ -1,30 +1,13 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
-import { notifyPayment, resendConfirmation, AuthApiError } from '@/modules/auth/authApi'
-import { useAuth } from '@/modules/auth/AuthContext'
+import { useSearchParams } from 'react-router'
+import { resendConfirmation } from '@/modules/auth/authApi'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { Button } from '@/shared/ui/button'
+import { NotifyWithReceiptButton } from './NotifyWithReceiptButton'
+import { PLANES, PAYMENT_INFO } from './payment-plans'
 
 const DESCRIPTION =
   'Activa tu cuenta en Fibras Inmobiliarias para acceder al portafolio, reportes trimestrales, oportunidades y herramientas de análisis.'
-
-const PLANES = [
-  {
-    nombre: 'Mensual',
-    precio: '$299 MXN / mes',
-    descripcion: 'Acceso completo mensual',
-  },
-  {
-    nombre: 'Anual',
-    precio: '$2,490 MXN / año',
-    descripcion: 'Ahorra un 30% vs. mensual',
-  },
-  {
-    nombre: 'Lifetime',
-    precio: '$6,999 MXN',
-    descripcion: 'Pago único, acceso de por vida',
-  },
-]
 
 export function ActivarPage() {
   const [searchParams] = useSearchParams()
@@ -42,28 +25,6 @@ export function ActivarPage() {
 }
 
 function TrialExpiredView() {
-  const { status } = useAuth()
-  const navigate = useNavigate()
-  const [notifyStatus, setNotifyStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
-
-  async function handleNotifyPayment() {
-    if (status !== 'authenticated') {
-      navigate('/login', { replace: true })
-      return
-    }
-    setNotifyStatus('sending')
-    try {
-      await notifyPayment()
-      setNotifyStatus('sent')
-    } catch (err) {
-      if (err instanceof AuthApiError && err.code === 'notify_payment_failed') {
-        setNotifyStatus('error')
-      } else {
-        setNotifyStatus('error')
-      }
-    }
-  }
-
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-12">
       <section className="w-full max-w-2xl rounded-3xl border border-border bg-card p-8 shadow-sm">
@@ -96,42 +57,24 @@ function TrialExpiredView() {
           <dl className="flex flex-col gap-2 text-sm">
             <div className="flex gap-2">
               <dt className="font-medium text-muted-foreground w-16 shrink-0">CLABE:</dt>
-              <dd className="font-mono text-amber-700 font-semibold">[CLABE PENDIENTE]</dd>
+              <dd className="font-mono text-amber-700 font-semibold">{PAYMENT_INFO.clabe}</dd>
             </div>
             <div className="flex gap-2">
               <dt className="font-medium text-muted-foreground w-16 shrink-0">Banco:</dt>
-              <dd>[BANCO PENDIENTE]</dd>
+              <dd>{PAYMENT_INFO.banco}</dd>
             </div>
             <div className="flex gap-2">
               <dt className="font-medium text-muted-foreground w-16 shrink-0">Concepto:</dt>
-              <dd>Suscripción Fibras Inmobiliarias</dd>
+              <dd>{PAYMENT_INFO.concepto}</dd>
             </div>
             <div className="flex gap-2">
               <dt className="font-medium text-muted-foreground w-16 shrink-0">Contacto:</dt>
-              <dd>contacto@fibrasinmobiliarias.com</dd>
+              <dd>{PAYMENT_INFO.contacto}</dd>
             </div>
           </dl>
         </div>
 
-        {notifyStatus === 'sent' ? (
-          <p className="text-sm text-emerald-700 font-medium">
-            ✓ Notificación enviada. Te contactaremos para activar tu acceso.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <Button
-              onClick={handleNotifyPayment}
-              disabled={notifyStatus === 'sending'}
-            >
-              {notifyStatus === 'sending' ? 'Enviando…' : 'Ya pagué — notificar al equipo'}
-            </Button>
-            {notifyStatus === 'error' ? (
-              <p role="alert" className="text-sm text-destructive">
-                No se pudo enviar la notificación. Escríbenos a contacto@fibrasinmobiliarias.com.
-              </p>
-            ) : null}
-          </div>
-        )}
+        <NotifyWithReceiptButton />
       </section>
     </div>
   )

@@ -1,22 +1,15 @@
-import { useState } from 'react'
 import { Navigate } from 'react-router'
-import { notifyPayment, AuthApiError } from '@/modules/auth/authApi'
 import { useAuth } from '@/modules/auth/AuthContext'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
-import { Button } from '@/shared/ui/button'
 import { resolveSubscriptionState } from './suscripcion-logic'
 import type { SubscriptionState } from './suscripcion-logic'
+import { NotifyWithReceiptButton } from './NotifyWithReceiptButton'
+import { PLANES, PAYMENT_INFO } from './payment-plans'
 
 export { resolveSubscriptionState, type SubscriptionState }
 
 const DESCRIPTION =
   'Consulta el estado de tu suscripción en Fibras Inmobiliarias, conoce tu plan activo y las instrucciones de pago.'
-
-const PLANES = [
-  { nombre: 'Mensual', precio: '$299 MXN / mes', descripcion: 'Acceso completo mensual' },
-  { nombre: 'Anual', precio: '$2,490 MXN / año', descripcion: 'Ahorra un 30% vs. mensual' },
-  { nombre: 'Lifetime', precio: '$6,999 MXN', descripcion: 'Pago único, acceso de por vida' },
-]
 
 function formatDate(isoString: string): string {
   if (!isoString) return '—'
@@ -65,24 +58,6 @@ function StatusBanner({ state }: { state: SubscriptionState }) {
 }
 
 function PaymentSection() {
-  const { status } = useAuth()
-  const [notifyStatus, setNotifyStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
-
-  async function handleNotifyPayment() {
-    if (status !== 'authenticated') return
-    setNotifyStatus('sending')
-    try {
-      await notifyPayment()
-      setNotifyStatus('sent')
-    } catch (err) {
-      if (err instanceof AuthApiError && err.code === 'notify_payment_failed') {
-        setNotifyStatus('error')
-      } else {
-        setNotifyStatus('error')
-      }
-    }
-  }
-
   return (
     <div>
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
@@ -105,39 +80,24 @@ function PaymentSection() {
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex gap-2">
             <dt className="font-medium text-muted-foreground w-16 shrink-0">CLABE:</dt>
-            <dd className="font-mono text-amber-700 font-semibold">[CLABE PENDIENTE]</dd>
+            <dd className="font-mono text-amber-700 font-semibold">{PAYMENT_INFO.clabe}</dd>
           </div>
           <div className="flex gap-2">
             <dt className="font-medium text-muted-foreground w-16 shrink-0">Banco:</dt>
-            <dd>[BANCO PENDIENTE]</dd>
+            <dd>{PAYMENT_INFO.banco}</dd>
           </div>
           <div className="flex gap-2">
             <dt className="font-medium text-muted-foreground w-16 shrink-0">Concepto:</dt>
-            <dd>Suscripción Fibras Inmobiliarias</dd>
+            <dd>{PAYMENT_INFO.concepto}</dd>
           </div>
           <div className="flex gap-2">
             <dt className="font-medium text-muted-foreground w-16 shrink-0">Contacto:</dt>
-            <dd>portafoliodefibras@gmail.com</dd>
+            <dd>{PAYMENT_INFO.contacto}</dd>
           </div>
         </dl>
       </div>
 
-      {notifyStatus === 'sent' ? (
-        <p className="text-sm text-emerald-700 font-medium">
-          ✓ Notificación enviada. Te contactaremos para activar tu acceso.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <Button onClick={handleNotifyPayment} disabled={notifyStatus === 'sending'}>
-            {notifyStatus === 'sending' ? 'Enviando…' : 'Ya pagué — notificar al equipo'}
-          </Button>
-          {notifyStatus === 'error' ? (
-            <p role="alert" className="text-sm text-destructive">
-              No se pudo enviar la notificación. Escríbenos a portafoliodefibras@gmail.com.
-            </p>
-          ) : null}
-        </div>
-      )}
+      <NotifyWithReceiptButton />
     </div>
   )
 }

@@ -105,7 +105,7 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     {
         public List<CapturedEmail> Emails { get; } = [];
         public List<CapturedPasswordResetEmail> PasswordResetEmails { get; } = [];
-        public List<(Guid UserId, string UserEmail)> PaymentNotifications { get; } = [];
+        public List<(Guid UserId, string UserEmail, byte[]? FileContent, string? FileName)> PaymentNotifications { get; } = [];
         public List<string> AccessExpiredEmails { get; } = [];
         public List<string> AccessActivatedEmails { get; } = [];
         public List<(string ToEmail, int DaysLeft)> TrialExpiringEmails { get; } = [];
@@ -123,9 +123,9 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             return Task.CompletedTask;
         }
 
-        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct)
+        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, byte[]? fileContent, string? fileName, CancellationToken ct)
         {
-            PaymentNotifications.Add((userId, userEmail));
+            PaymentNotifications.Add((userId, userEmail, fileContent, fileName));
             return Task.CompletedTask;
         }
 

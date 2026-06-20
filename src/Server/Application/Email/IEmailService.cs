@@ -6,7 +6,7 @@ public interface IEmailService
 
     Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct);
 
-    Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct);
+    Task SendPaymentNotificationAsync(Guid userId, string userEmail, byte[]? fileContent, string? fileName, CancellationToken ct);
 
     Task SendAccessExpiredAsync(string toEmail, CancellationToken ct);
 

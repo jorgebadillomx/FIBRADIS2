@@ -159,6 +159,7 @@ public static class AccountEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         app.MapPost("/api/v1/account/notify-payment", async (
+            IFormFile? comprobante,
             IEmailService emailService,
             HttpContext ctx,
             CancellationToken ct) =>
@@ -169,14 +170,49 @@ public static class AccountEndpoints
             if (!Guid.TryParse(sub, out var userId))
                 return Results.Unauthorized();
 
+            byte[]? fileBytes = null;
+            string? fileName = null;
+
+            if (comprobante is not null)
+            {
+                var contentType = comprobante.ContentType ?? "";
+                var typeOk = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+                          || contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+                if (!typeOk)
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                        { ["comprobante"] = ["Solo se aceptan imágenes y PDF."] });
+                }
+
+                using var ms = new MemoryStream();
+                await comprobante.CopyToAsync(ms, ct);
+                fileBytes = ms.ToArray();
+
+                if (ms.Length == 0)
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                        { ["comprobante"] = ["El archivo está vacío."] });
+                }
+
+                if (ms.Length > 5_242_880)
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                        { ["comprobante"] = ["El archivo supera el límite de 5 MB."] });
+                }
+
+                fileName = Path.GetFileName(comprobante.FileName ?? string.Empty);
+            }
+
             var userEmail = ctx.User.FindFirstValue(JwtRegisteredClaimNames.Email) ?? "";
-            await emailService.SendPaymentNotificationAsync(userId, userEmail, ct);
+            await emailService.SendPaymentNotificationAsync(userId, userEmail, fileBytes, fileName, ct);
 
             return Results.NoContent();
         })
         .RequireAuthorization()
+        .DisableAntiforgery()
         .WithTags("Account")
         .Produces(StatusCodes.Status204NoContent)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         return app;
