@@ -9,6 +9,7 @@ export type CreateUserRequest = components['schemas']['CreateUserRequest']
 export type SetUserActiveRequest = components['schemas']['SetUserActiveRequest']
 export type ChangePasswordRequest = components['schemas']['ChangePasswordRequest']
 export type UpdatePaymentRequest = components['schemas']['UpdatePaymentRequest']
+export type UpdateSubscriptionRequest = components['schemas']['UpdateSubscriptionRequest']
 
 export async function fetchOpsUsers(): Promise<UserSummaryDto[]> {
   assertOpsAccessToken()
@@ -64,6 +65,21 @@ export async function updateUserPayment(
     body: { pago, fechaPago },
   })
   if (error) throw new Error(getOpsApiErrorMessage(error, `Error al actualizar pago: ${JSON.stringify(error)}`))
+  if (!data) throw new Error('La API no devolvió datos.')
+  return data
+}
+
+export async function updateUserSubscription(
+  id: string,
+  body: UpdateSubscriptionRequest,
+): Promise<UserSummaryDto> {
+  assertOpsAccessToken()
+  const { data, error } = await apiClient['/api/v1/ops/users/{id}/subscription'].PATCH({
+    headers: getOpsAuthHeaders(),
+    params: { path: { id } },
+    body,
+  })
+  if (error) throw new Error(getOpsApiErrorMessage(error, `Error al actualizar suscripción: ${JSON.stringify(error)}`))
   if (!data) throw new Error('La API no devolvió datos.')
   return data
 }
