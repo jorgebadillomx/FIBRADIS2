@@ -59,7 +59,7 @@ public static class AuthEndpoints
                 try
                 {
                     var token = tokenService.GenerateToken(user.Id);
-                    var confirmationUrl = $"{baseUrl}/confirmar-email?token={Uri.EscapeDataString(token)}";
+                    var confirmationUrl = $"{baseUrl}/api/v1/auth/confirm-email-redirect?token={Uri.EscapeDataString(token)}";
                     await emailService.SendEmailConfirmationAsync(user.Email, confirmationUrl, ct);
                 }
                 catch (Exception emailEx)
@@ -87,6 +87,58 @@ public static class AuthEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status409Conflict)
         .Produces(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapGet("/confirm-email-redirect", async (
+            string? token,
+            IEmailConfirmationTokenService tokenService,
+            IUserService userService,
+            IConfiguration config,
+            ILogger<Program> logger,
+            CancellationToken ct) =>
+        {
+            var baseUrl = config["App:BaseUrl"]?.TrimEnd('/') ?? string.Empty;
+            var confirmedUrl = $"{baseUrl}/confirmar-email";
+            var errorUrl = $"{confirmedUrl}?status=error";
+
+            try
+            {
+                var validation = tokenService.ValidateToken(token ?? string.Empty);
+                if (!validation.IsValid)
+                    return Results.Redirect(errorUrl);
+
+                if (validation.IsExpired)
+                    return Results.Redirect($"{confirmedUrl}?status=expired");
+
+                var user = await userService.FindByIdAsync(validation.UserId, ct);
+                if (user is null)
+                    return Results.Redirect(errorUrl);
+
+                if (user.EmailConfirmedAt is not null)
+                    return Results.Redirect($"{confirmedUrl}?status=already_confirmed");
+
+                try
+                {
+                    var confirmed = await userService.ConfirmEmailAsync(validation.UserId, ct);
+                    var trialEndsAt = confirmed.TrialEndsAt
+                        ?? throw new InvalidOperationException("ConfirmEmailAsync no asignó TrialEndsAt.");
+                    var t = Uri.EscapeDataString(
+                        new DateTimeOffset(DateTime.SpecifyKind(trialEndsAt, DateTimeKind.Utc)).ToString("O"));
+
+                    return Results.Redirect($"{confirmedUrl}?status=confirmed&t={t}");
+                }
+                catch (EmailAlreadyConfirmedException)
+                {
+                    return Results.Redirect($"{confirmedUrl}?status=already_confirmed");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error en confirm-email-redirect — redirigiendo a error.");
+                return Results.Redirect(errorUrl);
+            }
+        })
+        .AllowAnonymous()
+        .Produces(StatusCodes.Status302Found);
 
         group.MapGet("/confirm-email", async (
             string? token,

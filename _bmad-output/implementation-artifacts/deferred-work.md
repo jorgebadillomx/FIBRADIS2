@@ -1,5 +1,11 @@
 # Deferred Work
 
+## Deferred from: code review of 14-9-confirmacion-email-resiliente (2026-06-20)
+
+- **D1** `DateTime.SpecifyKind(trialEndsAt, DateTimeKind.Utc)` en el endpoint `/confirm-email-redirect` asume que `TrialEndsAt` de EF Core es UTC. Si EF devuelve `DateTimeKind.Unspecified` (común con `datetime2` en SQL Server), `SpecifyKind` fuerza UTC sin conversión. Patrón idéntico pre-existente en `/confirm-email`. Riesgo bajo en práctica.
+- **D2** `formatTrialEndsAt` muestra la fecha de fin de trial en timezone UTC (`timeZone: 'UTC'`). Usuarios mexicanos (UTC-5/UTC-7) pueden ver la fecha un día antes de lo esperado si el trial vence cerca de medianoche UTC. Pre-existente en la función utilitaria; requiere decision de UX para corregir.
+- **D3** El nuevo endpoint `/confirm-email-redirect` en `Api.json` no tiene `operationId`. Aplica al patrón general de endpoints en el proyecto, no específico de esta historia.
+
 ## Deferred from: code review of 14-8-cta-auth-recuperar-contrasena (2026-06-20)
 
 - **D1** BCrypt hash prefix en `PasswordResetTokenService.BuildKey` usa solo ~5 chars de entropía real (los primeros 7 chars siempre son `$2b$10$`). Diseño intencional per spec; `64^5 ≈ 10^9` combinaciones es suficiente para invalidación stateless de tokens. Documentar en `PasswordResetTokenService.cs` para futuros reviewers.

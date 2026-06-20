@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Email;
 using Domain.Auth;
 using Domain.Auth.Exceptions;
 using Infrastructure.Persistence.SqlServer;
@@ -659,6 +660,27 @@ public class UserServiceTests
             () => svc.ConfirmEmailAsync(user.Id));
     }
 
+    [Fact]
+    public async Task ResendConfirmationAsync_QueuesRedirectConfirmationEmail()
+    {
+        await using var db = CreateDb();
+        var svc = CreateSvc(db);
+        await svc.CreateUserAsync("reenviar@fibradis.mx", "Fuerte1!", "User");
+
+        var tokenService = new FakeEmailConfirmationTokenService();
+        var emailService = new CapturingEmailService();
+
+        await svc.ResendConfirmationAsync(
+            "reenviar@fibradis.mx",
+            tokenService,
+            emailService,
+            "https://localhost:5001");
+
+        Assert.Single(emailService.Emails);
+        Assert.Equal("reenviar@fibradis.mx", emailService.Emails[0].ToEmail);
+        Assert.Contains("/api/v1/auth/confirm-email-redirect?token=generated-token", emailService.Emails[0].ConfirmationUrl);
+    }
+
     // ── AcceptTerms ──────────────────────────────────────────────────────────
 
     [Fact]
@@ -757,5 +779,31 @@ public class UserServiceTests
 
         Assert.False(profile.IsActive);
         Assert.Null(profile.TrialEndsAt);
+    }
+
+    private sealed class CapturingEmailService : IEmailService
+    {
+        public List<(string ToEmail, string ConfirmationUrl)> Emails { get; } = [];
+
+        public Task SendEmailConfirmationAsync(string toEmail, string confirmationUrl, CancellationToken ct)
+        {
+            Emails.Add((toEmail, confirmationUrl));
+            return Task.CompletedTask;
+        }
+
+        public Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct) => Task.CompletedTask;
+        public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct) => Task.CompletedTask;
+        public Task SendAccessExpiredAsync(string toEmail, CancellationToken ct) => Task.CompletedTask;
+        public Task SendAccessActivatedAsync(string toEmail, CancellationToken ct) => Task.CompletedTask;
+        public Task SendTrialExpiringAsync(string toEmail, int daysLeft, CancellationToken ct) => Task.CompletedTask;
+        public Task SendSubscriptionExpiringAsync(string toEmail, int daysLeft, CancellationToken ct) => Task.CompletedTask;
+    }
+
+    private sealed class FakeEmailConfirmationTokenService : IEmailConfirmationTokenService
+    {
+        public string GenerateToken(Guid userId) => "generated-token";
+
+        public EmailTokenValidationResult ValidateToken(string token)
+            => new(Guid.Empty, IsExpired: false, IsValid: false);
     }
 }

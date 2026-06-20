@@ -43,7 +43,7 @@ public class AuthRegisterTests : IAsyncLifetime
         Assert.Single(_factory.EmailService.Emails);
         var email = _factory.EmailService.Emails[0];
         Assert.Equal("nuevo@fibradis.mx", email.ToEmail);
-        Assert.Contains("/confirmar-email?token=", email.ConfirmationUrl);
+        Assert.Contains("/api/v1/auth/confirm-email-redirect?token=", email.ConfirmationUrl);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.SqlServer.AppDbContext>();
@@ -51,6 +51,29 @@ public class AuthRegisterTests : IAsyncLifetime
         Assert.False(stored.IsActive);
         Assert.Null(stored.EmailConfirmedAt);
         Assert.Null(stored.TrialEndsAt);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_ValidUser_QueuesRedirectConfirmationEmail()
+    {
+        const string email = "reenviar@fibradis.mx";
+
+        var registerResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", new RegisterRequest(
+            email,
+            "Fuerte1!",
+            null,
+            null));
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        _factory.EmailService.Clear();
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/resend-confirmation", new { Email = email });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        Assert.Single(_factory.EmailService.Emails);
+        var resendEmail = _factory.EmailService.Emails[0];
+        Assert.Equal(email, resendEmail.ToEmail);
+        Assert.Contains("/api/v1/auth/confirm-email-redirect?token=", resendEmail.ConfirmationUrl);
     }
 
     [Fact]

@@ -9,9 +9,9 @@ import type { ReactNode } from 'react'
 const DESCRIPTION =
   'Confirma tu correo para activar tu prueba gratuita de 14 días en Fibras Inmobiliarias y completar el registro de tu cuenta.'
 
-function formatTrialEndsAt(value: string): string {
+function formatTrialEndsAt(value: string): string | null {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
+  if (Number.isNaN(date.getTime())) return null
 
   return new Intl.DateTimeFormat('es-MX', {
     dateStyle: 'full',
@@ -22,7 +22,9 @@ function formatTrialEndsAt(value: string): string {
 
 export function ConfirmarEmailPage() {
   const [searchParams] = useSearchParams()
+  const status = searchParams.get('status')
   const token = searchParams.get('token')
+  const trialEndsAtParam = searchParams.get('t')
 
   usePageTitle('Confirma tu email | Fibras Inmobiliarias', DESCRIPTION, {
     canonicalPath: '/confirmar-email',
@@ -32,10 +34,75 @@ export function ConfirmarEmailPage() {
   const confirmationQuery = useQuery({
     queryKey: ['auth', 'confirm-email', token],
     queryFn: () => confirmEmail(token ?? ''),
-    enabled: Boolean(token),
+    enabled: Boolean(token) && status === null,
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
   })
+
+  if (status !== null) {
+    if (status === 'confirmed') {
+      const trialEndsAt = trialEndsAtParam ? formatTrialEndsAt(trialEndsAtParam) : null
+
+      return (
+        <ConfirmCard
+          icon={<CheckCircle2 className="size-6" />}
+          title="¡Cuenta confirmada!"
+          description={
+            trialEndsAt
+              ? `Tu prueba de 14 días ha comenzado. Vence el ${trialEndsAt}.`
+              : 'Tu prueba de 14 días ha comenzado.'
+          }
+          tone="success"
+          action={
+            <Button asChild>
+              <Link to="/portafolio">Ir a mi portafolio</Link>
+            </Button>
+          }
+        />
+      )
+    }
+
+    if (status === 'expired') {
+      return (
+        <ConfirmCard
+          icon={<MailWarning className="size-6" />}
+          title="El enlace expiró"
+          description="Solicita un nuevo correo de confirmación para activar tu cuenta."
+          tone="warning"
+          action={
+            <Button asChild>
+              <Link to="/activar?reason=trial_not_started">Reenviar confirmación</Link>
+            </Button>
+          }
+        />
+      )
+    }
+
+    if (status === 'already_confirmed') {
+      return (
+        <ConfirmCard
+          icon={<CheckCircle2 className="size-6" />}
+          title="Tu cuenta ya fue confirmada"
+          description="Puedes iniciar sesión con tu correo y contraseña para entrar a tu portafolio."
+          tone="success"
+          action={
+            <Button asChild>
+              <Link to="/login">Iniciar sesión</Link>
+            </Button>
+          }
+        />
+      )
+    }
+
+    return (
+      <ConfirmCard
+        icon={<AlertCircle className="size-6" />}
+        title="No pudimos confirmar tu cuenta"
+        description="Vuelve a intentarlo en unos minutos o solicita un nuevo correo de confirmación."
+        tone="error"
+      />
+    )
+  }
 
   if (!token) {
     return (

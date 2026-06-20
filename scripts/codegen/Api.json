@@ -791,6 +791,27 @@
         }
       }
     },
+    "/api/v1/auth/confirm-email-redirect": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Found"
+          }
+        }
+      }
+    },
     "/api/v1/auth/confirm-email": {
       "get": {
         "tags": [

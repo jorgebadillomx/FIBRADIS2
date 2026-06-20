@@ -352,7 +352,7 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
                 return;
 
             var token = tokenService.GenerateToken(user.Id);
-            var confirmationUrl = $"{baseUrl}/confirmar-email?token={Uri.EscapeDataString(token)}";
+            var confirmationUrl = $"{baseUrl}/api/v1/auth/confirm-email-redirect?token={Uri.EscapeDataString(token)}";
             await emailService.SendEmailConfirmationAsync(normalizedEmail, confirmationUrl, ct);
         }
         catch (Exception)

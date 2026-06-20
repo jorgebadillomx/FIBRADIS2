@@ -14,6 +14,7 @@ public class OpenApiEndpointTests(ApiWebFactory factory) : IClassFixture<ApiWebF
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("\"openapi\"", body);
         Assert.Contains("/api/v1/auth/login", body);
+        Assert.Contains("/api/v1/auth/confirm-email-redirect", body);
         Assert.Contains("/api/v1/market/indicadores", body);
         Assert.Contains("/api/v1/news/blocklist-terms", body);
         Assert.Contains("/api/v1/ops/seo", body);
