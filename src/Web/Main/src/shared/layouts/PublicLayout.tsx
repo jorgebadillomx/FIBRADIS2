@@ -293,6 +293,7 @@ export function PublicLayout() {
               <DesktopMenu
                 align="right"
                 entries={[
+                  { label: 'Suscripción', to: '/suscripcion' },
                   { label: 'Mi perfil', to: '/perfil' },
                   { label: 'Cerrar sesión', onClick: handleLogout },
                 ]}

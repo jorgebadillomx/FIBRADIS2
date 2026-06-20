@@ -464,6 +464,14 @@ development_status:
   14-6-ops-users-subscription-ui: done
   # story 14-7 creada — CTA de registro en /plataforma: separar "Crear cuenta / Iniciar sesión" en dos botones (outline→/registro, ghost→/portafolio)
   14-7-cta-registro-plataforma: done
+  # story 14-8 creada — CTAs auth en LoginForm + flujo recuperar contraseña
+  14-8-cta-auth-recuperar-contrasena: done
+  # story 14-9 done — confirmación de email resiliente
+  14-9-confirmacion-email-resiliente: done
+  # story 14-10 creada — página /suscripcion en el menú de usuario: estado de trial/suscripción + instrucciones de pago + botón "Ya pagué"
+  14-10-pagina-suscripcion: review
+  # story 14-11 creada — Microsoft Clarity
+  14-11-microsoft-clarity: ready-for-dev
 
   # ── Épica 15: INPC — Rendimiento Real e Inflación Visible ───────────────
   # epic-15 creada 2026-06-18 — backfill manual INPC, serie de inflación en performance y rendimiento real visible en herramientas/portafolio/oportunidades/comparador.

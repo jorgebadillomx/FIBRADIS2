@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using SharedApiContracts.Auth;
 
 namespace Api.Tests;
@@ -135,6 +136,30 @@ public class AccountEndpointTests : IClassFixture<ApiWebFactory>, IAsyncLifetime
             new ChangeOwnPasswordRequest("password123", "sinmayuscula1!"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProfile_WhenUserHasMonthlySubscription_ReturnsSubscriptionTypeAndEndsAt()
+    {
+        var endsAt = DateTime.UtcNow.AddDays(30);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.SqlServer.AppDbContext>();
+            var user = await db.Users.FindAsync(Guid.Parse("11111111-0000-0000-0000-000000000001"));
+            user!.SubscriptionType = Domain.Auth.SubscriptionType.Monthly;
+            user.SubscriptionStartedAt = DateTime.UtcNow.AddDays(-5);
+            user.SubscriptionEndsAt = endsAt;
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _userClient.GetAsync("/api/v1/account/me");
+        var body = await response.Content.ReadFromJsonAsync<UserProfileResponse>();
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal("Monthly", body!.SubscriptionType);
+        Assert.NotNull(body.SubscriptionEndsAt);
     }
 
     private async Task<string> LoginAndGetTokenAsync(string email, string password)

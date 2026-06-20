@@ -19,6 +19,8 @@ interface AuthContextValue {
   hasAcceptedTerms: boolean
   isActive: boolean
   trialEndsAt: string | null
+  subscriptionType: string | null
+  subscriptionEndsAt: string | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   acceptTerms: () => Promise<void>
@@ -34,6 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
   const [isActive, setIsActive] = useState(true)
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
+  const [subscriptionType, setSubscriptionType] = useState<string | null>(null)
+  const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -56,11 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!active) return
             setIsActive(profile.isActive)
             setTrialEndsAt(profile.trialEndsAt ?? null)
+            setSubscriptionType(profile.subscriptionType ?? null)
+            setSubscriptionEndsAt(profile.subscriptionEndsAt ?? null)
           } catch {
             if (!active) return
             // Si falla el perfil, asumir activo (degraded mode)
             setIsActive(true)
             setTrialEndsAt(null)
+            setSubscriptionType(null)
+            setSubscriptionEndsAt(null)
           }
         }
       } catch {
@@ -83,6 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasAcceptedTerms(false)
       setIsActive(true)
       setTrialEndsAt(null)
+      setSubscriptionType(null)
+      setSubscriptionEndsAt(null)
     }
 
     window.addEventListener(MAIN_AUTH_REQUIRED_EVENT, handleAuthRequired)
@@ -104,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setHasAcceptedTerms(false)
           setIsActive(true)
           setTrialEndsAt(null)
+          setSubscriptionType(null)
+          setSubscriptionEndsAt(null)
         } else {
           setHasAcceptedTerms(getMainTokenClaims()?.hasAcceptedTerms ?? false)
         }
@@ -127,9 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await fetchProfile()
       setIsActive(profile.isActive)
       setTrialEndsAt(profile.trialEndsAt ?? null)
+      setSubscriptionType(profile.subscriptionType ?? null)
+      setSubscriptionEndsAt(profile.subscriptionEndsAt ?? null)
     } catch {
       setIsActive(true)
       setTrialEndsAt(null)
+      setSubscriptionType(null)
+      setSubscriptionEndsAt(null)
     }
   }
 
@@ -140,6 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHasAcceptedTerms(false)
     setIsActive(true)
     setTrialEndsAt(null)
+    setSubscriptionType(null)
+    setSubscriptionEndsAt(null)
   }
 
   async function acceptTerms() {
@@ -160,6 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasAcceptedTerms,
         isActive,
         trialEndsAt,
+        subscriptionType,
+        subscriptionEndsAt,
         login,
         logout,
         acceptTerms,

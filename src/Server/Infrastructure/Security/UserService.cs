@@ -176,7 +176,9 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
             user.Apodo,
             user.IsActive,
             user.TrialEndsAt,
-            user.FechaPago);
+            user.FechaPago,
+            user.SubscriptionType?.ToString(),
+            user.SubscriptionEndsAt);
     }
 
     public async Task UpdateApodoAsync(Guid userId, string? apodo, CancellationToken ct = default)
