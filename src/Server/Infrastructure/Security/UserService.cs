@@ -164,6 +164,20 @@ public class UserService(AppDbContext db, IEmailEncryptor emailEncryptor) : IUse
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken ct = default)
+    {
+        var user = await db.Users.FindAsync([userId], ct)
+            ?? throw new UserNotFoundException();
+
+        ValidateStrongPassword(newPassword);
+
+        if (System.Text.Encoding.UTF8.GetByteCount(newPassword) > 72)
+            throw new InvalidUserDataException("La contraseña no puede superar 72 bytes en UTF-8 (límite de BCrypt).");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task<UserProfileData> GetProfileAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await db.Users.FindAsync([userId], ct)

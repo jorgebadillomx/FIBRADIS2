@@ -25,6 +25,20 @@ public sealed class ResendEmailService(
             throwOnFailure: false,
             ct);
 
+    public Task SendPasswordResetAsync(string toEmail, string resetUrl, CancellationToken ct)
+        => SendTemplatedEmailAsync(
+            toEmail,
+            options.Value.Templates.PasswordReset,
+            new
+            {
+                RESET_URL = resetUrl,
+                EXPIRY_MINUTES = "60",
+                PREVIEW = "Tienes 60 minutos para restablecer tu contraseña en Fibras Inmobiliarias.",
+            },
+            "email de restablecimiento de contraseña",
+            throwOnFailure: false,
+            ct);
+
     public Task SendPaymentNotificationAsync(Guid userId, string userEmail, CancellationToken ct)
         => SendTemplatedEmailAsync(
             ContactEmail,

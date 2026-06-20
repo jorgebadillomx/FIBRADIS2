@@ -2,7 +2,9 @@ using Application.Auth;
 using Application.Email;
 using Domain.Auth;
 using Domain.Auth.Exceptions;
+using Infrastructure.Persistence.SqlServer;
 using SharedApiContracts.Auth;
+using Microsoft.EntityFrameworkCore;
 
 namespace Api.Endpoints.Public;
 
@@ -193,8 +195,148 @@ public static class AuthEndpoints
         .WithTags("Auth")
         .Produces(StatusCodes.Status204NoContent);
 
+        app.MapPasswordReset();
         return app;
     }
+
+    public static IEndpointRouteBuilder MapPasswordReset(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/auth").WithTags("Auth");
+
+        group.MapPost("/forgot-password", async (
+            ForgotPasswordRequest request,
+            AppDbContext db,
+            IEmailEncryptor emailEncryptor,
+            IPasswordResetTokenService tokenService,
+            IEmailService emailService,
+            IConfiguration config,
+            ILogger<Program> logger,
+            CancellationToken ct) =>
+        {
+            var normalizedEmail = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                try
+                {
+                    var baseUrl = config["App:BaseUrl"]?.TrimEnd('/');
+                    if (!string.IsNullOrWhiteSpace(baseUrl))
+                    {
+                        var encryptedEmail = emailEncryptor.Encrypt(normalizedEmail);
+                        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
+
+                        if (user is { EmailConfirmedAt: not null, IsActive: true })
+                        {
+                            var token = tokenService.GenerateToken(user.Id, user.PasswordHash);
+                            var resetUrl = $"{baseUrl}/api/v1/auth/reset-password-redirect?token={Uri.EscapeDataString(token)}";
+                            await emailService.SendPasswordResetAsync(emailEncryptor.Decrypt(user.Email), resetUrl, ct);
+                        }
+                    }
+                    else
+                    {
+                        logger.LogWarning("App:BaseUrl no está configurado — reset email no enviado.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error en forgot-password.");
+                }
+            }
+
+            return Results.Ok(new { message = "Si ese email está registrado, recibirás un enlace." });
+        })
+        .AllowAnonymous()
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/reset-password", async (
+            ResetPasswordRequest request,
+            AppDbContext db,
+            IUserService userService,
+            IPasswordResetTokenService tokenService,
+            CancellationToken ct) =>
+        {
+            var userId = tokenService.TryDecodeUserId(request.Token ?? string.Empty);
+            if (userId is null)
+                return Results.BadRequest(new { code = "token_invalid" });
+
+            var user = await db.Users.FindAsync([userId.Value], ct);
+            if (user is null)
+                return Results.BadRequest(new { code = "token_invalid" });
+
+            var result = tokenService.ValidateToken(request.Token ?? string.Empty, user.PasswordHash);
+            if (result is PasswordResetTokenValidationResult.Invalid or PasswordResetTokenValidationResult.Expired)
+                return Results.BadRequest(new { code = "token_invalid" });
+
+            try
+            {
+                await userService.ResetPasswordAsync(userId.Value, request.NewPassword ?? string.Empty, ct);
+            }
+            catch (InvalidUserDataException ex)
+            {
+                return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+            }
+            catch (UserNotFoundException)
+            {
+                return Results.BadRequest(new { code = "token_invalid" });
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Problem(
+                    detail: "No se pudo actualizar la contraseña. Por favor, intenta de nuevo.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            return Results.Ok(new { message = "Contraseña actualizada." });
+        })
+        .AllowAnonymous()
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/reset-password-redirect", async (
+            string? token,
+            AppDbContext db,
+            IPasswordResetTokenService tokenService,
+            IConfiguration config,
+            ILogger<Program> logger,
+            CancellationToken ct) =>
+        {
+            var baseUrl = config["App:BaseUrl"]?.TrimEnd('/');
+            var prefix = string.IsNullOrWhiteSpace(baseUrl) ? string.Empty : baseUrl;
+            var errorUrl = $"{prefix}/nueva-contrasena?status=invalid";
+
+            try
+            {
+                var userId = tokenService.TryDecodeUserId(token ?? string.Empty);
+                if (userId is null)
+                    return Results.Redirect(errorUrl);
+
+                var user = await db.Users.FindAsync([userId.Value], ct);
+                if (user is null)
+                    return Results.Redirect(errorUrl);
+
+                var result = tokenService.ValidateToken(token ?? string.Empty, user.PasswordHash);
+                return result switch
+                {
+                    PasswordResetTokenValidationResult.Valid =>
+                        Results.Redirect($"{prefix}/nueva-contrasena?token={Uri.EscapeDataString(token ?? string.Empty)}"),
+                    PasswordResetTokenValidationResult.Expired =>
+                        Results.Redirect($"{prefix}/nueva-contrasena?status=expired"),
+                    _ => Results.Redirect(errorUrl),
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error en reset-password-redirect — redirigiendo a error.");
+                return Results.Redirect(errorUrl);
+            }
+        })
+        .AllowAnonymous()
+        .Produces(StatusCodes.Status302Found);
+
+        return app;
+    }
+
+    private sealed record ForgotPasswordRequest(string Email);
+    private sealed record ResetPasswordRequest(string Token, string NewPassword);
 
     private static void SetRefreshCookie(HttpContext ctx, string token)
     {

@@ -224,6 +224,49 @@ export async function resendConfirmation(email: string): Promise<void> {
   })
 }
 
+export async function forgotPassword(email: string): Promise<void> {
+  try {
+    await fetch('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+  } catch {
+    // Siempre es silencioso: no revelar estado del email al caller.
+  }
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const response = await fetch('/api/v1/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  })
+
+  if (response.ok) return
+
+  let body: unknown = null
+  try {
+    body = await response.json()
+  } catch {
+    body = null
+  }
+
+  if (response.status === 400) {
+    const typedBody = body as { code?: unknown }
+    const code = typeof typedBody.code === 'string' ? typedBody.code : 'reset_password_failed'
+    throw new AuthApiError(
+      code,
+      getMainApiErrorMessage(body, 'No se pudo restablecer la contraseña.'),
+    )
+  }
+
+  throw new AuthApiError(
+    'reset_password_failed',
+    getMainApiErrorMessage(body, 'No se pudo restablecer la contraseña.'),
+  )
+}
+
 export async function confirmEmail(token: string): Promise<ConfirmEmailResponse> {
   const { data, error, response } = await authClient['/api/v1/auth/confirm-email'].GET({
     params: { query: { token } },
