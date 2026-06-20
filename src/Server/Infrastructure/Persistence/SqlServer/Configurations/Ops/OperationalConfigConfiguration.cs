@@ -53,7 +53,7 @@ public class OperationalConfigConfiguration : IEntityTypeConfiguration<Operation
             UpdatedAt = new DateTimeOffset(2026, 5, 24, 0, 0, 0, TimeSpan.Zero),
             UpdatedBy = "system",
             TermsEnabled = false,
-            ContactEmail = "portafoliodefibras@gmail.com",
+            ContactEmail = "contacto@fibrasinmobiliarias.com",
             IsrRetentionRate = 0.30m,
             IvaRate = 0.16m,
         });

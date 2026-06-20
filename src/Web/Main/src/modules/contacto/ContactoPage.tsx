@@ -3,7 +3,7 @@ import { useSiteContent } from '@/shared/hooks/useSiteContent'
 
 export function ContactoPage() {
   const { data: siteContent } = useSiteContent()
-  const contactEmail = siteContent?.contactEmail?.trim() || 'portafoliodefibras@gmail.com'
+  const contactEmail = siteContent?.contactEmail?.trim() || 'contacto@fibrasinmobiliarias.com'
 
   usePageTitle(
     'Contacto | Fibras Inmobiliarias',
