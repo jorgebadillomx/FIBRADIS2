@@ -8354,6 +8354,8 @@ export interface components {
             isActive: boolean;
             trialEndsAt: null | string;
             paidAt: null | string;
+            subscriptionType: null | string;
+            subscriptionEndsAt: null | string;
         };
         UserSummaryDto: {
             /** Format: uuid */

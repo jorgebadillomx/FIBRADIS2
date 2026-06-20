@@ -7,4 +7,6 @@ public sealed record UserProfileData(
     string? Apodo,
     bool IsActive,
     DateTime? TrialEndsAt,
-    DateTime? FechaPago);
+    DateTime? FechaPago,
+    string? SubscriptionType,
+    DateTime? SubscriptionEndsAt);

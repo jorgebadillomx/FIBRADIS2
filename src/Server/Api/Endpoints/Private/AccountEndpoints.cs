@@ -35,6 +35,10 @@ public static class AccountEndpoints
                         : null,
                     profile.FechaPago.HasValue
                         ? DateTime.SpecifyKind(profile.FechaPago.Value, DateTimeKind.Utc).ToString("O")
+                        : null,
+                    profile.SubscriptionType,
+                    profile.SubscriptionEndsAt.HasValue
+                        ? DateTime.SpecifyKind(profile.SubscriptionEndsAt.Value, DateTimeKind.Utc).ToString("O")
                         : null));
             }
             catch (UserNotFoundException)

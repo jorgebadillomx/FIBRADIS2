@@ -33,6 +33,9 @@ const RegistroPage = lazy(() =>
 const ActivarPage = lazy(() =>
   import('@/pages/ActivarPage').then(m => ({ default: m.ActivarPage })),
 )
+const SuscripcionPage = lazy(() =>
+  import('@/pages/SuscripcionPage').then(m => ({ default: m.SuscripcionPage })),
+)
 const PrivacidadPage = lazy(() => import('@/modules/privacidad/PrivacidadPage').then(m => ({ default: m.PrivacidadPage })))
 const AcercaPage = lazy(() => import('@/modules/acerca/AcercaPage').then(m => ({ default: m.AcercaPage })))
 const ContactoPage = lazy(() => import('@/modules/contacto/ContactoPage').then(m => ({ default: m.ContactoPage })))
@@ -74,6 +77,7 @@ export const routes: RouteObject[] = [
       { path: '/nueva-contrasena', element: p(<NuevaContrasenaPage />) },
       { path: '/registro', element: p(<RegistroPage />) },
       { path: '/activar', element: p(<ActivarPage />) },
+      { path: '/suscripcion', element: p(<SuscripcionPage />) },
       { path: '/login', element: p(<LoginPage />) },
       { path: '/privacidad', element: p(<PrivacidadPage />) },
       { path: '/acerca', element: p(<AcercaPage />) },

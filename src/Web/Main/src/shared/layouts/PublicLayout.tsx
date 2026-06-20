@@ -294,6 +294,7 @@ export function PublicLayout() {
                 align="right"
                 entries={[
                   { label: 'Mi perfil', to: '/perfil' },
+                  { label: 'Suscripción', to: '/suscripcion' },
                   { label: 'Cerrar sesión', onClick: handleLogout },
                 ]}
                 label={profileLabel}

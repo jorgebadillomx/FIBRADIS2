@@ -11594,7 +11594,9 @@
           "apodo",
           "isActive",
           "trialEndsAt",
-          "paidAt"
+          "paidAt",
+          "subscriptionType",
+          "subscriptionEndsAt"
         ],
         "type": "object",
         "properties": {
@@ -11620,6 +11622,18 @@
             ]
           },
           "paidAt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subscriptionType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subscriptionEndsAt": {
             "type": [
               "null",
               "string"

@@ -56,7 +56,7 @@ test('authenticated mobile menu keeps the account actions and anonymous menu kee
   assert.ok(anonymousAccountSection)
   assert.ok(authenticatedAccountSection)
   assert.deepEqual(anonymousAccountSection?.items.map((item) => item.label), ['Portafolio'])
-  assert.deepEqual(authenticatedAccountSection?.items.map((item) => item.label), ['Mi perfil', 'Cerrar sesión'])
+  assert.deepEqual(authenticatedAccountSection?.items.map((item) => item.label), ['Mi perfil', 'Suscripción', 'Cerrar sesión'])
 })
 
 test('shouldCloseMenuOnEscape only closes the dropdown on Escape', () => {

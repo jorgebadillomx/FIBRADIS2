@@ -6,4 +6,6 @@ public sealed record UserProfileResponse(
     string? Apodo,
     bool IsActive,
     string? TrialEndsAt,
-    string? PaidAt);
+    string? PaidAt,
+    string? SubscriptionType,
+    string? SubscriptionEndsAt);
