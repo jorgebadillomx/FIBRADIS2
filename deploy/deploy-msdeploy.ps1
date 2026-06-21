@@ -132,7 +132,8 @@ $msArgs = @(
     "-allowUntrusted",
     "-enableRule:AppOffline",
     "-retryAttempts:5",
-    "-retryInterval:3000"
+    "-retryInterval:3000",
+    "-skip:objectName=filePath,absolutePath=appsettings\.Production\.json"
 )
 
 Start-Process -FilePath $MsDeploy -ArgumentList $msArgs -Wait -NoNewWindow `
