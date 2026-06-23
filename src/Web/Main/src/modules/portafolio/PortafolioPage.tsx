@@ -11,6 +11,7 @@ import { PerformanceChart } from '@/modules/portafolio/PerformanceChart'
 import { PortafolioCalendario } from '@/modules/portafolio/PortafolioCalendario'
 import { PositionsTable } from '@/modules/portafolio/PositionsTable'
 import { UploadZone } from '@/modules/portafolio/UploadZone'
+import { VideoAyudaDialog } from '@/modules/portafolio/VideoAyudaDialog'
 import { useFavorites } from '@/modules/oportunidades/useFavorites'
 import { latestInpcPct } from '@/shared/lib/inflation-utils'
 import { Button } from '@/shared/ui/button'
@@ -268,12 +269,15 @@ export function PortafolioPage() {
       {!hasPositions ? (
         <div className="space-y-6">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <p className="text-sm text-muted-foreground">
-              Sube un archivo Excel o CSV con tus posiciones para comenzar. El archivo debe contener
-              las columnas <code className="font-mono rounded bg-muted px-1">Ticker</code>,{' '}
-              <code className="font-mono rounded bg-muted px-1">Qty</code> y{' '}
-              <code className="font-mono rounded bg-muted px-1">AvgCost</code>.
-            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Sube un archivo Excel o CSV con tus posiciones para comenzar. El archivo debe contener
+                las columnas <code className="font-mono rounded bg-muted px-1">Ticker</code>,{' '}
+                <code className="font-mono rounded bg-muted px-1">Qty</code> y{' '}
+                <code className="font-mono rounded bg-muted px-1">AvgCost</code>.
+              </p>
+              <VideoAyudaDialog triggerClassName="shrink-0" />
+            </div>
           </div>
 
           <UploadZone
