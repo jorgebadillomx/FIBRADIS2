@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router'
+import { Sparkles } from 'lucide-react'
 import { useAuth } from '@/modules/auth/AuthContext'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { resolveSubscriptionState } from './suscripcion-logic'
@@ -73,6 +74,16 @@ function PaymentSection() {
             <span className="text-sm text-muted-foreground">{plan.descripcion}</span>
           </div>
         ))}
+      </div>
+
+      <div className="mb-8 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <Sparkles className="mt-0.5 size-5 shrink-0 text-emerald-600" aria-hidden="true" />
+        <div>
+          <p className="text-sm font-semibold text-emerald-800">Navega sin publicidad</p>
+          <p className="mt-1 text-sm text-emerald-700">
+            Como suscriptor de Fibras Inmobiliarias, la plataforma se muestra sin anuncios.
+          </p>
+        </div>
       </div>
 
       <div className="mb-8 rounded-2xl border border-border bg-muted/30 p-5">
