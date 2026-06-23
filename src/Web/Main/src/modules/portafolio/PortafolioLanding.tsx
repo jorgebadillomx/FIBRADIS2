@@ -136,6 +136,7 @@ export function PortafolioLanding() {
                 <li>Una URL indexable para descubrir la plataforma desde Google.</li>
                 <li>Login embebido para entrar al dashboard sin cambiar de experiencia.</li>
                 <li>Acceso a reportes privados, oportunidades y herramientas tras autenticación.</li>
+                <li>Sin publicidad: al iniciar sesión, la experiencia queda libre de anuncios.</li>
               </ul>
             </div>
           </aside>
