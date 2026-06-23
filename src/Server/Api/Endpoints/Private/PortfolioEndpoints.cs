@@ -546,21 +546,71 @@ public static class PortfolioEndpoints
         var normalizedEntries = entries
             .Where(entry => entry.InpcIndex > 0m)
             .Select(entry => new InpcStepEntry(entry.Periodo, entry.InpcIndex))
+            .OrderBy(entry => entry.Periodo)
             .ToList();
 
         if (normalizedEntries.Count == 0)
             return null;
 
-        var baseEntry = normalizedEntries.LastOrDefault(entry => entry.Periodo <= rangeMonthStart)
-            ?? normalizedEntries[0];
-        var result = new List<PortfolioPerformancePointDto>(portfolioSeries.Count);
+        // El INPC es mensual y se publica con rezago, así que una resolución escalonada
+        // dejaba la línea plana en rangos cortos (todos los puntos caían en el mes base y el
+        // mes en curso aún no estaba publicado). En su lugar interpolamos un índice diario
+        // entre anclas mensuales y proyectamos los meses aún no publicados con la última tasa
+        // mensual (MoM), de modo que la serie se mueva de forma coherente en cualquier rango.
+        var anchors = new SortedDictionary<DateOnly, decimal>();
+        foreach (var entry in normalizedEntries)
+            anchors[entry.Periodo] = entry.InpcIndex;
 
+        var monthlyGrowth = normalizedEntries.Count >= 2
+            ? normalizedEntries[^1].InpcIndex / normalizedEntries[^2].InpcIndex
+            : 1m;
+
+        // Garantizamos un ancla superior para el mes posterior al último punto, de forma que
+        // toda fecha del portafolio tenga un ancla inferior y otra superior para interpolar.
+        var lastPortfolioDate = DateOnly.ParseExact(portfolioSeries[^1].Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var requiredUpperMonth = new DateOnly(lastPortfolioDate.Year, lastPortfolioDate.Month, 1).AddMonths(1);
+        var projectedMonth = normalizedEntries[^1].Periodo;
+        var projectedIndex = normalizedEntries[^1].InpcIndex;
+        while (projectedMonth < requiredUpperMonth)
+        {
+            projectedMonth = projectedMonth.AddMonths(1);
+            projectedIndex *= monthlyGrowth;
+            anchors[projectedMonth] = projectedIndex;
+        }
+
+        var anchorList = anchors.Select(kv => (Date: kv.Key, Index: kv.Value)).ToList();
+
+        decimal InterpolatedIndexAt(DateOnly date)
+        {
+            var lowerIdx = -1;
+            for (var i = 0; i < anchorList.Count; i++)
+            {
+                if (anchorList[i].Date <= date) lowerIdx = i;
+                else break;
+            }
+
+            if (lowerIdx < 0)
+                return anchorList[0].Index;                  // clamp antes de la primera ancla
+            if (lowerIdx == anchorList.Count - 1)
+                return anchorList[lowerIdx].Index;            // en/después de la última ancla
+
+            var lower = anchorList[lowerIdx];
+            var upper = anchorList[lowerIdx + 1];
+            var totalDays = upper.Date.DayNumber - lower.Date.DayNumber;
+            if (totalDays <= 0) return lower.Index;
+            var fraction = (decimal)(date.DayNumber - lower.Date.DayNumber) / totalDays;
+            return lower.Index + (upper.Index - lower.Index) * fraction;
+        }
+
+        var baseIndex = InterpolatedIndexAt(firstPortfolioDate);
+        if (baseIndex <= 0m)
+            return null;
+
+        var result = new List<PortfolioPerformancePointDto>(portfolioSeries.Count);
         foreach (var point in portfolioSeries)
         {
             var date = DateOnly.ParseExact(point.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-            var month = new DateOnly(date.Year, date.Month, 1);
-            var current = normalizedEntries.LastOrDefault(entry => entry.Periodo <= month) ?? baseEntry;
-            var valuePct = Math.Round((current.InpcIndex / baseEntry.InpcIndex - 1m) * 100m, 4);
+            var valuePct = Math.Round((InterpolatedIndexAt(date) / baseIndex - 1m) * 100m, 4);
             result.Add(new PortfolioPerformancePointDto(point.Date, valuePct));
         }
 
