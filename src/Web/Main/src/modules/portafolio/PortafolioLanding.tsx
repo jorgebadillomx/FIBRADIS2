@@ -7,6 +7,7 @@ import { fetchFaqItems } from '@/api/faqApi'
 import { Button } from '@/shared/ui/button'
 import { FaqAccordion } from '@/shared/ui/FaqAccordion'
 import { LoginForm } from '@/modules/auth/LoginForm'
+import { VideoAyudaDialog } from '@/modules/portafolio/VideoAyudaDialog'
 
 const FAQ_PAGE_TYPE = 'StaticPage'
 const FAQ_ENTITY_KEY = '/portafolio'
@@ -121,6 +122,9 @@ export function PortafolioLanding() {
               </p>
             </div>
 
+            <div>
+              <VideoAyudaDialog triggerLabel="Ver video: qué incluye el portafolio" />
+            </div>
           </div>
 
           <aside className="rounded-3xl border border-border bg-surface-elevated/95 p-6 shadow-sm backdrop-blur">
