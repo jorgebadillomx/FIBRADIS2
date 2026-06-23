@@ -531,6 +531,8 @@ public sealed class FibraProfileMetadataMiddlewareTests : IDisposable
 
         public Task<bool> UpdateDistributionBreakdownAsync(Guid fibraId, DateOnly paymentDate, DateOnly? exDate, decimal? taxable, decimal? capital, string? avisoUrl, CancellationToken ct = default) => throw new NotSupportedException();
 
+        public Task<bool> InsertAnnouncedDistributionIfAbsentAsync(Guid fibraId, string ticker, DateOnly paymentDate, DateOnly? exDate, decimal amount, decimal? taxable, decimal? capital, string? avisoUrl, string currency, CancellationToken ct = default) => throw new NotSupportedException();
+
         public Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default) => throw new NotSupportedException();
 
         public Task<bool> DeleteDistributionAsync(Guid id, CancellationToken ct = default) => throw new NotSupportedException();

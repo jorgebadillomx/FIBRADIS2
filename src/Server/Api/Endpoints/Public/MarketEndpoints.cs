@@ -125,6 +125,9 @@ public static class MarketEndpoints
                 if (!fibraById.TryGetValue(dist.FibraId, out var fibra))
                     continue;
 
+                // "Anunciado": evento futuro proveniente de masdividendos aún no confirmado por Yahoo.
+                var isEstimated = string.Equals(dist.Source, "masdividendos", StringComparison.OrdinalIgnoreCase);
+
                 if (dist.PaymentDate >= rangeFrom && dist.PaymentDate <= rangeTo)
                 {
                     events.Add(new CalendarEventDto(
@@ -135,7 +138,8 @@ public static class MarketEndpoints
                         dist.AmountPerUnit,
                         dist.TaxableAmount,
                         dist.CapitalReturnAmount,
-                        dist.AvisoUrl));
+                        dist.AvisoUrl,
+                        isEstimated));
                 }
 
                 if (dist.ExDividendDate is DateOnly exDate && exDate >= rangeFrom && exDate <= rangeTo)
@@ -148,7 +152,8 @@ public static class MarketEndpoints
                         dist.AmountPerUnit,
                         dist.TaxableAmount,
                         dist.CapitalReturnAmount,
-                        dist.AvisoUrl));
+                        dist.AvisoUrl,
+                        isEstimated));
                 }
             }
 

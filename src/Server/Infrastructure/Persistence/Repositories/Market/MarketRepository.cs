@@ -178,6 +178,25 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
         if (updated)
             return false;
 
+        // Reconciliación con eventos anunciados por masdividendos. Yahoo entrega como PaymentDate la
+        // fecha ex-derecho; un evento que masdividendos insertó como "anunciado" guarda PaymentDate =
+        // fecha de pago real y ExDividendDate = ex-derecho, por lo que el match por PaymentDate falla.
+        // Lo localizamos por ExDividendDate y lo confirmamos en la MISMA fila (Yahoo es fuente de verdad
+        // del monto), conservando la fecha de pago precisa de masdividendos.
+        var announced = await db.Distributions
+            .FirstOrDefaultAsync(
+                d => d.FibraId == dist.FibraId
+                     && d.ExDividendDate == dist.PaymentDate
+                     && d.Source == "masdividendos",
+                ct);
+        if (announced is not null)
+        {
+            announced.AmountPerUnit = dist.AmountPerUnit;
+            announced.Source = "yahoo";
+            await db.SaveChangesAsync(ct);
+            return false;
+        }
+
         try
         {
             db.Distributions.Add(dist);
@@ -294,6 +313,58 @@ public class MarketRepository(AppDbContext db) : IMarketRepository
             await db.SaveChangesAsync(ct);
 
         return true;
+    }
+
+    public async Task<bool> InsertAnnouncedDistributionIfAbsentAsync(
+        Guid fibraId,
+        string ticker,
+        DateOnly paymentDate,
+        DateOnly? exDate,
+        decimal amount,
+        decimal? taxable,
+        decimal? capital,
+        string? avisoUrl,
+        string currency,
+        CancellationToken ct = default)
+    {
+        // No insertar si ya existe una fila que represente este evento por cualquiera de sus fechas:
+        // por la fecha de pago, por la ex-derecho (Yahoo la usa como PaymentDate), o cruzadas.
+        var exists = await db.Distributions.AnyAsync(
+            d => d.FibraId == fibraId
+                 && (d.PaymentDate == paymentDate
+                     || d.ExDividendDate == paymentDate
+                     || (exDate != null && (d.PaymentDate == exDate || d.ExDividendDate == exDate))),
+            ct);
+        if (exists)
+            return false;
+
+        var dist = new Distribution
+        {
+            Id = Guid.NewGuid(),
+            FibraId = fibraId,
+            Ticker = ticker,
+            PaymentDate = paymentDate,
+            ExDividendDate = exDate,
+            AmountPerUnit = amount,
+            TaxableAmount = taxable,
+            CapitalReturnAmount = capital,
+            AvisoUrl = avisoUrl,
+            Currency = currency,
+            Source = "masdividendos",
+            CapturedAt = DateTimeOffset.UtcNow,
+        };
+
+        try
+        {
+            db.Distributions.Add(dist);
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2627 or 2601 })
+        {
+            db.Entry(dist).State = EntityState.Detached;
+            return false;
+        }
     }
 
     public async Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default)

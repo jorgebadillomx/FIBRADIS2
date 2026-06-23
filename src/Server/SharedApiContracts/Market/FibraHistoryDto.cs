@@ -28,5 +28,6 @@ public record CalendarEventDto(
     decimal AmountPerUnit,
     decimal? TaxableAmount,
     decimal? CapitalReturnAmount,
-    string? AvisoUrl
+    string? AvisoUrl,
+    bool IsEstimated
 );

@@ -191,10 +191,15 @@ export function CalendarioPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <EventChip eventType={event.eventType} />
+                            <EventChip eventType={event.eventType} estimated={event.isEstimated} />
                             <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                               {formatDateLabel(event.date)}
                             </span>
+                            {event.isEstimated ? (
+                              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-700">
+                                Anunciado
+                              </span>
+                            ) : null}
                           </div>
                           <h4 className="mt-2 text-sm font-semibold text-foreground">{event.empresa}</h4>
                           <p className="text-xs font-medium text-primary">{event.ticker}</p>

@@ -30,6 +30,7 @@ public class DistributionPipelineJob(
         var masDividendosUpdated = 0;
         var masDividendosSkipped = 0;
         var masDividendosUnmatched = 0;
+        var masDividendosInserted = 0;
         string? details = null;
         try
         {
@@ -132,6 +133,7 @@ public class DistributionPipelineJob(
                 masDividendosUpdated += importResult.Updated;
                 masDividendosSkipped += importResult.Skipped;
                 masDividendosUnmatched += importResult.Unmatched;
+                masDividendosInserted += importResult.Inserted;
             }
             catch (OperationCanceledException)
             {
@@ -144,8 +146,8 @@ public class DistributionPipelineJob(
             }
 
             logger.LogInformation(
-                "Distribution pipeline complete — inserted: {Inserted}, skipped: {Skipped}, masdividendos updated: {MasUpdated}, masdividendos skipped: {MasSkipped}, unmatched: {MasUnmatched}, errors: {Errors}",
-                inserted, skipped, masDividendosUpdated, masDividendosSkipped, masDividendosUnmatched, errors);
+                "Distribution pipeline complete — inserted: {Inserted}, skipped: {Skipped}, masdividendos updated: {MasUpdated}, masdividendos inserted: {MasInserted}, masdividendos skipped: {MasSkipped}, unmatched: {MasUnmatched}, errors: {Errors}",
+                inserted, skipped, masDividendosUpdated, masDividendosInserted, masDividendosSkipped, masDividendosUnmatched, errors);
 
             status = "Completed";
             details = JsonSerializer.Serialize(new
@@ -155,6 +157,7 @@ public class DistributionPipelineJob(
                 masDividendos = new
                 {
                     updated = masDividendosUpdated,
+                    inserted = masDividendosInserted,
                     skipped = masDividendosSkipped,
                     unmatched = masDividendosUnmatched,
                 },
@@ -177,6 +180,7 @@ public class DistributionPipelineJob(
                 masDividendos = new
                 {
                     updated = masDividendosUpdated,
+                    inserted = masDividendosInserted,
                     skipped = masDividendosSkipped,
                     unmatched = masDividendosUnmatched,
                 },

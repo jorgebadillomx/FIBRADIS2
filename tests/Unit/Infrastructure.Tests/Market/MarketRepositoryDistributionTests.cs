@@ -129,4 +129,107 @@ public class MarketRepositoryDistributionTests
         Assert.Equal(0.88m, stored.CapitalReturnAmount);
         Assert.Equal("https://www.bmv.com.mx/docs-pub/aviso.pdf", stored.AvisoUrl);
     }
+
+    [Fact]
+    public async Task InsertAnnounced_WhenNoExistingRow_InsertsMasDividendosSource()
+    {
+        var fibraId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var repo = new MarketRepository(db);
+
+        var inserted = await repo.InsertAnnouncedDistributionIfAbsentAsync(
+            fibraId,
+            "FCFE18",
+            new DateOnly(2026, 6, 30), // fecha de pago futura
+            new DateOnly(2026, 6, 29), // ex-derecho
+            0.61m,
+            0.31m,
+            0.30m,
+            "https://www.bmv.com.mx/docs-pub/aviso.pdf",
+            "MXN");
+
+        Assert.True(inserted);
+        var stored = await db.Distributions.SingleAsync(d => d.FibraId == fibraId);
+        Assert.Equal("masdividendos", stored.Source);
+        Assert.Equal(new DateOnly(2026, 6, 30), stored.PaymentDate);
+        Assert.Equal(new DateOnly(2026, 6, 29), stored.ExDividendDate);
+        Assert.Equal(0.61m, stored.AmountPerUnit);
+        Assert.Equal(0.31m, stored.TaxableAmount);
+    }
+
+    [Fact]
+    public async Task InsertAnnounced_WhenYahooRowMatchesByExDate_DoesNotDuplicate()
+    {
+        // Yahoo ya insertó la fila usando la ex-derecho como PaymentDate.
+        var fibraId = Guid.NewGuid();
+        var yahooExDate = new DateOnly(2026, 6, 29);
+        var masFechaPago = new DateOnly(2026, 6, 30);
+
+        await using var db = CreateDbContext();
+        db.Distributions.Add(new Distribution
+        {
+            Id = Guid.NewGuid(),
+            FibraId = fibraId,
+            Ticker = "FCFE18",
+            PaymentDate = yahooExDate,
+            AmountPerUnit = 0.62m,
+            Currency = "MXN",
+            Source = "yahoo",
+            CapturedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+
+        var repo = new MarketRepository(db);
+        var inserted = await repo.InsertAnnouncedDistributionIfAbsentAsync(
+            fibraId, "FCFE18", masFechaPago, yahooExDate, 0.61m, null, null, null, "MXN");
+
+        Assert.False(inserted);
+        Assert.Equal(1, await db.Distributions.CountAsync(d => d.FibraId == fibraId));
+    }
+
+    [Fact]
+    public async Task UpsertDistribution_ReconcilesAnnouncedRow_ByExDate_IntoSingleRow()
+    {
+        // Fila "anunciada" por masdividendos: PaymentDate = fecha de pago real, ExDividendDate = ex-derecho.
+        var fibraId = Guid.NewGuid();
+        var masFechaPago = new DateOnly(2026, 6, 30);
+        var exDate = new DateOnly(2026, 6, 29);
+
+        await using var db = CreateDbContext();
+        db.Distributions.Add(new Distribution
+        {
+            Id = Guid.NewGuid(),
+            FibraId = fibraId,
+            Ticker = "FCFE18",
+            PaymentDate = masFechaPago,
+            ExDividendDate = exDate,
+            AmountPerUnit = 0.50m,
+            Currency = "MXN",
+            Source = "masdividendos",
+            CapturedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+
+        var repo = new MarketRepository(db);
+
+        // Yahoo confirma: usa la ex-derecho como PaymentDate y trae el monto real.
+        var wasInserted = await repo.UpsertDistributionAsync(new Distribution
+        {
+            Id = Guid.NewGuid(),
+            FibraId = fibraId,
+            Ticker = "FCFE18",
+            PaymentDate = exDate,
+            AmountPerUnit = 0.62m,
+            Currency = "MXN",
+            Source = "yahoo",
+            CapturedAt = DateTimeOffset.UtcNow,
+        });
+
+        Assert.False(wasInserted); // reconciliado, no insertado
+        var stored = await db.Distributions.SingleAsync(d => d.FibraId == fibraId);
+        Assert.Equal("yahoo", stored.Source);
+        Assert.Equal(0.62m, stored.AmountPerUnit);     // monto de Yahoo (fuente de verdad)
+        Assert.Equal(masFechaPago, stored.PaymentDate); // fecha de pago precisa preservada
+        Assert.Equal(exDate, stored.ExDividendDate);
+    }
 }

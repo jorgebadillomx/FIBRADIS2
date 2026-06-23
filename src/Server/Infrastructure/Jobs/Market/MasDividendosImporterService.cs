@@ -20,10 +20,12 @@ public sealed class MasDividendosImporterService(
 
         var records = await client.GetAllAsync(ct);
         var byTicker = BuildLookup(fibras);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var updated = 0;
         var skipped = 0;
         var unmatched = 0;
+        var inserted = 0;
 
         foreach (var record in records)
         {
@@ -58,9 +60,36 @@ public sealed class MasDividendosImporterService(
                     ct);
 
                 if (changed)
+                {
                     updated++;
-                else
-                    skipped++;
+                    continue;
+                }
+
+                // No había fila histórica que enriquecer. Si es un evento FUTURO anunciado con monto
+                // parseable, insertarlo como distribución provisional (Source=masdividendos); Yahoo lo
+                // confirmará y reconciliará en la misma fila cuando llegue la fecha.
+                if (amount is not null && record.FechaPago.Value > today)
+                {
+                    var insertedRow = await marketRepo.InsertAnnouncedDistributionIfAbsentAsync(
+                        fibra.Id,
+                        fibra.Ticker,
+                        record.FechaPago.Value,
+                        record.FechaExDerecho,
+                        amount.Value,
+                        taxable,
+                        capital,
+                        avisoUrl,
+                        fibra.Currency,
+                        ct);
+
+                    if (insertedRow)
+                    {
+                        inserted++;
+                        continue;
+                    }
+                }
+
+                skipped++;
             }
             catch (Exception ex)
             {
@@ -69,7 +98,7 @@ public sealed class MasDividendosImporterService(
             }
         }
 
-        return new MasDividendosImportResult(updated, skipped, unmatched);
+        return new MasDividendosImportResult(updated, skipped, unmatched, inserted);
     }
 
     private static Dictionary<string, Fibra> BuildLookup(IReadOnlyList<Fibra> fibras)

@@ -388,6 +388,19 @@ internal sealed class FakeDistMarketRepository : IMarketRepository
         CancellationToken ct = default)
         => Task.FromResult(false);
 
+    public Task<bool> InsertAnnouncedDistributionIfAbsentAsync(
+        Guid fibraId,
+        string ticker,
+        DateOnly paymentDate,
+        DateOnly? exDate,
+        decimal amount,
+        decimal? taxable,
+        decimal? capital,
+        string? avisoUrl,
+        string currency,
+        CancellationToken ct = default)
+        => Task.FromResult(false);
+
     public Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default)
         => Task.CompletedTask;
 

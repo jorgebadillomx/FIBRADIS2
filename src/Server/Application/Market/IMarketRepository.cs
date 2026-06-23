@@ -37,6 +37,17 @@ public interface IMarketRepository
         decimal? capital,
         string? avisoUrl,
         CancellationToken ct = default);
+    Task<bool> InsertAnnouncedDistributionIfAbsentAsync(
+        Guid fibraId,
+        string ticker,
+        DateOnly paymentDate,
+        DateOnly? exDate,
+        decimal amount,
+        decimal? taxable,
+        decimal? capital,
+        string? avisoUrl,
+        string currency,
+        CancellationToken ct = default);
     Task UpdateDistributionAsync(Distribution distribution, CancellationToken ct = default);
     Task<bool> DeleteDistributionAsync(Guid id, CancellationToken ct = default);
 }

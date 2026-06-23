@@ -71,9 +71,12 @@ function CalendarCell({ cell }: { cell: CalendarCellData }) {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-1.5 rounded-lg border border-border/70 bg-white px-2 py-1 text-[11px] leading-4 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition hover:border-primary/40 hover:shadow-sm"
+                className={[
+                  'flex w-full items-center gap-1.5 rounded-lg border bg-white px-2 py-1 text-[11px] leading-4 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition hover:border-primary/40 hover:shadow-sm',
+                  event.isEstimated ? 'border-dashed border-amber-300' : 'border-border/70',
+                ].join(' ')}
               >
-                <EventChip eventType={event.eventType} compact />
+                <EventChip eventType={event.eventType} compact estimated={event.isEstimated} />
                 <span className="min-w-0 flex-1 truncate text-left font-medium text-foreground">
                   {event.ticker}
                 </span>
@@ -105,10 +108,15 @@ function EventPopoverBody({ event }: { event: MarketCalendarEvent }) {
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center gap-2">
-        <EventChip eventType={event.eventType} />
+        <EventChip eventType={event.eventType} estimated={event.isEstimated} />
         <span className="font-semibold text-foreground">{event.ticker}</span>
       </div>
       <p className="text-muted-foreground">{event.empresa}</p>
+      {event.isEstimated ? (
+        <p className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700">
+          Fecha anunciada (masdividendos), sujeta a confirmación.
+        </p>
+      ) : null}
       <dl className="grid grid-cols-2 gap-1.5">
         <div>
           <dt className="font-semibold uppercase tracking-wide text-muted-foreground">Fecha</dt>
